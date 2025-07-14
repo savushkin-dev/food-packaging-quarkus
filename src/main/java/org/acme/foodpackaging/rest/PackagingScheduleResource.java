@@ -17,8 +17,15 @@ import ai.timefold.solver.core.api.solver.SolutionManager;
 import ai.timefold.solver.core.api.solver.SolverManager;
 import ai.timefold.solver.core.api.solver.SolverStatus;
 
+import jakarta.ws.rs.core.Response;
+import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.Map;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -38,6 +45,31 @@ public class PackagingScheduleResource {
         this.repository = repository;
         this.solverManager = solverManager;
         this.solutionManager = solutionManager;
+    }
+
+    @Inject
+    LoadData loadData;
+
+    @POST
+    @Path("load")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response load(LoadDTO loadDTO) {
+        try {
+
+            loadData.loadDataByDate(loadDTO.getDate());
+
+            return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getDate())).build();
+        } catch (DateTimeParseException e) {
+
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
+                    .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed to load data: " + e.getMessage()))
+                    .build();
+        }
     }
 
     @GET
