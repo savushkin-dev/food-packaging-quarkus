@@ -20,6 +20,7 @@ import ai.timefold.solver.core.api.solver.SolverStatus;
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 
 import java.time.LocalDate;
@@ -51,14 +52,14 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("load")
-    @Consumes(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response load(String dateString) {
+    public Response load(LoadDTO loadDTO) {
         try {
 
-            loadData.loadDataByDate(dateString);
+            loadData.loadDataByDate(loadDTO.getDate());
 
-            return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + dateString)).build();
+            return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getDate())).build();
         } catch (DateTimeParseException e) {
 
             return Response.status(Response.Status.BAD_REQUEST)
