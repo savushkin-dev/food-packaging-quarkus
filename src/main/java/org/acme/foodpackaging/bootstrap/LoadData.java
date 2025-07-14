@@ -14,7 +14,7 @@ import java.time.*;
 import java.util.*;
 
 @ApplicationScoped
-public class DemoData24Hours {
+public class LoadData {
     @Inject
     PackagingScheduleRepository repository;
 
@@ -293,4 +293,3 @@ public class DemoData24Hours {
         );
     }
 }
-
