@@ -14,7 +14,7 @@ import java.time.*;
 import java.util.*;
 
 @ApplicationScoped
-public class DemoData24Hours {
+public class LoadData {
     @Inject
     PackagingScheduleRepository repository;
 
@@ -45,9 +45,14 @@ public class DemoData24Hours {
             "4810268056826", true
     );
 
+    public void loadDataByDate(String dateString) {
+        PackagingSchedule solution = initSolution(dateString);
+        repository.write(solution);
+    }
+
     @Transactional
-    public void generateDemoData(@Observes StartupEvent startupEvent) {
-        String date = "2025-05-25";
+   public PackagingSchedule initSolution(String date) {
+        Objects.requireNonNull(date, "Date cannot be null");
         final LocalDate START_DATE = LocalDate.parse(date);
         final LocalDateTime START_DATE_TIME = LocalDateTime.of(START_DATE, LocalTime.of(8,0));
         final LocalDate END_DATE = START_DATE.plusDays(1);
@@ -152,7 +157,7 @@ public class DemoData24Hours {
         jobs.sort(Comparator.comparing(Job::getName));
         solution.setJobs(jobs);
 
-        repository.write(solution);
+       return solution;
     }
 
     private Product createProduct(String id, String name) {
@@ -293,4 +298,3 @@ public class DemoData24Hours {
         );
     }
 }
-
