@@ -34,6 +34,13 @@ public class Line {
         jobs = new ArrayList<>();
     }
 
+    public Line(String id, String name, LocalDateTime startDateTime) {
+        this.id = id;
+        this.name = name;
+        this.startDateTime = startDateTime;
+        jobs = new ArrayList<>();
+    }
+
     @Override
     public String toString() {
         return name;
