@@ -19,6 +19,8 @@ public class LoadData {
 
     @ConfigProperty(name = "demo-data.line-count", defaultValue = "6")
     int lineCount;
+    @ConfigProperty(name = "db.url")
+    String dbUrl;
 
     private static final int DEFAULT_PRIORITY = 0;
 
@@ -62,10 +64,9 @@ public class LoadData {
         List<Job> jobs = new ArrayList<>();
         ProductFactory productFactory = new ProductFactory();
         Map<String, Product> productMap = new HashMap<>();
-        String url = "jdbc:sqlserver://10.164.30.246;databaseName=MES;integratedSecurity=true;encrypt=true;trustServerCertificate=true";
 
         try {
-            try (Connection connection = DriverManager.getConnection(url);
+            try (Connection connection = DriverManager.getConnection(dbUrl);
                  PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS)) {
                 preparedStatement.setString(1, date + "T00:00:00");     // Параметр для v.DTI
 
