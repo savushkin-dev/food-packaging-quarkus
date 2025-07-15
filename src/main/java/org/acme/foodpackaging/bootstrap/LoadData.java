@@ -42,21 +42,19 @@ public class LoadData {
         PackagingSchedule solution = new PackagingSchedule();
         DurationProvider provider = new DurationProvider();
         this.shortener = new ProductNameShortener();
-
+        // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
-
         // Инициализация линий
         List<Line> lines = createLines(lineCount, START_DATE_TIME);
         List<Product> products = new ArrayList<>();
         List<Job> jobs = loadJobs(date,  START_DATE_TIME, provider, products);
-        // Инициализация времени мойки
+        // Инициализация времени мойки между продукцией
         CleaningTimeCalculator cleaningCalculator = new CleaningTimeCalculator(products);
 
         solution.setLines(lines);
         solution.setProducts(products);
         jobs.sort(Comparator.comparing(Job::getName));
         solution.setJobs(jobs);
-
         return solution;
     }
 
@@ -75,19 +73,19 @@ public class LoadData {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
 
                     while (resultSet.next()) {
-                        int quantity = resultSet.getInt("KOLEV");
-                        String np = resultSet.getString("NP");
-                        String priority = resultSet.getString("UX");
-                        String ean13 = resultSet.getString("EAN13");
-                        String name = resultSet.getString("NAME");
-
+                        int quantity = resultSet.getInt("KOLEV");    // количество
+                        String np = resultSet.getString("NP");       // Номер партии
+                        String priority = resultSet.getString("UX"); // Приоритет выполнения
+                        String ean13 = resultSet.getString("EAN13"); // Уникальный идентификатор продукта
+                        String name = resultSet.getString("NAME");   // Название
+                        // Список с продукцией хранит только уникальные значения
                         Product product = productMap.get(ean13);
                         if (product == null) {
                             product = productFactory.create(ean13, name);
                             productMap.put(ean13, product);
                             products.add(product);
                         }
-                     switch(product.getType()){
+                     switch(product.getType()){ // Если тип не классика, можно время выполнения сразу рассчитать
                          case ROD, CACTUS, PLUSH -> duration = provider.calculate(product, quantity);
                          default -> duration = Duration.ZERO;
                      }
@@ -109,7 +107,6 @@ public class LoadData {
     }
 
     private List<Line> createLines(int lineCount, LocalDateTime startDateTime){
-
         List<Line> lines = new ArrayList<>(lineCount);
         for(int i=1; i<=lineCount; ++i){
             String lineName = "Line" + String.valueOf(i);
