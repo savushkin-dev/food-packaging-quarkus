@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// Сокращенные названия сырков
 public class ProductNameShortener {
 
     private final Map<String, String> productMap;

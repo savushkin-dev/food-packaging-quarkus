@@ -2,8 +2,9 @@ package org.acme.foodpackaging.domain;
 
 import java.util.Map;
 
+// Класс для создания объектов продукции
 public class ProductFactory {
-    private static final Map<String, Boolean> IS_ALLERGEN = Map.of(
+    private static final Map<String, Boolean> IS_ALLERGEN = Map.of( // ean13 аллергенов
             "4810268043727", true,
             "4810268043475", true,
             "4810268054969", true,
@@ -16,7 +17,7 @@ public class ProductFactory {
         return new Product(id, name, type, allergen);
     }
 
-    private ProductType determineType(String productName) {
+    private ProductType determineType(String productName) { // Присвоение типа продукту методом поиска ключевых слов в названии
         String lower = productName.toLowerCase();
         if (containsAll(lower, "творобушки", "флоупак")) return ProductType.ROD;
         if (containsAll(lower, "топ", "флоупак")) return ProductType.ROD;
