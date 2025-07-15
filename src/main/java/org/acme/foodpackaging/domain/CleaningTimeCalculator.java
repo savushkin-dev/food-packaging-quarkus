@@ -1,15 +1,9 @@
-package org.acme.foodpackaging.bootstrap;
-
-import org.acme.foodpackaging.domain.FillingType;
-import org.acme.foodpackaging.domain.GlazeType;
-import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.domain.ProductType;
+package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
 import java.util.*;
 
-public class CleaningCalculator {
-
+public class CleaningTimeCalculator {
     private static final int ALLERGEN_DIFFERENT_GLAZE = 90;
     private static final int CLEANING_AFTER_ALLERGEN = 240;
     private static final int CACTUS_CLEANING = 180;
@@ -23,7 +17,7 @@ public class CleaningCalculator {
 
     private final Random random = new Random();
 
-    public CleaningCalculator(List<Product> products){
+    public CleaningTimeCalculator(List<Product> products){
         calculateCleaningDurations(products);
     }
     private void calculateCleaningDurations(List<Product> products) {
