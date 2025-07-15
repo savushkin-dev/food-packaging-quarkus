@@ -19,19 +19,10 @@ public class LoadData {
 
     @ConfigProperty(name = "demo-data.line-count", defaultValue = "6")
     int lineCount;
-    @ConfigProperty(name = "demo-data.job-count", defaultValue = "10")
-    int jobCount;
 
     private static final int DEFAULT_PRIORITY = 0;
 
     private ProductNameShortener shortener;
-
-    private static final Map<String, Boolean> IS_ALLERGEN = Map.of(
-            "4810268043727", true,
-            "4810268043475", true,
-            "4810268054969", true,
-            "4810268056826", true
-    );
 
     public void loadDataByDate(String dateString) {
         PackagingSchedule solution = initSolution(dateString);
@@ -54,11 +45,10 @@ public class LoadData {
 
         // Инициализация линий
         List<Line> lines = createLines(lineCount, START_DATE_TIME);
-        Map<String, Product> productMap = new HashMap<>();
         List<Product> products = new ArrayList<>();
-        List<Job> jobs = loadJobs(date,  START_DATE_TIME, provider, productMap, products);
+        List<Job> jobs = loadJobs(date,  START_DATE_TIME, provider, products);
         // Инициализация времени мойки
-        CleaningCalculator cleaningCalculator = new CleaningCalculator(products);
+        CleaningTimeCalculator cleaningCalculator = new CleaningTimeCalculator(products);
 
         solution.setLines(lines);
         solution.setProducts(products);
@@ -68,10 +58,10 @@ public class LoadData {
         return solution;
     }
 
-    private List<Job> loadJobs(String date, LocalDateTime startDateTime, DurationProvider provider,
-                               Map<String, Product> productMap, List<Product> products) {
+    private List<Job> loadJobs(String date, LocalDateTime startDateTime, DurationProvider provider, List<Product> products) {
         List<Job> jobs = new ArrayList<>();
-        int id = 0;
+        ProductFactory productFactory = new ProductFactory();
+        Map<String, Product> productMap = new HashMap<>();
         String url = "jdbc:sqlserver://10.164.30.246;databaseName=MES;integratedSecurity=true;encrypt=true;trustServerCertificate=true";
 
         try {
@@ -92,7 +82,7 @@ public class LoadData {
 
                         Product product = productMap.get(ean13);
                         if (product == null) {
-                            product = createProduct(ean13, name);
+                            product = productFactory.create(ean13, name);
                             productMap.put(ean13, product);
                             products.add(product);
                         }
@@ -117,11 +107,6 @@ public class LoadData {
         return jobs;
     }
 
-    private Product createProduct(String id, String name) {
-        ProductType type = determineProductType(name);
-        return new Product(id, name, type, IS_ALLERGEN.getOrDefault(id, false));
-    }
-
     private List<Line> createLines(int lineCount, LocalDateTime startDateTime){
 
         List<Line> lines = new ArrayList<>(lineCount);
@@ -133,38 +118,13 @@ public class LoadData {
         }
         return lines;
     }
-    private ProductType determineProductType(String productName) {
-        String lowerName = productName.toLowerCase();
-
-        if (containsAll(lowerName, "творобушки", "флоупак")) return ProductType.ROD;
-        if (containsAll(lowerName, "топ", "флоупак")) return ProductType.ROD;
-        if (containsAll(lowerName, "фольга")) return ProductType.PLUSH;
-        if (containsAll(lowerName, "кактус")) return ProductType.CACTUS;
-        return ProductType.CLASSIC;
-    }
-
-    private boolean containsAll(String text, String... keywords) {
-        for (String kw : keywords) {
-            if (!text.contains(kw)) return false;
-        }
-        return true;
-    }
 
     private Job createJob(String id, String np, Product product, int quantity, Duration duration, DurationProvider provider, int priority, LocalDateTime startDate) {
         String jobName = shortener.getShortName(product.getId(), product.getName());
-        return new Job(
-                id,
-                jobName,
-                np,
-                product,
-                quantity,
-                duration,
-                provider,
-                startDate,
+        return new Job(id, jobName, np, product, quantity, duration, provider, startDate,
                 startDate.plusDays(1).withHour(2).withMinute(0), // Идеальное время завершения
                 startDate.plusDays(1).withHour(4).withMinute(0), // Максимальное время завершения
-                priority,
-                false
+                priority, false
         );
     }
 }
