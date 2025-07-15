@@ -116,6 +116,8 @@ public class Job {
 
     public int getQuantity() { return quantity; }
 
+    public String getNp() { return np; }
+
     public String getName() {
         return name;
     }

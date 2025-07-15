@@ -4,11 +4,11 @@ let loadedSchedule = null;
 const dateTimeFormat = JSJoda.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 const byLinePanel = document.getElementById("byLinePanel");
 const byLineTimelineOptions = {
-  timeAxis: {scale: "hour"},
+  timeAxis: {scale: "minute", step: "30"},
   orientation: {axis: "top"},
   stack: false,
   xss: {disabled: true}, // Items are XSS safe through JQuery
-  zoomMin: 1000 * 60 * 60 * 12 // Half day in milliseconds
+  zoomMin: 1000 * 60 * 30 // Half day in milliseconds
 };
 var byLineGroupDataSet = new vis.DataSet();
 var byLineItemDataSet = new vis.DataSet();
@@ -96,7 +96,6 @@ function refreshSchedule() {
     $.each(schedule.lines, (index, line) => {
       const lineGroupElement = $(`<div/>`)
         .append($(`<h5 class="card-title mb-1"/>`).text(line.name))
-        .append($(`<p class="card-text ms-2 mb-0"/>`).text(line.operator));
       byLineGroupDataSet.add({id : line.id, content: lineGroupElement.html()});
     });
 
@@ -138,10 +137,69 @@ function refreshSchedule() {
       } else {
         const beforeReady = JSJoda.LocalDateTime.parse(job.startProductionDateTime).isBefore(JSJoda.LocalDateTime.parse(job.minStartTime));
         const afterDue = JSJoda.LocalDateTime.parse(job.endDateTime).isAfter(JSJoda.LocalDateTime.parse(job.maxEndTime));
-        const byLineJobElement = $(`<div/>`)
-          .append($(`<p class="card-text"/>`).text(job.name));
+               const startJob = JSJoda.LocalDateTime.parse(job.startProductionDateTime);
+               const endJob = JSJoda.LocalDateTime.parse(job.endDateTime);
+
+               const jobDuration = JSJoda.Duration.between(startJob, endJob);
+               const jobDurationHours = jobDuration.toHours();
+               const jobDurationMinutes = jobDuration.toMinutes() % 60;
+
+               let durationText = '';
+               if (jobDurationHours > 0) {
+                   durationText += `${jobDurationHours} h`;
+               }
+               if (jobDurationMinutes > 0) {
+                   durationText += (durationText ? ' ' : '') + `${jobDurationMinutes} min`;
+               }
+               if (durationText === '') {
+                   durationText = '0 min';
+               }
+
+               const byLineJobElement = $(`<div class="card-body p-2"/>`)
+                   .append($(`<h5 class="card-title mb-1"/>`).text(job.name))
+                   .append($(`<p class="card-text ms-2 mb-0"/>`).html(
+                       `Np: ${job.np}, Duration: <span class="text-success">${durationText}</span>`
+                   ))
+                   .append($(`<p class="card-text ms-2 mb-0"/>`).html(
+                       `Start: <span class="text-success">${startJob.format(dateTimeFormat)}</span>`
+                   ))
+                   .append($(`<p class="card-text ms-2 mb-0"/>`).html(
+                       `End: <span class="text-danger">${endJob.format(dateTimeFormat)}</span>`
+                   ));
+
         const byJobJobElement = $(`<div/>`)
           .append($(`<p class="card-text"/>`).text(job.line.name));
+
+       const startCleaning = JSJoda.LocalDateTime.parse(job.startCleaningDateTime);
+       const endCleaning = JSJoda.LocalDateTime.parse(job.startProductionDateTime);
+
+       const cleaningDuration = JSJoda.Duration.between(startCleaning, endCleaning);
+       const cleaningHours = cleaningDuration.toHours();
+       const cleaningMinutes = cleaningDuration.toMinutes() % 60;
+
+       let cleaningDurationText = '';
+       if (cleaningHours > 0) {
+           cleaningDurationText += `${cleaningHours} h`;
+       }
+       if (cleaningMinutes > 0) {
+           cleaningDurationText += (cleaningDurationText ? ' ' : '') + `${cleaningMinutes} min`;
+       }
+       if (cleaningDurationText === '') {
+           cleaningDurationText = '0 min';
+       }
+
+       const byLineCleaningElement = $('<div class="card-body p-2"/>')
+           .append($('<h5 class="card-title mb-1"/>').text('Cleaning'))
+           .append($('<p class="card-text ms-2 mb-0"/>').html(
+               `Duration: <span class="text-success">${cleaningDurationText}</span>`
+           ))
+           .append($('<p class="card-text ms-2 mb-0"/>').html(
+               `Start: <span class="text-success">${startCleaning.format(dateTimeFormat)}</span>`
+           ))
+           .append($('<p class="card-text ms-2 mb-0"/>').html(
+               `End: <span class="text-danger">${endCleaning.format(dateTimeFormat)}</span>`
+           ));
+
         if (beforeReady) {
           byLineJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
           byJobJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
@@ -152,9 +210,9 @@ function refreshSchedule() {
         }
         byLineItemDataSet.add({
           id : job.id + "_cleaning", group: job.line.id,
-          content: "Cleaning",
+          content:byLineCleaningElement.html(),
           start: job.startCleaningDateTime, end: job.startProductionDateTime,
-          style: "background-color: #FCAF3E99"
+          style: "background-color: #D3D7CF99"
         });
         byLineItemDataSet.add({
           id : job.id, group: job.line.id,
