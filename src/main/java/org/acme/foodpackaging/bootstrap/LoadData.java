@@ -217,7 +217,7 @@ public class LoadData {
 
                 // 8. Оба аллергены, разные глазури
                 else if (currentProduct.is_allergen() && previousProduct.is_allergen()
-                        && currentProduct.getType() == ProductType.CLASSI
+                        && currentProduct.getType() == ProductType.CLASSIC
                         && previousProduct.getType() == ProductType.CLASSIC
                         && !currentProduct.getGlaze().equals(previousProduct.getGlaze())) {
                     cleaningDuration = Duration.ofMinutes(ALLERGEN_DIFFERENT_GLAZE);
