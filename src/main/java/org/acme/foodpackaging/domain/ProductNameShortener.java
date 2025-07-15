@@ -14,7 +14,8 @@ public class ProductNameShortener {
         productMap.put("4810268043710", "Аленка");
         productMap.put("4810268043475", "Фисташка");
         productMap.put("4810268040450", "Коровка");
-        productMap.put("4810268047589", "ВарСгущенка");
+        productMap.put("4810268047589", "Вареная Сгущенка");
+        productMap.put("4810268045066", "Вареная сгущенка");
         productMap.put("4810268047572", "Шоколадный");
         productMap.put("4810268054228", "Бискотти");
         productMap.put("4810268057748", "Тоффи");
@@ -27,14 +28,14 @@ public class ProductNameShortener {
         productMap.put("4810268050640", "ТвШоколад");
         productMap.put("4810268050664", "ТвМанго");
         productMap.put("4810268050657", "ТвКлубника");
-        productMap.put("4810268054969", "ТпФундук");
-        productMap.put("4810268056826", "ТпКарамельАр");
-        productMap.put("4810268050121", "ТпКлубника");
-        productMap.put("4810268053153", "ТпМалина");
-        productMap.put("4810268050138", "ТпШоколад");
-        productMap.put("4810268044984", "вПлюш");
-        productMap.put("4810268044977", "кПлюш");
-        productMap.put("4810268049866", "МишкаСгущенка");
+        productMap.put("4810268054969", "ТопФундук");
+        productMap.put("4810268056826", "ТопКарамельАрахис");
+        productMap.put("4810268050121", "ТопКлубника");
+        productMap.put("4810268053153", "ТопМалина");
+        productMap.put("4810268050138", "ТопШоколад");
+        productMap.put("4810268044984", "Плюш Ваниль");
+        productMap.put("4810268044977", "Плюш Какао");
+        productMap.put("4810268049866", "Мишка на полюсе Сгущенка");
     }
 
     public String getShortName(String ean13, String jobName) {
