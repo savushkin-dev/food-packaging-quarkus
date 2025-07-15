@@ -113,8 +113,7 @@ public class LoadData {
         List<Line> lines = new ArrayList<>(lineCount);
         for(int i=1; i<=lineCount; ++i){
             String lineName = "Line" + String.valueOf(i);
-            String operatorName = "Operator" + String.valueOf(i);
-            Line line = new Line(String.valueOf(i), lineName, operatorName,startDateTime);
+            Line line = new Line(String.valueOf(i), lineName, startDateTime);
             lines.add(line);
         }
         return lines;
