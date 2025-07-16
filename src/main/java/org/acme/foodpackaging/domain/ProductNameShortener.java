@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// Сокращенные названия сырков
 public class ProductNameShortener {
 
     private final Map<String, String> productMap;
@@ -46,7 +47,7 @@ public class ProductNameShortener {
         Pattern pattern = Pattern.compile("\"([^\"]+)\"");
         Matcher matcher = pattern.matcher(jobName);
         if (matcher.find()) {
-            jobName = matcher.group(1); // Внутри кавычек
+            jobName = matcher.group(1);
         }
         return jobName;
     }
