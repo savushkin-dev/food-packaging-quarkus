@@ -22,9 +22,9 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
                 classicOnlyOnLines1236(factory),
                 // Medium constraints
                 idealEndDateTime(factory),
-              //  minimizeCleaningDuration(factory),
                 // Soft constraints
                 minimizeMakespan(factory),
+                minimizeCleaningDuration(factory),
         };
     }
 
