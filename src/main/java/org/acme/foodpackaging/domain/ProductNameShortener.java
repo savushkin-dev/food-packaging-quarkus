@@ -47,7 +47,7 @@ public class ProductNameShortener {
         Pattern pattern = Pattern.compile("\"([^\"]+)\"");
         Matcher matcher = pattern.matcher(jobName);
         if (matcher.find()) {
-            jobName = matcher.group(1); // Внутри кавычек
+            jobName = matcher.group(1);
         }
         return jobName;
     }
