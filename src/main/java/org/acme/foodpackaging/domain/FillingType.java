@@ -12,6 +12,7 @@ public enum FillingType {
     HAZELNUT("Фундук"),
     NONE("Без начинки");
 
+    // Классификация начинок стрежней по ean13
     private static final Map<String, FillingType> ID_TO_FILLING = Map.of(
             "4810268050671", CONDENSED_MILK,
             "4810268050640", CHOCOLATE,
