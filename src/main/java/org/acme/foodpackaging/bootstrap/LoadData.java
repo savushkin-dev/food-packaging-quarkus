@@ -118,8 +118,6 @@ public class LoadData {
 
     private Job createJob(String id, String jobName, String np, Product product, int quantity, Duration duration, DurationProvider provider, int priority, LocalDateTime startDate) {
         return new Job(id, jobName, np, product, quantity, duration, provider, startDate,
-                startDate.plusDays(1).withHour(2).withMinute(0), // Идеальное время завершения
-                startDate.plusDays(1).withHour(4).withMinute(0), // Максимальное время завершения
                 priority, false
         );
     }

@@ -100,31 +100,44 @@ function refreshSchedule() {
     });
 
     $.each(schedule.jobs, (index, job) => {
+    const minStartDateTime = JSJoda.LocalDateTime.parse(job.minStartTime); // LocalDateTime
+    const minEndDateTime = minStartDateTime.plusHours(12);
+    const minEndDateTimeFormat = dateTimeFormat.format(minEndDateTime);
       byJobGroupDataSet.add({id : job.id, content: job.name});
       byJobItemDataSet.add({
         id: job.id + "_readyToIdealEnd", group: job.id,
         start: job.minStartTime,
-        end: job.idealEndTime,
+        end: minEndDateTimeFormat,
         type: "background",
         style: "background-color: #8AE23433"
       });
       byJobItemDataSet.add({
         id: job.id + "_idealEndToDue", group: job.id,
-        start: job.idealEndTime,
-        end: job.maxEndTime,
+        start: minEndDateTimeFormat,
+        end: minEndDateTimeFormat,
         type: "background",
         style: "background-color: #FCAF3E33"
       });
 
       if (job.line == null || job.startCleaningDateTime == null || job.startProductionDateTime == null || job.endDateTime == null) {
         unassignedJobsCount++;
-        const durationMinutes = JSJoda.Duration.ofSeconds(job.duration).toMinutes();
+        const duration = JSJoda.Duration.ofSeconds(job.duration);
+        const jobDurationHours = duration.toHours();
+        const jobDurationMinutes = duration.toMinutes() % 60;
+                     let durationText = '';
+                     if (jobDurationHours > 0) {
+                         durationText += `${jobDurationHours} h`;
+                     }
+                     if (jobDurationMinutes > 0) {
+                         durationText += (durationText ? ' ' : '') + `${jobDurationMinutes} min`;
+                     }
+                     if (durationText === '') {
+                         durationText = '0 min';
+                     }
         const unassignedJobElement = $(`<div class="card-body p-2"/>`)
           .append($(`<h5 class="card-title mb-1"/>`).text(job.name))
-          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`${Math.floor(durationMinutes / 60)} hours ${durationMinutes % 60} mins`))
-          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Min: ${JSJoda.LocalDateTime.parse(job.minStartTime).format(dateTimeFormat)}`))
-          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Ideal: ${JSJoda.LocalDateTime.parse(job.idealEndTime).format(dateTimeFormat)}`))
-          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Max: ${JSJoda.LocalDateTime.parse(job.maxEndTime).format(dateTimeFormat)}`));
+          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Duration: ${durationText}`))
+          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Start: ${JSJoda.LocalDateTime.parse(job.minStartTime).format(dateTimeFormat)}`))
         const byJobJobElement = $(`<div/>`)
           .append($(`<h5 class="card-title mb-1"/>`).text(`Unassigned`));
         unassignedJobs.append($(`<div class="col"/>`).append($(`<div class="card"/>`).append(unassignedJobElement)));
@@ -135,8 +148,6 @@ function refreshSchedule() {
           style: "background-color: #EF292999"
         });
       } else {
-        const beforeReady = JSJoda.LocalDateTime.parse(job.startProductionDateTime).isBefore(JSJoda.LocalDateTime.parse(job.minStartTime));
-        const afterDue = JSJoda.LocalDateTime.parse(job.endDateTime).isAfter(JSJoda.LocalDateTime.parse(job.maxEndTime));
                const startJob = JSJoda.LocalDateTime.parse(job.startProductionDateTime);
                const endJob = JSJoda.LocalDateTime.parse(job.endDateTime);
 
@@ -199,15 +210,6 @@ function refreshSchedule() {
            .append($('<p class="card-text ms-2 mb-0"/>').html(
                `End: <span class="text-danger">${endCleaning.format(dateTimeFormat)}</span>`
            ));
-
-        if (beforeReady) {
-          byLineJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
-          byJobJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
-        }
-        if (afterDue) {
-          byLineJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`After due (too late)`));
-          byJobJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`After due (too late)`));
-        }
         byLineItemDataSet.add({
           id : job.id + "_cleaning", group: job.line.id,
           content:byLineCleaningElement.html(),

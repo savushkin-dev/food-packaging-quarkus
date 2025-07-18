@@ -15,13 +15,10 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
     public Constraint[] defineConstraints(ConstraintFactory factory) {
         return new Constraint[] {
                 // Hard constraints
-                maxEndDateTime(factory),
                 plushMustBeOnLine1(factory),
                 rodOnlyOnLines456(factory),
                 cactusOnlyOnLines123(factory),
                 classicOnlyOnLines1236(factory),
-                // Medium constraints
-                idealEndDateTime(factory),
                 // Soft constraints
                 minimizeMakespan(factory),
                 minimizeCleaningDuration(factory),
