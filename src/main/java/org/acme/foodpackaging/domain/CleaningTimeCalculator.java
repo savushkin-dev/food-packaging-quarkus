@@ -5,16 +5,17 @@ import java.util.*;
 
 // Класс для расчета длительности мойки между различной продукцией
 public class CleaningTimeCalculator {
-    private static final int ALLERGEN_DIFFERENT_GLAZE = 90;     // Переход с аллергена на другой аллерген
-    private static final int CLEANING_AFTER_ALLERGEN = 240;    // Мойка после аллергена
-    private static final int CACTUS_CLEANING = 180;           // Мойка до и после кактуса
-    private static final int MIN_CLASSIC_GLAZE = 30;         // Минимальное время смены глазури в классике
-    private static final int MAX_CLASSIC_GLAZE = 50;        // Максимальное время смены глазури в классике
-    private static final int FROM_ROD_TO_CLASSIC = 150;    // Переход со стержня на классик
-    private static final int ROD_DIFFERENT_FILLING = 50;  // Смена начинки в стержня
-    private static final int DIFFERENT_CURD_MASS = 20;   // Смена творожной массы
-    private static final int CHANGING_PACKAGING = 10;   // Смена упаковки
-    private static final int TO_NONE_FILLING_ROD = 40; // Стержень с начинкой на стержень без начинки
+    private static final int ALLERGEN_DIFFERENT_GLAZE = 90;        // Переход с аллергена на другой аллерген
+    private static final int CLEANING_AFTER_ALLERGEN = 240;       // Мойка после аллергена
+    private static final int CACTUS_CLEANING = 180;              // Мойка до и после кактуса
+    private static final int MIN_CLASSIC_GLAZE = 30;            // Минимальное время смены глазури в классике
+    private static final int MAX_CLASSIC_GLAZE = 50;           // Максимальное время смены глазури в классике
+    private static final int FROM_ROD_TO_CLASSIC = 150;       // Переход со стержня на классик
+    private static final int ROD_DIFFERENT_FILLING = 50;     // Смена начинки в стержня
+    private static final int DIFFERENT_CURD_MASS = 20;      // Смена творожной массы
+    private static final int CHANGING_PACKAGING = 10;      // Смена упаковки
+    private static final int TO_NONE_FILLING_ROD = 40;    // Стержень с начинкой на стержень без начинки
+    private static final int FROM_PLUSH_TO_CLASSIC = 50; // Переход с классики на плюш
 
     private final Random random = new Random();
 
@@ -32,6 +33,8 @@ public class CleaningTimeCalculator {
                     duration = Duration.ZERO;
                 } else if (isCactusTransition(current, previous)) {
                     duration = Duration.ofMinutes(CACTUS_CLEANING);
+                } else if (isPlushToClassic(current, previous)){
+                    duration = Duration.ofMinutes(FROM_PLUSH_TO_CLASSIC);
                 } else if (previous.is_allergen() && !current.is_allergen()) {
                     duration = Duration.ofMinutes(CLEANING_AFTER_ALLERGEN);
                 } else if (isRodToClassic(current, previous)) {
@@ -64,6 +67,10 @@ public class CleaningTimeCalculator {
 
     private boolean isCactusTransition(Product c, Product p) { //  Возвращает true, если ровно один из двух продуктов имеет тип CACTUS — но не оба одновременно
         return c.getType() == ProductType.CACTUS ^ p.getType() == ProductType.CACTUS;
+    }
+
+    private boolean isPlushToClassic(Product c, Product p) { //  Плюш на классику
+        return c.getType() == ProductType.CLASSIC && p.getType() == ProductType.PLUSH;
     }
 
     private boolean isRodToClassic(Product c, Product p) { // Стержень на классику
