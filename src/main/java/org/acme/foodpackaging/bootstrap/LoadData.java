@@ -11,8 +11,6 @@ import java.sql.*;
 import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
 import java.time.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @ApplicationScoped
 public class LoadData {
