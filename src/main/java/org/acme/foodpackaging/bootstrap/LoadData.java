@@ -24,8 +24,6 @@ public class LoadData {
 
     private static final int DEFAULT_PRIORITY = 0;
 
-    private ProductNameShortener shortener;
-
     public void loadDataByDate(String dateString) {
         PackagingSchedule solution = initSolution(dateString);
         repository.write(solution);
@@ -41,7 +39,6 @@ public class LoadData {
 
         PackagingSchedule solution = new PackagingSchedule();
         DurationProvider provider = new DurationProvider();
-        this.shortener = new ProductNameShortener();
         // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
         // Инициализация линий
@@ -75,11 +72,12 @@ public class LoadData {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
 
                     while (resultSet.next()) {
-                        int quantity = resultSet.getInt("KOLEV");    // количество
-                        String np = resultSet.getString("NP");       // Номер партии
-                        String priority = resultSet.getString("UX"); // Приоритет выполнения
+                        int quantity = resultSet.getInt("KOLEV");       // количество
+                        String np = resultSet.getString("NP");         // Номер партии
+                        String priority = resultSet.getString("UX");  // Приоритет выполнения
                         String ean13 = resultSet.getString("EAN13"); // Уникальный идентификатор продукта
-                        String name = resultSet.getString("NAME");   // Название
+                        String name = resultSet.getString("NAME");  // Название
+                        String shortName = resultSet.getString(("SNM"));      // Сокращенное название
                         // Список с продукцией хранит только уникальные значения
                         Product product = productMap.get(ean13);
                         if (product == null) {
@@ -93,7 +91,7 @@ public class LoadData {
                      }
                         // Создание партий
                         Job job = createJob(
-                                String.valueOf(++job_id), np, product, quantity,
+                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity,
                                 duration, provider,
                                 DEFAULT_PRIORITY, startDateTime
                         );
@@ -118,12 +116,18 @@ public class LoadData {
         return lines;
     }
 
-    private Job createJob(String id, String np, Product product, int quantity, Duration duration, DurationProvider provider, int priority, LocalDateTime startDate) {
-        String jobName = shortener.getShortName(product.getId(), product.getName());
+    private Job createJob(String id, String jobName, String np, Product product, int quantity, Duration duration, DurationProvider provider, int priority, LocalDateTime startDate) {
         return new Job(id, jobName, np, product, quantity, duration, provider, startDate,
                 startDate.plusDays(1).withHour(2).withMinute(0), // Идеальное время завершения
                 startDate.plusDays(1).withHour(4).withMinute(0), // Максимальное время завершения
                 priority, false
         );
+    }
+
+    public static String cleanSyrkiName(String input) {
+        return input.replaceFirst(
+                "(?i)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный)",
+                ""
+        ).trim();
     }
 }
