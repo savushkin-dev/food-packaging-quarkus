@@ -122,8 +122,17 @@
       <version>3.26.3</version>
       <scope>test</scope>
     </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi</artifactId>
+        <version>5.3.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>5.3.0</version>
+      </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <plugin>
@@ -148,7 +157,6 @@
       </plugin>
     </plugins>
   </build>
-
   <profiles>
     <profile>
       <id>native</id>
@@ -220,5 +228,4 @@
       </dependencyManagement>
     </profile>
   </profiles>
-
 </project>

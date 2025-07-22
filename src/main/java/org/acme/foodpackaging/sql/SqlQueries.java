@@ -13,4 +13,20 @@ public class SqlQueries {
     WHERE (v.KMC = m.KMC) AND (v.DTI = ?) AND (v.KSK = ?) AND (m.MASSA < ?)
     ORDER BY v.SNPZ
     """;
+
+    public static final String LOAD_LABELING_CACTUS_COCONUT_ALMONDS = """
+    SELECT TOP (1000)
+           [KMC],
+           [NP],
+           [DTS],
+           [NKOLE],
+           [MRPL],
+           [DTE],
+           [LINEID],
+           [STP_AVT]
+    FROM [prommark].[dbo].[PM_ASSCC]
+    WHERE (KMC LIKE ? OR KMC LIKE ?)
+      AND CAST(DTF AS DATE) = ?
+    ORDER BY NP
+    """;
 }
