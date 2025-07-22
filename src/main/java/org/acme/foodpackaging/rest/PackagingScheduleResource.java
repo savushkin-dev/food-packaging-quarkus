@@ -18,12 +18,13 @@ import ai.timefold.solver.core.api.solver.SolverManager;
 import ai.timefold.solver.core.api.solver.SolverStatus;
 
 import jakarta.ws.rs.core.Response;
+import org.acme.foodpackaging.bootstrap.ExcelExporter;
 import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 
@@ -50,6 +51,11 @@ public class PackagingScheduleResource {
     @Inject
     LoadData loadData;
 
+    @ConfigProperty(name = "dbLabeling.url")
+    String dbLabelingUrl;
+
+    String date;
+
     @POST
     @Path("load")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -58,6 +64,7 @@ public class PackagingScheduleResource {
         try {
 
             loadData.loadDataByDate(loadDTO.getDate());
+            date = loadDTO.getDate();
 
             return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getDate())).build();
         } catch (DateTimeParseException e) {
@@ -88,7 +95,14 @@ public class PackagingScheduleResource {
         solverManager.solveBuilder()
                 .withProblemId(SINGLETON_SOLUTION_ID)
                 .withProblemFinder(id -> repository.read())
-                .withBestSolutionConsumer(schedule -> repository.write(schedule))
+                .withBestSolutionConsumer(schedule -> {
+                    if (schedule != null) {
+                        repository.write(schedule);
+                        ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date,schedule.getJobs());
+                    } else {
+                        System.err.println("Schedule is null — Excel export skipped.");
+                    }
+                })
                 .run();
     }
 
