@@ -8,41 +8,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ProductionLine {
-    private final LocalDate startDate;
+
     private final Map<Integer, LocalDateTime> lineStarts; // Номер линии → дата и время
 
     public ProductionLine(String startDateStr,
                           String startLine1, String startLine2, String startLine3,
                           String startLine4, String startLine5, String startLine6) {
-      
-        this.startDate = LocalDate.parse(startDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
         this.lineStarts = new HashMap<>();
-
-        // Добавляем время для каждой линии (если не указано — ставим 08:00)
-        addLineTime(1, startLine1);
-        addLineTime(2, startLine2);
-        addLineTime(3, startLine3);
-        addLineTime(4, startLine4);
-        addLineTime(5, startLine5);
-        addLineTime(6, startLine6);
+        lineStarts.put(1, parseDateTime(startDateStr,startLine1));
+        lineStarts.put(2, parseDateTime(startDateStr,startLine2));
+        lineStarts.put(3, parseDateTime(startDateStr,startLine3));
+        lineStarts.put(4, parseDateTime(startDateStr,startLine4));
+        lineStarts.put(5, parseDateTime(startDateStr,startLine5));
+        lineStarts.put(6, parseDateTime(startDateStr,startLine6));
     }
 
-    private void addLineTime(int lineNumber, String timeStr) {
-        LocalTime time;
-
-        if (timeStr == null || timeStr.isEmpty()) {
-            time = LocalTime.of(8, 0); // По умолчанию 08:00
-        } else {
-            try {
-                time = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
-            } catch (Exception e) {
-                System.err.println("Ошибка парсинга времени для линии " + lineNumber);
-                time = LocalTime.of(8, 0);
-            }
-        }
-
-        LocalDateTime dateTime = LocalDateTime.of(startDate, time);
-        lineStarts.put(lineNumber, dateTime);
+    public static LocalDateTime parseDateTime(String dateStr, String timeStr) {
+        LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalTime time = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
+        return LocalDateTime.of(date, time);
     }
 
     public Map<Integer, LocalDateTime> getLineStarts() {
