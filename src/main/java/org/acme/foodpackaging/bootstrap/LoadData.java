@@ -24,13 +24,13 @@ public class LoadData {
 
     private static final int DEFAULT_PRIORITY = 0;
 
-    public void loadDataByDate(String dateString) {
-        PackagingSchedule solution = initSolution(dateString);
+    public void loadDataByDate(String dateString, Map<Integer, LocalDateTime> lineStartsTime) {
+        PackagingSchedule solution = initSolution(dateString, lineStartsTime);
         repository.write(solution);
     }
 
     @Transactional
-    public PackagingSchedule initSolution(String date) {
+    public PackagingSchedule initSolution(String date, Map<Integer, LocalDateTime> lineStartsTime) {
         Objects.requireNonNull(date, "Date cannot be null");
         final LocalDate START_DATE = LocalDate.parse(date);
         final LocalDateTime START_DATE_TIME = LocalDateTime.of(START_DATE, LocalTime.of(8, 0));
@@ -42,7 +42,7 @@ public class LoadData {
         // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
         // Инициализация линий
-        List<Line> lines = createLines(lineCount, START_DATE_TIME);
+        List<Line> lines = createLines(lineCount, lineStartsTime);
         List<Product> products = new ArrayList<>();
         List<Job> jobs = loadJobs(date,  START_DATE_TIME, provider, products);
         // Инициализация времени мойки между продукцией
@@ -106,11 +106,11 @@ public class LoadData {
         return jobs;
     }
 
-    private List<Line> createLines(int lineCount, LocalDateTime startDateTime){
+    private List<Line> createLines(int lineCount, Map<Integer, LocalDateTime> lineStartsTime){
         List<Line> lines = new ArrayList<>(lineCount);
         for(int i=1; i<=lineCount; ++i){
             String lineName = "Line" + String.valueOf(i);
-            Line line = new Line(String.valueOf(i), lineName, startDateTime);
+            Line line = new Line(String.valueOf(i), lineName, lineStartsTime.get(i));
             lines.add(line);
         }
         return lines;
