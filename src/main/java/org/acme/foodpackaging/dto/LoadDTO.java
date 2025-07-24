@@ -8,7 +8,11 @@ import java.util.Map;
 
 public class LoadDTO {
 
-    private String date;
+    private String startDate;
+    private String endDate;
+
+    private String idealEndDateTime;
+    private String maxEndDateTime;
 
     private String startLine1;
     private String startLine2;
@@ -19,7 +23,17 @@ public class LoadDTO {
 
     public LoadDTO() {}
 
-    public String getDate() { return date; }
+    public String getStartDate() { return startDate; }
+    public String getEndDate() { return endDate; }
+
+    public LocalDateTime getIdealEndDateTime() {
+        return ProductionLine.parseDateTime(endDate, idealEndDateTime);
+    }
+    public LocalDateTime getMaxEndDateTime() {
+        return ProductionLine.parseDateTime(endDate, maxEndDateTime);
+    }
+
+    public String getMaxEndTime() { return maxEndDateTime; }
 
     public String getStartLine1() { return startLine1; }
     public String getStartLine2() { return startLine2; }
@@ -28,8 +42,17 @@ public class LoadDTO {
     public String getStartLine5() { return startLine5; }
     public String getStartLine6() { return startLine6; }
 
-    public void setDate(String date) {
-        this.date = date;
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+    }
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+    public void setIdealEndDateTime(String idealEndDateTime) {
+        this.idealEndDateTime = idealEndDateTime;
+    }
+    public void setMaxEndDateTime(String maxEndDateTime) {
+        this.maxEndDateTime = maxEndDateTime;
     }
 
     public void setStartLine1(String  startLine1) { this.startLine1 = startLine1; }
@@ -40,11 +63,11 @@ public class LoadDTO {
     public void setStartLine6(String  startLine6) { this.startLine6 = startLine6; }
 
     public Map<Integer, LocalDateTime> getLineStartsMap() {
-        if (date == null) return Collections.emptyMap();
+        if (startDate == null) return Collections.emptyMap();
 
         return Collections.unmodifiableMap(
                 new ProductionLine(
-                        date, startLine1, startLine2, startLine3,
+                        startDate, startLine1, startLine2, startLine3,
                         startLine4, startLine5, startLine6
                 ).getLineStarts()
         );
