@@ -58,7 +58,7 @@ public class PackagingScheduleResource {
         try {
 
             loadData.loadDataByDate(loadDTO.getStartDate(), loadDTO.getEndDate(),
-                    loadDTO.getIdealEndDateTime(), loadDTO.getMaxEndDateTime(),loadDTO.getLineStartsMap());
+                    loadDTO.getIdealEndDateTime(), loadDTO.getMaxEndDateTime(),loadDTO.toLineStartDateTimeMap());
 
             return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getStartDate())).build();
         } catch (DateTimeParseException e) {
