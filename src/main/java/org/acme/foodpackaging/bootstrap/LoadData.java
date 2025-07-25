@@ -17,34 +17,34 @@ public class LoadData {
     @Inject
     PackagingScheduleRepository repository;
 
-    @ConfigProperty(name = "demo-data.line-count", defaultValue = "6")
-    int lineCount;
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
     private static final int DEFAULT_PRIORITY = 0;
+    private LocalDateTime IDEAL_END_DATE_TIME;
+    private LocalDateTime MAX_END_DATE_TIME;
+    private LocalDateTime MIN_START_DATE_TIME;
 
-    public void loadDataByDate(String dateString) {
-        PackagingSchedule solution = initSolution(dateString);
+    public void loadDataByDate(LocalDate START_DATE,  LocalDate END_DATE, LocalDateTime idealEndDateTime,
+                               LocalDateTime maxEndDateTime, Map<Integer, LocalDateTime> lineStartsTime) {
+        this.MIN_START_DATE_TIME =  Collections.min(lineStartsTime.values());
+        this.IDEAL_END_DATE_TIME = idealEndDateTime;
+        this.MAX_END_DATE_TIME = maxEndDateTime;
+        PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
         repository.write(solution);
     }
 
     @Transactional
-    public PackagingSchedule initSolution(String date) {
-        Objects.requireNonNull(date, "Date cannot be null");
-        final LocalDate START_DATE = LocalDate.parse(date);
-        final LocalDateTime START_DATE_TIME = LocalDateTime.of(START_DATE, LocalTime.of(8, 0));
-        final LocalDate END_DATE = START_DATE.plusDays(1);
-        final LocalDateTime END_DATE_TIME = LocalDateTime.of(END_DATE, LocalTime.of(4, 0));
-
+    public PackagingSchedule initSolution(LocalDate START_DATE, LocalDate END_DATE,
+                                          Map<Integer, LocalDateTime> lineStartsTime) {
         PackagingSchedule solution = new PackagingSchedule();
         DurationProvider provider = new DurationProvider();
         // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
         // Инициализация линий
-        List<Line> lines = createLines(lineCount, START_DATE_TIME);
+        List<Line> lines = createLines(lineStartsTime.size(), lineStartsTime);
         List<Product> products = new ArrayList<>();
-        List<Job> jobs = loadJobs(date,  START_DATE_TIME, provider, products);
+        List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, provider, products);
         // Инициализация времени мойки между продукцией
         CleaningTimeCalculator cleaningCalculator = new CleaningTimeCalculator(products);
 
@@ -93,7 +93,7 @@ public class LoadData {
                         Job job = createJob(
                                 String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity,
                                 duration, provider,
-                                DEFAULT_PRIORITY, startDateTime
+                                DEFAULT_PRIORITY, MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
                         );
                         jobs.add(job);
                     }
@@ -106,20 +106,22 @@ public class LoadData {
         return jobs;
     }
 
-    private List<Line> createLines(int lineCount, LocalDateTime startDateTime){
+    private List<Line> createLines(int lineCount, Map<Integer, LocalDateTime> lineStartsTime){
         List<Line> lines = new ArrayList<>(lineCount);
         for(int i=1; i<=lineCount; ++i){
             String lineName = "Line" + String.valueOf(i);
-            Line line = new Line(String.valueOf(i), lineName, startDateTime);
+            Line line = new Line(String.valueOf(i), lineName, lineStartsTime.get(i));
             lines.add(line);
         }
         return lines;
     }
 
-    private Job createJob(String id, String jobName, String np, Product product, int quantity, Duration duration, DurationProvider provider, int priority, LocalDateTime startDate) {
-        return new Job(id, jobName, np, product, quantity, duration, provider, startDate,
-                startDate.plusDays(1).withHour(2).withMinute(0), // Идеальное время завершения
-                startDate.plusDays(1).withHour(4).withMinute(0), // Максимальное время завершения
+    private Job createJob(String id, String jobName, String np, Product product, int quantity, Duration duration, DurationProvider provider, int priority,
+                          LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
+        return new Job(id, jobName, np, product, quantity, duration, provider,
+                minStartDateTime,
+                idealEndDateTime,
+                maxEndDateTime,
                 priority, false
         );
     }
