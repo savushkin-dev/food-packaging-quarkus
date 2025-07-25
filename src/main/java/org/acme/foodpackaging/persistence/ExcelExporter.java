@@ -1,17 +1,23 @@
-package org.acme.foodpackaging.bootstrap;
+package org.acme.foodpackaging.persistence;
 
 import org.acme.foodpackaging.domain.Job;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LABELING_CACTUS_COCONUT_ALMONDS;
-
+import java.io.File;
 import java.io.FileOutputStream;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LABELING_CACTUS_COCONUT_ALMONDS;
 
 public class ExcelExporter {
 
@@ -76,6 +82,15 @@ public class ExcelExporter {
                 for (int i = 0; i < 7; i++) {
                     sheet.autoSizeColumn(i);
                 }
+
+                File exportDir = new File("src/main/resources/excelExport");
+                if (!exportDir.exists()) {
+                    boolean created = exportDir.mkdirs();
+                    if (!created) {
+                        System.err.println("Не удалось создать каталог: " + exportDir.getAbsolutePath());
+                        return;
+                    }
+                }
                 try (FileOutputStream fos = new FileOutputStream("src/main/resources/excelExport/" + date + ".xlsx")) {
                     workbook.write(fos);
                     System.out.println("✅ Данные успешно экспортированы в Excel:" + "src/main/resources/excelExport/" + date + ".xlsx");
@@ -87,5 +102,4 @@ public class ExcelExporter {
             System.err.println(e.getMessage());
         }
     }
-
 }

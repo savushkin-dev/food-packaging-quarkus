@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.rest;
 
+import ai.timefold.solver.core.api.solver.*;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -12,21 +13,18 @@ import jakarta.ws.rs.core.MediaType;
 
 import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
-import ai.timefold.solver.core.api.solver.ScoreAnalysisFetchPolicy;
-import ai.timefold.solver.core.api.solver.SolutionManager;
-import ai.timefold.solver.core.api.solver.SolverManager;
-import ai.timefold.solver.core.api.solver.SolverStatus;
 
 import jakarta.ws.rs.core.Response;
-import org.acme.foodpackaging.bootstrap.ExcelExporter;
 import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
+import org.acme.foodpackaging.persistence.ExcelExporter;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -38,6 +36,8 @@ public class PackagingScheduleResource {
     private SolverManager<PackagingSchedule, String> solverManager;
 
     private SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
+
+    private SolverJob<PackagingSchedule, String> currentSolverSolution;
 
     @Inject
     public PackagingScheduleResource(PackagingScheduleRepository repository,
@@ -92,17 +92,10 @@ public class PackagingScheduleResource {
     @POST
     @Path("solve")
     public void solve() {
-        solverManager.solveBuilder()
+        currentSolverSolution=solverManager.solveBuilder()
                 .withProblemId(SINGLETON_SOLUTION_ID)
                 .withProblemFinder(id -> repository.read())
-                .withBestSolutionConsumer(schedule -> {
-                    if (schedule != null) {
-                        repository.write(schedule);
-                        ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date,schedule.getJobs());
-                    } else {
-                        System.err.println("Schedule is null — Excel export skipped.");
-                    }
-                })
+                .withBestSolutionConsumer(schedule -> repository.write(schedule))
                 .run();
     }
 
@@ -119,6 +112,23 @@ public class PackagingScheduleResource {
     @Path("stopSolving")
     public void stopSolving() {
         solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
+        if (currentSolverSolution != null) {
+            try {
+                PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
+                if (bestSolution != null) {
+                    exportTimeCompare(date, bestSolution);
+                } else {
+                    System.err.println("Best solution is null — export skipped.");
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                System.err.println(e.getMessage());
+            }
+        } else {
+            System.err.println("Current solver solution is null");
+        }
     }
 
+    public  void exportTimeCompare(String date, PackagingSchedule solution) {
+        ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
+    }
 }
