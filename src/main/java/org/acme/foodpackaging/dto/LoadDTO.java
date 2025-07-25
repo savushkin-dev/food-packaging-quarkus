@@ -1,75 +1,58 @@
 package org.acme.foodpackaging.dto;
 
-import org.acme.foodpackaging.domain.ProductionLine;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class LoadDTO {
 
-    private String startDate;
-    private String endDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
 
-    private String idealEndDateTime;
-    private String maxEndDateTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
 
-    private String startLine1;
-    private String startLine2;
-    private String startLine3;
-    private String startLine4;
-    private String startLine5;
-    private String startLine6;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
+    private LocalDateTime idealEndDateTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
+    private LocalDateTime maxEndDateTime;
+
+    @JsonFormat(pattern = "HH:mm")
+    private Map<Integer, LocalTime> lineStartTimes;
 
     public LoadDTO() {}
 
-    public String getStartDate() { return startDate; }
-    public String getEndDate() { return endDate; }
+    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getEndDate() { return endDate; }
 
-    public LocalDateTime getIdealEndDateTime() {
-        return ProductionLine.parseDateTime(endDate, idealEndDateTime);
-    }
-    public LocalDateTime getMaxEndDateTime() {
-        return ProductionLine.parseDateTime(endDate, maxEndDateTime);
-    }
+    public LocalDateTime getIdealEndDateTime() { return idealEndDateTime; }
+    public LocalDateTime getMaxEndDateTime() { return maxEndDateTime; }
 
-    public String getMaxEndTime() { return maxEndDateTime; }
+    public Map<Integer, LocalTime> getLineStartTimes() { return lineStartTimes; }
 
-    public String getStartLine1() { return startLine1; }
-    public String getStartLine2() { return startLine2; }
-    public String getStartLine3() { return startLine3; }
-    public String getStartLine4() { return startLine4; }
-    public String getStartLine5() { return startLine5; }
-    public String getStartLine6() { return startLine6; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
 
-    public void setStartDate(String startDate) {
-        this.startDate = startDate;
-    }
-    public void setEndDate(String endDate) {
-        this.endDate = endDate;
-    }
-    public void setIdealEndDateTime(String idealEndDateTime) {
-        this.idealEndDateTime = idealEndDateTime;
-    }
-    public void setMaxEndDateTime(String maxEndDateTime) {
-        this.maxEndDateTime = maxEndDateTime;
+    public void setIdealEndDateTime(LocalDateTime idealEndDateTime) { this.idealEndDateTime = idealEndDateTime; }
+    public void setMaxEndDateTime(LocalDateTime maxEndDateTime) { this.maxEndDateTime = maxEndDateTime; }
+
+    public void setLineStartTimes(Map<Integer, LocalTime> lineStartTimes) { this.lineStartTimes = lineStartTimes; }
+
+    public Map<Integer, LocalDateTime> toLineStartDateTimeMap() {
+        Map<Integer, LocalDateTime> result = new HashMap<>();
+        for (Map.Entry<Integer, LocalTime> entry : lineStartTimes.entrySet()) {
+            result.put(entry.getKey(), LocalDateTime.of(startDate, entry.getValue()));
+        }
+        return result;
     }
 
-    public void setStartLine1(String  startLine1) { this.startLine1 = startLine1; }
-    public void setStartLine2(String  startLine2) { this.startLine2 = startLine2; }
-    public void setStartLine3(String  startLine3) { this.startLine3 = startLine3; }
-    public void setStartLine4(String  startLine4) { this.startLine4 = startLine4; }
-    public void setStartLine5(String  startLine5) { this.startLine5 = startLine5; }
-    public void setStartLine6(String  startLine6) { this.startLine6 = startLine6; }
-
-    public Map<Integer, LocalDateTime> getLineStartsMap() {
-        if (startDate == null) return Collections.emptyMap();
-
-        return Collections.unmodifiableMap(
-                new ProductionLine(
-                        startDate, startLine1, startLine2, startLine3,
-                        startLine4, startLine5, startLine6
-                ).getLineStarts()
-        );
-    }
 }
+
+

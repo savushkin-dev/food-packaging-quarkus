@@ -27,23 +27,18 @@ public class LoadData {
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
 
-    public void loadDataByDate(String startDateStr, String endDateStr, LocalDateTime idealEndDateTime,
+    public void loadDataByDate(LocalDate START_DATE,  LocalDate END_DATE, LocalDateTime idealEndDateTime,
                                LocalDateTime maxEndDateTime, Map<Integer, LocalDateTime> lineStartsTime) {
         this.MIN_START_DATE_TIME =  Collections.min(lineStartsTime.values());
         this.IDEAL_END_DATE_TIME = idealEndDateTime;
         this.MAX_END_DATE_TIME = maxEndDateTime;
-        PackagingSchedule solution = initSolution(startDateStr,endDateStr,lineStartsTime);
-
+        PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
         repository.write(solution);
     }
 
     @Transactional
-    public PackagingSchedule initSolution(String startDateStr,String endDateStr,
+    public PackagingSchedule initSolution(LocalDate START_DATE, LocalDate END_DATE,
                                           Map<Integer, LocalDateTime> lineStartsTime) {
-        Objects.requireNonNull(startDateStr, "Date cannot be null");
-        final LocalDate START_DATE = LocalDate.parse(startDateStr);
-        final LocalDate END_DATE = LocalDate.parse(endDateStr);
-
         PackagingSchedule solution = new PackagingSchedule();
         DurationProvider provider = new DurationProvider();
         // Инициализация даты
@@ -51,7 +46,7 @@ public class LoadData {
         // Инициализация линий
         List<Line> lines = createLines(lineCount, lineStartsTime);
         List<Product> products = new ArrayList<>();
-        List<Job> jobs = loadJobs(startDateStr, MIN_START_DATE_TIME, provider, products);
+        List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, provider, products);
         // Инициализация времени мойки между продукцией
         CleaningTimeCalculator cleaningCalculator = new CleaningTimeCalculator(products);
 
