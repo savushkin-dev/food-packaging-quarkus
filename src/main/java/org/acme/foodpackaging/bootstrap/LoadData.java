@@ -17,8 +17,6 @@ public class LoadData {
     @Inject
     PackagingScheduleRepository repository;
 
-    @ConfigProperty(name = "demo-data.line-count", defaultValue = "6")
-    int lineCount;
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
@@ -44,7 +42,7 @@ public class LoadData {
         // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
         // Инициализация линий
-        List<Line> lines = createLines(lineCount, lineStartsTime);
+        List<Line> lines = createLines(lineStartsTime.size(), lineStartsTime);
         List<Product> products = new ArrayList<>();
         List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, provider, products);
         // Инициализация времени мойки между продукцией

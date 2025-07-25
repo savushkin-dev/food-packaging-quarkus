@@ -23,7 +23,6 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 
