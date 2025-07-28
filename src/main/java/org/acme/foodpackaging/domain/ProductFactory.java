@@ -8,7 +8,8 @@ public class ProductFactory {
             "4810268043727", true,
             "4810268043475", true,
             "4810268054969", true,
-            "4810268056826", true
+            "4810268056826", true,
+            "4810268059773", true
     );
 
     public Product create(String id, String name) {
