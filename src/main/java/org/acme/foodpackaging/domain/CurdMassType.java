@@ -29,6 +29,7 @@ public enum CurdMassType {
             Map.entry("4810268058554", MARSHMALLOW),
             Map.entry("4810268043727", COCONUT_ALMONDS),
             Map.entry("4810268047640", COCOA),
+            Map.entry("4810268044977", COCOA),
             Map.entry("4810268055492", CARAMEL_COFFEE),
             Map.entry("4810268047572", CHOCOLATE),
             Map.entry("4810268050640", CHOCOLATE),
