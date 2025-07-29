@@ -38,6 +38,9 @@ $(document).ready(function () {
   $("#stopSolvingButton").click(function () {
     stopSolving();
   });
+    $("#exportButton").click(function () {
+      exportSchedule();
+    });
   $("#analyzeButton").click(function () {
     analyze();
   });
@@ -248,7 +251,12 @@ function solve() {
     showError("Start solving failed.", xhr);
   });
 }
-
+function exportSchedule() {
+  $.post("/schedule/export", function () {
+  }).fail(function (xhr, ajaxOptions, thrownError) {
+    showError("Export failed.", xhr);
+  });
+}
 function analyze() {
   new bootstrap.Modal("#scoreAnalysisModal").show()
   const scoreAnalysisModalContent = $("#scoreAnalysisModalContent");
@@ -337,12 +345,14 @@ function refreshSolvingButtons(solving) {
   if (solving) {
     $("#solveButton").hide();
     $("#stopSolvingButton").show();
+    $("#exportButton").prop("disabled", true);
     if (autoRefreshIntervalId == null) {
       autoRefreshIntervalId = setInterval(refreshSchedule, 2000);
     }
   } else {
     $("#solveButton").show();
     $("#stopSolvingButton").hide();
+    $("#exportButton").prop("disabled", false);
     if (autoRefreshIntervalId != null) {
       clearInterval(autoRefreshIntervalId);
       autoRefreshIntervalId = null;

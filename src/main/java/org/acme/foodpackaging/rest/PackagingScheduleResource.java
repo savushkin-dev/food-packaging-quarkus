@@ -100,19 +100,9 @@ public class PackagingScheduleResource {
                 .run();
     }
 
-    @PUT
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("analyze")
-    public ScoreAnalysis<HardMediumSoftLongScore> analyze(@QueryParam("fetchPolicy") ScoreAnalysisFetchPolicy fetchPolicy) {
-        PackagingSchedule problem = repository.read();
-        return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
-    }
-
     @POST
-    @Path("stopSolving")
-    public void stopSolving() {
-        solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
+    @Path("export")
+    public void export() {
         if (currentSolverSolution != null) {
             try {
                 PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
@@ -127,6 +117,22 @@ public class PackagingScheduleResource {
         } else {
             System.err.println("Current solver solution is null");
         }
+    }
+
+    @PUT
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("analyze")
+    public ScoreAnalysis<HardMediumSoftLongScore> analyze(@QueryParam("fetchPolicy") ScoreAnalysisFetchPolicy fetchPolicy) {
+        PackagingSchedule problem = repository.read();
+        return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
+    }
+
+    @POST
+    @Path("stopSolving")
+    public void stopSolving() {
+        solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
+
     }
 
     public  void exportTimeCompare(String date, PackagingSchedule solution) {
