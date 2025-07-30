@@ -5,10 +5,14 @@ import java.util.Map;
 // Класс для создания объектов продукции
 public class ProductFactory {
     private static final Map<String, Boolean> IS_ALLERGEN = Map.of( // ean13 аллергенов
-            "4810268043727", true,
-            "4810268043475", true,
-            "4810268054969", true,
-            "4810268056826", true
+                "4810268043727", true,
+            "4810268043475", true, // Фисташка
+                "4810268054969", true,
+            "4810268056826", true,
+            "4810268059773", true,
+            "4810268059858", true,  // Дубай фисташка
+                 "4810268053870", true, // Картошка
+                 "4810268054228",     true  // Бискотти
     );
 
     public Product create(String id, String name) {
