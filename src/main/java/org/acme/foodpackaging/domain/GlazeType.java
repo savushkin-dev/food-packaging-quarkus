@@ -9,6 +9,7 @@ public enum GlazeType {
     C65_47,
     ALENKA,
     CARAMEL,
+    CARAMEL_TOFFEE,
     CACTUS;
 
     private static final Map<ProductType, GlazeType> DEFAULT_BY_TYPE = Map.of(
@@ -19,11 +20,12 @@ public enum GlazeType {
     );
     // Сырки с нетипичной глазурью для своей линейки
     private static final Map<String, GlazeType> ID_TO_GLAZE = Map.of(
-            "4810268043710", ALENKA,
-            "4810268043475", C65_47,
-            "4810268050282", C65_47,
-            "4810268040450", CARAMEL,
-            "4810268043727", G15
+            "4810268043710", ALENKA, // Аленка
+                "4810268043475", C65_47,  //
+                "4810268050282", C65_47,
+            "4810268040450", CARAMEL, // Любимая Кровка
+                "4810268057748", CARAMEL_TOFFEE, // Тоффи
+                "4810268043727", G15 // Кокос-миндаль
     );
     // Возвращает по ц=умолчанию глазурь для классики
     public static GlazeType getDefaultForType(ProductType type) {

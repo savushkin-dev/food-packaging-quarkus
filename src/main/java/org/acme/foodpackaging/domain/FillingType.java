@@ -13,19 +13,19 @@ public enum FillingType {
     NONE("Без начинки");
 
     // Классификация начинок стрежней по ean13
-    private static final Map<String, FillingType> ID_TO_FILLING = Map.of(
-            "4810268050671", CONDENSED_MILK,
-            "4810268050640", CHOCOLATE,
-            "4810268050138", CHOCOLATE,
-            "4810268050657", STRAWBERRY,
-            "4810268050121", STRAWBERRY,
-            "4810268054969", HAZELNUT,
-            "4810268050664", MANGO,
-            "4810268056826", CARAMEL_PEANUT,
-            "4810268053153", RASPBERRY,
-            "4810268050282", NONE
-
+    private static final Map<String, FillingType> ID_TO_FILLING = Map.ofEntries(
+            Map.entry("4810268050671", CONDENSED_MILK),
+            Map.entry("4810268050640", CHOCOLATE),
+            Map.entry("4810268050138", CHOCOLATE),
+            Map.entry("4810268050657", STRAWBERRY),
+            Map.entry("4810268050121", STRAWBERRY),
+            Map.entry("4810268054969", HAZELNUT),
+            Map.entry("4810268050664", MANGO),
+            Map.entry("4810268056826", CARAMEL_PEANUT),
+            Map.entry("4810268053153", RASPBERRY),
+            Map.entry("4810268050282", NONE)
     );
+
     private final String displayName;
 
     FillingType(String displayName) {
