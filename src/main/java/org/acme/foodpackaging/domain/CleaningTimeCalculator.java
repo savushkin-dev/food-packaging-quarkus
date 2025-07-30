@@ -95,7 +95,7 @@ public class CleaningTimeCalculator {
 
     private boolean isRodToNoneFillingRod(Product c, Product p) { // Стержень с начинкой на стержень без начинки
         return c.getType() == ProductType.ROD && p.getType() == ProductType.ROD
-                && c.getFilling() == FillingType.NONE || p.getFilling() == FillingType.NONE;
+                && (c.getFilling() == FillingType.NONE || p.getFilling() == FillingType.NONE);
     }
 
     private boolean isRodDifferentFilling(Product c, Product p) { // Стержень с разной начинкой
