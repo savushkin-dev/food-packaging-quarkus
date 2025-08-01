@@ -71,7 +71,7 @@ public class CleaningTimeCalculator {
 
     private boolean isRodToClassic(Product c, Product p) { // Стержень на классику
         return c.getType() == ProductType.CLASSIC && p.getType() == ProductType.ROD
-                || c.getType() == ProductType.ROD && p.getType() == ProductType.CLASSIC;
+                || (c.getType() == ProductType.ROD && p.getType() == ProductType.CLASSIC);
     }
 
     private boolean isClassicDifferentGlaze(Product c, Product p) { // Условие для разной глазури в классической линейке
