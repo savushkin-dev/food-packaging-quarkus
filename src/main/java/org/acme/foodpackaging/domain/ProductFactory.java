@@ -23,8 +23,8 @@ public class ProductFactory {
 
     private ProductType determineType(String productName) { // Присвоение типа продукту методом поиска ключевых слов в названии
         String lower = productName.toLowerCase();
-        if (containsAll(lower, "творобушки", "флоупак")) return ProductType.ROD;
-        if (containsAll(lower, "топ", "флоупак")) return ProductType.ROD;
+        if (containsAll(lower, "творобушки")) return ProductType.ROD;
+        if (containsAll(lower, "топ")) return ProductType.ROD;
         if (containsAll(lower, "фольга")) return ProductType.PLUSH;
         if (containsAll(lower, "кактус")) return ProductType.CACTUS;
         return ProductType.CLASSIC;
