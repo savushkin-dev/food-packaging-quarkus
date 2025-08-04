@@ -252,11 +252,30 @@ function solve() {
   });
 }
 function exportSchedule() {
-  $.post("/schedule/export", function () {
-  }).fail(function (xhr, ajaxOptions, thrownError) {
-    showError("Export failed.", xhr);
+  $.ajax({
+    url: "/schedule/export",
+    method: "POST",
+    xhrFields: {
+      responseType: 'blob'
+    },
+    headers: {
+      "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    success: function (data, status, xhr) {
+      const blob = new Blob([data], { type: xhr.getResponseHeader("Content-Type") });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "schedule.xlsx";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+    error: function (xhr, status, error) {
+      showError("Export failed.", xhr);
+    }
   });
 }
+
 function analyze() {
   new bootstrap.Modal("#scoreAnalysisModal").show()
   const scoreAnalysisModalContent = $("#scoreAnalysisModalContent");

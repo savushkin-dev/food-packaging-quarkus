@@ -22,6 +22,9 @@ import org.acme.foodpackaging.persistence.ExcelExporter;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -64,7 +67,7 @@ public class PackagingScheduleResource {
         try {
 
             loadData.loadDataByDate(loadDTO.getStartDate(), loadDTO.getEndDate(),
-                    loadDTO.getIdealEndDateTime(), loadDTO.getMaxEndDateTime(),loadDTO.toLineStartDateTimeMap());
+                    loadDTO.getIdealEndDateTime(), loadDTO.getMaxEndDateTime(), loadDTO.toLineStartDateTimeMap());
             date = String.valueOf(loadDTO.getStartDate());
 
             return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getStartDate())).build();
@@ -93,7 +96,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("solve")
     public void solve() {
-        currentSolverSolution=solverManager.solveBuilder()
+        currentSolverSolution = solverManager.solveBuilder()
                 .withProblemId(SINGLETON_SOLUTION_ID)
                 .withProblemFinder(id -> repository.read())
                 .withBestSolutionConsumer(schedule -> repository.write(schedule))
@@ -102,25 +105,37 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("export")
-    public void export() {
+    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public Response export() {
         if (currentSolverSolution != null) {
             try {
                 PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
                 if (bestSolution != null) {
-                    exportTimeCompare(date, bestSolution);
+                    File excelFile = exportTimeCompare(date, bestSolution);
+                    if (excelFile != null && excelFile.exists()) {
+                        byte[] fileContent = Files.readAllBytes(excelFile.toPath());
+                        return Response.ok(fileContent)
+                                .header("Content-Disposition", "attachment; filename=\"" + excelFile.getName() + "\"")
+                                .build();
+                    } else {
+                        return Response.serverError().entity("The Excel file was not created").build();
+                    }
                 } else {
-                    System.err.println("Best solution is null — export skipped.");
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                System.err.println(e.getMessage());
-            }
-        } else {
-            System.err.println("Current solver solution is null");
-        }
+                    return Response.status(Response.Status.NO_CONTENT)
+                            .entity("Best solution is null — export skipped.")
+                            .build();
+            } } catch (InterruptedException | ExecutionException | IOException e) {
+        return Response.serverError().entity("Export error: " + e.getMessage()).build();
+    }
+} else {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Current solver solution is null")
+                .build();
+    }
     }
 
     @PUT
-    @Consumes({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     @Path("analyze")
     public ScoreAnalysis<HardMediumSoftLongScore> analyze(@QueryParam("fetchPolicy") ScoreAnalysisFetchPolicy fetchPolicy) {
@@ -135,7 +150,9 @@ public class PackagingScheduleResource {
 
     }
 
-    public  void exportTimeCompare(String date, PackagingSchedule solution) {
+    public File exportTimeCompare(String date, PackagingSchedule solution) {
         ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
+        return exporter.getExportedFile();
+
     }
 }
