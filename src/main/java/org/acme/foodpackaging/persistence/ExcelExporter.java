@@ -21,8 +21,14 @@ import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LABELING_CACTUS_COCONUT
 
 public class ExcelExporter {
 
+    private File exportedFile;
+
     public ExcelExporter(String dbLabelingUrl, String date, List<Job> jobs) {
         importDataFromDB(dbLabelingUrl, date, jobs);
+    }
+
+    public File getExportedFile() {
+        return exportedFile;
     }
 
     private String  formatTime(Duration duration){
@@ -91,6 +97,8 @@ public class ExcelExporter {
                         return;
                     }
                 }
+                exportedFile = new File(exportDir, date + ".xlsx");
+
                 try (FileOutputStream fos = new FileOutputStream("src/main/resources/excelExport/" + date + ".xlsx")) {
                     workbook.write(fos);
                     System.out.println("✅ Данные успешно экспортированы в Excel:" + "src/main/resources/excelExport/" + date + ".xlsx");
