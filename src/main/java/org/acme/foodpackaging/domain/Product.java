@@ -13,6 +13,7 @@ public class Product {
     private ProductType type;
     private GlazeType glaze;
     private FillingType filling;
+    private CurdMassType curdMass;
     private boolean allergen;
     /** The map key is previous product on assembly line. */
     private Map<Product, Duration> cleaningDurations;
@@ -30,6 +31,7 @@ public class Product {
         this.name = name;
         this.type = type;
         this.filling = FillingType.fromProduct(id);
+        this.curdMass = CurdMassType.fromProduct(id);
         this.glaze = GlazeType.fromProduct(id, type);
         this.allergen = allergen;
     }
@@ -59,6 +61,8 @@ public class Product {
     // ************************************************************************
 
     public FillingType getFilling(){ return filling; }
+
+    public CurdMassType getCurdMass() { return curdMass; }
 
     public String getId() {
         return id;
