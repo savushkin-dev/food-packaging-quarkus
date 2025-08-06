@@ -25,3 +25,4 @@ venv*
 #Directories
 /.idea/
 target/
+src/main/resources/excelExport/
