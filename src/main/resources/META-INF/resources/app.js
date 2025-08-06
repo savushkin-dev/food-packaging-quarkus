@@ -38,6 +38,9 @@ $(document).ready(function () {
   $("#stopSolvingButton").click(function () {
     stopSolving();
   });
+    $("#exportButton").click(function () {
+      exportSchedule();
+    });
   $("#analyzeButton").click(function () {
     analyze();
   });
@@ -248,6 +251,30 @@ function solve() {
     showError("Start solving failed.", xhr);
   });
 }
+function exportSchedule() {
+  $.ajax({
+    url: "/schedule/export",
+    method: "POST",
+    xhrFields: {
+      responseType: 'blob'
+    },
+    headers: {
+      "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    success: function (data, status, xhr) {
+      const blob = new Blob([data], { type: xhr.getResponseHeader("Content-Type") });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "schedule.xlsx";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+    error: function (xhr, status, error) {
+      showError("Export failed.", xhr);
+    }
+  });
+}
 
 function analyze() {
   new bootstrap.Modal("#scoreAnalysisModal").show()
@@ -337,12 +364,14 @@ function refreshSolvingButtons(solving) {
   if (solving) {
     $("#solveButton").hide();
     $("#stopSolvingButton").show();
+    $("#exportButton").prop("disabled", true);
     if (autoRefreshIntervalId == null) {
       autoRefreshIntervalId = setInterval(refreshSchedule, 2000);
     }
   } else {
     $("#solveButton").show();
     $("#stopSolvingButton").hide();
+    $("#exportButton").prop("disabled", false);
     if (autoRefreshIntervalId != null) {
       clearInterval(autoRefreshIntervalId);
       autoRefreshIntervalId = null;
