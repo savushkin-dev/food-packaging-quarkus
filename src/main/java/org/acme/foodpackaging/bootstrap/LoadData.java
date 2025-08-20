@@ -108,12 +108,10 @@ public class LoadData {
 
     private List<Line> createLines(int lineCount, Map<Integer, LocalDateTime> lineStartsTime){
         List<Line> lines = new ArrayList<>(lineCount);
-        for( Map.Entry<Integer, LocalDateTime> entry : lineStartsTime.entrySet()) {
-            if (!entry.getKey().equals(0)) {
+        for( Map.Entry<Integer, LocalDateTime> entry : lineStartsTime.entrySet()){
                 String lineName = "Line" + entry.getKey();
                 Line line = new Line(String.valueOf(entry.getKey()), lineName, entry.getValue());
                 lines.add(line);
-            }
         }
         return lines;
     }
