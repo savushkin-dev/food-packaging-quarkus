@@ -16,10 +16,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
         return new Constraint[] {
                 // Hard constraints
                 maxEndDateTime(factory),
-                plushMustBeOnLine1(factory),
-                rodOnlyOnLines456(factory),
-                cactusOnlyOnLines123(factory),
-                classicOnlyOnLines1236(factory),
+                forbidZeroSpeedProducts(factory),
                 // Soft constraints
                 minimizeMakespan(factory),
                 minimizeCleaningDuration(factory),
@@ -38,40 +35,15 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
                 .asConstraint("Max end date time");
     }
 
-    protected Constraint plushMustBeOnLine1(ConstraintFactory factory) {
+   protected Constraint forbidZeroSpeedProducts(ConstraintFactory factory) {
         return factory.forEach(Job.class)
-                .filter(job -> job.getLine() != null && job.getProduct() != null)
-                .filter(job -> job.getProduct().getType() == ProductType.PLUSH)
-                .filter(job -> !"1".equals(job.getLine().getId()))
+                .filter(job -> job.getLine() != null && job.getProduct().getType() != null)
+                .filter(job -> {
+                    Integer speed = job.getSpeed();
+                    return speed != null && speed == 0;
+                })
                 .penalizeLong(HardMediumSoftLongScore.ONE_HARD, job -> 1000L)
-                .asConstraint("PLUSH must be on line 1");
-    }
-
-    protected Constraint rodOnlyOnLines456(ConstraintFactory factory) {
-        return factory.forEach(Job.class)
-                .filter(job -> job.getLine() != null && job.getProduct() != null)
-                .filter(job -> job.getProduct().getType() == ProductType.ROD)
-                .filter(job -> !Set.of("4", "5", "6").contains(job.getLine().getId()))
-                .penalizeLong(HardMediumSoftLongScore.ONE_HARD, job -> 1000L)
-                .asConstraint("ROD must be on lines 4, 5, 6");
-    }
-
-    protected Constraint cactusOnlyOnLines123(ConstraintFactory factory) {
-        return factory.forEach(Job.class)
-                .filter(job -> job.getLine() != null && job.getProduct() != null)
-                .filter(job -> job.getProduct().getType() == ProductType.CACTUS)
-                .filter(job -> !Set.of("1", "2", "3").contains(job.getLine().getId()))
-                .penalizeLong(HardMediumSoftLongScore.ONE_HARD, job -> 1000L)
-                .asConstraint("CACTUS must be on lines 1, 2, 3");
-    }
-
-    protected Constraint classicOnlyOnLines1236(ConstraintFactory factory) {
-        return factory.forEach(Job.class)
-                .filter(job -> job.getLine() != null && job.getProduct() != null)
-                .filter(job -> job.getProduct().getType() == ProductType.CLASSIC)
-                .filter(job -> !Set.of("1", "2", "3", "6").contains(job.getLine().getId()))
-                .penalizeLong(HardMediumSoftLongScore.ONE_HARD, job -> 1000L)
-                .asConstraint("CLASSIC must be on lines 1, 2, 3,6");
+                .asConstraint("Forbid products with zero speed on line");
     }
     // ************************************************************************
     // Medium constraints

@@ -5,8 +5,15 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
+import org.apache.commons.math3.util.Pair;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.*;
 import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
 import java.time.*;
@@ -52,7 +59,46 @@ public class LoadData {
         solution.setProducts(products);
         jobs.sort(Comparator.comparing(Job::getName));
         solution.setJobs(jobs);
+
         return solution;
+    }
+
+    private Map<Integer, Map<String, Integer>> loadSpeedsFromDB(){
+        Map<Integer, Map<String, Integer>> lineSpeeds = new HashMap<>();
+        try {
+            FileInputStream fis = new FileInputStream("src/main/resources/line_speeds.xlsx");
+            Workbook workbook = new XSSFWorkbook(fis);
+            Sheet sheet = workbook.getSheetAt(0);
+
+            Row headerRow = sheet.getRow(0);
+            List<String> productTypes = new ArrayList<>();
+            for (int j = 1; j < headerRow.getLastCellNum(); j++) {
+                productTypes.add(headerRow.getCell(j).getStringCellValue());
+            }
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                int lineId = (int) row.getCell(0).getNumericCellValue();
+                Map<String, Integer> speeds = new HashMap<>();
+
+                for (int j = 1; j < row.getLastCellNum(); j++) {
+                    int speed = (int) row.getCell(j).getNumericCellValue();
+                    speeds.put(productTypes.get(j - 1), speed);
+                }
+
+                lineSpeeds.put(lineId, speeds);
+            }
+
+            workbook.close();
+            fis.close();
+        }
+        catch (IOException e) {
+            System.err.println("Error: The specified file was not found. " + e.getMessage());
+        }
+        return lineSpeeds;
+
     }
 
     private List<Job> loadJobs(String date, LocalDateTime startDateTime, DurationProvider provider, List<Product> products) {
@@ -102,6 +148,12 @@ public class LoadData {
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load jobs from DB", e);
+        }
+
+        Map<Integer, Map<String, Integer>> lineSpeeds = loadSpeedsFromDB();
+
+        for(Job job : jobs){
+            job.setLineSpeeds(lineSpeeds);
         }
         return jobs;
     }
