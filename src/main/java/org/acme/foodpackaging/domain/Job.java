@@ -2,6 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
 import ai.timefold.solver.core.api.domain.entity.PlanningPin;
@@ -43,6 +44,8 @@ public class Job {
     @JsonIgnore
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
+
+    private Map<Integer, Map<String, Integer>> lineSpeeds;
 
     /**
      * Start is after cleanup.
@@ -97,7 +100,8 @@ public class Job {
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, String np, Product product, int quantity, Duration duration, DurationProvider provider, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
+    public Job(String id, String name, String np, Product product, int quantity, Duration duration, DurationProvider provider, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime,
+               int priority, boolean pinned) {
         this(id, name, np, product, quantity, duration, provider, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
     }
 
@@ -112,6 +116,10 @@ public class Job {
 
     public String getId() {
         return id;
+    }
+
+    public Map<Integer, Map<String, Integer>> getLineSpeeds() {
+        return lineSpeeds;
     }
 
     public int getQuantity() { return quantity; }
@@ -148,6 +156,11 @@ public class Job {
         return priority;
     }
 
+    public Integer getSpeed() {
+        if (line == null || product.getType() == null) return null;
+        return lineSpeeds.get(Integer.parseInt(line.getId())).get(product.getType().name());
+    }
+
     public boolean isPinned() {
         return pinned;
     }
@@ -172,6 +185,9 @@ public class Job {
         return nextJob;
     }
 
+    public  void setLineSpeeds(Map<Integer, Map<String, Integer>> lineSpeeds){
+        this.lineSpeeds = lineSpeeds;
+    }
     public void setNextJob(Job nextJob) {
         this.nextJob = nextJob;
     }
