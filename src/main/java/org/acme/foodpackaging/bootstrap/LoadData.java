@@ -27,7 +27,6 @@ public class LoadData {
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
-    private static final int DEFAULT_PRIORITY = 0;
     private LocalDateTime IDEAL_END_DATE_TIME;
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
@@ -45,13 +44,12 @@ public class LoadData {
     public PackagingSchedule initSolution(LocalDate START_DATE, LocalDate END_DATE,
                                           Map<Integer, LocalDateTime> lineStartsTime) {
         PackagingSchedule solution = new PackagingSchedule();
-        DurationProvider provider = new DurationProvider();
         // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
         // Инициализация линий
         List<Line> lines = createLines(lineStartsTime.size(), lineStartsTime);
         List<Product> products = new ArrayList<>();
-        List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, provider, products);
+        List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, products);
         // Инициализация времени мойки между продукцией
         CleaningTimeCalculator cleaningCalculator = new CleaningTimeCalculator(products);
 
@@ -101,7 +99,7 @@ public class LoadData {
 
     }
 
-    private List<Job> loadJobs(String date, LocalDateTime startDateTime, DurationProvider provider, List<Product> products) {
+    private List<Job> loadJobs(String date, LocalDateTime startDateTime, List<Product> products) {
         List<Job> jobs = new ArrayList<>();
         ProductFactory productFactory = new ProductFactory();
         Map<String, Product> productMap = new HashMap<>();
@@ -131,15 +129,10 @@ public class LoadData {
                             productMap.put(ean13, product);
                             products.add(product);
                         }
-                     switch(product.getType()){ // Если тип не классика, можно время выполнения сразу рассчитать
-                         case ROD, CACTUS, PLUSH -> duration = provider.calculate(product, quantity);
-                         default -> duration = Duration.ZERO;
-                     }
                         // Создание партий
                         Job job = createJob(
                                 String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity,
-                                duration, provider,
-                                DEFAULT_PRIORITY, MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
+                                MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
                         );
                         jobs.add(job);
                     }
@@ -168,13 +161,12 @@ public class LoadData {
         return lines;
     }
 
-    private Job createJob(String id, String jobName, String np, Product product, int quantity, Duration duration, DurationProvider provider, int priority,
+    private Job createJob(String id, String jobName, String np, Product product, int quantity,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
-        return new Job(id, jobName, np, product, quantity, duration, provider,
-                minStartDateTime,
-                idealEndDateTime,
-                maxEndDateTime,
-                priority, false
+        return new Job (id, jobName, np, product, quantity,
+                    minStartDateTime,
+                    idealEndDateTime,
+                    maxEndDateTime, false
         );
     }
 
