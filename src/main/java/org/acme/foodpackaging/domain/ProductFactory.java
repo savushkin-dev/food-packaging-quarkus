@@ -15,10 +15,10 @@ public class ProductFactory {
                  "4810268054228",     true  // Бискотти
     );
 
-    public Product create(String id, String name) {
+    public Product create(String id, String kmc, String name) {
         ProductType type = determineType(name);
         boolean allergen = IS_ALLERGEN.getOrDefault(id, false);
-        return new Product(id, name, type, allergen);
+        return new Product(id, kmc, name, type, allergen);
     }
 
     private ProductType determineType(String productName) { // Присвоение типа продукту методом поиска ключевых слов в названии
