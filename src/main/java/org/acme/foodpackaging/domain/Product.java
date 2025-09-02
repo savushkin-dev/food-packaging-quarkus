@@ -10,6 +10,7 @@ public class Product {
     @PlanningId
     private String id;
     private String name;
+    private String kmc;
     private ProductType type;
     private GlazeType glaze;
     private FillingType filling;
@@ -26,8 +27,9 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String id, String name, ProductType type, boolean allergen) {
+    public Product(String id, String kmc, String name, ProductType type, boolean allergen) {
         this.id = id;
+        this.kmc = kmc;
         this.name = name;
         this.type = type;
         this.filling = FillingType.fromProduct(id);
@@ -71,6 +73,10 @@ public class Product {
     public String getName() {
         return name;
     }
+
+    public String getKmc(){ return kmc;}
+
+    public void setKmc(String kmc){ this.kmc = kmc; }
 
     public void setName(String name) {
         this.name = name;
