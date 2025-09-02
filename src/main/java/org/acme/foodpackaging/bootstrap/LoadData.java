@@ -76,12 +76,13 @@ public class LoadData {
                         String np = resultSet.getString("NP");         // Номер партии
                         String priority = resultSet.getString("UX");  // Приоритет выполнения
                         String ean13 = resultSet.getString("EAN13"); // Уникальный идентификатор продукта
+                        String kmc = resultSet.getString("KMC"); // Уникальный идентификатор продукта
                         String name = resultSet.getString("NAME");  // Название
                         String shortName = resultSet.getString(("SNM"));      // Сокращенное название
                         // Список с продукцией хранит только уникальные значения
                         Product product = productMap.get(ean13);
                         if (product == null) {
-                            product = productFactory.create(ean13, name);
+                            product = productFactory.create(ean13, kmc, name);
                             productMap.put(ean13, product);
                             products.add(product);
                         }
