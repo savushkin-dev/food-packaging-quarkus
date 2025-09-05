@@ -29,4 +29,9 @@ public class SqlQueries {
       AND CAST(DTF AS DATE) = ?
     ORDER BY NP
     """;
+
+    public static final String LOAD_LINES = """
+            select krc from PLR_PLINES
+                              group by krc
+    """;
 }
