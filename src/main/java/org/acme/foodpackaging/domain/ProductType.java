@@ -3,10 +3,10 @@ package org.acme.foodpackaging.domain;
 public enum ProductType {
 
     // От типа зависит техпроцесс производства
-    PLUSH("PLUSH"),
-    ROD("ROD"),
-    CLASSIC("CLASSIC"),
-    CACTUS("CACTUS");
+    PLUSH("10003"),
+    ROD("10002"),
+    CLASSIC("10001"),
+    CACTUS("10004");
 
     private final String displayName;
 
