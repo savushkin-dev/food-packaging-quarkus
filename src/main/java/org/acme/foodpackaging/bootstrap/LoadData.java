@@ -16,8 +16,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.*;
 import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
+import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES_SPEEDS;
+
 import java.time.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @ApplicationScoped
 public class LoadData {
@@ -31,9 +35,9 @@ public class LoadData {
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
 
-    public void loadDataByDate(LocalDate START_DATE,  LocalDate END_DATE, LocalDateTime idealEndDateTime,
+    public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
                                LocalDateTime maxEndDateTime, Map<Integer, LocalDateTime> lineStartsTime) {
-        this.MIN_START_DATE_TIME =  Collections.min(lineStartsTime.values());
+        this.MIN_START_DATE_TIME = Collections.min(lineStartsTime.values());
         this.IDEAL_END_DATE_TIME = idealEndDateTime;
         this.MAX_END_DATE_TIME = maxEndDateTime;
         PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
@@ -61,42 +65,61 @@ public class LoadData {
         return solution;
     }
 
-    private Map<Integer, Map<String, Integer>> loadSpeedsFromDB(){
-        Map<Integer, Map<String, Integer>> lineSpeeds = new HashMap<>();
-        try {
-            FileInputStream fis = new FileInputStream("src/main/resources/line_speeds.xlsx");
-            Workbook workbook = new XSSFWorkbook(fis);
-            Sheet sheet = workbook.getSheetAt(0);
+    private Map<Integer, Map<String, Integer>> loadSpeedsFromDB() {
+        Map<Pair<String, String>, Integer> mapSpeed = getSpeedsfromDB();
+        Map<Integer, Map<String, Integer>> finalMap = new HashMap<>();
 
-            Row headerRow = sheet.getRow(0);
-            List<String> productTypes = new ArrayList<>();
-            for (int j = 1; j < headerRow.getLastCellNum(); j++) {
-                productTypes.add(headerRow.getCell(j).getStringCellValue());
-            }
+        Set<String> allTypes = new HashSet<>();
+        for (Pair<String, String> key : mapSpeed.keySet()) {
+            allTypes.add(key.getSecond());
+        }
 
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
+        for (Map.Entry<Pair<String, String>, Integer> entry : mapSpeed.entrySet()) {
+            Pair<String, String> key = entry.getKey();
+            Integer line = Integer.valueOf(extractLineNumberRegex(key.getFirst()));
+            String type = key.getSecond();
+            Integer speed = entry.getValue();
 
-                int lineId = (int) row.getCell(0).getNumericCellValue();
-                Map<String, Integer> speeds = new HashMap<>();
-
-                for (int j = 1; j < row.getLastCellNum(); j++) {
-                    int speed = (int) row.getCell(j).getNumericCellValue();
-                    speeds.put(productTypes.get(j - 1), speed);
+            finalMap.computeIfAbsent(line, l -> {
+                Map<String, Integer> m = new HashMap<>();
+                for (String t : allTypes) {
+                    m.put(t, 0);
                 }
+                return m;
+            });
 
-                lineSpeeds.put(lineId, speeds);
+            finalMap.get(line).put(type, speed);
+        }
+        for (Map<String, Integer> typeMap : finalMap.values()) {
+            for (String type : allTypes) {
+                typeMap.putIfAbsent(type, 0);
             }
-
-            workbook.close();
-            fis.close();
         }
-        catch (IOException e) {
-            System.err.println("Error: The specified file was not found. " + e.getMessage());
-        }
-        return lineSpeeds;
 
+        return finalMap;
+    }
+
+    private Map<Pair<String, String>, Integer> getSpeedsfromDB(){
+        Map<Pair<String, String>, Integer> lines = new HashMap<>();
+
+        ResultSet resultSet = null;
+        try (Connection connection = DriverManager.getConnection(dbUrl);
+             Statement statement = connection.createStatement();) {
+            resultSet = statement.executeQuery(LOAD_LINES_SPEEDS);
+
+            while (resultSet.next()) {
+                String krc = resultSet.getString("KRC");
+                String grf = resultSet.getString("GRF");
+                String prod = resultSet.getString("PROD");
+                Pair<String, String> typeLine = new Pair<>(krc, grf);
+                lines.put(typeLine, Integer.valueOf(prod));
+
+            }
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to load lines from DB", e);
+        }
+        return lines;
     }
 
     private List<Job> loadJobs(String date, LocalDateTime startDateTime, List<Product> products) {
@@ -175,5 +198,15 @@ public class LoadData {
                 "(?i)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
                 ""
         ).trim();
+    }
+
+    public static String extractLineNumberRegex(String code) {
+        Pattern p = Pattern.compile("(?<=1706100)(\\d+?)(?=0+$)");
+        Matcher m = p.matcher(code);
+        if (m.find()) {
+            String num = m.group(1).replaceFirst("^0+", "");
+            return num.isEmpty() ? "0" : num;
+        }
+        throw new IllegalArgumentException("Неверный формат кода: " + code);
     }
 }
