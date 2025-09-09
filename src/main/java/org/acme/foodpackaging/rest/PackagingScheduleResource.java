@@ -102,6 +102,7 @@ public class PackagingScheduleResource {
     }
 
     @GET
+    @Path("lines")
     public Map<Integer,String> getLines() {
         Map<Integer,String> lines = new HashMap<>();
         ResultSet resultSet = null;
