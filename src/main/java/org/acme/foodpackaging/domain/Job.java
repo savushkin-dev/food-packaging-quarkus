@@ -164,7 +164,7 @@ public class Job {
         if (productSpeeds == null) {
             return null;
         }
-        return productSpeeds.get(product.getType().name());
+        return productSpeeds.get(product.getType().getDisplayName());
     }
 
     public boolean isPinned() {

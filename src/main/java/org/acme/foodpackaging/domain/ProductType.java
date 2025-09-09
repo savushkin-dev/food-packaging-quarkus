@@ -13,4 +13,5 @@ public enum ProductType {
     ProductType(String displayName) {
         this.displayName = displayName;
     }
+    public  String getDisplayName() { return displayName; }
 }
