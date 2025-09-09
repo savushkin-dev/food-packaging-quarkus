@@ -77,6 +77,7 @@ public class LoadData {
         for (Map.Entry<Pair<String, String>, Integer> entry : mapSpeed.entrySet()) {
             Pair<String, String> key = entry.getKey();
             Integer line = Integer.valueOf(extractLineNumberRegex(key.getFirst()));
+            if(line == 0){ line = 6;}
             String type = key.getSecond();
             Integer speed = entry.getValue();
 
