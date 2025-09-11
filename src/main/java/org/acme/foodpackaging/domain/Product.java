@@ -10,6 +10,8 @@ public class Product {
     @PlanningId
     private String id;
     private String name;
+    private String kmc;
+    private String ean13;
     private String type;
     private String glaze;
     private String filling;
@@ -25,8 +27,9 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String id,  String ean13, String type, String glaze, String curdMass, String filling) {
+    public Product(String id,  String ean13, String type, String glaze, String curdMass, String filling ) {
         this.id = id;
+        this.ean13 = ean13;
         this.type = type;
         this.glaze = glaze;
         this.curdMass = curdMass;
@@ -60,6 +63,10 @@ public class Product {
 
     public String getId() {
         return id;
+    }
+
+    public String getEan13() {
+        return ean13;
     }
 
     public String getName() {
