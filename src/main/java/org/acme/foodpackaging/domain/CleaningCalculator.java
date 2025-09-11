@@ -21,7 +21,7 @@ public class CleaningCalculator {
 
         return times.stream()
                 .filter(Objects::nonNull)
-                .max(Integer::compare) 
+                .max(Integer::compare)
                 .orElse(0);
     }
 
