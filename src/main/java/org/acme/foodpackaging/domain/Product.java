@@ -10,15 +10,10 @@ public class Product {
     @PlanningId
     private String id;
     private String name;
-    private ProductType type;
-    private GlazeType glaze;
-    private FillingType filling;
-    private CurdMassType curdMass;
-    private boolean allergen;
-    private String type_s;
-    private String glaze_s;
-    private String filling_s;
-    private String curdMass_s;
+    private String type;
+    private String glaze;
+    private String filling;
+    private String curdMass;
     /** The map key is previous product on assembly line. */
     private Map<Product, Duration> cleaningDurations;
 
@@ -30,32 +25,13 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String id, String name, ProductType type, boolean allergen) {
-        this.id = id;
-        this.name = name;
-        this.type = type;
-        this.filling = FillingType.fromProduct(id);
-        this.curdMass = CurdMassType.fromProduct(id);
-        this.glaze = GlazeType.fromProduct(id, type);
-        this.allergen = allergen;
-    }
-
     public Product(String id,  String ean13, String type, String glaze, String curdMass, String filling) {
         this.id = id;
-        this.type_s = type;
-        this.glaze_s = glaze;
-        this.curdMass_s = curdMass;
-        this.filling_s = filling;
-
-
+        this.type = type;
+        this.glaze = glaze;
+        this.curdMass = curdMass;
+        this.filling = filling;
     }
-
-
-    public ProductType getType() { return type; }
-
-    public GlazeType getGlaze(){ return glaze; }
-
-    public boolean is_allergen() { return allergen; }
 
     @Override
     public String toString() {
@@ -74,10 +50,13 @@ public class Product {
     // ************************************************************************
     // Getters and setters
     // ************************************************************************
+    public String getType() { return type; }
 
-    public FillingType getFilling(){ return filling; }
+    public String getGlaze(){ return glaze; }
 
-    public CurdMassType getCurdMass() { return curdMass; }
+    public String getFilling(){ return filling; }
+
+    public String getCurdMass() { return curdMass; }
 
     public String getId() {
         return id;

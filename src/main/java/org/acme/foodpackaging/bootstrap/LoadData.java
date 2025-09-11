@@ -56,8 +56,7 @@ public class LoadData {
         List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, productSet);
         List<Product> products = new ArrayList<>(productSet);
         // Инициализация времени мойки между продукцией
-        CleaningTimeCalculator cleaningCalculator = new CleaningTimeCalculator(products);
-
+        List<CleaningRule> rules = loadCleaningRulesfromDB();
         solution.setLines(lines);
         solution.setProducts(products);
         jobs.sort(Comparator.comparing(Job::getName));
@@ -99,6 +98,30 @@ public class LoadData {
         }
 
         return finalMap;
+    }
+
+    private List<CleaningRule> loadCleaningRulesfromDB(){
+
+        List<CleaningRule> rules = new ArrayList<>();
+
+        ResultSet resultSet = null;
+        try (Connection connection = DriverManager.getConnection(dbUrl);
+             Statement statement = connection.createStatement();) {
+            resultSet = statement.executeQuery(LOAD_CLEANING_RULES);
+
+            while (resultSet.next()) {
+                String parameter = resultSet.getString("NPAR");
+                String from_value = resultSet.getString("FROM_VALUE");
+                String to_value = resultSet.getString("TO_VALUE");
+                int duration = resultSet.getInt("DUR");
+                CleaningRule rule = new CleaningRule(parameter, from_value, to_value, duration);
+                rules.add(rule);
+            }
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to load cleaning rules from DB", e);
+        }
+        return rules;
     }
 
     private Map<Pair<String, String>, Integer> getSpeedsfromDB(){

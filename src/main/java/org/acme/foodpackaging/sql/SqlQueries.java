@@ -50,4 +50,11 @@ public class SqlQueries {
       FROM [MES].[dbo].[PLR_MC]
       where F_DEL=0
     """;
+    public static final String LOAD_CLEANING_RULES = """
+    SELECT [NPAR], [FROM_VALUE], [TO_VALUE], [DUR]
+      FROM [MES].[dbo].[PLR_CHANGE]
+       where (F_DEL=0) and (KRC='170610000000')
+       order by NPAR
+    """;
 }
+
