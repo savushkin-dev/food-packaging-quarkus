@@ -52,8 +52,9 @@ public class LoadData {
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
         // Инициализация линий
         List<Line> lines = createLines(lineStartsTime.size(), lineStartsTime);
-        List<Product> products = new ArrayList<>();
-        List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, products);
+        Set<Product> productSet = new HashSet<>();
+        List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, productSet);
+        List<Product> products = new ArrayList<>(productSet);
         // Инициализация времени мойки между продукцией
         CleaningTimeCalculator cleaningCalculator = new CleaningTimeCalculator(products);
 
@@ -144,11 +145,10 @@ private Map<String, Product> loadProductfromDB(){
     }
     return productsMap;
 }
-    private List<Job> loadJobs(String date, LocalDateTime startDateTime, List<Product> products) {
+    private List<Job> loadJobs(String date, LocalDateTime startDateTime, Set<Product> productsSet) {
         List<Job> jobs = new ArrayList<>();
-        ProductFactory productFactory = new ProductFactory();
         Map<String, Product> productMap = new HashMap<>();
-        Map<String, Product> producstMap = loadProductfromDB();
+        Map<String, Product> productsMap = loadProductfromDB();
         try {
             try (Connection connection = DriverManager.getConnection(dbUrl);
                  PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS)) {
@@ -165,15 +165,13 @@ private Map<String, Product> loadProductfromDB(){
                         String np = resultSet.getString("NP");         // Номер партии
                         String priority = resultSet.getString("UX");  // Приоритет выполнения
                         String ean13 = resultSet.getString("EAN13"); // Уникальный идентификатор продукта
-                        String name = resultSet.getString("NAME");  // Название
+                        String kmc = resultSet.getString("KMC");    //  Еще один какой-то уникальный идентификатор продукта...
+                        String name = resultSet.getString("NAME"); // Название
                         String shortName = resultSet.getString(("SNM"));      // Сокращенное название
-                        // Список с продукцией хранит только уникальные значения
-                        Product product = productMap.get(ean13);
-                        if (product == null) {
-                            product = productFactory.create(ean13, name);
-                            productMap.put(ean13, product);
-                            products.add(product);
-                        }
+                        // Список со всем возможным ассортиментов продуктов
+                        Product product = productsMap.get(kmc);
+                        product.setName(shortName);
+                        productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
                         Job job = createJob(
                                 String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity,
