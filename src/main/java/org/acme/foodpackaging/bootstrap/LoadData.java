@@ -249,6 +249,14 @@ private Map<String, Product> loadProductfromDB(){
                 if(current.getId().equals(previous.getId())){
                     duration = Duration.ZERO;
                 }
+                else if(current.getType().equals(previous.getType())
+                        && current.getGlaze().equals(previous.getGlaze())
+                        && current.getCurdMass().equals(previous.getCurdMass())
+                        && current.getFilling().equals(previous.getFilling())
+                        && !current.getId().equals(previous.getId())){
+
+                        duration = Duration.ofMinutes(10); // Если совпадает все кроме Id, значит требуется только смена упаковки
+                }
                 else {
                     duration = Duration.ofMinutes(calc.getCleaningTime(previous, current));
                 }

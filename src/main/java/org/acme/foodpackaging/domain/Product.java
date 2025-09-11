@@ -50,13 +50,13 @@ public class Product {
     // ************************************************************************
     // Getters and setters
     // ************************************************************************
-    public String getType() { return type; }
+    public String getType() { return type == null ? "" : type; }
 
-    public String getGlaze(){ return glaze; }
+    public String getGlaze() { return glaze == null ? "" : glaze; }
 
-    public String getFilling(){ return filling; }
+    public String getFilling() { return filling == null ? "" : filling; }
 
-    public String getCurdMass() { return curdMass; }
+    public String getCurdMass() { return curdMass == null ? "" : curdMass; }
 
     public String getId() {
         return id;
