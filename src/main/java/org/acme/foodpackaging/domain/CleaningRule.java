@@ -13,9 +13,9 @@ public class CleaningRule {
         this.duration = duration;
     }
 
-    public String getParameter() { return parameter; }
-    public String getFrom() { return from; }
-    public String getTo() { return to; }
+    public String getParameter() { return parameter == null ? "" : parameter; }
+    public String getFrom() { return from == null ? "" : from; }
+    public String getTo() { return to == null ? "" : to; }
     public int getDuration() { return duration; }
 }
 
