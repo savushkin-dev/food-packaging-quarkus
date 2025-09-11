@@ -22,7 +22,7 @@ import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LABELING_CACTUS_COCONUT
 public class ExcelExporter {
 
     private File exportedFile;
-
+    private final int cellCount = 8;
     public ExcelExporter(String dbLabelingUrl, String date, List<Job> jobs) {
         importDataFromDB(dbLabelingUrl, date, jobs);
     }
@@ -50,13 +50,14 @@ public class ExcelExporter {
             Sheet sheet = workbook.createSheet("Data");
             Row headerRow = sheet.createRow(0);
             headerRow.createCell(0).setCellValue("NP");
-            headerRow.createCell(1).setCellValue("KMC");
-            headerRow.createCell(2).setCellValue("Количество (факт)");
-            headerRow.createCell(3).setCellValue("Количество (планировщик)");
-            headerRow.createCell(4).setCellValue("Время старта выполнения (факт)");
-            headerRow.createCell(5).setCellValue("Время завершения фасовки (факт)");
-            headerRow.createCell(6).setCellValue("Продолжительность фасовки (факт)");
-            headerRow.createCell(7).setCellValue("Продолжительность фасовки (планировщик)");
+            headerRow.createCell(1).setCellValue("SNM");
+            headerRow.createCell(2).setCellValue("KMC");
+            headerRow.createCell(3).setCellValue("Количество (факт)");
+            headerRow.createCell(4).setCellValue("Количество (планировщик)");
+            headerRow.createCell(5).setCellValue("Время старта выполнения (факт)");
+            headerRow.createCell(6).setCellValue("Время завершения фасовки (факт)");
+            headerRow.createCell(7).setCellValue("Продолжительность фасовки (факт)");
+            headerRow.createCell(8).setCellValue("Продолжительность фасовки (планировщик)");
 
             try (ResultSet rs = ps.executeQuery()) {
                 int rowIdx = 1;
@@ -73,19 +74,20 @@ public class ExcelExporter {
 
                     Row row = sheet.createRow(rowIdx++);
                     row.createCell(0).setCellValue(np);
-                    row.createCell(1).setCellValue(kmc);
-                    row.createCell(2).setCellValue(nkole);
-                    row.createCell(4).setCellValue(dts.format(formatter));
-                    row.createCell(5).setCellValue(dte.format(formatter));
-                    row.createCell(6).setCellValue(formatTime(jobDuration));
+                    row.createCell(2).setCellValue(kmc);
+                    row.createCell(3).setCellValue(nkole);
+                    row.createCell(5).setCellValue(dts.format(formatter));
+                    row.createCell(6).setCellValue(dte.format(formatter));
+                    row.createCell(7).setCellValue(formatTime(jobDuration));
                     for(Job job : jobs){
-                        if(job.getNp().equals(np)){
-                            row.createCell(3).setCellValue(job.getQuantity());
-                            row.createCell(7).setCellValue(formatTime(job.getDuration()));
+                        if(job.getProduct().getKmc().equals(kmc)){
+                            row.createCell(1).setCellValue(job.getName());
+                            row.createCell(4).setCellValue(job.getQuantity());
+                            row.createCell(8).setCellValue(formatTime(job.getDuration()));
                         }
                     }
                 }
-                for (int i = 0; i < 7; i++) {
+                for (int i = 0; i < cellCount; i++) {
                     sheet.autoSizeColumn(i);
                 }
 

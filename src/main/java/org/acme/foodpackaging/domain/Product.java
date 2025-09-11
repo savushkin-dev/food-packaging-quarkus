@@ -66,6 +66,10 @@ public class Product {
         return name;
     }
 
+    public String getKmc(){ return kmc;}
+
+    public void setKmc(String kmc){ this.kmc = kmc; }
+
     public void setName(String name) {
         this.name = name;
     }
