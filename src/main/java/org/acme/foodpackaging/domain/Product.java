@@ -78,4 +78,5 @@ public class Product {
         this.cleaningDurations = cleaningDurations;
     }
 
+    public void setType(String type) { this.type = type; }
 }

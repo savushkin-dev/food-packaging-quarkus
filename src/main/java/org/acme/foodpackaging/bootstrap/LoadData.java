@@ -55,8 +55,8 @@ public class LoadData {
         Set<Product> productSet = new HashSet<>();
         List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, productSet);
         List<Product> products = new ArrayList<>(productSet);
+        cleaningCalculate(products);
         // Инициализация времени мойки между продукцией
-        List<CleaningRule> rules = loadCleaningRulesfromDB();
         solution.setLines(lines);
         solution.setProducts(products);
         jobs.sort(Comparator.comparing(Job::getName));
@@ -146,6 +146,7 @@ public class LoadData {
         }
         return lines;
     }
+
 private Map<String, Product> loadProductfromDB(){
         Map<String, Product> productsMap = new HashMap<>();
     ResultSet resultSet = null;
@@ -168,6 +169,7 @@ private Map<String, Product> loadProductfromDB(){
     }
     return productsMap;
 }
+
     private List<Job> loadJobs(String date, LocalDateTime startDateTime, Set<Product> productsSet) {
         List<Job> jobs = new ArrayList<>();
         Map<String, Product> productMap = new HashMap<>();
@@ -234,6 +236,26 @@ private Map<String, Product> loadProductfromDB(){
                     idealEndDateTime,
                     maxEndDateTime, false
         );
+    }
+
+    private void cleaningCalculate(List<Product> products) {
+        List<CleaningRule> rules = loadCleaningRulesfromDB();
+        CleaningCalculator calc = new CleaningCalculator(rules);
+
+        for (Product current : products) {
+            Map<Product, Duration> durations = new HashMap<>(products.size());
+            for (Product previous : products) {
+                Duration duration;
+                if(current.getId().equals(previous.getId())){
+                    duration = Duration.ZERO;
+                }
+                else {
+                    duration = Duration.ofMinutes(calc.getCleaningTime(previous, current));
+                }
+                durations.put(previous, duration);
+            }
+            current.setCleaningDurations(durations);
+        }
     }
 
     public static String cleanSyrkiName(String input) {
