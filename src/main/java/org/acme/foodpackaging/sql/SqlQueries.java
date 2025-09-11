@@ -56,5 +56,10 @@ public class SqlQueries {
        where (F_DEL=0) and (KRC='170610000000')
        order by NPAR
     """;
+
+    public static final String LOAD_LINES = """
+            select krc from PLR_PLINES
+                              group by krc
+    """;
 }
 
