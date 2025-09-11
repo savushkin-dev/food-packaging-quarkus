@@ -15,13 +15,13 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.*;
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES_SPEEDS;
 
 import java.time.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.acme.foodpackaging.sql.SqlQueries.*;
 
 @ApplicationScoped
 public class LoadData {
@@ -122,12 +122,33 @@ public class LoadData {
         }
         return lines;
     }
+private Map<String, Product> loadProductfromDB(){
+        Map<String, Product> productsMap = new HashMap<>();
+    ResultSet resultSet = null;
+    try (Connection connection = DriverManager.getConnection(dbUrl);
+         Statement statement = connection.createStatement();) {
+        resultSet = statement.executeQuery(LOAD_PRODUCTS);
 
+        while (resultSet.next()) {
+            String kmc = resultSet.getString("KMC");
+            String ean13 = resultSet.getString("EAN13");
+            String type = resultSet.getString("GRF");
+            String glaze = resultSet.getString("TGLAZ");
+            String curdMass = resultSet.getString("TMASS");
+            String filling = resultSet.getString("TFBF");
+            productsMap.put(kmc, new Product(kmc, ean13, type, glaze, curdMass, filling));
+        }
+    }
+    catch (SQLException e) {
+        throw new RuntimeException("Failed to load products from DB", e);
+    }
+    return productsMap;
+}
     private List<Job> loadJobs(String date, LocalDateTime startDateTime, List<Product> products) {
         List<Job> jobs = new ArrayList<>();
         ProductFactory productFactory = new ProductFactory();
         Map<String, Product> productMap = new HashMap<>();
-
+        Map<String, Product> producstMap = loadProductfromDB();
         try {
             try (Connection connection = DriverManager.getConnection(dbUrl);
                  PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS)) {

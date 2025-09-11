@@ -39,4 +39,15 @@ public class SqlQueries {
     WHERE PROD IS NOT NULL
     ORDER BY KRC
     """;
+
+    public static final String LOAD_PRODUCTS = """
+    SELECT [KMC]
+      ,[EAN13]
+      ,[GRF]
+      ,[TGLAZ]
+      ,[TMASS]
+      ,[TFBF]
+      FROM [MES].[dbo].[PLR_MC]
+      where F_DEL=0
+    """;
 }
