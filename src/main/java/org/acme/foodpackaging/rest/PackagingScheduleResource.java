@@ -25,9 +25,14 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.sql.*;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
+import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -56,6 +61,9 @@ public class PackagingScheduleResource {
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
+
+    @ConfigProperty(name = "db.url")
+    String dbUrl;
 
     String date;
 
@@ -91,6 +99,27 @@ public class PackagingScheduleResource {
         PackagingSchedule schedule = repository.read();
         schedule.setSolverStatus(solverStatus);
         return schedule;
+    }
+
+    @GET
+    @Path("lines")
+    public Map<Integer,String> getLines() {
+        Map<Integer,String> lines = new HashMap<>();
+        ResultSet resultSet = null;
+        try (Connection connection = DriverManager.getConnection(dbUrl);
+             Statement statement = connection.createStatement();) {
+             resultSet = statement.executeQuery(LOAD_LINES);
+            int index = 1;
+             while (resultSet.next()) {
+                String krc = resultSet.getString("krc");
+                lines.put(index, krc);
+                ++index;
+             }
+        }
+         catch (SQLException e) {
+             throw new RuntimeException("Failed to load lines from DB", e);
+         }
+        return lines;
     }
 
     @POST
