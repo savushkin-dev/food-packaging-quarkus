@@ -59,7 +59,7 @@ public class LoadData {
         // Инициализация времени мойки между продукцией
         solution.setLines(lines);
         solution.setProducts(products);
-        jobs.sort(Comparator.comparing(Job::getName));
+
         solution.setJobs(jobs);
 
         return solution;
@@ -195,6 +195,9 @@ private Map<String, Product> loadProductfromDB(){
                         String shortName = resultSet.getString(("SNM"));      // Сокращенное название
                         // Список со всем возможным ассортиментов продуктов
                         Product product = productsMap.get(kmc);
+                        if(product == null){
+                            System.out.println("Error: new Product not found");
+                        }
                         product.setName(shortName);
                         productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
