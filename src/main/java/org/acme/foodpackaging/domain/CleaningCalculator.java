@@ -26,7 +26,7 @@ public class CleaningCalculator {
     }
 
     private boolean matches(String ruleValue, String actual) {
-        if (ruleValue.isBlank()) return true; // ANY
+        if (ruleValue.isBlank()) return true;
         return ruleValue.equalsIgnoreCase(actual == null ? "" : actual);
     }
 
