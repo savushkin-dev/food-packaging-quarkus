@@ -35,13 +35,16 @@ public class LoadData {
     private LocalDateTime IDEAL_END_DATE_TIME;
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
+    private  Map<String, Product> allProductsMap;
 
     public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
                                LocalDateTime maxEndDateTime, Map<Integer, LocalDateTime> lineStartsTime) {
         this.MIN_START_DATE_TIME = Collections.min(lineStartsTime.values());
         this.IDEAL_END_DATE_TIME = idealEndDateTime;
         this.MAX_END_DATE_TIME = maxEndDateTime;
+        this.allProductsMap = loadProductfromDB();
         PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
+        exportCleaningTime();
         repository.write(solution);
     }
 
@@ -62,12 +65,7 @@ public class LoadData {
         solution.setProducts(products);
 
         solution.setJobs(jobs);
-        try {
-            CleaningTimeToExcel cleaningTimeToExcel = new CleaningTimeToExcel(products);
-        }
-        catch (Exception e){
-            System.err.println(e.getMessage());
-        }
+
         return solution;
     }
 
@@ -104,6 +102,17 @@ public class LoadData {
         }
 
         return finalMap;
+    }
+
+    private void exportCleaningTime(){
+        List<Product> allProducts = allProductsMap.values().stream().toList();
+        cleaningCalculate(allProducts);
+        try {
+            CleaningTimeToExcel cleaningTimeToExcel = new CleaningTimeToExcel(allProducts);
+        }
+        catch (Exception e){
+            System.err.println(e.getMessage());
+        }
     }
 
     private List<CleaningRule> loadCleaningRulesfromDB(){
@@ -162,12 +171,13 @@ private Map<String, Product> loadProductfromDB(){
 
         while (resultSet.next()) {
             String kmc = resultSet.getString("KMC");
+            String shortName = resultSet.getString("SNM");
             String ean13 = resultSet.getString("EAN13");
             String type = resultSet.getString("GRF");
             String glaze = resultSet.getString("TGLAZ");
             String curdMass = resultSet.getString("TMASS");
             String filling = resultSet.getString("TFBF");
-            productsMap.put(kmc, new Product(kmc, ean13, type, glaze, curdMass, filling));
+            productsMap.put(kmc, new Product(shortName, kmc, ean13, type, glaze, curdMass, filling));
         }
     }
     catch (SQLException e) {
@@ -178,8 +188,7 @@ private Map<String, Product> loadProductfromDB(){
 
     private List<Job> loadJobs(String date, LocalDateTime startDateTime, Set<Product> productsSet) {
         List<Job> jobs = new ArrayList<>();
-        Map<String, Product> productMap = new HashMap<>();
-        Map<String, Product> productsMap = loadProductfromDB();
+
         try {
             try (Connection connection = DriverManager.getConnection(dbUrl);
                  PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS)) {
@@ -200,11 +209,10 @@ private Map<String, Product> loadProductfromDB(){
                         String name = resultSet.getString("NAME"); // Название
                         String shortName = resultSet.getString(("SNM"));      // Сокращенное название
                         // Список со всем возможным ассортиментов продуктов
-                        Product product = productsMap.get(kmc);
+                        Product product = allProductsMap.get(kmc);
                         if(product == null){
                             System.out.println("Error: new Product not found");
                         }
-                        product.setName(shortName);
                         productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
                         Job job = createJob(

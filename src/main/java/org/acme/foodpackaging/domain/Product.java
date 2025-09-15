@@ -27,7 +27,8 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String id,  String ean13, String type, String glaze, String curdMass, String filling ) {
+    public Product(String name, String id,  String ean13, String type, String glaze, String curdMass, String filling ) {
+        this.name = name;
         this.id = id;
         this.ean13 = ean13;
         this.type = type;
