@@ -1,9 +1,7 @@
 package org.acme.foodpackaging.persistence;
 
 import org.acme.foodpackaging.domain.Product;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
@@ -11,7 +9,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 public class CleaningTimeToExcel {
 
@@ -21,29 +18,59 @@ public class CleaningTimeToExcel {
 
     private void createCleaningTimeExcel(List<Product> products) throws IOException {
         Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Products");
+        Sheet sheet = workbook.createSheet("CleaningTimes");
+        Font headerFont = workbook.createFont();
+        headerFont.setFontName("Calibri"); // или Arial, как в остальной таблице
+        headerFont.setFontHeightInPoints((short) 11);
+        headerFont.setBold(true);
 
-        int rowIndex = 0;
+        CellStyle normalHeaderStyle = workbook.createCellStyle();
+        normalHeaderStyle.setFont(headerFont);
+        normalHeaderStyle.setAlignment(HorizontalAlignment.CENTER);
+        normalHeaderStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
-        Row header = sheet.createRow(rowIndex++);
-        header.createCell(0).setCellValue("From");
-        header.createCell(1).setCellValue("To");
-        header.createCell(2).setCellValue("Time");
+        CellStyle rotatedStyle = workbook.createCellStyle();
+        rotatedStyle.setFont(headerFont);
+        rotatedStyle.setRotation((short) 90);
+        rotatedStyle.setAlignment(HorizontalAlignment.CENTER);
+        rotatedStyle.setVerticalAlignment(VerticalAlignment.BOTTOM);
 
+        Row headerRow = sheet.createRow(0);
+        headerRow.createCell(0).setCellValue("Переход с");
+
+        int colIndex = 1;
         for (Product product : products) {
-            for (Map.Entry<Product, Duration> entry : product.getCleaningDurations().entrySet()) {
-                Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(entry.getKey().getName());
-                row.createCell(1).setCellValue(product.getName());
-                row.createCell(2).setCellValue(entry.getValue().toMinutes());
-            }
+            Cell cell = headerRow.createCell(colIndex);
+            cell.setCellValue(product.getName());
+            cell.setCellStyle(rotatedStyle);
+            colIndex++;
+        }
 
+        headerRow.setHeightInPoints(250);
+
+        int rowIndex = 1;
+        for (Product fromProduct : products) {
+            Row row = sheet.createRow(rowIndex);
+            row.createCell(0).setCellValue(fromProduct.getName());
+
+            colIndex = 1;
+            for (Product toProduct : products) {
+                Duration duration = fromProduct.getCleaningDurations().get(toProduct);
+                if (duration != null) {
+                    row.createCell(colIndex).setCellValue(duration.toMinutes());
+                } else {
+                    row.createCell(colIndex).setCellValue("-");
+                }
+                colIndex++;
+            }
             rowIndex++;
         }
 
-        for (int i = 0; i < 3; i++) {
-            sheet.autoSizeColumn(i);
+         sheet.setColumnWidth(0, 60*256);
+        for (int i = 1; i <= products.size(); i++) {
+            sheet.setColumnWidth(i, 7 * 270);
         }
+
         File exportDir = new File("src/main/resources/excelExport");
         if (!exportDir.exists() && !exportDir.mkdirs()) {
             throw new IOException("Не удалось создать каталог: " + exportDir.getAbsolutePath());
