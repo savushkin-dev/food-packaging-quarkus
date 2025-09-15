@@ -41,15 +41,19 @@ public class SqlQueries {
     """;
 
     public static final String LOAD_PRODUCTS = """
-    SELECT [KMC]
-      ,[EAN13]
-      ,[GRF]
-      ,[TGLAZ]
-      ,[TMASS]
-      ,[TFBF]
-      FROM [MES].[dbo].[PLR_MC]
-      where F_DEL=0
+    SELECT p.KMC,
+           p.EAN13,
+           p.GRF,
+           p.TGLAZ,
+           p.TMASS,
+           p.TFBF,
+           n.SNM
+    FROM [MES].[dbo].[PLR_MC] p
+    JOIN [MES].[dbo].[NS_MC] n
+        ON p.KMC = n.KMC
+    WHERE p.F_DEL = 0
     """;
+
     public static final String LOAD_CLEANING_RULES = """
     SELECT [NPAR], [FROM_VALUE], [TO_VALUE], [DUR]
       FROM [MES].[dbo].[PLR_CHANGE]
