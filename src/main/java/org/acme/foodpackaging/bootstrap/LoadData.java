@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.persistence.CleaningTimeToExcel;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
 import org.apache.poi.ss.usermodel.Row;
@@ -61,7 +62,12 @@ public class LoadData {
         solution.setProducts(products);
 
         solution.setJobs(jobs);
-
+        try {
+            CleaningTimeToExcel cleaningTimeToExcel = new CleaningTimeToExcel(products);
+        }
+        catch (Exception e){
+            System.err.println(e.getMessage());
+        }
         return solution;
     }
 
