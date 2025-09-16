@@ -2,6 +2,8 @@ package org.acme.foodpackaging.persistence;
 
 import org.acme.foodpackaging.domain.Product;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
@@ -19,42 +21,42 @@ public class CleaningTimeToExcel {
     private void createCleaningTimeExcel(List<Product> products) throws IOException {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("CleaningTimes");
+
+        // ---------- Шрифт и стили ----------
         Font headerFont = workbook.createFont();
-        headerFont.setFontName("Calibri"); // или Arial, как в остальной таблице
+        headerFont.setFontName("Calibri");
         headerFont.setFontHeightInPoints((short) 11);
         headerFont.setBold(true);
 
-        CellStyle normalHeaderStyle = workbook.createCellStyle();
-        normalHeaderStyle.setFont(headerFont);
-        normalHeaderStyle.setAlignment(HorizontalAlignment.CENTER);
-        normalHeaderStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-
         CellStyle rotatedStyle = workbook.createCellStyle();
         rotatedStyle.setFont(headerFont);
-        rotatedStyle.setRotation((short) 90);
+        rotatedStyle.setRotation((short) 90); // поворот текста
         rotatedStyle.setAlignment(HorizontalAlignment.CENTER);
         rotatedStyle.setVerticalAlignment(VerticalAlignment.BOTTOM);
 
+        // ---------- Заголовок (строка 0) ----------
         Row headerRow = sheet.createRow(0);
-        headerRow.createCell(0).setCellValue("Переход с");
+        headerRow.createCell(0).setCellValue("Переход с"); // уголок
 
         int colIndex = 1;
-        for (Product product : products) {
-            Cell cell = headerRow.createCell(colIndex);
-            cell.setCellValue(product.getName());
+        for (Product fromProduct : products) {
+            Cell cell = headerRow.createCell(colIndex++);
+            cell.setCellValue(fromProduct.getName());
             cell.setCellStyle(rotatedStyle);
-            colIndex++;
         }
-
         headerRow.setHeightInPoints(250);
 
+        // ---------- Строки (To) ----------
         int rowIndex = 1;
-        for (Product fromProduct : products) {
+        for (Product toProduct : products) {
             Row row = sheet.createRow(rowIndex);
-            row.createCell(0).setCellValue(fromProduct.getName());
 
+            // первый столбец — To
+            row.createCell(0).setCellValue(toProduct.getName());
+
+            // остальные столбцы — Duration[from → to]
             colIndex = 1;
-            for (Product toProduct : products) {
+            for (Product fromProduct : products) {
                 Duration duration = fromProduct.getCleaningDurations().get(toProduct);
                 if (duration != null) {
                     row.createCell(colIndex).setCellValue(duration.toMinutes());
