@@ -2,8 +2,6 @@ package org.acme.foodpackaging.persistence;
 
 import org.acme.foodpackaging.domain.Product;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
@@ -22,7 +20,6 @@ public class CleaningTimeToExcel {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("CleaningTimes");
 
-        // ---------- Шрифт и стили ----------
         Font headerFont = workbook.createFont();
         headerFont.setFontName("Calibri");
         headerFont.setFontHeightInPoints((short) 11);
@@ -34,9 +31,8 @@ public class CleaningTimeToExcel {
         rotatedStyle.setAlignment(HorizontalAlignment.CENTER);
         rotatedStyle.setVerticalAlignment(VerticalAlignment.BOTTOM);
 
-        // ---------- Заголовок (строка 0) ----------
         Row headerRow = sheet.createRow(0);
-        headerRow.createCell(0).setCellValue("Переход с"); // уголок
+        headerRow.createCell(0).setCellValue("Переход с");
 
         int colIndex = 1;
         for (Product fromProduct : products) {
@@ -46,15 +42,12 @@ public class CleaningTimeToExcel {
         }
         headerRow.setHeightInPoints(250);
 
-        // ---------- Строки (To) ----------
         int rowIndex = 1;
         for (Product toProduct : products) {
             Row row = sheet.createRow(rowIndex);
-
-            // первый столбец — To
+            
             row.createCell(0).setCellValue(toProduct.getName());
 
-            // остальные столбцы — Duration[from → to]
             colIndex = 1;
             for (Product fromProduct : products) {
                 Duration duration = fromProduct.getCleaningDurations().get(toProduct);
