@@ -41,6 +41,9 @@ $(document).ready(function () {
     $("#exportButton").click(function () {
       exportSchedule();
     });
+      $("#saveButton").click(function () {
+          saveSchedule();
+        });
   $("#analyzeButton").click(function () {
     analyze();
   });
@@ -251,6 +254,7 @@ function solve() {
     showError("Start solving failed.", xhr);
   });
 }
+
 function exportSchedule() {
   $.ajax({
     url: "/schedule/export",
@@ -272,6 +276,30 @@ function exportSchedule() {
     },
     error: function (xhr, status, error) {
       showError("Export failed.", xhr);
+    }
+  });
+}
+
+function saveSchedule() {
+  $.ajax({
+    url: "/schedule/save",
+    method: "POST",
+    xhrFields: { responseType: 'blob' },
+    headers: { "Accept": "application/octet-stream" },
+    success: function (data, status, xhr) {
+      const blob = new Blob([data], { type: xhr.getResponseHeader("Content-Type") });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "schedule.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    },
+    error: function (xhr, status, error) {
+      console.error(xhr.responseText);
+      showError("Save failed.", xhr);
     }
   });
 }
@@ -365,6 +393,7 @@ function refreshSolvingButtons(solving) {
     $("#solveButton").hide();
     $("#stopSolvingButton").show();
     $("#exportButton").prop("disabled", true);
+    $("#saveButton").prop("disabled", true);
     if (autoRefreshIntervalId == null) {
       autoRefreshIntervalId = setInterval(refreshSchedule, 2000);
     }
@@ -372,6 +401,7 @@ function refreshSolvingButtons(solving) {
     $("#solveButton").show();
     $("#stopSolvingButton").hide();
     $("#exportButton").prop("disabled", false);
+    $("#saveButton").prop("disabled", false);
     if (autoRefreshIntervalId != null) {
       clearInterval(autoRefreshIntervalId);
       autoRefreshIntervalId = null;
