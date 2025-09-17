@@ -1,6 +1,9 @@
 package org.acme.foodpackaging.rest;
 
 import ai.timefold.solver.core.api.solver.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -31,7 +34,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
 import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES;
 
 @Path("schedule")
@@ -161,6 +163,40 @@ public class PackagingScheduleResource {
                 .entity("Current solver solution is null")
                 .build();
     }
+    }
+
+    @POST
+    @Path("save")
+    @Produces("application/octet-stream")
+    public Response save() {
+        if (currentSolverSolution != null) {
+            try {
+                PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
+                if (bestSolution != null) {
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.registerModule(new JavaTimeModule());
+                    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+                    byte[] fileContent = mapper.writerWithDefaultPrettyPrinter()
+                            .writeValueAsBytes(bestSolution);
+
+                    return Response.ok(fileContent)
+                            .header("Content-Disposition", "attachment; filename=\"schedule.json\"")
+                            .build();
+                } else {
+                    return Response.status(Response.Status.NO_CONTENT)
+                            .entity("Best solution is null — save skipped.")
+                            .build();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Response.serverError().entity("Save error: " + e.getMessage()).build();
+            }
+        } else {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Current solver solution is null")
+                    .build();
+        }
     }
 
     @PUT
