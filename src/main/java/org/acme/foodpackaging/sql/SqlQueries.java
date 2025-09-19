@@ -34,4 +34,8 @@ public class SqlQueries {
             select krc from PLR_PLINES
                               group by krc
     """;
+
+    public static final String INSERT_SOLUTION_TO_JSON = """
+           INSERT INTO PLR_PLAN (KRC, DT, [PLAN]) VALUES (?, ?, ?);
+    """;
 }

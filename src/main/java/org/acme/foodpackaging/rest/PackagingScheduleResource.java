@@ -1,9 +1,6 @@
 package org.acme.foodpackaging.rest;
 
 import ai.timefold.solver.core.api.solver.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -22,6 +19,7 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.ExcelExporter;
+import org.acme.foodpackaging.persistence.JsonExporter;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -166,36 +164,16 @@ public class PackagingScheduleResource {
     }
 
     @POST
-    @Path("save")
-    @Produces("application/octet-stream")
-    public Response save() {
-        if (currentSolverSolution != null) {
-            try {
-                PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
-                if (bestSolution != null) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    mapper.registerModule(new JavaTimeModule());
-                    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-                    byte[] fileContent = mapper.writerWithDefaultPrettyPrinter()
-                            .writeValueAsBytes(bestSolution);
-
-                    return Response.ok(fileContent)
-                            .header("Content-Disposition", "attachment; filename=\"schedule.json\"")
-                            .build();
-                } else {
-                    return Response.status(Response.Status.NO_CONTENT)
-                            .entity("Best solution is null — save skipped.")
-                            .build();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                return Response.serverError().entity("Save error: " + e.getMessage()).build();
-            }
-        } else {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Current solver solution is null")
-                    .build();
+    @Path("saveToDb")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveToDb() {
+        JsonExporter jsonExporter = new JsonExporter(dbUrl);
+        try {
+            PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
+            jsonExporter.export(bestSolution);
+            return Response.ok(Map.of("message", "Saved to DB successfully")).build();
+        } catch (Exception e) {
+            return Response.serverError().entity("Save error: " + e.getMessage()).build();
         }
     }
 

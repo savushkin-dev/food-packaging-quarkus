@@ -282,24 +282,16 @@ function exportSchedule() {
 
 function saveSchedule() {
   $.ajax({
-    url: "/schedule/save",
+    url: "/schedule/saveToDb",
     method: "POST",
-    xhrFields: { responseType: 'blob' },
-    headers: { "Accept": "application/octet-stream" },
-    success: function (data, status, xhr) {
-      const blob = new Blob([data], { type: xhr.getResponseHeader("Content-Type") });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "schedule.json";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+    headers: { "Accept": "application/json" },
+    success: function (data) {
+      console.log(data.message);
+      alert(data.message);
     },
     error: function (xhr, status, error) {
       console.error(xhr.responseText);
-      showError("Save failed.", xhr);
+      alert("Save failed: " + xhr.responseText);
     }
   });
 }
