@@ -210,8 +210,8 @@ private Map<String, Product> loadProductfromDB(){
                         String shortName = resultSet.getString(("SNM"));      // Сокращенное название
                         // Список со всем возможным ассортиментов продуктов
                         Product product = allProductsMap.get(kmc);
-                        if(product == null){
-                            System.out.println("Error: new Product not found");
+                        if (product == null) {
+                            throw new IllegalStateException("KMC=" + kmc + " не найден в таблице продукции для планировщика");
                         }
                         productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
