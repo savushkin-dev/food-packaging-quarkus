@@ -38,4 +38,10 @@ public class SqlQueries {
     public static final String INSERT_SOLUTION_TO_JSON = """
            INSERT INTO PLR_PLAN (KRC, DT, [PLAN]) VALUES (?, ?, ?);
     """;
+
+    public static final String SELECT_SOLUTION_FROM_JSON = """
+        SELECT [PLAN]
+        FROM dbo.PLR_PLAN
+        WHERE DT = ?
+    """;
 }
