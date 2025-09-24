@@ -156,6 +156,7 @@ public class Job {
         return priority;
     }
 
+    @JsonIgnore
     public Integer getSpeed() {
         if (line == null || product == null || product.getType() == null) {
             return null;

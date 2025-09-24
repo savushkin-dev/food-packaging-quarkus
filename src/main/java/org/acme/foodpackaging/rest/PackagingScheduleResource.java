@@ -19,6 +19,8 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.ExcelExporter;
+import org.acme.foodpackaging.persistence.JsonExporter;
+import org.acme.foodpackaging.persistence.JsonImporter;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -26,12 +28,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.Month;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
 import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES;
 
 @Path("schedule")
@@ -161,6 +164,36 @@ public class PackagingScheduleResource {
                 .entity("Current solver solution is null")
                 .build();
     }
+    }
+
+    @POST
+    @Path("saveToDb")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveToDb() {
+        JsonExporter jsonExporter = new JsonExporter(dbUrl);
+        try {
+            PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
+            jsonExporter.export(bestSolution);
+            return Response.ok(Map.of("message", "Saved to DB successfully")).build();
+        } catch (Exception e) {
+            return Response.serverError().entity("Save error: " + e.getMessage()).build();
+        }
+    }
+
+    @GET
+    @Path("/upload")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response importFromDb() {
+        try {
+            LocalDate dt = LocalDate.of(2025, Month.SEPTEMBER, 23);
+            JsonImporter importer = new JsonImporter(dbUrl, dt);
+            PackagingSchedule schedule = importer.importFromDb();
+            repository.write(schedule);
+
+            return Response.ok(Map.of("message", "Uploaded from db successfully")).build();
+        } catch (Exception e) {
+            return Response.serverError().entity("Import error: " + e.getMessage()).build();
+        }
     }
 
     @PUT
