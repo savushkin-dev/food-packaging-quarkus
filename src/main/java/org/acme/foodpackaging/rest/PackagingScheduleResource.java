@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.rest;
 
+import ai.timefold.solver.core.api.score.director.ScoreDirector;
 import ai.timefold.solver.core.api.solver.*;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -72,18 +73,19 @@ public class PackagingScheduleResource {
         LocalDate startDate = loadDTO.getStartDate();
 
         try {
-            // 1️⃣ Проверяем, есть ли расписание в БД
             JsonImporter importer = new JsonImporter(dbUrl, startDate);
             PackagingSchedule schedule = null;
-
             try {
                 schedule = importer.importFromDb();
-            } catch (IllegalStateException e) {
-                // если записи нет, importer выбросил исключение — будем создавать новое расписание
-            }
+            } catch (RuntimeException ignored) {}
 
-            // 2️⃣ Если в базе нет, создаём новое
-            if (schedule == null) {
+            if (schedule != null) {
+                solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+                repository.write(schedule);
+                return Response.ok(Map.of(
+                        "message", "Saved schedule imported for date: " + startDate
+                )).build();
+            } else {
                 loadData.loadDataByDate(
                         loadDTO.getStartDate(),
                         loadDTO.getEndDate(),
@@ -91,11 +93,11 @@ public class PackagingScheduleResource {
                         loadDTO.getMaxEndDateTime(),
                         loadDTO.toLineStartDateTimeMap()
                 );
-                schedule = repository.read(); // предполагается, что loadData положил новое расписание в репозиторий
-                return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getStartDate())).build();
-            } else {
-                repository.write(schedule); // если импортировали из БД, положим его в репозиторий
-                return Response.ok(Map.of("message", "Saved schedule imported for date: " + startDate)).build();
+                date = String.valueOf(loadDTO.getStartDate());
+
+                return Response.ok(Map.of(
+                        "message", "New data generated successfully for date: " + loadDTO.getStartDate()
+                )).build();
             }
 
         } catch (DateTimeParseException e) {
@@ -104,10 +106,9 @@ public class PackagingScheduleResource {
                     .build();
         } catch (Exception e) {
             return Response.serverError()
-                    .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
+                    .entity(Map.of("error", "Failed to load scheduleee: " + e.getMessage()))
                     .build();
         }
-
     }
 
     @GET
