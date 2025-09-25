@@ -2,13 +2,7 @@ package org.acme.foodpackaging.rest;
 
 import ai.timefold.solver.core.api.solver.*;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
@@ -75,23 +69,45 @@ public class PackagingScheduleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response load(LoadDTO loadDTO) {
+        LocalDate startDate = loadDTO.getStartDate();
+
         try {
+            // 1️⃣ Проверяем, есть ли расписание в БД
+            JsonImporter importer = new JsonImporter(dbUrl, startDate);
+            PackagingSchedule schedule = null;
 
-            loadData.loadDataByDate(loadDTO.getStartDate(), loadDTO.getEndDate(),
-                    loadDTO.getIdealEndDateTime(), loadDTO.getMaxEndDateTime(), loadDTO.toLineStartDateTimeMap());
-            date = String.valueOf(loadDTO.getStartDate());
+            try {
+                schedule = importer.importFromDb();
+            } catch (IllegalStateException e) {
+                // если записи нет, importer выбросил исключение — будем создавать новое расписание
+            }
 
-            return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getStartDate())).build();
+            // 2️⃣ Если в базе нет, создаём новое
+            if (schedule == null) {
+                loadData.loadDataByDate(
+                        loadDTO.getStartDate(),
+                        loadDTO.getEndDate(),
+                        loadDTO.getIdealEndDateTime(),
+                        loadDTO.getMaxEndDateTime(),
+                        loadDTO.toLineStartDateTimeMap()
+                );
+                schedule = repository.read(); // предполагается, что loadData положил новое расписание в репозиторий
+                return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getStartDate())).build();
+            } else {
+                repository.write(schedule); // если импортировали из БД, положим его в репозиторий
+                return Response.ok(Map.of("message", "Saved schedule imported for date: " + startDate)).build();
+            }
+
         } catch (DateTimeParseException e) {
-
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
                     .build();
         } catch (Exception e) {
             return Response.serverError()
-                    .entity(Map.of("error", "Failed to load data: " + e.getMessage()))
+                    .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
                     .build();
         }
+
     }
 
     @GET
@@ -100,6 +116,9 @@ public class PackagingScheduleResource {
         // to avoid the race condition that the solver terminates between them
         SolverStatus solverStatus = solverManager.getSolverStatus(SINGLETON_SOLUTION_ID);
         PackagingSchedule schedule = repository.read();
+        if (schedule == null) {
+            throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
+        }
         schedule.setSolverStatus(solverStatus);
         return schedule;
     }
@@ -185,7 +204,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response importFromDb() {
         try {
-            LocalDate dt = LocalDate.of(2025, Month.SEPTEMBER, 23);
+            LocalDate dt = LocalDate.of(2025, Month.SEPTEMBER, 18);
             JsonImporter importer = new JsonImporter(dbUrl, dt);
             PackagingSchedule schedule = importer.importFromDb();
             repository.write(schedule);

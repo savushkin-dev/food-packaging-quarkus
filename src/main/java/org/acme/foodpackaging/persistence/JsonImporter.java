@@ -11,7 +11,10 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.SELECT_SOLUTION_FROM_JSON;
 
@@ -56,7 +59,21 @@ public class JsonImporter {
                         }
                     }
 
+                    Map<String, List<Job>> jobsByLineName = schedule.getJobs().stream()
+                            .collect(Collectors.groupingBy(job -> job.getLine().getName()));
+
+                    for (Line line : schedule.getLines()) {
+                        List<Job> jobsForLine = jobsByLineName.getOrDefault(line.getName(), new ArrayList<>());
+
+                        for (Job job : jobsForLine) {
+                            job.setLine(line);
+                        }
+
+                        line.setJobs(jobsForLine);
+                    }
+
                     return schedule;
+
                 } else {
                     throw new IllegalStateException("No saved schedule found for DT=" + dt);
                 }

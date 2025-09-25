@@ -14,7 +14,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.time.LocalDate;
 
-import static org.acme.foodpackaging.sql.SqlQueries.INSERT_SOLUTION_TO_JSON;
+import static org.acme.foodpackaging.sql.SqlQueries.UPSERT_SOLUTION_TO_JSON;
 
 public class JsonExporter {
     private final ObjectMapper mapper;
@@ -32,7 +32,7 @@ public class JsonExporter {
 
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(schedule);
         try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement ps = conn.prepareStatement(INSERT_SOLUTION_TO_JSON)) {
+             PreparedStatement ps = conn.prepareStatement(UPSERT_SOLUTION_TO_JSON)) {
 
             ps.setString(1, "170610000000");
 
