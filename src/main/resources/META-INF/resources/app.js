@@ -38,9 +38,12 @@ $(document).ready(function () {
   $("#stopSolvingButton").click(function () {
     stopSolving();
   });
-    $("#exportButton").click(function () {
+  $("#exportButton").click(function () {
       exportSchedule();
-    });
+  });
+  $("#saveButton").click(function () {
+      saveSchedule();
+  });
   $("#analyzeButton").click(function () {
     analyze();
   });
@@ -276,6 +279,22 @@ function exportSchedule() {
   });
 }
 
+function saveSchedule() {
+  $.ajax({
+    url: "/schedule/saveToDb",
+    method: "POST",
+    headers: { "Accept": "application/json" },
+    success: function (data) {
+      console.log(data.message);
+      alert(data.message);
+    },
+    error: function (xhr, status, error) {
+      console.error(xhr.responseText);
+      alert("Save failed: " + xhr.responseText);
+    }
+  });
+}
+
 function analyze() {
   new bootstrap.Modal("#scoreAnalysisModal").show()
   const scoreAnalysisModalContent = $("#scoreAnalysisModalContent");
@@ -365,6 +384,7 @@ function refreshSolvingButtons(solving) {
     $("#solveButton").hide();
     $("#stopSolvingButton").show();
     $("#exportButton").prop("disabled", true);
+    $("#saveButton").prop("disabled", true);
     if (autoRefreshIntervalId == null) {
       autoRefreshIntervalId = setInterval(refreshSchedule, 2000);
     }
@@ -372,6 +392,7 @@ function refreshSolvingButtons(solving) {
     $("#solveButton").show();
     $("#stopSolvingButton").hide();
     $("#exportButton").prop("disabled", false);
+    $("#saveButton").prop("disabled", false);
     if (autoRefreshIntervalId != null) {
       clearInterval(autoRefreshIntervalId);
       autoRefreshIntervalId = null;

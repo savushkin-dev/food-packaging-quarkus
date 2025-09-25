@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.domain;
 
 import ai.timefold.solver.core.api.domain.lookup.PlanningId;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.Duration;
 import java.util.Map;
@@ -17,6 +18,7 @@ public class Product {
     private String filling;
     private String curdMass;
     /** The map key is previous product on assembly line. */
+    @JsonIgnore
     private Map<Product, Duration> cleaningDurations;
 
     public Product() {
@@ -81,7 +83,7 @@ public class Product {
     public void setName(String name) {
         this.name = name;
     }
-
+    @JsonIgnore
     public Map<Product, Duration> getCleaningDurations() {
         return cleaningDurations;
     }

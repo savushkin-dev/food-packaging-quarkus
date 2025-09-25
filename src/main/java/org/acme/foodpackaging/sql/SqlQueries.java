@@ -65,5 +65,24 @@ public class SqlQueries {
             select krc from PLR_PLINES
                               group by krc
     """;
+
+    public static final String UPSERT_SOLUTION_TO_JSON = """
+    MERGE dbo.PLR_PLAN AS target
+    USING (VALUES (?, ?, ?)) AS src (KRC, DT, [PLAN])
+        ON target.DT = src.DT
+    WHEN MATCHED THEN
+        UPDATE SET
+            target.KRC = src.KRC,
+            target.[PLAN] = src.[PLAN]
+    WHEN NOT MATCHED THEN
+        INSERT (KRC, DT, [PLAN])
+        VALUES (src.KRC, src.DT, src.[PLAN]);
+""";
+
+    public static final String SELECT_SOLUTION_FROM_JSON = """
+        SELECT [PLAN]
+        FROM dbo.PLR_PLAN
+        WHERE DT = ?
+    """;
 }
 

@@ -1,14 +1,9 @@
 package org.acme.foodpackaging.rest;
 
+import ai.timefold.solver.core.api.score.director.ScoreDirector;
 import ai.timefold.solver.core.api.solver.*;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
@@ -19,6 +14,8 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.ExcelExporter;
+import org.acme.foodpackaging.persistence.JsonExporter;
+import org.acme.foodpackaging.persistence.JsonImporter;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -26,12 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.Month;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS;
 import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES;
 
 @Path("schedule")
@@ -72,21 +70,43 @@ public class PackagingScheduleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response load(LoadDTO loadDTO) {
+        LocalDate startDate = loadDTO.getStartDate();
+
         try {
+            JsonImporter importer = new JsonImporter(dbUrl, startDate);
+            PackagingSchedule schedule = null;
+            try {
+                schedule = importer.importFromDb();
+            } catch (RuntimeException ignored) {}
 
-            loadData.loadDataByDate(loadDTO.getStartDate(), loadDTO.getEndDate(),
-                    loadDTO.getIdealEndDateTime(), loadDTO.getMaxEndDateTime(), loadDTO.toLineStartDateTimeMap());
-            date = String.valueOf(loadDTO.getStartDate());
+            if (schedule != null) {
+                solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+                repository.write(schedule);
+                return Response.ok(Map.of(
+                        "message", "Saved schedule imported for date: " + startDate
+                )).build();
+            } else {
+                loadData.loadDataByDate(
+                        loadDTO.getStartDate(),
+                        loadDTO.getEndDate(),
+                        loadDTO.getIdealEndDateTime(),
+                        loadDTO.getMaxEndDateTime(),
+                        loadDTO.toLineStartDateTimeMap()
+                );
+                date = String.valueOf(loadDTO.getStartDate());
 
-            return Response.ok().entity(Map.of("message", "Data loaded successfully for date: " + loadDTO.getStartDate())).build();
+                return Response.ok(Map.of(
+                        "message", "New data generated successfully for date: " + loadDTO.getStartDate()
+                )).build();
+            }
+
         } catch (DateTimeParseException e) {
-
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
                     .build();
         } catch (Exception e) {
             return Response.serverError()
-                    .entity(Map.of("error", "Failed to load data: " + e.getMessage()))
+                    .entity(Map.of("error", "Failed to load scheduleee: " + e.getMessage()))
                     .build();
         }
     }
@@ -97,6 +117,9 @@ public class PackagingScheduleResource {
         // to avoid the race condition that the solver terminates between them
         SolverStatus solverStatus = solverManager.getSolverStatus(SINGLETON_SOLUTION_ID);
         PackagingSchedule schedule = repository.read();
+        if (schedule == null) {
+            throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
+        }
         schedule.setSolverStatus(solverStatus);
         return schedule;
     }
@@ -161,6 +184,20 @@ public class PackagingScheduleResource {
                 .entity("Current solver solution is null")
                 .build();
     }
+    }
+
+    @POST
+    @Path("saveToDb")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveToDb() {
+        JsonExporter jsonExporter = new JsonExporter(dbUrl);
+        try {
+            PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
+            jsonExporter.export(bestSolution);
+            return Response.ok(Map.of("message", "Saved to DB successfully")).build();
+        } catch (Exception e) {
+            return Response.serverError().entity("Save error: " + e.getMessage()).build();
+        }
     }
 
     @PUT
