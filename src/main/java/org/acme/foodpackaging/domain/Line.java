@@ -70,4 +70,6 @@ public class Line {
         return jobs;
     }
 
+    public void setJobs(List<Job> jobs) { this.jobs = jobs; }
+
 }

@@ -1,20 +1,20 @@
 package org.acme.foodpackaging.bootstrap;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.CleaningTimeToExcel;
+import org.acme.foodpackaging.persistence.JsonImporter;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.File;
 import java.sql.*;
 
 import java.time.*;
@@ -36,6 +36,7 @@ public class LoadData {
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
     private  Map<String, Product> allProductsMap;
+    private CleaningCalculator calculator;
 
     public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
                                LocalDateTime maxEndDateTime, Map<Integer, LocalDateTime> lineStartsTime) {
@@ -43,6 +44,7 @@ public class LoadData {
         this.IDEAL_END_DATE_TIME = idealEndDateTime;
         this.MAX_END_DATE_TIME = maxEndDateTime;
         this.allProductsMap = loadProductfromDB();
+        this.calculator = new CleaningCalculator();
         PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
         exportCleaningTime();
         repository.write(solution);
@@ -59,16 +61,15 @@ public class LoadData {
         Set<Product> productSet = new HashSet<>();
         List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, productSet);
         List<Product> products = new ArrayList<>(productSet);
-        cleaningCalculate(products);
         // Инициализация времени мойки между продукцией
+        calculator.cleaningCalculate(products);
         solution.setLines(lines);
         solution.setProducts(products);
 
         solution.setJobs(jobs);
 
-        return solution;
+            return solution;
     }
-
     private Map<Integer, Map<String, Integer>> loadSpeedsFromDB() {
         Map<Pair<String, String>, Integer> mapSpeed = getSpeedsfromDB();
         Map<Integer, Map<String, Integer>> finalMap = new HashMap<>();
@@ -106,7 +107,7 @@ public class LoadData {
 
     private void exportCleaningTime(){
         List<Product> allProducts = allProductsMap.values().stream().toList();
-        cleaningCalculate(allProducts);
+        calculator.cleaningCalculate(allProducts);
         try {
             CleaningTimeToExcel cleaningTimeToExcel = new CleaningTimeToExcel(allProducts);
         }
@@ -253,34 +254,6 @@ private Map<String, Product> loadProductfromDB(){
                     idealEndDateTime,
                     maxEndDateTime, false
         );
-    }
-
-    private void cleaningCalculate(List<Product> products) {
-        List<CleaningRule> rules = loadCleaningRulesfromDB();
-        CleaningCalculator calc = new CleaningCalculator(rules);
-
-        for (Product current : products) {
-            Map<Product, Duration> durations = new HashMap<>(products.size());
-            for (Product previous : products) {
-                Duration duration;
-                if(current.getId().equals(previous.getId())){
-                    duration = Duration.ZERO;
-                }
-                else if(current.getType().equals(previous.getType())
-                        && current.getGlaze().equals(previous.getGlaze())
-                        && current.getCurdMass().equals(previous.getCurdMass())
-                        && current.getFilling().equals(previous.getFilling())
-                        && !current.getId().equals(previous.getId())){
-
-                        duration = Duration.ofMinutes(10); // Если совпадает все кроме Id, значит требуется только смена упаковки
-                }
-                else {
-                    duration = Duration.ofMinutes(calc.getCleaningTime(previous, current));
-                }
-                durations.put(previous, duration);
-            }
-            current.setCleaningDurations(durations);
-        }
     }
 
     public static String cleanSyrkiName(String input) {

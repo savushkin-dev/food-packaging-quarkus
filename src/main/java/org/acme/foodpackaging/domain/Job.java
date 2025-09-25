@@ -156,6 +156,7 @@ public class Job {
         return priority;
     }
 
+    @JsonIgnore
     public Integer getSpeed() {
         if (line == null || product == null || product.getType() == null) {
             return null;
@@ -221,6 +222,8 @@ public class Job {
     public void setEndDateTime(LocalDateTime endDateTime) {
         this.endDateTime = endDateTime;
     }
+
+    public void  setProduct(Product product) { this.product = product; }
 
     // ************************************************************************
     // Complex methods
