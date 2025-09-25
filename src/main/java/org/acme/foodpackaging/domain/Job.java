@@ -223,6 +223,8 @@ public class Job {
         this.endDateTime = endDateTime;
     }
 
+    public void  setProduct(Product product) { this.product = product; }
+
     // ************************************************************************
     // Complex methods
     // ************************************************************************
