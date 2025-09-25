@@ -41,9 +41,6 @@ $(document).ready(function () {
   $("#exportButton").click(function () {
       exportSchedule();
   });
-  $("#uploadButton").click(function () {
-      uploadSolution();
-  });
   $("#saveButton").click(function () {
       saveSchedule();
   });
@@ -294,22 +291,6 @@ function saveSchedule() {
     error: function (xhr, status, error) {
       console.error(xhr.responseText);
       alert("Save failed: " + xhr.responseText);
-    }
-  });
-}
-
-function uploadSolution() {
-  $.ajax({
-    url: "/schedule/upload",
-    method: "GET",
-    headers: { "Accept": "application/json" },
-    success: function (data) {
-      console.log("Uploaded solution:", data);
-      alert("Solution uploaded successfully!");
-    },
-    error: function (xhr, status, error) {
-      console.error("Upload failed:", xhr.responseText);
-      alert("Upload failed: " + xhr.responseText);
     }
   });
 }
