@@ -200,22 +200,6 @@ public class PackagingScheduleResource {
         }
     }
 
-    @GET
-    @Path("/upload")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response importFromDb() {
-        try {
-            LocalDate dt = LocalDate.of(2025, Month.SEPTEMBER, 18);
-            JsonImporter importer = new JsonImporter(dbUrl, dt);
-            PackagingSchedule schedule = importer.importFromDb();
-            repository.write(schedule);
-
-            return Response.ok(Map.of("message", "Uploaded from db successfully")).build();
-        } catch (Exception e) {
-            return Response.serverError().entity("Import error: " + e.getMessage()).build();
-        }
-    }
-
     @PUT
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
