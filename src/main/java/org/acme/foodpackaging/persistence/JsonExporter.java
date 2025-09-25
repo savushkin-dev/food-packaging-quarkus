@@ -43,22 +43,5 @@ public class JsonExporter {
 
             ps.executeUpdate();
         }
-
-        File exportDir = new File("src/main/resources/jsonExport");
-        if (!exportDir.exists()) {
-            boolean created = exportDir.mkdirs();
-            if (!created) {
-                System.err.println("Не удалось создать каталог: " + exportDir.getAbsolutePath());
-                return;
-            }
-        }
-
-        String filename = "src/main/resources/jsonExport/packaging_schedule_" + schedule.getWorkCalendar().getFromDate() + ".json";
-        Files.write(
-                Paths.get(filename),
-                json.getBytes(),
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING
-        );
     }
 }
