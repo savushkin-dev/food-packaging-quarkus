@@ -2,6 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
 import ai.timefold.solver.core.api.domain.entity.PlanningPin;
@@ -20,7 +21,6 @@ public class Job {
     private String id;
     private String name;
     private String np;
-    private transient DurationProvider durationProvider;
 
     private Product product;
     private int quantity;
@@ -43,6 +43,8 @@ public class Job {
     @JsonIgnore
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
+
+    private Map<Integer, Map<String, Integer>> lineSpeeds;
 
     /**
      * Start is after cleanup.
@@ -78,27 +80,24 @@ public class Job {
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, String np, Product product, int quantity, Duration duration, DurationProvider provider, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
+    public Job(String id, String name, String np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, boolean pinned,
                LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
         this.np = np;
         this.product = product;
         this.quantity = quantity;
-        this.duration = duration;
-        this.durationProvider = provider;
         this.minStartTime = minStartTime;
         this.idealEndTime = idealEndTime;
         this.maxEndTime = maxEndTime;
-        this.priority = priority;
         this.startCleaningDateTime = startCleaningDateTime;
         this.startProductionDateTime = startProductionDateTime;
-        this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
+        this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(getDuration());
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, String np, Product product, int quantity, Duration duration, DurationProvider provider, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
-        this(id, name, np, product, quantity, duration, provider, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
+    public Job(String id, String name, String np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, boolean pinned) {
+        this(id, name, np, product, quantity, minStartTime, idealEndTime, maxEndTime, pinned, null, null);
     }
 
     @Override
@@ -114,6 +113,10 @@ public class Job {
         return id;
     }
 
+    public Map<Integer, Map<String, Integer>> getLineSpeeds() {
+        return lineSpeeds;
+    }
+
     public int getQuantity() { return quantity; }
 
     public String getNp() { return np; }
@@ -127,11 +130,16 @@ public class Job {
     }
 
     public Duration getDuration() {
-        if (duration == Duration.ZERO) {
-            return durationProvider.calculate(this.product, this.line, this.quantity);
+        Integer speed = getSpeed();
+
+        if (speed == null || speed <= 0) {
+            return Duration.ZERO;
         }
-        return duration;
+        final int IF_CHANGING_PACKAGING = 4;
+        long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+        return Duration.ofMinutes(minutes);
     }
+
     public LocalDateTime getMinStartTime() {
         return minStartTime;
     }
@@ -146,6 +154,18 @@ public class Job {
 
     public int getPriority() {
         return priority;
+    }
+
+    @JsonIgnore
+    public Integer getSpeed() {
+        if (line == null || product == null || product.getType() == null) {
+            return null;
+        }
+        Map<String, Integer> productSpeeds = lineSpeeds.get(Integer.parseInt(line.getId()));
+        if (productSpeeds == null) {
+            return null;
+        }
+        return productSpeeds.get(product.getType());
     }
 
     public boolean isPinned() {
@@ -172,6 +192,9 @@ public class Job {
         return nextJob;
     }
 
+    public  void setLineSpeeds(Map<Integer, Map<String, Integer>> lineSpeeds){
+        this.lineSpeeds = lineSpeeds;
+    }
     public void setNextJob(Job nextJob) {
         this.nextJob = nextJob;
     }
@@ -199,6 +222,8 @@ public class Job {
     public void setEndDateTime(LocalDateTime endDateTime) {
         this.endDateTime = endDateTime;
     }
+
+    public void  setProduct(Product product) { this.product = product; }
 
     // ************************************************************************
     // Complex methods
