@@ -121,6 +121,8 @@ public class Job {
 
     public String getNp() { return np; }
 
+    public int getNpAsInt() { return Integer.parseInt(np); }
+
     public String getName() {
         return name;
     }

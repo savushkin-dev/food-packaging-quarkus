@@ -14,6 +14,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
         return new Constraint[] {
                 // Hard constraints
                 maxEndDateTime(factory),
+                enforceNpOrder(factory),
                 forbidZeroSpeedProducts(factory),
                 // Soft constraints
                 minimizeMakespan(factory),
@@ -28,7 +29,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
     protected Constraint maxEndDateTime(ConstraintFactory factory) {
         return factory.forEach(Job.class)
                 .filter(job -> job.getEndDateTime() != null && job.getMaxEndTime().isBefore(job.getEndDateTime()))
-                .penalizeLong(HardMediumSoftLongScore.ONE_HARD,
+                .penalizeLong(HardMediumSoftLongScore.ONE_SOFT,
                         job -> Duration.between(job.getMaxEndTime(), job.getEndDateTime()).toMinutes())
                 .asConstraint("Max end date time");
     }
@@ -74,4 +75,16 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
                         * Duration.between(job.getStartCleaningDateTime(), job.getStartProductionDateTime()).toMinutes())
                 .asConstraint("Minimize cleaning duration");
     }
+
+    Constraint enforceNpOrder(ConstraintFactory factory) {
+        return factory.forEachUniquePair(Job.class,
+                        Joiners.equal(Job::getLine),
+                        Joiners.equal(Job::getProduct))
+                .filter((j1, j2) ->
+                        j1.getNpAsInt() < j2.getNpAsInt() &&
+                                j1.getStartProductionDateTime().isAfter(j2.getStartProductionDateTime()))
+                .penalize(HardMediumSoftLongScore.ONE_HARD)
+                .asConstraint("Batches must be in increasing order");
+    }
+
 }
