@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.domain;
 
 import ai.timefold.solver.core.api.domain.lookup.PlanningId;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.Duration;
 import java.util.Map;
@@ -11,12 +12,13 @@ public class Product {
     private String id;
     private String name;
     private String kmc;
-    private ProductType type;
-    private GlazeType glaze;
-    private FillingType filling;
-    private CurdMassType curdMass;
-    private boolean allergen;
+    private String ean13;
+    private String type;
+    private String glaze;
+    private String filling;
+    private String curdMass;
     /** The map key is previous product on assembly line. */
+    @JsonIgnore
     private Map<Product, Duration> cleaningDurations;
 
     public Product() {
@@ -27,22 +29,15 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String id, String kmc, String name, ProductType type, boolean allergen) {
-        this.id = id;
-        this.kmc = kmc;
+    public Product(String name, String id,  String ean13, String type, String glaze, String curdMass, String filling ) {
         this.name = name;
+        this.id = id;
+        this.ean13 = ean13;
         this.type = type;
-        this.filling = FillingType.fromProduct(id);
-        this.curdMass = CurdMassType.fromProduct(id);
-        this.glaze = GlazeType.fromProduct(id, type);
-        this.allergen = allergen;
+        this.glaze = glaze;
+        this.curdMass = curdMass;
+        this.filling = filling;
     }
-
-    public ProductType getType() { return type; }
-
-    public GlazeType getGlaze(){ return glaze; }
-
-    public boolean is_allergen() { return allergen; }
 
     @Override
     public String toString() {
@@ -61,13 +56,20 @@ public class Product {
     // ************************************************************************
     // Getters and setters
     // ************************************************************************
+    public String getType() { return type == null ? "" : type; }
 
-    public FillingType getFilling(){ return filling; }
+    public String getGlaze() { return glaze == null ? "" : glaze; }
 
-    public CurdMassType getCurdMass() { return curdMass; }
+    public String getFilling() { return filling == null ? "" : filling; }
+
+    public String getCurdMass() { return curdMass == null ? "" : curdMass; }
 
     public String getId() {
         return id;
+    }
+
+    public String getEan13() {
+        return ean13;
     }
 
     public String getName() {
@@ -81,7 +83,7 @@ public class Product {
     public void setName(String name) {
         this.name = name;
     }
-
+    @JsonIgnore
     public Map<Product, Duration> getCleaningDurations() {
         return cleaningDurations;
     }
@@ -90,4 +92,5 @@ public class Product {
         this.cleaningDurations = cleaningDurations;
     }
 
+    public void setType(String type) { this.type = type; }
 }
