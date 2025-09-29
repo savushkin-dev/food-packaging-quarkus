@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class LoadDTO {
@@ -44,7 +44,7 @@ public class LoadDTO {
     public void setLineStartTimes(Map<String, LocalTime> lineStartTimes) { this.lineStartTimes = lineStartTimes; }
 
     public Map<String, LocalDateTime> toLineStartDateTimeMap() {
-        Map<String, LocalDateTime> result = new HashMap<>();
+        Map<String, LocalDateTime> result = new LinkedHashMap<>();
         for (Map.Entry<String, LocalTime> entry : lineStartTimes.entrySet()) {
             result.put(entry.getKey(), LocalDateTime.of(startDate, entry.getValue()));
         }
