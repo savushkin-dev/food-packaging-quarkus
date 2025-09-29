@@ -23,7 +23,7 @@ public class LoadDTO {
     private LocalDateTime maxEndDateTime;
 
     @JsonFormat(pattern = "HH:mm")
-    private Map<Integer, LocalTime> lineStartTimes;
+    private Map<String, LocalTime> lineStartTimes;
 
     public LoadDTO() {}
 
@@ -33,7 +33,7 @@ public class LoadDTO {
     public LocalDateTime getIdealEndDateTime() { return idealEndDateTime; }
     public LocalDateTime getMaxEndDateTime() { return maxEndDateTime; }
 
-    public Map<Integer, LocalTime> getLineStartTimes() { return lineStartTimes; }
+    public Map<String, LocalTime> getLineStartTimes() { return lineStartTimes; }
 
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
@@ -41,11 +41,11 @@ public class LoadDTO {
     public void setIdealEndDateTime(LocalDateTime idealEndDateTime) { this.idealEndDateTime = idealEndDateTime; }
     public void setMaxEndDateTime(LocalDateTime maxEndDateTime) { this.maxEndDateTime = maxEndDateTime; }
 
-    public void setLineStartTimes(Map<Integer, LocalTime> lineStartTimes) { this.lineStartTimes = lineStartTimes; }
+    public void setLineStartTimes(Map<String, LocalTime> lineStartTimes) { this.lineStartTimes = lineStartTimes; }
 
-    public Map<Integer, LocalDateTime> toLineStartDateTimeMap() {
-        Map<Integer, LocalDateTime> result = new HashMap<>();
-        for (Map.Entry<Integer, LocalTime> entry : lineStartTimes.entrySet()) {
+    public Map<String, LocalDateTime> toLineStartDateTimeMap() {
+        Map<String, LocalDateTime> result = new HashMap<>();
+        for (Map.Entry<String, LocalTime> entry : lineStartTimes.entrySet()) {
             result.put(entry.getKey(), LocalDateTime.of(startDate, entry.getValue()));
         }
         return result;
