@@ -39,7 +39,7 @@ public class LoadData {
     private CleaningCalculator calculator;
 
     public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
-                               LocalDateTime maxEndDateTime, Map<Integer, LocalDateTime> lineStartsTime) {
+                               LocalDateTime maxEndDateTime, Map<String, LocalDateTime> lineStartsTime) {
         this.MIN_START_DATE_TIME = Collections.min(lineStartsTime.values());
         this.IDEAL_END_DATE_TIME = idealEndDateTime;
         this.MAX_END_DATE_TIME = maxEndDateTime;
@@ -52,7 +52,7 @@ public class LoadData {
 
     @Transactional
     public PackagingSchedule initSolution(LocalDate START_DATE, LocalDate END_DATE,
-                                          Map<Integer, LocalDateTime> lineStartsTime) {
+                                          Map<String, LocalDateTime> lineStartsTime) {
         PackagingSchedule solution = new PackagingSchedule();
         // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
@@ -70,9 +70,9 @@ public class LoadData {
 
             return solution;
     }
-    private Map<Integer, Map<String, Integer>> loadSpeedsFromDB() {
+    private Map<String, Map<String, Integer>> loadSpeedsFromDB() {
         Map<Pair<String, String>, Integer> mapSpeed = getSpeedsfromDB();
-        Map<Integer, Map<String, Integer>> finalMap = new HashMap<>();
+        Map<String, Map<String, Integer>> finalMap = new HashMap<>();
 
         Set<String> allTypes = new HashSet<>();
         for (Pair<String, String> key : mapSpeed.keySet()) {
@@ -81,8 +81,8 @@ public class LoadData {
 
         for (Map.Entry<Pair<String, String>, Integer> entry : mapSpeed.entrySet()) {
             Pair<String, String> key = entry.getKey();
-            Integer line = Integer.valueOf(extractLineNumberRegex(key.getFirst()));
-            if(line == 0){ line = 6;}
+            String line = key.getFirst();
+
             String type = key.getSecond();
             Integer speed = entry.getValue();
 
@@ -229,7 +229,7 @@ private Map<String, Product> loadProductfromDB(){
             throw new RuntimeException("Failed to load jobs from DB", e);
         }
 
-        Map<Integer, Map<String, Integer>> lineSpeeds = loadSpeedsFromDB();
+        Map<String, Map<String, Integer>> lineSpeeds = loadSpeedsFromDB();
 
         for(Job job : jobs){
             job.setLineSpeeds(lineSpeeds);
@@ -237,11 +237,11 @@ private Map<String, Product> loadProductfromDB(){
         return jobs;
     }
 
-    private List<Line> createLines(int lineCount, Map<Integer, LocalDateTime> lineStartsTime){
+    private List<Line> createLines(int lineCount, Map<String, LocalDateTime> lineStartsTime){
         List<Line> lines = new ArrayList<>(lineCount);
-        for( Map.Entry<Integer, LocalDateTime> entry : lineStartsTime.entrySet()){
+        for( Map.Entry<String, LocalDateTime> entry : lineStartsTime.entrySet()){
                 String lineName = "Line" + entry.getKey();
-                Line line = new Line(String.valueOf(entry.getKey()), lineName, entry.getValue());
+                Line line = new Line(entry.getKey(), lineName, entry.getValue());
                 lines.add(line);
         }
         return lines;
@@ -263,13 +263,4 @@ private Map<String, Product> loadProductfromDB(){
         ).trim();
     }
 
-    public static String extractLineNumberRegex(String code) {
-        Pattern p = Pattern.compile("(?<=1706100)(\\d+?)(?=0+$)");
-        Matcher m = p.matcher(code);
-        if (m.find()) {
-            String num = m.group(1).replaceFirst("^0+", "");
-            return num.isEmpty() ? "0" : num;
-        }
-        throw new IllegalArgumentException("Неверный формат кода: " + code);
-    }
 }
