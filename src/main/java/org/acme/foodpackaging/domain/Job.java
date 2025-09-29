@@ -44,7 +44,7 @@ public class Job {
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
 
-    private Map<Integer, Map<String, Integer>> lineSpeeds;
+    private Map<String, Map<String, Integer>> lineSpeeds;
 
     /**
      * Start is after cleanup.
@@ -113,7 +113,7 @@ public class Job {
         return id;
     }
 
-    public Map<Integer, Map<String, Integer>> getLineSpeeds() {
+    public Map<String, Map<String, Integer>> getLineSpeeds() {
         return lineSpeeds;
     }
 
@@ -161,7 +161,7 @@ public class Job {
         if (line == null || product == null || product.getType() == null) {
             return null;
         }
-        Map<String, Integer> productSpeeds = lineSpeeds.get(Integer.parseInt(line.getId()));
+        Map<String, Integer> productSpeeds = lineSpeeds.get(line.getId());
         if (productSpeeds == null) {
             return null;
         }
@@ -192,7 +192,7 @@ public class Job {
         return nextJob;
     }
 
-    public  void setLineSpeeds(Map<Integer, Map<String, Integer>> lineSpeeds){
+    public  void setLineSpeeds(Map<String, Map<String, Integer>> lineSpeeds){
         this.lineSpeeds = lineSpeeds;
     }
     public void setNextJob(Job nextJob) {
