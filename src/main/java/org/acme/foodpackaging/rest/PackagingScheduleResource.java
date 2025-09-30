@@ -1,6 +1,5 @@
 package org.acme.foodpackaging.rest;
 
-import ai.timefold.solver.core.api.score.director.ScoreDirector;
 import ai.timefold.solver.core.api.solver.*;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -11,6 +10,7 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.bootstrap.LoadData;
+import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.persistence.ExcelExporter;
@@ -22,15 +22,12 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.sql.*;
 import java.time.LocalDate;
-import java.time.Month;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -73,32 +70,28 @@ public class PackagingScheduleResource {
         LocalDate startDate = loadDTO.getStartDate();
 
         try {
-            JsonImporter importer = new JsonImporter(dbUrl, startDate);
-            PackagingSchedule schedule = null;
-            try {
-                schedule = importer.importFromDb();
-            } catch (RuntimeException ignored) {}
+            PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
 
-            if (schedule != null) {
+            if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
                 repository.write(schedule);
+
                 return Response.ok(Map.of(
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
-            } else {
-                loadData.loadDataByDate(
-                        loadDTO.getStartDate(),
-                        loadDTO.getEndDate(),
-                        loadDTO.getIdealEndDateTime(),
-                        loadDTO.getMaxEndDateTime(),
-                        loadDTO.toLineStartDateTimeMap()
-                );
-                date = String.valueOf(loadDTO.getStartDate());
-
-                return Response.ok(Map.of(
-                        "message", "New data generated successfully for date: " + loadDTO.getStartDate()
-                )).build();
             }
+
+            loadData.loadDataByDate(
+                    loadDTO.getStartDate(),
+                    loadDTO.getEndDate(),
+                    loadDTO.getIdealEndDateTime(),
+                    loadDTO.getMaxEndDateTime(),
+                    loadDTO.toLineStartDateTimeMap()
+            );
+
+            return Response.ok(Map.of(
+                    "message", "New data generated successfully for date: " + loadDTO.getStartDate()
+            )).build();
 
         } catch (DateTimeParseException e) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -106,10 +99,38 @@ public class PackagingScheduleResource {
                     .build();
         } catch (Exception e) {
             return Response.serverError()
-                    .entity(Map.of("error", "Failed to load scheduleee: " + e.getMessage()))
+                    .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
                     .build();
         }
     }
+
+    private PackagingSchedule tryImportScheduleFromDb(LocalDate startDate) {
+        try {
+            JsonImporter importer = new JsonImporter(dbUrl, startDate);
+            return importer.importFromDb();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private boolean isScheduleCompatible(PackagingSchedule schedule, LoadDTO loadDTO) {
+        if (schedule.getLines().size() != loadDTO.getLineStartTimes().size()) {
+            return false;
+        }
+
+        Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
+
+        for (Line line : schedule.getLines()) {
+            LocalTime lineStartTime = line.getStartDateTime().toLocalTime();
+            LocalTime expectedStart = startTimesFromJson.get(line.getId()).toLocalTime();
+            
+            if (!lineStartTime.equals(expectedStart)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     @GET
     public PackagingSchedule get() {
@@ -126,23 +147,8 @@ public class PackagingScheduleResource {
 
     @GET
     @Path("lines")
-    public Map<Integer,String> getLines() {
-        Map<Integer,String> lines = new HashMap<>();
-        ResultSet resultSet = null;
-        try (Connection connection = DriverManager.getConnection(dbUrl);
-             Statement statement = connection.createStatement();) {
-             resultSet = statement.executeQuery(LOAD_LINES);
-            int index = 1;
-             while (resultSet.next()) {
-                String krc = resultSet.getString("krc");
-                lines.put(index, krc);
-                ++index;
-             }
-        }
-         catch (SQLException e) {
-             throw new RuntimeException("Failed to load lines from DB", e);
-         }
-        return lines;
+    public Map<String,String> getLines() {
+        return loadData.getLinesIdWithNamesMap();
     }
 
     @POST

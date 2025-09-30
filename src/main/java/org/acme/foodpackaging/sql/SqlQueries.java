@@ -66,6 +66,14 @@ public class SqlQueries {
                               group by krc
     """;
 
+    public static final String LOAD_LINES_WITH_NAME = """
+     SELECT KRC, SNM
+     FROM [MES].[dbo].[PLR_PLINES]
+             where F_DEL=0
+             group by KRC, SNM
+             order by SNM
+    """;
+
     public static final String UPSERT_SOLUTION_TO_JSON = """
     MERGE dbo.PLR_PLAN AS target
     USING (VALUES (?, ?, ?)) AS src (KRC, DT, [PLAN])
