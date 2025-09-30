@@ -1,9 +1,5 @@
 package org.acme.foodpackaging.bootstrap;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -14,13 +10,11 @@ import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.File;
 import java.sql.*;
 
 import java.time.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 
@@ -36,6 +30,7 @@ public class LoadData {
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
     private  Map<String, Product> allProductsMap;
+    private  Map<String, String> linesIdWithNamesMap;
     private CleaningCalculator calculator;
 
     public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
@@ -45,6 +40,7 @@ public class LoadData {
         this.MAX_END_DATE_TIME = maxEndDateTime;
         this.allProductsMap = loadProductfromDB();
         this.calculator = new CleaningCalculator();
+        this.linesIdWithNamesMap = loadLinesIdWithNames();
         PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
         exportCleaningTime();
         repository.write(solution);
@@ -240,13 +236,35 @@ private Map<String, Product> loadProductfromDB(){
     private List<Line> createLines(int lineCount, Map<String, LocalDateTime> lineStartsTime){
         List<Line> lines = new ArrayList<>(lineCount);
         for( Map.Entry<String, LocalDateTime> entry : lineStartsTime.entrySet()){
-                String lineName = "Line" + entry.getKey();
+                String lineName = linesIdWithNamesMap.get(entry.getKey());
                 Line line = new Line(entry.getKey(), lineName, entry.getValue());
                 lines.add(line);
         }
         return lines;
     }
 
+    private Map<String, String> loadLinesIdWithNames(){
+        Map<String, String> linesNamesById = new LinkedHashMap<>();
+        ResultSet resultSet = null;
+        try (Connection connection = DriverManager.getConnection(dbUrl);
+             Statement statement = connection.createStatement();) {
+            resultSet = statement.executeQuery(LOAD_LINES_WITH_NAME);
+
+            while (resultSet.next()) {
+                String lineId = resultSet.getString("KRC");
+                String lineName = resultSet.getString("SNM");
+                linesNamesById.put(lineId, lineName);
+            }
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to load lines id with names from DB", e);
+        }
+        return linesNamesById;
+    }
+
+    public Map<String, String> getLinesIdWithNamesMap(){
+        return linesIdWithNamesMap;
+    }
     private Job createJob(String id, String jobName, String np, Product product, int quantity,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
         return new Job (id, jobName, np, product, quantity,

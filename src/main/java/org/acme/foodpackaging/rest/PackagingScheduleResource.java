@@ -106,7 +106,7 @@ public class PackagingScheduleResource {
                     .build();
         } catch (Exception e) {
             return Response.serverError()
-                    .entity(Map.of("error", "Failed to load scheduleee: " + e.getMessage()))
+                    .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
                     .build();
         }
     }
@@ -126,23 +126,8 @@ public class PackagingScheduleResource {
 
     @GET
     @Path("lines")
-    public Map<Integer,String> getLines() {
-        Map<Integer,String> lines = new HashMap<>();
-        ResultSet resultSet = null;
-        try (Connection connection = DriverManager.getConnection(dbUrl);
-             Statement statement = connection.createStatement();) {
-             resultSet = statement.executeQuery(LOAD_LINES);
-            int index = 1;
-             while (resultSet.next()) {
-                String krc = resultSet.getString("krc");
-                lines.put(index, krc);
-                ++index;
-             }
-        }
-         catch (SQLException e) {
-             throw new RuntimeException("Failed to load lines from DB", e);
-         }
-        return lines;
+    public Map<String,String> getLines() {
+        return loadData.getLinesIdWithNamesMap();
     }
 
     @POST
