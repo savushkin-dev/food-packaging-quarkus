@@ -5,7 +5,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.CleaningTimeToExcel;
-import org.acme.foodpackaging.persistence.JsonImporter;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
