@@ -14,7 +14,7 @@ public class PlanAnalyzeData {
 
     public record Key(String productId, String np) {}
 
-    public static class AggregatedData {
+    public static class FactData {
         LocalDateTime startDate;
         LocalDateTime endDate;
         String lineId;
@@ -30,7 +30,7 @@ public class PlanAnalyzeData {
         }
     }
 
-    private Map<Key, AggregatedData> aggregatedMap;
+    private Map<Key, FactData> factedMap;
 
     private final String jdbcUrl;
     private final String user;
@@ -43,16 +43,16 @@ public class PlanAnalyzeData {
         password = config.getValue("plan.db.password", String.class);
     }
 
-    public Map<Key, AggregatedData> getAggregatedMap(String date) {
-        if (aggregatedMap == null) {
-            aggregatedMap = readDataFromPostGres(date);
+    public Map<Key, FactData> getAggregatedMap(String date) {
+        if (factedMap == null) {
+            factedMap = readDataFromPostGres(date);
         }
-        return aggregatedMap;
+        return factedMap;
     }
 
-    private Map<Key, AggregatedData> readDataFromPostGres(String date) {
+    private Map<Key, FactData> readDataFromPostGres(String date) {
 
-        Map<Key, AggregatedData> result = new HashMap<>();
+        Map<Key, FactData> result = new HashMap<>();
 
         try (Connection connection = DriverManager.getConnection(jdbcUrl, user, password);
              PreparedStatement ps = connection.prepareStatement(LOAD_LINE_WORK_FACT)) {
@@ -73,7 +73,7 @@ public class PlanAnalyzeData {
                     Key key = new Key(product_id, np);
                     result.compute(key, (k, agg) -> {
                         if (agg == null) {
-                            AggregatedData newAgg = new AggregatedData();
+                            FactData newAgg = new FactData();
                             newAgg.startDate = datetime;
                             newAgg.endDate = datetime;
                             newAgg.lineId = lineId;
