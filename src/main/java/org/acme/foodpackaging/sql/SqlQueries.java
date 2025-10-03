@@ -92,5 +92,12 @@ public class SqlQueries {
         FROM dbo.PLR_PLAN
         WHERE DT = ?
     """;
+
+    public static final String LOAD_LINE_WORK_FACT = """
+        SELECT datetime1, project, wc, producttype, batch
+        FROM reports.batchstat
+        WHERE datetime1 >= ? AND datetime1 <= ?
+        ORDER BY project, datetime1
+        """;
 }
 
