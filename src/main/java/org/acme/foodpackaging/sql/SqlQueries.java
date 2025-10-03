@@ -47,7 +47,8 @@ public class SqlQueries {
            p.TGLAZ,
            p.TMASS,
            p.TFBF,
-           n.SNM
+           n.SNM,
+           n.KRKMC
     FROM [MES].[dbo].[PLR_MC] p
     JOIN [MES].[dbo].[NS_MC] n
         ON p.KMC = n.KMC
