@@ -13,10 +13,7 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
-import org.acme.foodpackaging.persistence.ExcelExporter;
-import org.acme.foodpackaging.persistence.JsonExporter;
-import org.acme.foodpackaging.persistence.JsonImporter;
-import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
+import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
@@ -160,36 +157,38 @@ public class PackagingScheduleResource {
                 .withBestSolutionConsumer(schedule -> repository.write(schedule))
                 .run();
     }
-
     @POST
     @Path("export")
-    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response export() {
-        if (currentSolverSolution != null) {
-            try {
-                PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
-                if (bestSolution != null) {
-                    File excelFile = exportTimeCompare(date, bestSolution);
-                    if (excelFile != null && excelFile.exists()) {
-                        byte[] fileContent = Files.readAllBytes(excelFile.toPath());
-                        return Response.ok(fileContent)
-                                .header("Content-Disposition", "attachment; filename=\"" + excelFile.getName() + "\"")
-                                .build();
-                    } else {
-                        return Response.serverError().entity("The Excel file was not created").build();
-                    }
-                } else {
-                    return Response.status(Response.Status.NO_CONTENT)
-                            .entity("Best solution is null — export skipped.")
-                            .build();
-            } } catch (InterruptedException | ExecutionException | IOException e) {
-        return Response.serverError().entity("Export error: " + e.getMessage()).build();
-    }
-} else {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Current solver solution is null")
-                .build();
-    }
+        if (currentSolverSolution == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("status", "error", "message", "Current solver solution is null"))
+                    .build();
+        }
+
+        try {
+            PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
+            if (bestSolution == null) {
+                return Response.status(Response.Status.NO_CONTENT)
+                        .entity(Map.of("status", "error", "message", "Best solution is null — export skipped."))
+                        .build();
+            }
+
+            PlanFactAnalysis factAnalysis = new PlanFactAnalysis(bestSolution.getWorkCalendar().getFromDate().toString());
+            factAnalysis.excelWrite(bestSolution.getJobs());
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Export completed successfully. Excel file saved in resources."
+            )).build();
+
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("status", "error", "message", "Export error: " + e.getMessage()))
+                    .build();
+        }
     }
 
     @POST
