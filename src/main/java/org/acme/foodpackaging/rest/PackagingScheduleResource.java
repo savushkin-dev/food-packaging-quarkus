@@ -72,7 +72,6 @@ public class PackagingScheduleResource {
             if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
                 repository.write(schedule);
-
                 return Response.ok(Map.of(
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
@@ -128,7 +127,6 @@ public class PackagingScheduleResource {
         return true;
     }
 
-
     @GET
     public PackagingSchedule get() {
         // Get the solver status before loading the solution
@@ -162,22 +160,23 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response export() {
-        if (currentSolverSolution == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("status", "error", "message", "Current solver solution is null"))
-                    .build();
-        }
-
         try {
-            PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
-            if (bestSolution == null) {
+            PackagingSchedule schedule;
+
+            if (currentSolverSolution != null) {
+                schedule = currentSolverSolution.getFinalBestSolution();
+            } else {
+                schedule = repository.read();
+            }
+            if (schedule == null) {
                 return Response.status(Response.Status.NO_CONTENT)
-                        .entity(Map.of("status", "error", "message", "Best solution is null — export skipped."))
+                        .entity(Map.of("status", "error", "message", "No schedule available to export."))
                         .build();
             }
-
-            PlanFactAnalysis factAnalysis = new PlanFactAnalysis(bestSolution.getWorkCalendar().getFromDate().toString());
-            factAnalysis.excelWrite(bestSolution.getJobs());
+            PlanFactAnalysis factAnalysis = new PlanFactAnalysis(
+                    schedule.getWorkCalendar().getFromDate().toString()
+            );
+            factAnalysis.excelWrite(schedule.getJobs());
 
             return Response.ok(Map.of(
                     "status", "success",
