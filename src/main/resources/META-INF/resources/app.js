@@ -261,7 +261,8 @@ function exportSchedule() {
     contentType: "application/json",
     dataType: "json",
     success: function (response) {
-      showMessage(response.message || "Export completed successfully.");
+      console.log(response.message);
+      alert(response.message)
     },
     error: function (xhr) {
       showError("Export failed.", xhr);
@@ -269,17 +270,18 @@ function exportSchedule() {
   });
 }
 
-function exportSchedule() {
+function saveSchedule() {
   $.ajax({
-    url: "/schedule/export",
+    url: "/schedule/saveToDb",
     method: "POST",
-    contentType: "application/json",
-    dataType: "json",
-    success: function (response) {
-      showMessage(response.message || "Export completed successfully.");
+    headers: { "Accept": "application/json" },
+    success: function (data) {
+      console.log(data.message);
+      alert(data.message);
     },
-    error: function (xhr) {
-      showError("Export failed.", xhr);
+    error: function (xhr, status, error) {
+      console.error(xhr.responseText);
+      alert("Save failed: " + xhr.responseText);
     }
   });
 }
