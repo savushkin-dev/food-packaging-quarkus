@@ -167,13 +167,14 @@ private Map<String, Product> loadProductfromDB(){
 
         while (resultSet.next()) {
             String kmc = resultSet.getString("KMC");
+            String krKmc = resultSet.getString("KRKMC");
             String shortName = resultSet.getString("SNM");
             String ean13 = resultSet.getString("EAN13");
             String type = resultSet.getString("GRF");
             String glaze = resultSet.getString("TGLAZ");
             String curdMass = resultSet.getString("TMASS");
             String filling = resultSet.getString("TFBF");
-            productsMap.put(kmc, new Product(shortName, kmc, ean13, type, glaze, curdMass, filling));
+            productsMap.put(kmc, new Product(shortName, kmc, krKmc, ean13, type, glaze, curdMass, filling));
         }
     }
     catch (SQLException e) {
