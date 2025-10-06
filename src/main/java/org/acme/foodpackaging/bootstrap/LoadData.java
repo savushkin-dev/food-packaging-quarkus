@@ -41,7 +41,6 @@ public class LoadData {
         this.calculator = new CleaningCalculator();
         this.linesIdWithNamesMap = loadLinesIdWithNames();
         PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
-        exportCleaningTime();
         repository.write(solution);
     }
 
@@ -60,7 +59,6 @@ public class LoadData {
         calculator.cleaningCalculate(products);
         solution.setLines(lines);
         solution.setProducts(products);
-
         solution.setJobs(jobs);
 
             return solution;

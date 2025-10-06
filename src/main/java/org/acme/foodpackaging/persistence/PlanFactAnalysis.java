@@ -40,7 +40,7 @@ public class PlanFactAnalysis {
         public void updateEnd(LocalDateTime newEnd) {
             if (endDate == null || newEnd.isAfter(endDate)) {
                 this.endDate = newEnd;
-                this.duration = Duration.between(startDate, endDate);
+                this.duration = Duration.ofMinutes(Duration.between(startDate, endDate).toMinutes());
             }
         }
     }
@@ -92,11 +92,11 @@ public class PlanFactAnalysis {
                     Key key = new Key(product_id, np);
                     result.compute(key, (k, agg) -> {
                         if (agg == null) {
-                            FactData newAgg = new FactData();
-                            newAgg.startDate = datetime; newAgg.endDate = datetime;
-                                newAgg.lineId = lineId; newAgg.productId = product_id;
-                                newAgg.np = np; newAgg.duration = Duration.ZERO;
-                                return newAgg;
+                            FactData newFact = new FactData();
+                            newFact.startDate = datetime; newFact.endDate = datetime;
+                                newFact.lineId = lineId; newFact.productId = product_id;
+                                newFact.np = np; newFact.duration = Duration.ofMinutes(1);
+                                return newFact;
                             } else {
                                 agg.updateEnd(datetime);
                                 return agg;
