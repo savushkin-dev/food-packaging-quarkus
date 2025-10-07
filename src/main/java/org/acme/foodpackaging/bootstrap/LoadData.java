@@ -28,8 +28,8 @@ public class LoadData {
     private LocalDateTime IDEAL_END_DATE_TIME;
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
-    private  Map<String, Product> allProductsMap;
-    private  Map<String, String> linesIdWithNamesMap;
+    private Map<String, Product> allProductsMap;
+    private Map<String, String> linesIdWithNamesMap;
     private CleaningCalculator calculator;
 
     public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
@@ -60,10 +60,9 @@ public class LoadData {
         calculator.cleaningCalculate(products);
         solution.setLines(lines);
         solution.setProducts(products);
-
         solution.setJobs(jobs);
 
-            return solution;
+        return solution;
     }
     private Map<String, Map<String, Integer>> loadSpeedsFromDB() {
         Map<Pair<String, String>, Integer> mapSpeed = getSpeedsfromDB();
@@ -212,7 +211,7 @@ private Map<String, Product> loadProductfromDB(){
                         productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
                         Job job = createJob(
-                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity,
+                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity, Integer.parseInt(priority),
                                 MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
                         );
                         jobs.add(job);
@@ -264,12 +263,12 @@ private Map<String, Product> loadProductfromDB(){
     public Map<String, String> getLinesIdWithNamesMap(){
         return linesIdWithNamesMap;
     }
-    private Job createJob(String id, String jobName, String np, Product product, int quantity,
+    private Job createJob(String id, String jobName, String np, Product product, int quantity, int priority,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
         return new Job (id, jobName, np, product, quantity,
                     minStartDateTime,
                     idealEndDateTime,
-                    maxEndDateTime, false
+                    maxEndDateTime, priority, false
         );
     }
 
