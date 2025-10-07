@@ -81,16 +81,21 @@ public class SqlQueries {
     WHEN MATCHED THEN
         UPDATE SET
             target.KRC = src.KRC,
-            target.[PLAN] = src.[PLAN]
+            target.[PLAN] = src.[PLAN],
+            target.F_DEL = 0
     WHEN NOT MATCHED THEN
         INSERT (KRC, DT, [PLAN])
         VALUES (src.KRC, src.DT, src.[PLAN]);
 """;
 
+    public static final String DELETE_SOLUTION_JSON  = """
+   update [MES].[dbo].[PLR_PLAN]  set F_DEL=1 where DT = ?
+""";
+
     public static final String SELECT_SOLUTION_FROM_JSON = """
         SELECT [PLAN]
         FROM dbo.PLR_PLAN
-        WHERE DT = ?
+        WHERE DT = ? AND F_DEL = 0
     """;
 }
 
