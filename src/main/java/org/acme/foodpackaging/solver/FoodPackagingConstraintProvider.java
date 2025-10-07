@@ -15,9 +15,10 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
                 // Hard constraints
                 maxEndDateTime(factory),
                 forbidZeroSpeedProducts(factory),
+                // Medium constraints
+                minimizeCleaningDuration(factory),
                 // Soft constraints
                 minimizeMakespan(factory),
-                minimizeCleaningDuration(factory),
         };
     }
 
@@ -70,7 +71,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
     protected Constraint minimizeCleaningDuration(ConstraintFactory factory) {
         return factory.forEach(Job.class)
                 .filter(job -> job.getStartProductionDateTime() != null)
-                .penalizeLong(HardMediumSoftLongScore.ONE_SOFT, job -> 5 * job.getPriority()
+                .penalizeLong(HardMediumSoftLongScore.ONE_SOFT, job -> job.getPriority()
                         * Duration.between(job.getStartCleaningDateTime(), job.getStartProductionDateTime()).toMinutes())
                 .asConstraint("Minimize cleaning duration");
     }
