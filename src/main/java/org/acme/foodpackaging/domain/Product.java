@@ -12,6 +12,7 @@ public class Product {
     private String id;
     private String name;
     private String kmc;
+    private String krKmc;
     private String ean13;
     private String type;
     private String glaze;
@@ -29,9 +30,10 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String name, String id,  String ean13, String type, String glaze, String curdMass, String filling ) {
+    public Product(String name, String id, String krKmc, String ean13,  String type, String glaze, String curdMass, String filling ) {
         this.name = name;
         this.id = id;
+        this.krKmc = krKmc;
         this.ean13 = ean13;
         this.type = type;
         this.glaze = glaze;
@@ -72,6 +74,10 @@ public class Product {
         return ean13;
     }
 
+    public String getKrKmc() {
+        return krKmc;
+    }
+
     public String getName() {
         return name;
     }
@@ -79,6 +85,8 @@ public class Product {
     public String getKmc(){ return kmc;}
 
     public void setKmc(String kmc){ this.kmc = kmc; }
+
+    public void setKrKmc(String KrKmc){ this.krKmc = krKmc; }
 
     public void setName(String name) {
         this.name = name;
