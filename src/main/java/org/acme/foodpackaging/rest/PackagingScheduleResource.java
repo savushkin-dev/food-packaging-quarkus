@@ -22,12 +22,18 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -68,6 +74,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response load(LoadDTO loadDTO) {
         LocalDate startDate = loadDTO.getStartDate();
+        this.date = startDate.toString();
 
         try {
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
@@ -203,6 +210,34 @@ public class PackagingScheduleResource {
             return Response.ok(Map.of("message", "Saved to DB successfully")).build();
         } catch (Exception e) {
             return Response.serverError().entity("Save error: " + e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("removeSolution")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteSolutionByDate() {
+
+        if (this.date == null || this.date.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("status", "error", "message", "Date field not set on server"))
+                    .build();
+        }
+        LocalDate removeDate = LocalDate.parse(date);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(DELETE_SOLUTION_JSON)) {
+            stmt.setDate(1, java.sql.Date.valueOf(removeDate));
+            int updatedRows = stmt.executeUpdate();
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Solution removed for date: " + this.date + " (rows affected: " + updatedRows + ")"
+            )).build();
+
+        } catch (SQLException e) {
+            return Response.serverError()
+                    .entity(Map.of("status", "error", "message", "SQL error: " + e.getMessage()))
+                    .build();
         }
     }
 
