@@ -27,4 +27,3 @@ venv*
 target/
 src/main/resources/excelExport/
 src/main/resources/PlanFactExport/
-src/main/resources/PlanFactTemplate/
