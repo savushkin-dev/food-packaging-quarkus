@@ -111,6 +111,9 @@ public class PackagingScheduleResource {
             return false;
         }
 
+        if(schedule.getJobs().get(0).getMaxEndTime() != loadDTO.getMaxEndDateTime()) return false;
+        if(schedule.getJobs().get(0).getIdealEndTime() != loadDTO.getIdealEndDateTime()) return false;
+
         Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
 
         for (Line line : schedule.getLines()) {
