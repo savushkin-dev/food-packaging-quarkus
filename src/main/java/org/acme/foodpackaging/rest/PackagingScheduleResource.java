@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.Objects;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -111,10 +112,10 @@ public class PackagingScheduleResource {
             return false;
         }
 
-        if(schedule.getJobs().get(0).getMaxEndTime() != loadDTO.getMaxEndDateTime()) return false;
-        if(schedule.getJobs().get(0).getIdealEndTime() != loadDTO.getIdealEndDateTime()) return false;
+      if (!Objects.equals( (schedule.getJobs().get(0).getMaxEndTime()),loadDTO.getMaxEndDateTime() )) return false;
+      if (!Objects.equals((schedule.getJobs().get(0).getIdealEndTime()),loadDTO.getIdealEndDateTime())) return false;
 
-        Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
+      Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
 
         for (Line line : schedule.getLines()) {
             LocalTime lineStartTime = line.getStartDateTime().toLocalTime();
