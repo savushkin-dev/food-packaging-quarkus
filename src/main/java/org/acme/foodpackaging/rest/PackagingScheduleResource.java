@@ -144,6 +144,9 @@ public class PackagingScheduleResource {
     @GET
     @Path("lines")
     public Map<String,String> getLines() {
+        if(loadData==null){
+            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+        }
         return loadData.getLinesIdWithNamesMap();
     }
 

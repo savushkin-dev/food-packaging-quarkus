@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.bootstrap;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -32,6 +33,11 @@ public class LoadData {
     private Map<String, String> linesIdWithNamesMap;
     private CleaningCalculator calculator;
 
+    @PostConstruct
+    private void init(){
+        this.linesIdWithNamesMap = loadLinesIdWithNames();
+    }
+
     public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
                                LocalDateTime maxEndDateTime, Map<String, LocalDateTime> lineStartsTime) {
         this.MIN_START_DATE_TIME = Collections.min(lineStartsTime.values());
@@ -39,7 +45,6 @@ public class LoadData {
         this.MAX_END_DATE_TIME = maxEndDateTime;
         this.allProductsMap = loadProductfromDB();
         this.calculator = new CleaningCalculator();
-        this.linesIdWithNamesMap = loadLinesIdWithNames();
         PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
         repository.write(solution);
     }
