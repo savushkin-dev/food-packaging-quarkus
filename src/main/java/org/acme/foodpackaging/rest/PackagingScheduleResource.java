@@ -17,6 +17,7 @@ import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -159,10 +160,10 @@ public class PackagingScheduleResource {
                 .withBestSolutionConsumer(schedule -> repository.write(schedule))
                 .run();
     }
+
     @POST
     @Path("export")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     public Response export() {
         try {
             PackagingSchedule schedule;
@@ -181,7 +182,13 @@ public class PackagingScheduleResource {
                     schedule.getWorkCalendar().getFromDate().toString()
             );
             factAnalysis.excelWrite(schedule.getJobs());
-
+            File planFactFile = factAnalysis.getExportFile();
+            if (planFactFile != null && planFactFile.exists()) {
+                byte[] fileContent = Files.readAllBytes(planFactFile.toPath());
+                return Response.ok(fileContent)
+                        .header("Content-Disposition", "attachment; filename=\"" + planFactFile.getName() + "\"")
+                        .build();
+            }
             return Response.ok(Map.of(
                     "status", "success",
                     "message", "Export completed successfully. Excel file saved in resources."
