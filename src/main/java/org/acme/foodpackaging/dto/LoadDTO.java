@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,7 +23,7 @@ public class LoadDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
     private LocalDateTime maxEndDateTime;
 
-    @JsonFormat(pattern = "HH:mm")
+    @JsonDeserialize(using = LineStartTimesDeserializer.class)
     private Map<String, LocalTime> lineStartTimes;
 
     public LoadDTO() {}
