@@ -254,17 +254,39 @@ function solve() {
     showError("Start solving failed.", xhr);
   });
 }
+
 function exportSchedule() {
   $.ajax({
     url: "/schedule/export",
     method: "POST",
-    contentType: "application/json",
-    dataType: "json",
-    success: function (response) {
-      console.log(response.message);
-      alert(response.message)
+    xhrFields: {
+      responseType: 'blob'
     },
-    error: function (xhr) {
+    headers: {
+      "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    success: function (data, status, xhr) {
+      const disposition = xhr.getResponseHeader("Content-Disposition");
+      let filename = "schedule.xlsx";
+      if (disposition && disposition.indexOf("filename=") !== -1) {
+        const matches = disposition.match(/filename="(.+)"/);
+        if (matches && matches.length > 1) {
+          filename = matches[1];
+        }
+      }
+      const blob = new Blob([data], { type: xhr.getResponseHeader("Content-Type") });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    },
+    error: function (xhr, status, error) {
       showError("Export failed.", xhr);
     }
   });
