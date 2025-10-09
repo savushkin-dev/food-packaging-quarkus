@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalTime;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -20,7 +19,7 @@ public class LineStartTimesDeserializer extends JsonDeserializer<Map<String, Loc
         Object value = p.readValueAs(Object.class);
 
         if (value instanceof Map<?, ?> rawMap) {
-            Map<String, LocalTime> result = new HashMap<>();
+            Map<String, LocalTime> result = new LinkedHashMap<>();
             for (Map.Entry<?, ?> e : rawMap.entrySet()) {
                 result.put(String.valueOf(e.getKey()), LocalTime.parse(String.valueOf(e.getValue())));
             }
