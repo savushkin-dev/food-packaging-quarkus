@@ -44,7 +44,7 @@ public class PlanFactAnalysis {
             }
         }
     }
-
+    private File exportFile;
     private Map<Key, FactData> factedMap;
     private final int cellCount = 9;
     private final String date;
@@ -67,6 +67,10 @@ public class PlanFactAnalysis {
             }
             return factedMap;
         }
+
+    public File getExportFile() {
+        return exportFile;
+    }
 
     private Map<Key, FactData> readDataFromDB() {
 
@@ -161,7 +165,7 @@ public class PlanFactAnalysis {
                 return;
             }
 
-            File exportFile = new File(exportDir, outputFileName);
+            exportFile = new File(exportDir, outputFileName);
             try (FileOutputStream fos = new FileOutputStream(exportFile)) {
                 workbook.write(fos);
             }
