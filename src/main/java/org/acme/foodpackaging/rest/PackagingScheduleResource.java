@@ -69,7 +69,7 @@ public class PackagingScheduleResource {
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
 
             if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
-                solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+                solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
                 repository.write(schedule);
                 return Response.ok(Map.of(
                         "message", "Saved schedule imported for date: " + startDate
