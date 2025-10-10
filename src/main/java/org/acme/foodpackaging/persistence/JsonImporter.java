@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.SELECT_SOLUTION_FROM_JSON;
@@ -51,6 +52,17 @@ public class JsonImporter {
                 objectMapper.registerModule(new JavaTimeModule());
                 objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
                 PackagingSchedule schedule = objectMapper.readValue(json, PackagingSchedule.class);
+
+                Map<String, Job> jobMap = schedule.getJobs().stream()
+                        .collect(Collectors.toMap(Job::getId, Function.identity()));
+                for (Job job : schedule.getJobs()) {
+                    if (job.getPreviousJobId() != null) {
+                        job.setPreviousJob(jobMap.get(job.getPreviousJobId()));
+                    }
+                    if (job.getNextJobId() != null) {
+                        job.setNextJob(jobMap.get(job.getNextJobId()));
+                    }
+                }
 
                 CleaningCalculator calculator = new CleaningCalculator();
                 calculator.cleaningCalculate(schedule.getProducts());
