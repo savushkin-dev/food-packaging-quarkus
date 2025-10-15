@@ -6,9 +6,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -40,20 +37,7 @@ public class JsonExporter {
         }
 
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(schedule);
-        String outputDir = "src/main/resources/ExportedJson"; // каталог для сохранения
-        String fileName = "schedule_" + schedule.getWorkCalendar().getFromDate() + ".json";
-        File dir = new File(outputDir);
-        if (!dir.exists() && !dir.mkdirs()) {
-            System.err.println("Не удалось создать директорию: " + dir.getAbsolutePath());
-        } else {
-            File jsonFile = new File(dir, fileName);
-            try (FileWriter writer = new FileWriter(jsonFile)) {
-                writer.write(json);
-                System.out.println("✅ JSON успешно сохранён в файл: " + jsonFile.getAbsolutePath());
-            } catch (IOException e) {
-                System.err.println("Ошибка при записи JSON в файл: " + e.getMessage());
-            }
-        }
+
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(UPSERT_SOLUTION_TO_JSON)) {
 
