@@ -28,6 +28,9 @@ public class Job {
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
+    private String previousJobId;
+    private String nextJobId;
+
     /**
      * Higher priority is a higher number.
      */
@@ -114,6 +117,14 @@ public class Job {
         return id;
     }
 
+    public String getPreviousJobId() {
+        return previousJobId;
+    }
+
+    public String getNextJobId() {
+        return nextJobId;
+    }
+
     public Map<String, Map<String, Integer>> getLineSpeeds() {
         return lineSpeeds;
     }
@@ -173,9 +184,11 @@ public class Job {
         return pinned;
     }
 
-    public Line getLine() {
-        return line;
-    }
+    public Line getLine() { return line; }
+
+    public void setNextJobId(String nextJobId) { this.nextJobId = nextJobId; }
+
+    public void setPreviousJobId(String previousJobId) { this.previousJobId = previousJobId; }
 
     public void setLine(Line line) {
         this.line = line;
