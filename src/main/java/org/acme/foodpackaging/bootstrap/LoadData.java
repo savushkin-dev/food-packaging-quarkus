@@ -201,13 +201,14 @@ private Map<String, Product> loadProductfromDB(){
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
 
                     while (resultSet.next()) {
-                        int quantity = resultSet.getInt("KOLEV");       // количество
-                        String np = resultSet.getString("NP");         // Номер партии
-                        String priority = resultSet.getString("UX");  // Приоритет выполнения
-                        String ean13 = resultSet.getString("EAN13"); // Уникальный идентификатор продукта
-                        String kmc = resultSet.getString("KMC");    //  Еще один какой-то уникальный идентификатор продукта...
-                        String name = resultSet.getString("NAME"); // Название
-                        String shortName = resultSet.getString(("SNM"));      // Сокращенное название
+                        int quantity = resultSet.getInt("KOLEV");          // количество
+                        String np = resultSet.getString("NP");            // Номер партии
+                        String priorityStr = resultSet.getString("UX");  // Приоритет выполнения
+                        int priority = (priorityStr == null || priorityStr.isBlank()) ? 0 : Integer.parseInt(priorityStr);
+                        String ean13 = resultSet.getString("EAN13");   // Уникальный идентификатор продукта
+                        String kmc = resultSet.getString("KMC");      //  Еще один какой-то уникальный идентификатор продукта...
+                        String name = resultSet.getString("NAME");   // Название
+                        String shortName = resultSet.getString(("SNM"));        // Сокращенное название
                         // Список со всем возможным ассортиментов продуктов
                         Product product = allProductsMap.get(kmc);
                         if (product == null) {
@@ -216,7 +217,7 @@ private Map<String, Product> loadProductfromDB(){
                         productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
                         Job job = createJob(
-                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity, Integer.parseInt(priority),
+                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity, priority,
                                 MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
                         );
                         jobs.add(job);
