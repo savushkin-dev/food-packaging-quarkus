@@ -11,7 +11,6 @@ public class Product {
     @PlanningId
     private String id;
     private String name;
-    private String kmc;
     private String krKmc;
     private String ean13;
     private String type;
@@ -81,12 +80,8 @@ public class Product {
     public String getName() {
         return name;
     }
-
-    public String getKmc(){ return kmc;}
-
-    public void setKmc(String kmc){ this.kmc = kmc; }
-
-    public void setKrKmc(String KrKmc){ this.krKmc = krKmc; }
+    
+    public void setKrKmc(String krKmc){ this.krKmc = krKmc; }
 
     public void setName(String name) {
         this.name = name;
