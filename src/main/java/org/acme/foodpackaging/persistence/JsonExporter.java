@@ -6,13 +6,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.time.LocalDate;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.UPSERT_SOLUTION_TO_JSON;
 
@@ -30,28 +30,30 @@ public class JsonExporter {
     public void export(PackagingSchedule schedule) throws Exception {
         if (schedule == null) throw new IllegalArgumentException("Schedule is null");
 
-        Map<String, Job> nextMap = schedule.getJobs().stream()
-                .filter(j -> j.getNextJob() != null)
-                .collect(Collectors.toMap(j -> j.getNextJob().getId(), Function.identity()));
-
-        Map<String, Job> previousMap = schedule.getJobs().stream()
-                .filter(j -> j.getPreviousJob() != null)
-                .collect(Collectors.toMap(j -> j.getPreviousJob().getId(), Function.identity()));
-
         for (Job job : schedule.getJobs()) {
-            if (job.getPreviousJob() == null) {
-                job.setPreviousJob(previousMap.get(job.getId()));
-            }
+            String prevId = job.getPreviousJob() != null ? job.getPreviousJob().getId() : null;
+            String nextId = job.getNextJob() != null ? job.getNextJob().getId() : null;
 
-            if (job.getNextJob() == null) {
-                job.setNextJob(nextMap.get(job.getId()));
-            }
+            job.setPreviousJobId(prevId);
+            job.setNextJobId(nextId);
 
-            job.setPreviousJobId(job.getPreviousJob() != null ? job.getPreviousJob().getId() : null);
-            job.setNextJobId(job.getNextJob() != null ? job.getNextJob().getId() : null);
         }
 
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(schedule);
+        String outputDir = "src/main/resources/ExportedJson"; // каталог для сохранения
+        String fileName = "schedule_" + schedule.getWorkCalendar().getFromDate() + ".json";
+        File dir = new File(outputDir);
+        if (!dir.exists() && !dir.mkdirs()) {
+            System.err.println("Не удалось создать директорию: " + dir.getAbsolutePath());
+        } else {
+            File jsonFile = new File(dir, fileName);
+            try (FileWriter writer = new FileWriter(jsonFile)) {
+                writer.write(json);
+                System.out.println("✅ JSON успешно сохранён в файл: " + jsonFile.getAbsolutePath());
+            } catch (IOException e) {
+                System.err.println("Ошибка при записи JSON в файл: " + e.getMessage());
+            }
+        }
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(UPSERT_SOLUTION_TO_JSON)) {
 

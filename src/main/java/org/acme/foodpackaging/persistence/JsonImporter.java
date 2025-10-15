@@ -104,6 +104,15 @@ public class JsonImporter {
                         }
                     }
                 }
+
+                Map<String, Job> jobById = schedule.getJobs().stream()
+                        .collect(Collectors.toMap(Job::getId, Function.identity()));
+
+                for (Job job : schedule.getJobs()) {
+                    if (job.getPreviousJobId() != null) job.setPreviousJob(jobById.get(job.getPreviousJobId()));
+                    if (job.getNextJobId() != null) job.setNextJob(jobById.get(job.getNextJobId()));
+                }
+
                 return schedule;
             }
 

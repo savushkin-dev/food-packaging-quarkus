@@ -118,11 +118,11 @@ public class Job {
     }
 
     public String getPreviousJobId() {
-        return id;
+        return previousJobId;
     }
 
     public String getNextJobId() {
-        return id;
+        return nextJobId;
     }
 
     public Map<String, Map<String, Integer>> getLineSpeeds() {
@@ -186,9 +186,9 @@ public class Job {
 
     public Line getLine() { return line; }
 
-    public void setNextJobId(String previousJobId) { this.nextJobId = previousJobId; }
+    public void setNextJobId(String nextJobId) { this.nextJobId = nextJobId; }
 
-    public void setPreviousJobId(String nextJobId) { this.nextJobId = nextJobId; }
+    public void setPreviousJobId(String previousJobId) { this.previousJobId = previousJobId; }
 
     public void setLine(Line line) {
         this.line = line;
