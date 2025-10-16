@@ -27,7 +27,13 @@ import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINE_WORK_FACT;
 
 public class PlanFactAnalysis {
 
-    public record Key(String productId, String np) {}
+    private record Key(String productId, String np) {}
+
+    private static final Map<String,String> LINES_CODES = Map.of(
+            "6040005", "1",
+            "6040001", "2",
+            "6040006", "3"
+    );
 
     public static class FactData {
         LocalDateTime startDate;
@@ -88,7 +94,7 @@ public class PlanFactAnalysis {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     LocalDateTime datetime = rs.getTimestamp("datetime1").toLocalDateTime();
-                    String lineId = rs.getString("wc");
+                    String lineId = LINES_CODES.get(rs.getString("wc"));
                     String product_id = rs.getString("producttype");
                     String np = rs.getString("batch");
 
