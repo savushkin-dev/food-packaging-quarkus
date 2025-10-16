@@ -212,7 +212,10 @@ public class PackagingScheduleResource {
         currentSolverSolution = solverManager.solveBuilder()
                 .withProblemId(SINGLETON_SOLUTION_ID)
                 .withProblemFinder(id -> repository.read())
-                .withBestSolutionConsumer(schedule -> repository.write(schedule))
+                .withBestSolutionConsumer(schedule -> {
+                    SolutionPostProcessor.sortJobsByNp(schedule);
+                    repository.write(schedule);
+                })
                 .run();
     }
 
