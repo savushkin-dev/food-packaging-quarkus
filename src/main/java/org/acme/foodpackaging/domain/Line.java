@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import ai.timefold.solver.core.api.domain.entity.PlanningPinToIndex;
 import ai.timefold.solver.core.api.domain.lookup.PlanningId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
@@ -21,6 +22,8 @@ public class Line {
     @JsonIgnore
     @PlanningListVariable
     private List<Job> jobs;
+
+    private int firstUnpinnedIndex;
 
     // No-arg constructor required for Timefold
     public Line() {
@@ -58,6 +61,9 @@ public class Line {
         return name;
     }
 
+    @PlanningPinToIndex
+    public int getFirstUnpinnedIndex() { return firstUnpinnedIndex; }
+
     public String getOperator() {
         return operator;
     }
@@ -71,5 +77,7 @@ public class Line {
     }
 
     public void setJobs(List<Job> jobs) { this.jobs = jobs; }
+
+    public void setFirstUnpinnedIndex( int firstUnpinnedIndex) { this.firstUnpinnedIndex = firstUnpinnedIndex; }
 
 }

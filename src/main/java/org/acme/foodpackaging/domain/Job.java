@@ -194,6 +194,10 @@ public class Job {
         this.line = line;
     }
 
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+    }
+
     public Job getPreviousJob() {
         return previousJob;
     }
@@ -244,7 +248,7 @@ public class Job {
     // ************************************************************************
 
     @SuppressWarnings("unused")
-    private void updateStartCleaningDateTime() {
+    public void updateStartCleaningDateTime() {
         if (getLine() == null) {
             if (getStartCleaningDateTime() != null) {
                 setStartCleaningDateTime(null);

@@ -13,6 +13,7 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
+import org.acme.foodpackaging.dto.PinRequest;
 import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -49,6 +50,8 @@ public class PackagingScheduleResource {
 
     @Inject
     LoadData loadData;
+
+    PinRequest pinRequest;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -97,6 +100,58 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
                     .build();
         }
+    }
+
+    @POST
+    @Path("pin")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response pin(PinRequest pinRequest) {
+        PackagingSchedule solution = repository.read();
+
+        Line pinnedLine = solution.getLines().stream()
+                .filter(l -> l.getId().equals(pinRequest.getLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + pinRequest.getLineId()));
+
+        if (Boolean.TRUE.equals(pinRequest.getPinAll())) {
+            pinnedLine.setFirstUnpinnedIndex(pinnedLine.getJobs().size());
+            repository.write(solution);
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "All jobs on line " + pinnedLine.getId() + " were pinned successfully."
+            )).build();
+        }
+
+        if (pinRequest.getPinCount() != null) {
+            int count = pinRequest.getPinCount();
+
+            if (count <= 0) {
+                pinnedLine.setFirstUnpinnedIndex(0);
+                repository.write(solution);
+                return Response.ok(Map.of(
+                        "status", "success",
+                        "message", "All jobs were unpinned (pinCount = 0)."
+                )).build();
+            }
+
+            int safeCount = Math.min(count, pinnedLine.getJobs().size());
+            pinnedLine.setFirstUnpinnedIndex(safeCount);
+            repository.write(solution);
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "First " + safeCount + " jobs were pinned successfully."
+            )).build();
+        }
+
+        pinnedLine.setFirstUnpinnedIndex(0);
+        repository.write(solution);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Line " + pinnedLine.getId() + " was fully unpinned."
+        )).build();
     }
 
     private PackagingSchedule tryImportScheduleFromDb(LocalDate startDate) {
