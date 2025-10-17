@@ -3,12 +3,9 @@ package org.acme.foodpackaging.persistence;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -30,7 +27,17 @@ public class JsonExporter {
     public void export(PackagingSchedule schedule) throws Exception {
         if (schedule == null) throw new IllegalArgumentException("Schedule is null");
 
+        for (Job job : schedule.getJobs()) {
+            String prevId = job.getPreviousJob() != null ? job.getPreviousJob().getId() : null;
+            String nextId = job.getNextJob() != null ? job.getNextJob().getId() : null;
+
+            job.setPreviousJobId(prevId);
+            job.setNextJobId(nextId);
+
+        }
+
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(schedule);
+
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(UPSERT_SOLUTION_TO_JSON)) {
 

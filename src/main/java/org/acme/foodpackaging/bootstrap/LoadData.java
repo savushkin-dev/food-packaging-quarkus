@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.bootstrap;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -28,9 +29,14 @@ public class LoadData {
     private LocalDateTime IDEAL_END_DATE_TIME;
     private LocalDateTime MAX_END_DATE_TIME;
     private LocalDateTime MIN_START_DATE_TIME;
-    private  Map<String, Product> allProductsMap;
-    private  Map<String, String> linesIdWithNamesMap;
+    private Map<String, Product> allProductsMap;
+    private Map<String, String> linesIdWithNamesMap;
     private CleaningCalculator calculator;
+
+    @PostConstruct
+    private void init(){
+        this.linesIdWithNamesMap = loadLinesIdWithNames();
+    }
 
     public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
                                LocalDateTime maxEndDateTime, Map<String, LocalDateTime> lineStartsTime) {
@@ -39,9 +45,7 @@ public class LoadData {
         this.MAX_END_DATE_TIME = maxEndDateTime;
         this.allProductsMap = loadProductfromDB();
         this.calculator = new CleaningCalculator();
-        this.linesIdWithNamesMap = loadLinesIdWithNames();
         PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
-        exportCleaningTime();
         repository.write(solution);
     }
 
@@ -60,10 +64,9 @@ public class LoadData {
         calculator.cleaningCalculate(products);
         solution.setLines(lines);
         solution.setProducts(products);
-
         solution.setJobs(jobs);
 
-            return solution;
+        return solution;
     }
     private Map<String, Map<String, Integer>> loadSpeedsFromDB() {
         Map<Pair<String, String>, Integer> mapSpeed = getSpeedsfromDB();
@@ -160,20 +163,21 @@ public class LoadData {
 
 private Map<String, Product> loadProductfromDB(){
         Map<String, Product> productsMap = new HashMap<>();
-    ResultSet resultSet = null;
+        ResultSet resultSet = null;
     try (Connection connection = DriverManager.getConnection(dbUrl);
          Statement statement = connection.createStatement();) {
         resultSet = statement.executeQuery(LOAD_PRODUCTS);
 
         while (resultSet.next()) {
             String kmc = resultSet.getString("KMC");
+            String krKmc = resultSet.getString("KRKMC");
             String shortName = resultSet.getString("SNM");
             String ean13 = resultSet.getString("EAN13");
             String type = resultSet.getString("GRF");
             String glaze = resultSet.getString("TGLAZ");
             String curdMass = resultSet.getString("TMASS");
             String filling = resultSet.getString("TFBF");
-            productsMap.put(kmc, new Product(shortName, kmc, ean13, type, glaze, curdMass, filling));
+            productsMap.put(kmc, new Product(shortName, kmc, krKmc, ean13, type, glaze, curdMass, filling));
         }
     }
     catch (SQLException e) {
@@ -197,13 +201,13 @@ private Map<String, Product> loadProductfromDB(){
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
 
                     while (resultSet.next()) {
-                        int quantity = resultSet.getInt("KOLEV");       // количество
-                        String np = resultSet.getString("NP");         // Номер партии
-                        String priority = resultSet.getString("UX");  // Приоритет выполнения
-                        String ean13 = resultSet.getString("EAN13"); // Уникальный идентификатор продукта
-                        String kmc = resultSet.getString("KMC");    //  Еще один какой-то уникальный идентификатор продукта...
-                        String name = resultSet.getString("NAME"); // Название
-                        String shortName = resultSet.getString(("SNM"));      // Сокращенное название
+                        int quantity = resultSet.getInt("KOLEV");          // количество
+                        int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
+                        int priority =resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
+                        String ean13 = resultSet.getString("EAN13");   // Уникальный идентификатор продукта
+                        String kmc = resultSet.getString("KMC");      //  Еще один какой-то уникальный идентификатор продукта...
+                        String name = resultSet.getString("NAME");   // Название
+                        String shortName = resultSet.getString(("SNM"));        // Сокращенное название
                         // Список со всем возможным ассортиментов продуктов
                         Product product = allProductsMap.get(kmc);
                         if (product == null) {
@@ -212,7 +216,7 @@ private Map<String, Product> loadProductfromDB(){
                         productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
                         Job job = createJob(
-                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity,
+                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity, priority,
                                 MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
                         );
                         jobs.add(job);
@@ -264,12 +268,12 @@ private Map<String, Product> loadProductfromDB(){
     public Map<String, String> getLinesIdWithNamesMap(){
         return linesIdWithNamesMap;
     }
-    private Job createJob(String id, String jobName, String np, Product product, int quantity,
+    private Job createJob(String id, String jobName, int np, Product product, int quantity, int priority,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
         return new Job (id, jobName, np, product, quantity,
                     minStartDateTime,
                     idealEndDateTime,
-                    maxEndDateTime, false
+                    maxEndDateTime, priority, false
         );
     }
 
