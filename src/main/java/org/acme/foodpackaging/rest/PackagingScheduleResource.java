@@ -131,7 +131,7 @@ public class PackagingScheduleResource {
 
         fixLineJobs(fromLine);
         fixLineJobs(toLine);
-
+        fixPinIndexes(schedule);
         SolutionPostProcessor.sortJobsByNp(schedule);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
@@ -142,7 +142,6 @@ public class PackagingScheduleResource {
                 "message", "Jobs moved and sorted successfully"
         )).build();
     }
-
     /**
      * Перемещает подсписок из одного списка в другой и возвращает перемещённые задачи
      */
@@ -161,7 +160,6 @@ public class PackagingScheduleResource {
 
         return subList;
     }
-
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
@@ -175,6 +173,19 @@ public class PackagingScheduleResource {
             current.updateStartCleaningDateTime();
         }
     }
+    /**
+     * Корректирует FirstUnpinnedIndex
+     */
+    private void fixPinIndexes(PackagingSchedule schedule) {
+        for (Line line : schedule.getLines()) {
+            int jobCount = line.getJobs().size();
+            int firstUnpinned = line.getFirstUnpinnedIndex();
+            if (firstUnpinned > jobCount) {
+                line.setFirstUnpinnedIndex(jobCount);
+            }
+        }
+    }
+
 
     @POST
     @Path("pin")
