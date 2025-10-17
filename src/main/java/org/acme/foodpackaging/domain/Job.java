@@ -20,7 +20,7 @@ public class Job {
     @PlanningId
     private String id;
     private String name;
-    private String np;
+    private int np;
 
     private Product product;
     private int quantity;
@@ -28,6 +28,9 @@ public class Job {
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
+    private String previousJobId;
+    private String nextJobId;
+
     /**
      * Higher priority is a higher number.
      */
@@ -73,14 +76,14 @@ public class Job {
         this.minStartTime = minStartTime;
         this.idealEndTime = idealEndTime;
         this.maxEndTime = maxEndTime;
-        this.priority = priority;
+        this.priority = priority == 0 ? 1 : priority*10;
         this.startCleaningDateTime = startCleaningDateTime;
         this.startProductionDateTime = startProductionDateTime;
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, String np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, boolean pinned,
+    public Job(String id, String name, int np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
                LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
@@ -94,10 +97,11 @@ public class Job {
         this.startProductionDateTime = startProductionDateTime;
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(getDuration());
         this.pinned = pinned;
+        this.priority = priority == 0 ? 1 : priority*10;
     }
 
-    public Job(String id, String name, String np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, boolean pinned) {
-        this(id, name, np, product, quantity, minStartTime, idealEndTime, maxEndTime, pinned, null, null);
+    public Job(String id, String name, int np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
+        this(id, name, np, product, quantity, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
     }
 
     @Override
@@ -113,13 +117,21 @@ public class Job {
         return id;
     }
 
+    public String getPreviousJobId() {
+        return previousJobId;
+    }
+
+    public String getNextJobId() {
+        return nextJobId;
+    }
+
     public Map<String, Map<String, Integer>> getLineSpeeds() {
         return lineSpeeds;
     }
 
     public int getQuantity() { return quantity; }
 
-    public String getNp() { return np; }
+    public int getNp() { return np; }
 
     public String getName() {
         return name;
@@ -172,12 +184,18 @@ public class Job {
         return pinned;
     }
 
-    public Line getLine() {
-        return line;
-    }
+    public Line getLine() { return line; }
+
+    public void setNextJobId(String nextJobId) { this.nextJobId = nextJobId; }
+
+    public void setPreviousJobId(String previousJobId) { this.previousJobId = previousJobId; }
 
     public void setLine(Line line) {
         this.line = line;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
     }
 
     public Job getPreviousJob() {
@@ -230,7 +248,7 @@ public class Job {
     // ************************************************************************
 
     @SuppressWarnings("unused")
-    private void updateStartCleaningDateTime() {
+    public void updateStartCleaningDateTime() {
         if (getLine() == null) {
             if (getStartCleaningDateTime() != null) {
                 setStartCleaningDateTime(null);

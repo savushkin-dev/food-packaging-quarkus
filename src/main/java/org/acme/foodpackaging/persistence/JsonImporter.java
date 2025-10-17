@@ -6,15 +6,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.acme.foodpackaging.domain.*;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.io.IOException;
+import java.sql.*;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.SELECT_SOLUTION_FROM_JSON;
@@ -29,6 +26,13 @@ public class JsonImporter {
         this.dt = dt;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+    }
+
+    private static <T> Map<String, T> mapById(Collection<T> list, Function<T, String> keyExtractor) {
+        if (list == null) return Collections.emptyMap();
+        return list.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(keyExtractor, Function.identity(), (a, b) -> a));
     }
 
     public PackagingSchedule importFromDb() {
@@ -52,51 +56,81 @@ public class JsonImporter {
                 objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
                 PackagingSchedule schedule = objectMapper.readValue(json, PackagingSchedule.class);
 
-                CleaningCalculator calculator = new CleaningCalculator();
-                calculator.cleaningCalculate(schedule.getProducts());
-
-                Map<String, Product> productMap = schedule.getProducts().stream()
-                        .collect(Collectors.toMap(Product::getId, p -> p));
+                Map<String, Product> productMap = mapById(schedule.getProducts(), Product::getId);
+                Map<String, Line> lineMap = mapById(schedule.getLines(), Line::getId);
+                Map<String, Job> jobMap = mapById(schedule.getJobs(), Job::getId);
 
                 for (Job job : schedule.getJobs()) {
-                    Product productInMap = productMap.get(job.getProduct().getId());
-                    if (productInMap == null) {
-                        throw new IllegalStateException("Job product not found in products list: "
-                                + job.getProduct().getId());
+
+                    if (job.getProduct() != null) {
+                        Product product = productMap.get(job.getProduct().getId());
+                        if (product != null) job.setProduct(product);
+                        else throw new IllegalStateException("Missing product for job " + job.getId());
                     }
-                    job.setProduct(productInMap);
+
+                    if (job.getLine() != null) {
+                        Line line = lineMap.get(job.getLine().getId());
+                        if (line != null) job.setLine(line);
+                    }
+
+                    if (job.getPreviousJobId() != null) {
+                        job.setPreviousJob(jobMap.get(job.getPreviousJobId()));
+                    }
+                    if (job.getNextJobId() != null) {
+                        job.setNextJob(jobMap.get(job.getNextJobId()));
+                    }
                 }
 
-                Map<String, List<Job>> jobsByLineName = schedule.getJobs().stream()
-                        .collect(Collectors.groupingBy(job -> job.getLine().getName()));
-
                 for (Line line : schedule.getLines()) {
-                    List<Job> jobsForLine = jobsByLineName.getOrDefault(line.getName(), new ArrayList<>());
-
-                    for (Job job : jobsForLine) {
-                        job.setLine(line);
-                    }
-
+                    List<Job> jobsForLine = schedule.getJobs().stream()
+                            .filter(j -> j.getLine() != null && j.getLine().getId().equals(line.getId()))
+                            .sorted(Comparator.comparing(Job::getStartProductionDateTime,
+                                    Comparator.nullsLast(Comparator.naturalOrder())))
+                            .toList();
                     line.setJobs(jobsForLine);
                 }
 
-                for (Job prevJob : schedule.getJobs()) {
-                    for (Job nextJob : schedule.getJobs()) {
-                        Duration duration = prevJob.getProduct().getCleaningDurations()
-                                .get(nextJob.getProduct());
-                        if (duration == null) {
-                            throw new IllegalStateException(
-                                    "Missing cleaning duration from product " +
-                                            prevJob.getProduct().getId() + " to product " +
-                                            nextJob.getProduct().getId());
-                        }
-                    }
-                }
+                new CleaningCalculator().cleaningCalculate(schedule.getProducts());
+
+                validateCleaningDurations(schedule);
+                debugReferenceIntegrity(schedule);
+
                 return schedule;
             }
 
+        } catch (IOException e) {
+            throw new RuntimeException("JSON deserialization failed", e);
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error while importing schedule", e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to import PackagingSchedule from DB", e);
+            throw new RuntimeException("Unexpected error while importing schedule", e);
+        }
+    }
+
+    private void validateCleaningDurations(PackagingSchedule schedule) {
+        for (Product from : schedule.getProducts()) {
+            for (Product to : schedule.getProducts()) {
+                Duration d = from.getCleaningDurations().get(to);
+                if (d == null) {
+                    throw new IllegalStateException(String.format(
+                            "Missing cleaning duration: from %s to %s",
+                            from.getId(), to.getId()
+                    ));
+                }
+            }
+        }
+    }
+
+    private void debugReferenceIntegrity(PackagingSchedule schedule) {
+        Map<String, Product> productMap = mapById(schedule.getProducts(), Product::getId);
+        for (Job job : schedule.getJobs()) {
+            if (job.getProduct() != null) {
+                Product expected = productMap.get(job.getProduct().getId());
+                if (expected != job.getProduct()) {
+                    System.err.printf("Mismatch: Job %s references cloned product %s%n",
+                            job.getId(), job.getProduct().getId());
+                }
+            }
         }
     }
 }

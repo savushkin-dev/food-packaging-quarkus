@@ -47,7 +47,8 @@ public class SqlQueries {
            p.TGLAZ,
            p.TMASS,
            p.TFBF,
-           n.SNM
+           n.SNM,
+           n.KRKMC
     FROM [MES].[dbo].[PLR_MC] p
     JOIN [MES].[dbo].[NS_MC] n
         ON p.KMC = n.KMC
@@ -97,5 +98,12 @@ public class SqlQueries {
         FROM dbo.PLR_PLAN
         WHERE DT = ? AND F_DEL = 0
     """;
+
+    public static final String LOAD_LINE_WORK_FACT = """
+        SELECT datetime1, project, wc, producttype, batch
+        FROM reports.batchstat
+        WHERE datetime1 >= ? AND datetime1 <= ?
+        ORDER BY project, datetime1
+        """;
 }
 

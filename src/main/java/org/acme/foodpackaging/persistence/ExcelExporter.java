@@ -80,7 +80,7 @@ public class ExcelExporter {
                     row.createCell(6).setCellValue(dte.format(formatter));
                     row.createCell(7).setCellValue(formatTime(jobDuration));
                     for(Job job : jobs){
-                        if(job.getProduct().getKmc().equals(kmc)){
+                        if(job.getProduct().getId().equals(kmc)){
                             row.createCell(1).setCellValue(job.getName());
                             row.createCell(4).setCellValue(job.getQuantity());
                             row.createCell(8).setCellValue(formatTime(job.getDuration()));
