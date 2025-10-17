@@ -163,7 +163,7 @@ public class LoadData {
 
 private Map<String, Product> loadProductfromDB(){
         Map<String, Product> productsMap = new HashMap<>();
-    ResultSet resultSet = null;
+        ResultSet resultSet = null;
     try (Connection connection = DriverManager.getConnection(dbUrl);
          Statement statement = connection.createStatement();) {
         resultSet = statement.executeQuery(LOAD_PRODUCTS);
@@ -202,9 +202,8 @@ private Map<String, Product> loadProductfromDB(){
 
                     while (resultSet.next()) {
                         int quantity = resultSet.getInt("KOLEV");          // количество
-                        String np = resultSet.getString("NP");            // Номер партии
-                        String priorityStr = resultSet.getString("UX");  // Приоритет выполнения
-                        int priority = (priorityStr == null || priorityStr.isBlank()) ? 0 : Integer.parseInt(priorityStr);
+                        int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
+                        int priority =resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
                         String ean13 = resultSet.getString("EAN13");   // Уникальный идентификатор продукта
                         String kmc = resultSet.getString("KMC");      //  Еще один какой-то уникальный идентификатор продукта...
                         String name = resultSet.getString("NAME");   // Название
@@ -269,7 +268,7 @@ private Map<String, Product> loadProductfromDB(){
     public Map<String, String> getLinesIdWithNamesMap(){
         return linesIdWithNamesMap;
     }
-    private Job createJob(String id, String jobName, String np, Product product, int quantity, int priority,
+    private Job createJob(String id, String jobName, int np, Product product, int quantity, int priority,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
         return new Job (id, jobName, np, product, quantity,
                     minStartDateTime,
