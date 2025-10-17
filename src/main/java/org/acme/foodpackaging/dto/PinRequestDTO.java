@@ -1,6 +1,6 @@
 package org.acme.foodpackaging.dto;
 
-public class PinRequest {
+public class PinRequestDTO {
     private String lineId;
     private Integer pinCount;
     private Boolean pinAll;
