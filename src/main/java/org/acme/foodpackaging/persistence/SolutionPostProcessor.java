@@ -5,9 +5,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class SolutionPostProcessor {
 
@@ -26,7 +24,6 @@ public class SolutionPostProcessor {
                 }
                 buffer.add(job);
             }
-
 
             if (!buffer.isEmpty()) {
                 newOrder.addAll(sortProductGroupsByNp(buffer));
@@ -55,24 +52,18 @@ public class SolutionPostProcessor {
 
     private static List<Job> sortProductGroupsByNp(List<Job> jobs) {
         List<Job> result = new ArrayList<>();
-        List<Job> currentGroup = new ArrayList<>();
-        Product currentProduct = null;
+        if (jobs.isEmpty()) return result;
 
+        Map<Product, List<Job>> groupedByProduct = new LinkedHashMap<>();
         for (Job job : jobs) {
-            if (currentProduct == null || !job.getProduct().equals(currentProduct)) {
-                if (!currentGroup.isEmpty()) {
-                    currentGroup.sort(Comparator.comparing(Job::getNp));
-                    result.addAll(currentGroup);
-                    currentGroup.clear();
-                }
-                currentProduct = job.getProduct();
-            }
-            currentGroup.add(job);
+            groupedByProduct
+                    .computeIfAbsent(job.getProduct(), p -> new ArrayList<>())
+                    .add(job);
         }
 
-        if (!currentGroup.isEmpty()) {
-            currentGroup.sort(Comparator.comparing(Job::getNp));
-            result.addAll(currentGroup);
+        for (List<Job> group : groupedByProduct.values()) {
+            group.sort(Comparator.comparing(Job::getNp));
+            result.addAll(group);
         }
 
         return result;
