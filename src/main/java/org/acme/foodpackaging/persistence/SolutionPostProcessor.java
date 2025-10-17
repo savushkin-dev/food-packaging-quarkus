@@ -20,17 +20,16 @@ public class SolutionPostProcessor {
             for (Job job : originalJobs) {
                 if (hadCleaningBefore(job)) {
                     if (!buffer.isEmpty()) {
-                        newOrder.addAll(sortProductGroupsByBatch(buffer));
+                        newOrder.addAll(sortProductGroupsByNp(buffer));
                         buffer.clear();
                     }
-                    newOrder.add(job);
-                } else {
-                    buffer.add(job);
                 }
+                buffer.add(job);
             }
 
+
             if (!buffer.isEmpty()) {
-                newOrder.addAll(sortProductGroupsByBatch(buffer));
+                newOrder.addAll(sortProductGroupsByNp(buffer));
             }
 
             for (int i = 0; i < newOrder.size(); i++) {
@@ -54,7 +53,7 @@ public class SolutionPostProcessor {
         return job.getStartCleaningDateTime().isBefore(job.getStartProductionDateTime());
     }
 
-    private static List<Job> sortProductGroupsByBatch(List<Job> jobs) {
+    private static List<Job> sortProductGroupsByNp(List<Job> jobs) {
         List<Job> result = new ArrayList<>();
         List<Job> currentGroup = new ArrayList<>();
         Product currentProduct = null;
