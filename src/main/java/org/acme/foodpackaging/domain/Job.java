@@ -20,7 +20,7 @@ public class Job {
     @PlanningId
     private String id;
     private String name;
-    private String np;
+    private int np;
 
     private Product product;
     private int quantity;
@@ -83,7 +83,7 @@ public class Job {
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, String np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
+    public Job(String id, String name, int np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
                LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
@@ -100,7 +100,7 @@ public class Job {
         this.priority = priority == 0 ? 1 : priority*10;
     }
 
-    public Job(String id, String name, String np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
+    public Job(String id, String name, int np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
         this(id, name, np, product, quantity, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
     }
 
@@ -131,7 +131,7 @@ public class Job {
 
     public int getQuantity() { return quantity; }
 
-    public String getNp() { return np; }
+    public int getNp() { return np; }
 
     public String getName() {
         return name;
@@ -194,6 +194,10 @@ public class Job {
         this.line = line;
     }
 
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+    }
+
     public Job getPreviousJob() {
         return previousJob;
     }
@@ -244,7 +248,7 @@ public class Job {
     // ************************************************************************
 
     @SuppressWarnings("unused")
-    private void updateStartCleaningDateTime() {
+    public void updateStartCleaningDateTime() {
         if (getLine() == null) {
             if (getStartCleaningDateTime() != null) {
                 setStartCleaningDateTime(null);

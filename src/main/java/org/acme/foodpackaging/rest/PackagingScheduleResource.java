@@ -10,20 +10,28 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.bootstrap.LoadData;
+import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
+import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
+import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
+import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -50,6 +58,10 @@ public class PackagingScheduleResource {
     @Inject
     LoadData loadData;
 
+    PinRequestDTO pinRequest;
+
+    MoveJobsRequestDTO moveJobsRequest;
+
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
 
@@ -64,6 +76,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response load(LoadDTO loadDTO) {
         LocalDate startDate = loadDTO.getStartDate();
+        this.date = startDate.toString();
 
         try {
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
@@ -97,6 +110,140 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
                     .build();
         }
+    }
+
+    @POST
+    @Path("moveJobs")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response moveJobs(MoveJobsRequestDTO request) {
+        PackagingSchedule schedule = repository.read();
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
+        Line fromLine = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getFromLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("fromLineId not found"));
+        Line toLine = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getToLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("toLineId not found"));
+
+        List<Job> movedJobs = moveSubList(fromLine, request.getFromIndex(), request.getCount(),
+                toLine, request.getInsertIndex());
+
+        fixLineJobs(fromLine);
+        fixLineJobs(toLine);
+        fixPinIndexes(schedule);
+        SolutionPostProcessor.sortJobsByNp(schedule);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.write(schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Jobs moved and sorted successfully"
+        )).build();
+    }
+    /**
+     * Перемещает подсписок из одного списка в другой и возвращает перемещённые задачи
+     */
+    private List<Job> moveSubList(Line fromLine, int fromIndex, int count,
+                                  Line toLine, int insertIndex) {
+        List<Job> fromJobs = new ArrayList<>(fromLine.getJobs());
+        List<Job> toJobs = new ArrayList<>(toLine.getJobs());
+
+        List<Job> subList = new ArrayList<>(fromJobs.subList(fromIndex, fromIndex + count));
+        fromJobs.subList(fromIndex, fromIndex + count).clear();
+        toJobs.addAll(insertIndex, subList);
+
+        // Назначаем новые списки обратно в линии
+        fromLine.setJobs(fromJobs);
+        toLine.setJobs(toJobs);
+
+        return subList;
+    }
+    /**
+     * Восстанавливает previous/next и пересчитывает shadow variables в линии
+     */
+    private void fixLineJobs(Line line) {
+        List<Job> jobs = line.getJobs();
+        for (int i = 0; i < jobs.size(); i++) {
+            Job current = jobs.get(i);
+            current.setLine(line);
+            current.setPreviousJob(i > 0 ? jobs.get(i - 1) : null);
+            current.setNextJob(i < jobs.size() - 1 ? jobs.get(i + 1) : null);
+            current.updateStartCleaningDateTime();
+        }
+    }
+    /**
+     * Корректирует FirstUnpinnedIndex
+     */
+    private void fixPinIndexes(PackagingSchedule schedule) {
+        for (Line line : schedule.getLines()) {
+            int jobCount = line.getJobs().size();
+            int firstUnpinned = line.getFirstUnpinnedIndex();
+            if (firstUnpinned > jobCount) {
+                line.setFirstUnpinnedIndex(jobCount);
+            }
+        }
+    }
+
+
+    @POST
+    @Path("pin")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response pin(PinRequestDTO pinRequest) {
+        PackagingSchedule solution = repository.read();
+
+        Line pinnedLine = solution.getLines().stream()
+                .filter(l -> l.getId().equals(pinRequest.getLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + pinRequest.getLineId()));
+
+        if (Boolean.TRUE.equals(pinRequest.getPinAll())) {
+            pinnedLine.setFirstUnpinnedIndex(pinnedLine.getJobs().size());
+            repository.write(solution);
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "All jobs on line " + pinnedLine.getId() + " were pinned successfully."
+            )).build();
+        }
+
+        if (pinRequest.getPinCount() != null) {
+            int count = pinRequest.getPinCount();
+
+            if (count <= 0) {
+                pinnedLine.setFirstUnpinnedIndex(0);
+                repository.write(solution);
+                return Response.ok(Map.of(
+                        "status", "success",
+                        "message", "All jobs were unpinned (pinCount = 0)."
+                )).build();
+            }
+
+            int safeCount = Math.min(count, pinnedLine.getJobs().size());
+            pinnedLine.setFirstUnpinnedIndex(safeCount);
+            repository.write(solution);
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "First " + safeCount + " jobs were pinned successfully."
+            )).build();
+        }
+
+        pinnedLine.setFirstUnpinnedIndex(0);
+        repository.write(solution);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Line " + pinnedLine.getId() + " was fully unpinned."
+        )).build();
     }
 
     private PackagingSchedule tryImportScheduleFromDb(LocalDate startDate) {
@@ -157,7 +304,10 @@ public class PackagingScheduleResource {
         currentSolverSolution = solverManager.solveBuilder()
                 .withProblemId(SINGLETON_SOLUTION_ID)
                 .withProblemFinder(id -> repository.read())
-                .withBestSolutionConsumer(schedule -> repository.write(schedule))
+                .withBestSolutionConsumer(schedule -> {
+                    SolutionPostProcessor.sortJobsByNp(schedule);
+                    repository.write(schedule);
+                })
                 .run();
     }
 
@@ -212,6 +362,34 @@ public class PackagingScheduleResource {
             return Response.ok(Map.of("message", "Saved to DB successfully")).build();
         } catch (Exception e) {
             return Response.serverError().entity("Save error: " + e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("removeSolution")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteSolutionByDate() {
+
+        if (this.date == null || this.date.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("status", "error", "message", "Date field not set on server"))
+                    .build();
+        }
+        LocalDate removeDate = LocalDate.parse(date);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(DELETE_SOLUTION_JSON)) {
+            stmt.setDate(1, java.sql.Date.valueOf(removeDate));
+            int updatedRows = stmt.executeUpdate();
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Solution removed for date: " + this.date + " (rows affected: " + updatedRows + ")"
+            )).build();
+
+        } catch (SQLException e) {
+            return Response.serverError()
+                    .entity(Map.of("status", "error", "message", "SQL error: " + e.getMessage()))
+                    .build();
         }
     }
 
