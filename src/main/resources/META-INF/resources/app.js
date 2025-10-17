@@ -44,6 +44,9 @@ $(document).ready(function () {
   $("#saveButton").click(function () {
       saveSchedule();
   });
+  $("#removeButton").click(function () {
+      removeSchedule();
+    });
   $("#analyzeButton").click(function () {
     analyze();
   });
@@ -308,6 +311,22 @@ function saveSchedule() {
   });
 }
 
+function removeSchedule() {
+  $.ajax({
+    url: "/schedule/removeSolution",
+    method: "POST",
+    contentType: "application/json",
+    dataType: "json",
+    success: function (response) {
+      console.log(response.message);
+      alert(response.message)
+    },
+    error: function (xhr) {
+      showError("Remove failed.", xhr);
+    }
+  });
+}
+
 function analyze() {
   new bootstrap.Modal("#scoreAnalysisModal").show()
   const scoreAnalysisModalContent = $("#scoreAnalysisModalContent");
@@ -398,6 +417,7 @@ function refreshSolvingButtons(solving) {
     $("#stopSolvingButton").show();
     $("#exportButton").prop("disabled", true);
     $("#saveButton").prop("disabled", true);
+    $("#removeButton").prop("disabled", true);
     if (autoRefreshIntervalId == null) {
       autoRefreshIntervalId = setInterval(refreshSchedule, 2000);
     }
@@ -406,6 +426,7 @@ function refreshSolvingButtons(solving) {
     $("#stopSolvingButton").hide();
     $("#exportButton").prop("disabled", false);
     $("#saveButton").prop("disabled", false);
+    $("#removeButton").prop("disabled", false);
     if (autoRefreshIntervalId != null) {
       clearInterval(autoRefreshIntervalId);
       autoRefreshIntervalId = null;
