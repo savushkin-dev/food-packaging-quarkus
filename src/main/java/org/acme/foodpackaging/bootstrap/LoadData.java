@@ -204,8 +204,8 @@ private Map<String, Product> loadProductfromDB(){
                         int quantity = resultSet.getInt("KOLEV");          // количество
                         int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
                         int priority =resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
-                        String ean13 = resultSet.getString("EAN13");   // Уникальный идентификатор продукта
-                        String kmc = resultSet.getString("KMC");      //  Еще один какой-то уникальный идентификатор продукта...
+                        String ean13 = resultSet.getString("EAN13");   // Идентификатор продукта EAN13
+                        String kmc = resultSet.getString("KMC");      //  Идентификатор продукта ERP
                         String name = resultSet.getString("NAME");   // Название
                         String shortName = resultSet.getString(("SNM"));        // Сокращенное название
                         // Список со всем возможным ассортиментов продуктов
