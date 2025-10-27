@@ -285,7 +285,6 @@ private Map<String, Product> loadProductfromDB(){
     }
 
     public Map<String, Map<String, Object>> loadPDay(LocalDate startDate, LocalDate endDate) {
-        String sql = "SELECT id, name, email FROM persons";
         Map<String, Map<String, Object>> result = new TreeMap<>();
 
         // читаем партии из PLR_PDAYNP
@@ -407,6 +406,51 @@ private Map<String, Product> loadProductfromDB(){
 
         return result;
 
+    }
+
+    public void updatePDay(LocalDate startDate, LocalDate endDate, Map<String, LocalDate> mapsnpz) {
+        Map<String, LocalDate> result = new HashMap<>();
+
+        // читаем партии из PLR_PDAYNP
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
+            ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
+            ps.setString(2, endDate.toString() + "T00:00:00");     // Параметр для v.DTI end
+            ps.setString(3, "0119030000");                           // Параметр для v.KSK
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
+                java.sql.Date dtf = rs.getDate(4);
+                String ssnpz = rs.getString(8);
+
+                result.put(ssnpz, LocalDate.parse(dtf.toString()));
+            }
+        } catch (SQLException e) {
+            // можно логировать e
+            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP "+e.getMessage(), e);
+        }
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(UPDATE_PDAYDTF)) {
+
+            for (Map.Entry<String, LocalDate> entry : mapsnpz.entrySet()) {
+                String key = entry.getKey();
+                LocalDate dbValue = result.get(key);
+                if (dbValue != null) {
+                    LocalDate value = entry.getValue();
+                    if (dbValue != value) {
+                        stmt.setDate(1, java.sql.Date.valueOf(value));
+                        stmt.setString(2, key);
+                        int updatedRows = stmt.executeUpdate();
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            // можно логировать e
+            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP "+e.getMessage(), e);
+        }
     }
 
 
