@@ -113,6 +113,32 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("loadpday")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response loadpday(LoadDTO loadDTO) {
+        LocalDate startDate = loadDTO.getStartDate();
+        this.date = startDate.toString();
+        LocalDate endDate = loadDTO.getEndDate();
+
+        try {
+
+            Map<String, Map<String, Object>> res = loadData.loadPDay(startDate, endDate);
+
+            return Response.ok(res).build();
+
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
+                    .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed to load production order: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
     @Path("moveJobs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -278,7 +304,7 @@ public class PackagingScheduleResource {
 
     @GET
     public PackagingSchedule get() {
-        // Get the solver status before loading the solution
+        // Get the solver status before loading the solution1
         // to avoid the race condition that the solver terminates between them
         SolverStatus solverStatus = solverManager.getSolverStatus(SINGLETON_SOLUTION_ID);
         PackagingSchedule schedule = repository.read();
