@@ -284,4 +284,106 @@ private Map<String, Product> loadProductfromDB(){
         ).trim();
     }
 
+    public Map<String, Map<String, Object>> loadPDay(LocalDate startDate, LocalDate endDate) {
+        String sql = "SELECT id, name, email FROM persons";
+        Map<String, Map<String, Object>> result = new TreeMap<>();
+
+        // читаем партии из PLR_PDAYNP
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
+             ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
+             ps.setString(2, endDate.toString() + "T00:00:00");     // Параметр для v.DTI end
+             ps.setString(3, "0119030000");                           // Параметр для v.KSK
+
+             ResultSet rs = ps.executeQuery();
+
+            ResultSetMetaData md = rs.getMetaData();
+            int cols = md.getColumnCount();
+
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
+                String snpz = "";
+                for (int i = 1; i <= cols; i++) {
+                    String colName = md.getColumnLabel(i);
+                    Object value = rs.getObject(i);
+                    row.put(colName, value);
+                    if (colName.equals("SNPZ")) { snpz = value.toString(); }
+                }
+                result.put(snpz, row);
+            }
+        } catch (SQLException e) {
+            // можно логировать e
+            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP", e);
+        }
+
+        // читаем партии из BD_VZPMC
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(LOAD_VZPMC)) {
+            ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
+            ps.setString(2, endDate.toString() + "T00:00:00");       // Параметр для v.DTI end
+            ps.setString(3, "0119030000");                           // Параметр для v.KSK
+            ps.setDouble(4, 0.1);                                    // Параметр для m.MASSA
+
+            ResultSet rs = ps.executeQuery();
+
+            //ResultSetMetaData md = rs.getMetaData();
+            //int cols = md.getColumnCount();
+
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
+                // KSK, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA
+                String ksk = "0119030000";
+                String kmc = rs.getString(2);
+                java.sql.Date dti = rs.getDate(3);
+                int np = rs.getInt(5);
+                int kolev = rs.getInt(6);
+                int ux = rs.getInt(7);
+                int isnpz = rs.getInt(8);
+                String ssnpz = rs.getString(8);
+                int massa = rs.getInt(9);
+
+                row.put("SNM", rs.getString(1));
+                row.put("KMC", kmc);
+                row.put("DTI", dti);
+                row.put("DTF", "");
+                row.put("NP", np);
+                row.put("KOLEV", kolev);
+                row.put("UX", ux);
+                row.put("SNPZ", isnpz);
+                row.put("MASSA", massa);
+
+                /*String snpz = "";
+                for (int i = 1; i <= cols; i++) {
+                    String colName = md.getColumnLabel(i);
+                    //Object value = rs.getObject(i);
+                    String value = rs.getString(i);
+                    row.put(colName, value);
+                    if (colName.equals("SNPZ")) { snpz = value.toString(); }
+                }*/
+
+                if (!result.containsKey(ssnpz)) {
+                    result.put(ssnpz, row);
+                    PreparedStatement stmt = conn.prepareStatement(INSERT_PDAY);
+                    stmt.setString(1, ksk);
+                    stmt.setString(2, kmc);
+                    stmt.setDate(3, dti);
+                    stmt.setInt(4, np);
+                    stmt.setInt(5, kolev);
+                    stmt.setInt(6, ux);
+                    stmt.setInt(7, isnpz);
+                    stmt.setInt(8, massa);
+                    int updatedRows = stmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            // можно логировать e
+            throw new RuntimeException("Failed to load jobs from BD_VZPMC. " + e.getMessage(), e);
+        }
+
+        return result;
+
+    }
+
+
+
 }
