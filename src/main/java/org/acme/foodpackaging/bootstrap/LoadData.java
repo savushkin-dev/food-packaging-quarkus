@@ -297,10 +297,10 @@ private Map<String, Product> loadProductfromDB(){
 
              ResultSet rs = ps.executeQuery();
 
-            ResultSetMetaData md = rs.getMetaData();
-            int cols = md.getColumnCount();
+            //ResultSetMetaData md = rs.getMetaData();
+            //int cols = md.getColumnCount();
 
-            while (rs.next()) {
+            /*while (rs.next()) {
                 Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
                 String snpz = "";
                 for (int i = 1; i <= cols; i++) {
@@ -310,6 +310,31 @@ private Map<String, Product> loadProductfromDB(){
                     if (colName.equals("SNPZ")) { snpz = value.toString(); }
                 }
                 result.put(snpz, row);
+            }*/
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
+                // KSK, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA
+                String kmc = rs.getString(2);
+                java.sql.Date dti = rs.getDate(3);
+                java.sql.Date dtf = rs.getDate(4);
+                int np = rs.getInt(5);
+                int kolev = rs.getInt(6);
+                int ux = rs.getInt(7);
+                int isnpz = rs.getInt(8);
+                String ssnpz = rs.getString(8);
+                int massa = rs.getInt(9);
+
+                row.put("SNM", rs.getString(1));
+                row.put("KMC", kmc);
+                row.put("DTI", dti);
+                row.put("DTF", dtf);
+                row.put("NP", np);
+                row.put("KOLEV", kolev);
+                row.put("UX", ux);
+                row.put("SNPZ", isnpz);
+                row.put("MASSA", massa);
+
+                result.put(ssnpz, row);
             }
         } catch (SQLException e) {
             // можно логировать e
