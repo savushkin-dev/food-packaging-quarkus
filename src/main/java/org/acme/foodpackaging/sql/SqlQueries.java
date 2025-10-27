@@ -32,6 +32,11 @@ public class SqlQueries {
        insert into [MES].[dbo].[PLR_PDAYNP] (KSK, KRC, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA) values (?, '', ?, ?, ?, ?, ?, ?, ?)
     """;
 
+    public static final String UPDATE_PDAYDTF  = """
+       update [MES].[dbo].[PLR_PDAYNP] set DTF=? where SNPZ=?
+    """;
+
+
     public static final String LOAD_LABELING_CACTUS_COCONUT_ALMONDS = """
     SELECT TOP (1000)
            [KMC],
