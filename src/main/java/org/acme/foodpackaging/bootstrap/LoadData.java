@@ -277,7 +277,7 @@ private Map<String, Product> loadProductfromDB(){
         );
     }
 
-    public static String cleanSyrkiName(String input) {
+    private static String cleanSyrkiName(String input) {
         return input.replaceFirst(
                 "(?i)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
                 ""
