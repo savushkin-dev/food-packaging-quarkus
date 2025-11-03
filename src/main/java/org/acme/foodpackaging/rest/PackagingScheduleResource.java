@@ -133,6 +133,32 @@ public class PackagingScheduleResource {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("toLineId not found"));
 
+        List<Job> jobsToMove = fromLine.getJobs().subList(
+                request.getFromIndex(),
+                Math.min(request.getFromIndex() + request.getCount(), fromLine.getJobs().size())
+        );
+
+        for (Job job : jobsToMove) {
+            String productType = job.getProduct().getType();
+            String toLineId = toLine.getId();
+
+            Integer duration = job.getLineSpeeds()
+                    .getOrDefault(toLineId, Map.of())
+                    .get(productType);
+
+            if (duration == null || duration == 0) {
+                String message = String.format(
+                        "Cannot move job \"%s\" to line \"%s\": This type of product is not produced on this line.",
+                        job.getName(),
+                        toLine.getName()
+                );
+
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", message))
+                        .build();
+            }
+        }
+
         List<Job> movedJobs = moveSubList(fromLine, request.getFromIndex(), request.getCount(),
                 toLine, request.getInsertIndex());
 
