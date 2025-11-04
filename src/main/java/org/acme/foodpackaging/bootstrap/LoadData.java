@@ -289,27 +289,13 @@ private Map<String, Product> loadProductfromDB(){
 
         // читаем партии из PLR_PDAYNP
         try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
-             ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
-             ps.setString(2, endDate.toString() + "T00:00:00");     // Параметр для v.DTI end
-             ps.setString(3, "0119030000");                           // Параметр для v.KSK
+            PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
+            ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
+            ps.setString(2, endDate.toString() + "T00:00:00");     // Параметр для v.DTI end
+            ps.setString(3, "0119030000");                           // Параметр для v.KSK
 
-             ResultSet rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
 
-            //ResultSetMetaData md = rs.getMetaData();
-            //int cols = md.getColumnCount();
-
-            /*while (rs.next()) {
-                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
-                String snpz = "";
-                for (int i = 1; i <= cols; i++) {
-                    String colName = md.getColumnLabel(i);
-                    Object value = rs.getObject(i);
-                    row.put(colName, value);
-                    if (colName.equals("SNPZ")) { snpz = value.toString(); }
-                }
-                result.put(snpz, row);
-            }*/
             while (rs.next()) {
                 Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
                 // KSK, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA
@@ -337,7 +323,7 @@ private Map<String, Product> loadProductfromDB(){
             }
         } catch (SQLException e) {
             // можно логировать e
-            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP", e);
+            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP. " + e.getMessage(), e);
         }
 
         // читаем партии из BD_VZPMC
@@ -350,8 +336,7 @@ private Map<String, Product> loadProductfromDB(){
 
             ResultSet rs = ps.executeQuery();
 
-            //ResultSetMetaData md = rs.getMetaData();
-            //int cols = md.getColumnCount();
+            PreparedStatement stmt = conn.prepareStatement(INSERT_PDAY);
 
             while (rs.next()) {
                 Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
@@ -376,18 +361,8 @@ private Map<String, Product> loadProductfromDB(){
                 row.put("SNPZ", isnpz);
                 row.put("MASSA", massa);
 
-                /*String snpz = "";
-                for (int i = 1; i <= cols; i++) {
-                    String colName = md.getColumnLabel(i);
-                    //Object value = rs.getObject(i);
-                    String value = rs.getString(i);
-                    row.put(colName, value);
-                    if (colName.equals("SNPZ")) { snpz = value.toString(); }
-                }*/
-
                 if (!result.containsKey(ssnpz)) {
                     result.put(ssnpz, row);
-                    PreparedStatement stmt = conn.prepareStatement(INSERT_PDAY);
                     stmt.setString(1, ksk);
                     stmt.setString(2, kmc);
                     stmt.setDate(3, dti);
@@ -409,47 +384,20 @@ private Map<String, Product> loadProductfromDB(){
     }
 
     public void updatePDay(LocalDate startDate, LocalDate endDate, Map<String, LocalDate> mapsnpz) {
-        Map<String, LocalDate> result = new HashMap<>();
-
-        // читаем партии из PLR_PDAYNP
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
-            ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
-            ps.setString(2, endDate.toString() + "T00:00:00");     // Параметр для v.DTI end
-            ps.setString(3, "0119030000");                           // Параметр для v.KSK
-
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
-                java.sql.Date dtf = rs.getDate(4);
-                String ssnpz = rs.getString(8);
-
-                result.put(ssnpz, LocalDate.parse(dtf.toString()));
-            }
-        } catch (SQLException e) {
-            // можно логировать e
-            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP "+e.getMessage(), e);
-        }
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(UPDATE_PDAYDTF)) {
 
             for (Map.Entry<String, LocalDate> entry : mapsnpz.entrySet()) {
                 String key = entry.getKey();
-                LocalDate dbValue = result.get(key);
-                if (dbValue != null) {
-                    LocalDate value = entry.getValue();
-                    if (dbValue != value) {
-                        stmt.setDate(1, java.sql.Date.valueOf(value));
-                        stmt.setString(2, key);
-                        int updatedRows = stmt.executeUpdate();
-                    }
-                }
+                LocalDate value = entry.getValue();
+                stmt.setDate(1, java.sql.Date.valueOf(value));
+                stmt.setString(2, key);
+                int updatedRows = stmt.executeUpdate();
             }
         } catch (SQLException e) {
             // можно логировать e
-            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP "+e.getMessage(), e);
+            throw new RuntimeException("Failed to update jobs to PLR_PDAYNP "+e.getMessage(), e);
         }
     }
 
