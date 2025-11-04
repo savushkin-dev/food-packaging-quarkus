@@ -14,6 +14,29 @@ public class SqlQueries {
     ORDER BY v.SNPZ
     """;
 
+    public static final String LOAD_PDAY = """
+        SELECT m.SNM, v.[KMC], v.[DTI], v.[DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
+        FROM [MES].[dbo].[PLR_PDAYNP] AS v, NS_MC AS m
+        WHERE (v.KMC = m.KMC) AND (v.DTI >= ?) AND (v.DTI < ?) AND (v.KSK = ?)
+        ORDER BY v.SNPZ
+    """;
+
+    public static final String LOAD_VZPMC = """
+        SELECT m.SNM, v.[KMC], v.[DTI], '' as [DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
+        FROM [MES].[dbo].[BD_VZPMC] AS v, NS_MC AS m
+        WHERE (v.KMC = m.KMC) AND (v.DTI >= ?) AND (v.DTI < ?) AND (v.KSK = ?) AND (m.MASSA < ?)
+        ORDER BY v.SNPZ
+    """;
+
+    public static final String INSERT_PDAY  = """
+       insert into [MES].[dbo].[PLR_PDAYNP] (KSK, KRC, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA) values (?, '', ?, ?, ?, ?, ?, ?, ?)
+    """;
+
+    public static final String UPDATE_PDAYDTF  = """
+       update [MES].[dbo].[PLR_PDAYNP] set DTF=? where SNPZ=?
+    """;
+
+
     public static final String LOAD_LABELING_CACTUS_COCONUT_ALMONDS = """
     SELECT TOP (1000)
            [KMC],

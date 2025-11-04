@@ -32,6 +32,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
+import static org.acme.foodpackaging.sql.SqlQueries.INSERT_PDAY;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -70,6 +71,8 @@ public class PackagingScheduleResource {
 
     String date;
 
+    LoadDTO ldto;
+
     @POST
     @Path("load")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -81,7 +84,7 @@ public class PackagingScheduleResource {
         try {
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
 
-            if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
+            if ((schedule != null) && isScheduleCompatible(schedule, loadDTO)) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
                 repository.write(schedule);
                 return Response.ok(Map.of(
@@ -108,6 +111,58 @@ public class PackagingScheduleResource {
         } catch (Exception e) {
             return Response.serverError()
                     .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("loadpday")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response loadpday(LoadDTO loadDTO) {
+        LocalDate startDate = loadDTO.getStartDate();
+        this.date = startDate.toString();
+        LocalDate endDate = loadDTO.getEndDate();
+        ldto = loadDTO;
+
+        try {
+
+            Map<String, Map<String, Object>> res = loadData.loadPDay(startDate, endDate);
+
+            return Response.ok(res).build();
+
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
+                    .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed to load production order: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("updatepday")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updatepday(Map<String, LocalDate> mapsnpz) {
+
+        try {
+            loadData.updatePDay(ldto.getStartDate(), ldto.getEndDate(), mapsnpz);
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Jobs DTF updates successfully"
+            )).build();
+
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
+                    .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed to update jobs: " + e.getMessage()))
                     .build();
         }
     }
@@ -304,7 +359,7 @@ public class PackagingScheduleResource {
 
     @GET
     public PackagingSchedule get() {
-        // Get the solver status before loading the solution
+        // Get the solver status before loading the solution1
         // to avoid the race condition that the solver terminates between them
         SolverStatus solverStatus = solverManager.getSolverStatus(SINGLETON_SOLUTION_ID);
         PackagingSchedule schedule = repository.read();
