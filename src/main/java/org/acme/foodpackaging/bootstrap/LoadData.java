@@ -204,8 +204,8 @@ private Map<String, Product> loadProductfromDB(){
                         int quantity = resultSet.getInt("KOLEV");          // количество
                         int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
                         int priority =resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
-                        String ean13 = resultSet.getString("EAN13");   // Уникальный идентификатор продукта
-                        String kmc = resultSet.getString("KMC");      //  Еще один какой-то уникальный идентификатор продукта...
+                        String ean13 = resultSet.getString("EAN13");   // Идентификатор продукта EAN13
+                        String kmc = resultSet.getString("KMC");      //  Идентификатор продукта ERP
                         String name = resultSet.getString("NAME");   // Название
                         String shortName = resultSet.getString(("SNM"));        // Сокращенное название
                         // Список со всем возможным ассортиментов продуктов
@@ -283,5 +283,124 @@ private Map<String, Product> loadProductfromDB(){
                 ""
         ).trim();
     }
+
+    public Map<String, Map<String, Object>> loadPDay(LocalDate startDate, LocalDate endDate) {
+        Map<String, Map<String, Object>> result = new TreeMap<>();
+
+        // читаем партии из PLR_PDAYNP
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+            PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
+            ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
+            ps.setString(2, endDate.toString() + "T00:00:00");     // Параметр для v.DTI end
+            ps.setString(3, "0119030000");                           // Параметр для v.KSK
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
+                // KSK, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA
+                String kmc = rs.getString(2);
+                java.sql.Date dti = rs.getDate(3);
+                java.sql.Date dtf = rs.getDate(4);
+                int np = rs.getInt(5);
+                int kolev = rs.getInt(6);
+                int ux = rs.getInt(7);
+                int isnpz = rs.getInt(8);
+                String ssnpz = rs.getString(8);
+                int massa = rs.getInt(9);
+
+                row.put("SNM", rs.getString(1));
+                row.put("KMC", kmc);
+                row.put("DTI", dti);
+                row.put("DTF", dtf);
+                row.put("NP", np);
+                row.put("KOLEV", kolev);
+                row.put("UX", ux);
+                row.put("SNPZ", isnpz);
+                row.put("MASSA", massa);
+
+                result.put(ssnpz, row);
+            }
+        } catch (SQLException e) {
+            // можно логировать e
+            throw new RuntimeException("Failed to load jobs from PLR_PDAYNP. " + e.getMessage(), e);
+        }
+
+        // читаем партии из BD_VZPMC
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(LOAD_VZPMC)) {
+            ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
+            ps.setString(2, endDate.toString() + "T00:00:00");       // Параметр для v.DTI end
+            ps.setString(3, "0119030000");                           // Параметр для v.KSK
+            ps.setDouble(4, 0.1);                                    // Параметр для m.MASSA
+
+            ResultSet rs = ps.executeQuery();
+
+            PreparedStatement stmt = conn.prepareStatement(INSERT_PDAY);
+
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>(); // сохранение порядка колонок
+                // KSK, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA
+                String ksk = "0119030000";
+                String kmc = rs.getString(2);
+                java.sql.Date dti = rs.getDate(3);
+                int np = rs.getInt(5);
+                int kolev = rs.getInt(6);
+                int ux = rs.getInt(7);
+                int isnpz = rs.getInt(8);
+                String ssnpz = rs.getString(8);
+                int massa = rs.getInt(9);
+
+                row.put("SNM", rs.getString(1));
+                row.put("KMC", kmc);
+                row.put("DTI", dti);
+                row.put("DTF", "");
+                row.put("NP", np);
+                row.put("KOLEV", kolev);
+                row.put("UX", ux);
+                row.put("SNPZ", isnpz);
+                row.put("MASSA", massa);
+
+                if (!result.containsKey(ssnpz)) {
+                    result.put(ssnpz, row);
+                    stmt.setString(1, ksk);
+                    stmt.setString(2, kmc);
+                    stmt.setDate(3, dti);
+                    stmt.setInt(4, np);
+                    stmt.setInt(5, kolev);
+                    stmt.setInt(6, ux);
+                    stmt.setInt(7, isnpz);
+                    stmt.setInt(8, massa);
+                    int updatedRows = stmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            // можно логировать e
+            throw new RuntimeException("Failed to load jobs from BD_VZPMC. " + e.getMessage(), e);
+        }
+
+        return result;
+
+    }
+
+    public void updatePDay(LocalDate startDate, LocalDate endDate, Map<String, LocalDate> mapsnpz) {
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(UPDATE_PDAYDTF)) {
+
+            for (Map.Entry<String, LocalDate> entry : mapsnpz.entrySet()) {
+                String key = entry.getKey();
+                LocalDate value = entry.getValue();
+                stmt.setDate(1, java.sql.Date.valueOf(value));
+                stmt.setString(2, key);
+                int updatedRows = stmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            // можно логировать e
+            throw new RuntimeException("Failed to update jobs to PLR_PDAYNP "+e.getMessage(), e);
+        }
+    }
+
+
 
 }
