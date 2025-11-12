@@ -191,7 +191,7 @@ private Map<String, Product> loadProductfromDB(){
 
         try {
             try (Connection connection = DriverManager.getConnection(dbUrl);
-                 PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS)) {
+                 PreparedStatement preparedStatement = connection.prepareStatement(LOAD_PDAY)) {
                 preparedStatement.setString(1, date + "T00:00:00");     // Параметр для v.DTI
                 preparedStatement.setString(2, "0119030000");          // Параметр для v.KSK
                 preparedStatement.setDouble(3, 0.1);                  // Параметр для m.MASSA
