@@ -94,9 +94,16 @@ public class PackagingScheduleResource {
         this.date = startDate.toString();
 
         try {
+            if (!loadDTO.getFindSolvedInDb()) {
+                createNewSchedule(loadDTO);
+                return Response.ok(Map.of(
+                        "message", "New schedule generated (forced) for date: " + startDate
+                )).build();
+            }
+
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
 
-            if ((schedule != null) && isScheduleCompatible(schedule, loadDTO)) {
+            if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
                 repository.write(schedule);
                 return Response.ok(Map.of(
@@ -104,16 +111,9 @@ public class PackagingScheduleResource {
                 )).build();
             }
 
-            loadData.loadDataByDate(
-                    loadDTO.getStartDate(),
-                    loadDTO.getEndDate(),
-                    loadDTO.getIdealEndDateTime(),
-                    loadDTO.getMaxEndDateTime(),
-                    loadDTO.toLineStartDateTimeMap()
-            );
-
+            createNewSchedule(loadDTO);
             return Response.ok(Map.of(
-                    "message", "New data generated successfully for date: " + loadDTO.getStartDate()
+                    "message", "No saved schedule found — new data generated for date: " + startDate
             )).build();
 
         } catch (DateTimeParseException e) {
@@ -125,6 +125,16 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
                     .build();
         }
+    }
+
+    private void createNewSchedule(LoadDTO loadDTO) {
+        loadData.loadDataByDate(
+                loadDTO.getStartDate(),
+                loadDTO.getEndDate(),
+                loadDTO.getIdealEndDateTime(),
+                loadDTO.getMaxEndDateTime(),
+                loadDTO.toLineStartDateTimeMap()
+        );
     }
 
     @POST
