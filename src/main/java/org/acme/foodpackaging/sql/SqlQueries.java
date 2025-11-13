@@ -17,7 +17,7 @@ public class SqlQueries {
     public static final String LOAD_PDAY = """
         SELECT m.SNM, v.[KMC], v.[DTI], v.[DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
         FROM [MES].[dbo].[PLR_PDAYNP] AS v, NS_MC AS m
-        WHERE (v.KMC = m.KMC) AND (v.DTF >= ?) AND (v.DTF < ?) AND (v.KSK = ?)
+        WHERE (v.KMC = m.KMC) AND (v.DTI >= ?) AND (v.DTI < ?) AND (v.KSK = ?)
         ORDER BY v.SNPZ
     """;
 
@@ -37,7 +37,10 @@ public class SqlQueries {
     """;
 
     public static final String INSERT_PDAY  = """
-       insert into [MES].[dbo].[PLR_PDAYNP] (KSK, KRC, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA) values (?, '', ?, ?, ?, ?, ?, ?, ?)
+       IF NOT EXISTS (SELECT 1 FROM [MES].[dbo].[PLR_PDAYNP] WHERE SNPZ = ?)
+       BEGIN
+         insert into [MES].[dbo].[PLR_PDAYNP] (KSK, KRC, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA) values (?, '', ?, ?, ?, ?, ?, ?, ?)
+       END
     """;
 
     public static final String UPDATE_PDAYDTF  = """
