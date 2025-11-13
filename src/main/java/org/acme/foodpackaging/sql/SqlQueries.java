@@ -17,7 +17,7 @@ public class SqlQueries {
     public static final String LOAD_PDAY = """
         SELECT m.SNM, v.[KMC], v.[DTI], v.[DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
         FROM [MES].[dbo].[PLR_PDAYNP] AS v, NS_MC AS m
-        WHERE (v.KMC = m.KMC) AND (v.DTI >= ?) AND (v.DTI < ?) AND (v.KSK = ?)
+        WHERE (v.KMC = m.KMC) AND (v.DTF >= ?) AND (v.DTF < ?) AND (v.KSK = ?)
         ORDER BY v.SNPZ
     """;
 
