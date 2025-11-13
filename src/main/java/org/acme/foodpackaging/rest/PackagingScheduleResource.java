@@ -429,7 +429,6 @@ public class PackagingScheduleResource {
                     .withProblemId(SINGLETON_SOLUTION_ID)
                     .withProblemFinder(id -> repository.read())
                     .withBestSolutionConsumer(schedule -> {
-                        SolutionPostProcessor.sortJobsByNp(schedule);
                         repository.write(schedule);
                     })
                     .run();
@@ -534,8 +533,11 @@ public class PackagingScheduleResource {
     @POST
     @Path("stopSolving")
     public void stopSolving() {
-            solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
-            solverBusy.set(false);
+        solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
+        PackagingSchedule finalSchedule = repository.read();
+        SolutionPostProcessor.sortJobsByNp(finalSchedule);
+        repository.write(finalSchedule);
+        solverBusy.set(false);
     }
 
     public File exportTimeCompare(String date, PackagingSchedule solution) {
