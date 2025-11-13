@@ -21,6 +21,14 @@ public class SqlQueries {
         ORDER BY v.SNPZ
     """;
 
+    public static final String LOAD_JOBS_FOR_SELECTED_DATE = """
+       SELECT v.KSK, v.SNPZ, v.DTI, v.DTF, v.KMC, v.MASSA, v.KOLEV, v.NP, v.UX,
+       m.MASSA, m.EAN13, m.SNM, m.NAME
+       FROM [MES].[dbo].[PLR_PDAYNP] AS v, NS_MC AS m
+       WHERE (v.KMC = m.KMC) AND (v.DTF = ? ) AND (v.KSK = ? ) AND (m.MASSA < ? )
+       ORDER BY v.KMC, v.NP
+    """;
+
     public static final String LOAD_VZPMC = """
         SELECT m.SNM, v.[KMC], v.[DTI], '' as [DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
         FROM [MES].[dbo].[BD_VZPMC] AS v, NS_MC AS m
@@ -29,7 +37,10 @@ public class SqlQueries {
     """;
 
     public static final String INSERT_PDAY  = """
-       insert into [MES].[dbo].[PLR_PDAYNP] (KSK, KRC, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA) values (?, '', ?, ?, ?, ?, ?, ?, ?)
+       IF NOT EXISTS (SELECT 1 FROM [MES].[dbo].[PLR_PDAYNP] WHERE SNPZ = ?)
+       BEGIN
+         insert into [MES].[dbo].[PLR_PDAYNP] (KSK, KRC, KMC, DTI, NP, KOLEV, UX, SNPZ, MASSA) values (?, '', ?, ?, ?, ?, ?, ?, ?)
+       END
     """;
 
     public static final String UPDATE_PDAYDTF  = """
