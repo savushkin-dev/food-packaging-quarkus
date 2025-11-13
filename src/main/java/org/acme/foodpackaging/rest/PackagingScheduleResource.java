@@ -30,11 +30,16 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
+import static org.acme.foodpackaging.sql.SqlQueries.INSERT_PDAY;
 
 @Path("schedule")
 public class PackagingScheduleResource {
+
+    // Атомарный флаг занятости решателя
+    private final AtomicBoolean solverBusy = new AtomicBoolean(false);
 
     public static final String SINGLETON_SOLUTION_ID = "1";
 
@@ -70,15 +75,32 @@ public class PackagingScheduleResource {
 
     String date;
 
+    LoadDTO ldto;
+
     @POST
     @Path("load")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response load(LoadDTO loadDTO) {
+
+        if (solverBusy.get()) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
+                    .build();
+        }
+
+
         LocalDate startDate = loadDTO.getStartDate();
         this.date = startDate.toString();
 
         try {
+            if (!loadDTO.getFindSolvedInDb()) {
+                createNewSchedule(loadDTO);
+                return Response.ok(Map.of(
+                        "message", "New schedule generated (forced) for date: " + startDate
+                )).build();
+            }
+
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
 
             if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
@@ -89,16 +111,9 @@ public class PackagingScheduleResource {
                 )).build();
             }
 
-            loadData.loadDataByDate(
-                    loadDTO.getStartDate(),
-                    loadDTO.getEndDate(),
-                    loadDTO.getIdealEndDateTime(),
-                    loadDTO.getMaxEndDateTime(),
-                    loadDTO.toLineStartDateTimeMap()
-            );
-
+            createNewSchedule(loadDTO);
             return Response.ok(Map.of(
-                    "message", "New data generated successfully for date: " + loadDTO.getStartDate()
+                    "message", "No saved schedule found — new data generated for date: " + startDate
             )).build();
 
         } catch (DateTimeParseException e) {
@@ -108,6 +123,74 @@ public class PackagingScheduleResource {
         } catch (Exception e) {
             return Response.serverError()
                     .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    private void createNewSchedule(LoadDTO loadDTO) {
+        loadData.loadDataByDate(
+                loadDTO.getStartDate(),
+                loadDTO.getEndDate(),
+                loadDTO.getIdealEndDateTime(),
+                loadDTO.getMaxEndDateTime(),
+                loadDTO.toLineStartDateTimeMap()
+        );
+    }
+
+    @POST
+    @Path("loadpday")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response loadpday(LoadDTO loadDTO) {
+        if (solverBusy.get()) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
+                    .build();
+        }
+
+        LocalDate startDate = loadDTO.getStartDate();
+        this.date = startDate.toString();
+        LocalDate endDate = loadDTO.getEndDate();
+        ldto = loadDTO;
+
+        try {
+
+            Map<String, Map<String, Object>> res = loadData.loadPDay(startDate, endDate);
+
+            return Response.ok(res).build();
+
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
+                    .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed to load production order: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("updatepday")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updatepday(Map<String, LocalDate> mapsnpz) {
+
+        try {
+            loadData.updatePDay(ldto.getStartDate(), ldto.getEndDate(), mapsnpz);
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Jobs DTF updates successfully"
+            )).build();
+
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
+                    .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed to update jobs: " + e.getMessage()))
                     .build();
         }
     }
@@ -132,6 +215,32 @@ public class PackagingScheduleResource {
                 .filter(l -> l.getId().equals(request.getToLineId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("toLineId not found"));
+
+        List<Job> jobsToMove = fromLine.getJobs().subList(
+                request.getFromIndex(),
+                Math.min(request.getFromIndex() + request.getCount(), fromLine.getJobs().size())
+        );
+
+        for (Job job : jobsToMove) {
+            String productType = job.getProduct().getType();
+            String toLineId = toLine.getId();
+
+            Integer duration = job.getLineSpeeds()
+                    .getOrDefault(toLineId, Map.of())
+                    .get(productType);
+
+            if (duration == null || duration == 0) {
+                String message = String.format(
+                        "Cannot move job \"%s\" to line \"%s\": This type of product is not produced on this line.",
+                        job.getName(),
+                        toLine.getName()
+                );
+
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", message))
+                        .build();
+            }
+        }
 
         List<Job> movedJobs = moveSubList(fromLine, request.getFromIndex(), request.getCount(),
                 toLine, request.getInsertIndex());
@@ -278,7 +387,7 @@ public class PackagingScheduleResource {
 
     @GET
     public PackagingSchedule get() {
-        // Get the solver status before loading the solution
+        // Get the solver status before loading the solution1
         // to avoid the race condition that the solver terminates between them
         SolverStatus solverStatus = solverManager.getSolverStatus(SINGLETON_SOLUTION_ID);
         PackagingSchedule schedule = repository.read();
@@ -286,6 +395,12 @@ public class PackagingScheduleResource {
             throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
         }
         schedule.setSolverStatus(solverStatus);
+
+        //Если планировщик сам перестал считать то принудительно освобождаем планировщик
+        if(solverStatus.name().equals("NOT_SOLVING") && solverBusy.get()){
+            solverBusy.set(false);
+        }
+
         return schedule;
     }
 
@@ -300,15 +415,28 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("solve")
-    public void solve() {
-        currentSolverSolution = solverManager.solveBuilder()
-                .withProblemId(SINGLETON_SOLUTION_ID)
-                .withProblemFinder(id -> repository.read())
-                .withBestSolutionConsumer(schedule -> {
-                    SolutionPostProcessor.sortJobsByNp(schedule);
-                    repository.write(schedule);
-                })
-                .run();
+    public Response solve() {
+
+        // Устанавливаем блокировку
+        if (!solverBusy.compareAndSet(false, true)) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
+                    .build();
+        }
+
+        try {
+            currentSolverSolution = solverManager.solveBuilder()
+                    .withProblemId(SINGLETON_SOLUTION_ID)
+                    .withProblemFinder(id -> repository.read())
+                    .withBestSolutionConsumer(schedule -> {
+                        repository.write(schedule);
+                    })
+                    .run();
+        } catch (Exception e){
+            solverBusy.set(false);
+        }
+
+        return Response.ok().build();
     }
 
     @POST
@@ -406,7 +534,10 @@ public class PackagingScheduleResource {
     @Path("stopSolving")
     public void stopSolving() {
         solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
-
+        PackagingSchedule finalSchedule = repository.read();
+        SolutionPostProcessor.sortJobsByNp(finalSchedule);
+        repository.write(finalSchedule);
+        solverBusy.set(false);
     }
 
     public File exportTimeCompare(String date, PackagingSchedule solution) {
