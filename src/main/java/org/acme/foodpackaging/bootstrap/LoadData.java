@@ -376,7 +376,6 @@ private Map<String, Product> loadProductfromDB(){
                 }
             }
         } catch (SQLException e) {
-            // можно логировать e
             throw new RuntimeException("Failed to load jobs from BD_VZPMC. " + e.getMessage(), e);
         }
 
@@ -397,7 +396,6 @@ private Map<String, Product> loadProductfromDB(){
                 int updatedRows = stmt.executeUpdate();
             }
         } catch (SQLException e) {
-            // можно логировать e
             throw new RuntimeException("Failed to update jobs to PLR_PDAYNP "+e.getMessage(), e);
         }
     }
