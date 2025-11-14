@@ -1,36 +1,29 @@
 package org.acme.foodpackaging.persistence;
 
+import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.SessionPackagingSchedule;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 @ApplicationScoped
 public class PackagingScheduleRepository {
 
-    private final AtomicReference<PackagingSchedule> defaultSolution = new AtomicReference<>();
-    private final ConcurrentHashMap<String, PackagingSchedule> sessionSolutions = new ConcurrentHashMap<>();
-
-    public PackagingSchedule read() {
-        return defaultSolution.get();
-    }
+    private final ConcurrentHashMap<String, SessionPackagingSchedule> sessionSolutions = new ConcurrentHashMap<>();
 
     public PackagingSchedule readForSession(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
-            return defaultSolution.get();
+        SessionPackagingSchedule session = sessionSolutions.get(sessionId);
+        if (session != null) {
+            session.updateTimestamp();
+            return session.getSchedule();
         }
-//        return sessionSolutions.get(sessionId);
-        return sessionSolutions.getOrDefault(sessionId, defaultSolution.get());
-    }
-
-    public void write(PackagingSchedule schedule) {
-        defaultSolution.set(schedule);
+        return null;
     }
 
     public void writeForSession(String sessionId, PackagingSchedule schedule) {
         if (sessionId != null && !sessionId.isBlank()) {
-            sessionSolutions.put(sessionId, schedule);
+            sessionSolutions.put(sessionId, new SessionPackagingSchedule(schedule));
         }
     }
 
@@ -38,5 +31,11 @@ public class PackagingScheduleRepository {
         if (sessionId != null) {
             sessionSolutions.remove(sessionId);
         }
+    }
+
+    @Scheduled(every = "24h")
+    public void cleanupOldSessions() {
+        long cutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000; // 24 часа назад
+        sessionSolutions.entrySet().removeIf(entry -> entry.getValue().getLastUpdated() < cutoff);
     }
 }
