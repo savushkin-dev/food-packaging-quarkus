@@ -98,7 +98,7 @@ public class PackagingScheduleResource {
                 )).build();
             }
 
-            loadData.loadDataByDate(
+            PackagingSchedule newSchedule = loadData.loadDataByDate(
                     loadDTO.getStartDate(),
                     loadDTO.getEndDate(),
                     loadDTO.getIdealEndDateTime(),
@@ -106,8 +106,6 @@ public class PackagingScheduleResource {
                     loadDTO.toLineStartDateTimeMap()
             );
 
-            // Сохраняем загруженные данные в сессию
-            PackagingSchedule newSchedule = repository.read();
             repository.writeForSession(sessionId, newSchedule);
 
             return Response.ok(Map.of(
