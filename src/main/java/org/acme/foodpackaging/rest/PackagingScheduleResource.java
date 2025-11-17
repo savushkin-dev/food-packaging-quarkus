@@ -33,12 +33,16 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 import static org.acme.foodpackaging.sql.SqlQueries.INSERT_PDAY;
 
 @Path("schedule")
 public class PackagingScheduleResource {
+
+    // Атомарный флаг занятости решателя
+    private final AtomicBoolean solverBusy = new AtomicBoolean(false);
 
     public static final String SINGLETON_SOLUTION_ID = "1";
 
@@ -83,13 +87,28 @@ public class PackagingScheduleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response load(LoadDTO loadDTO) {
+
+        if (solverBusy.get()) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
+                    .build();
+        }
+
+
         LocalDate startDate = loadDTO.getStartDate();
         this.date = startDate.toString();
 
         try {
+            if (!loadDTO.getFindSolvedInDb()) {
+                createNewSchedule(loadDTO);
+                return Response.ok(Map.of(
+                        "message", "New schedule generated (forced) for date: " + startDate
+                )).build();
+            }
+
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
 
-            if ((schedule != null) && isScheduleCompatible(schedule, loadDTO)) {
+            if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
                 repository.write(schedule);
                 return Response.ok(Map.of(
@@ -97,16 +116,9 @@ public class PackagingScheduleResource {
                 )).build();
             }
 
-            loadData.loadDataByDate(
-                    loadDTO.getStartDate(),
-                    loadDTO.getEndDate(),
-                    loadDTO.getIdealEndDateTime(),
-                    loadDTO.getMaxEndDateTime(),
-                    loadDTO.toLineStartDateTimeMap()
-            );
-
+            createNewSchedule(loadDTO);
             return Response.ok(Map.of(
-                    "message", "New data generated successfully for date: " + loadDTO.getStartDate()
+                    "message", "No saved schedule found — new data generated for date: " + startDate
             )).build();
 
         } catch (DateTimeParseException e) {
@@ -120,11 +132,27 @@ public class PackagingScheduleResource {
         }
     }
 
+    private void createNewSchedule(LoadDTO loadDTO) {
+        loadData.loadDataByDate(
+                loadDTO.getStartDate(),
+                loadDTO.getEndDate(),
+                loadDTO.getIdealEndDateTime(),
+                loadDTO.getMaxEndDateTime(),
+                loadDTO.toLineStartDateTimeMap()
+        );
+    }
+
     @POST
     @Path("loadpday")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response loadpday(LoadDTO loadDTO) {
+        if (solverBusy.get()) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
+                    .build();
+        }
+
         LocalDate startDate = loadDTO.getStartDate();
         this.date = startDate.toString();
         LocalDate endDate = loadDTO.getEndDate();
@@ -177,6 +205,7 @@ public class PackagingScheduleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response moveJobs(MoveJobsRequestDTO request) {
+
         PackagingSchedule schedule = repository.read();
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -188,42 +217,63 @@ public class PackagingScheduleResource {
                 .filter(l -> l.getId().equals(request.getFromLineId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("fromLineId not found"));
+
         Line toLine = schedule.getLines().stream()
                 .filter(l -> l.getId().equals(request.getToLineId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("toLineId not found"));
 
-        List<Job> jobsToMove = fromLine.getJobs().subList(
-                request.getFromIndex(),
-                Math.min(request.getFromIndex() + request.getCount(), fromLine.getJobs().size())
-        );
+        boolean sameLine = fromLine.getId().equals(toLine.getId());
 
-        for (Job job : jobsToMove) {
-            String productType = job.getProduct().getType();
-            String toLineId = toLine.getId();
+        int fromIndex = request.getFromIndex();
+        int count = request.getCount();
 
-            Integer duration = job.getLineSpeeds()
-                    .getOrDefault(toLineId, Map.of())
-                    .get(productType);
+        List<Job> jobs = fromLine.getJobs();
+        int fromEnd = Math.min(fromIndex + count, jobs.size());
+        
+        if (fromIndex < 0 || fromIndex >= jobs.size() || fromIndex >= fromEnd) {
+            return Response.ok(Map.of("status", "success", "message", "Nothing to move")).build();
+        }
 
-            if (duration == null || duration == 0) {
-                String message = String.format(
-                        "Cannot move job \"%s\" to line \"%s\": This type of product is not produced on this line.",
-                        job.getName(),
-                        toLine.getName()
-                );
+        if (!sameLine) {
+            for (int i = fromIndex; i < fromEnd; i++) {
+                Job job = jobs.get(i);
+                String productType = job.getProduct().getType();
 
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", message))
-                        .build();
+                Integer duration = job.getLineSpeeds()
+                        .getOrDefault(toLine.getId(), Map.of())
+                        .get(productType);
+
+                if (duration == null || duration == 0) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(Map.of(
+                                    "error",
+                                    "Cannot move job \"" + job.getName() +
+                                            "\" to line \"" + toLine.getName() + "\": product type unsupported"
+                            ))
+                            .build();
+                }
             }
         }
 
-        List<Job> movedJobs = moveSubList(fromLine, request.getFromIndex(), request.getCount(),
-                toLine, request.getInsertIndex());
+        // ----- no-op: вставка внутрь того же диапазона -----
+        if (sameLine
+                && request.getInsertIndex() >= fromIndex
+                && request.getInsertIndex() <= fromEnd) {
+            return Response.ok(Map.of("status", "success", "message", "No-op")).build();
+        }
 
+        // ---- Выполняем перенос -----
+        List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, request.getInsertIndex());
+
+        if (moved.isEmpty()) {
+            return Response.ok(Map.of("status", "success", "message", "No jobs moved")).build();
+        }
+
+        // ---- фиксация (ваши методы) -----
         fixLineJobs(fromLine);
-        fixLineJobs(toLine);
+        if (!sameLine) fixLineJobs(toLine);
+
         fixPinIndexes(schedule);
         SolutionPostProcessor.sortJobsByNp(schedule);
 
@@ -232,7 +282,7 @@ public class PackagingScheduleResource {
 
         return Response.ok(Map.of(
                 "status", "success",
-                "message", "Jobs moved and sorted successfully"
+                "message", "Jobs moved successfully"
         )).build();
     }
     /**
@@ -240,18 +290,53 @@ public class PackagingScheduleResource {
      */
     private List<Job> moveSubList(Line fromLine, int fromIndex, int count,
                                   Line toLine, int insertIndex) {
+
+        boolean sameLine = fromLine.getId().equals(toLine.getId());
+
         List<Job> fromJobs = new ArrayList<>(fromLine.getJobs());
-        List<Job> toJobs = new ArrayList<>(toLine.getJobs());
+        List<Job> toJobs = sameLine ? fromJobs : new ArrayList<>(toLine.getJobs());
 
-        List<Job> subList = new ArrayList<>(fromJobs.subList(fromIndex, fromIndex + count));
-        fromJobs.subList(fromIndex, fromIndex + count).clear();
-        toJobs.addAll(insertIndex, subList);
+        int fromEnd = Math.min(fromIndex + count, fromJobs.size());
+        if (fromIndex < 0 || fromIndex >= fromJobs.size() || fromIndex >= fromEnd) {
+            return Collections.emptyList();
+        }
 
-        // Назначаем новые списки обратно в линии
+        List<Job> jobsToMove = new ArrayList<>();
+        for (int i = fromIndex; i < fromEnd; i++) {
+            jobsToMove.add(fromJobs.get(i));
+        }
+
+        for (int i = 0; i < jobsToMove.size(); i++) {
+            fromJobs.remove(fromIndex);
+        }
+
+        if (sameLine && insertIndex > fromIndex) {
+            insertIndex -= jobsToMove.size();
+        }
+
+        insertIndex = Math.max(0, Math.min(insertIndex, toJobs.size()));
+
+        List<Job> newToJobs = new ArrayList<>();
+
+        for (int i = 0; i < toJobs.size(); i++) {
+            if (i == insertIndex) {
+                newToJobs.addAll(jobsToMove);
+            }
+            newToJobs.add(toJobs.get(i));
+        }
+
+        if (insertIndex == toJobs.size()) {
+            newToJobs.addAll(jobsToMove);
+        }
+
         fromLine.setJobs(fromJobs);
-        toLine.setJobs(toJobs);
+        if (!sameLine) {
+            toLine.setJobs(newToJobs);
+        } else {
+            fromLine.setJobs(newToJobs);
+        }
 
-        return subList;
+        return jobsToMove;
     }
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
@@ -429,6 +514,12 @@ public class PackagingScheduleResource {
             throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
         }
         schedule.setSolverStatus(solverStatus);
+
+        //Если планировщик сам перестал считать то принудительно освобождаем планировщик
+        if(solverStatus.name().equals("NOT_SOLVING") && solverBusy.get()){
+            solverBusy.set(false);
+        }
+
         return schedule;
     }
 
@@ -443,15 +534,28 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("solve")
-    public void solve() {
-        currentSolverSolution = solverManager.solveBuilder()
-                .withProblemId(SINGLETON_SOLUTION_ID)
-                .withProblemFinder(id -> repository.read())
-                .withBestSolutionConsumer(schedule -> {
-                    SolutionPostProcessor.sortJobsByNp(schedule);
-                    repository.write(schedule);
-                })
-                .run();
+    public Response solve() {
+
+        // Устанавливаем блокировку
+        if (!solverBusy.compareAndSet(false, true)) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
+                    .build();
+        }
+
+        try {
+            currentSolverSolution = solverManager.solveBuilder()
+                    .withProblemId(SINGLETON_SOLUTION_ID)
+                    .withProblemFinder(id -> repository.read())
+                    .withBestSolutionConsumer(schedule -> {
+                        repository.write(schedule);
+                    })
+                    .run();
+        } catch (Exception e){
+            solverBusy.set(false);
+        }
+
+        return Response.ok().build();
     }
 
     @POST
@@ -549,7 +653,10 @@ public class PackagingScheduleResource {
     @Path("stopSolving")
     public void stopSolving() {
         solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
-
+        PackagingSchedule finalSchedule = repository.read();
+        SolutionPostProcessor.sortJobsByNp(finalSchedule);
+        repository.write(finalSchedule);
+        solverBusy.set(false);
     }
 
     public File exportTimeCompare(String date, PackagingSchedule solution) {

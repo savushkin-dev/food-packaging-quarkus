@@ -11,6 +11,8 @@ import java.util.Map;
 
 public class LoadDTO {
 
+    private boolean findSolvedInDb;
+
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
@@ -27,6 +29,9 @@ public class LoadDTO {
     private Map<String, LocalTime> lineStartTimes;
 
     public LoadDTO() {}
+
+    public Boolean getFindSolvedInDb() { return findSolvedInDb; }
+    public void setFindSolvedInDb(Boolean findSolvedInDb) { this.findSolvedInDb = findSolvedInDb; }
 
     public LocalDate getStartDate() { return startDate; }
     public LocalDate getEndDate() { return endDate; }
