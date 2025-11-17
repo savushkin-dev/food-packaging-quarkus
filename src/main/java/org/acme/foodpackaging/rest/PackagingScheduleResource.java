@@ -256,21 +256,18 @@ public class PackagingScheduleResource {
             }
         }
 
-        // ----- no-op: вставка внутрь того же диапазона -----
         if (sameLine
                 && request.getInsertIndex() >= fromIndex
                 && request.getInsertIndex() <= fromEnd) {
             return Response.ok(Map.of("status", "success", "message", "No-op")).build();
         }
 
-        // ---- Выполняем перенос -----
         List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, request.getInsertIndex());
 
         if (moved.isEmpty()) {
             return Response.ok(Map.of("status", "success", "message", "No jobs moved")).build();
         }
 
-        // ---- фиксация (ваши методы) -----
         fixLineJobs(fromLine);
         if (!sameLine) fixLineJobs(toLine);
 
@@ -375,44 +372,58 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
-        int idx = request.getInsertIndex();
+        int insertIndex = request.getInsertIndex();
 
-        if (idx < 0 || idx >= schedule.getJobs().size()) {
+        if (insertIndex < 0 || insertIndex >= schedule.getJobs().size()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid insertIndex: " + idx))
+                    .entity(Map.of("error", "Invalid insertIndex: " + insertIndex))
                     .build();
         }
-
-        Job baseJob = schedule.getJobs().get(idx);
 
         Line line = schedule.getLines().stream()
                 .filter(l -> l.getId().equals(request.getLineId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
 
+        List<Job> lineJobs = line.getJobs();
+
+        if (insertIndex >lineJobs.size()+1) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error",
+                            "insertIndex must be between 0 and " + (lineJobs.size() +1)))
+                    .build();
+        }
+
+        Job baseJob = lineJobs.get(insertIndex);
+
         Product maintenanceProduct = schedule.getProducts().stream()
                 .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Maintenance product with id='MAINTENANCE' not found"));
 
-        Job job = new Job(
-                "MAINTENANCE",
+        Job maintenanceJob = new Job(
+                "MAINTENANCE-" + UUID.randomUUID(),
                 request.getName(),
                 maintenanceProduct,
-                Duration.ofMinutes(90),   // duration
-                LocalDateTime.of(2025, 10, 4, 8, 0),                // minStartTime
-                LocalDateTime.of(2025, 10, 5, 2, 0),                // idealEndTime
-                LocalDateTime.of(2025, 10, 5, 7, 0),               // maxEndTime
-                1,                                                  // priority (1 → 10)
-                true,                                               // pinned
-                null,                                               // startCleaningDateTime
-                null                                                // startProductionDateTime
+                Duration.ofMinutes(request.getDurationMinutes()),
+                baseJob.getMinStartTime(),
+                baseJob.getIdealEndTime(),
+                baseJob.getMaxEndDateTime(),
+                0,
+                true,
+                null,
+                null
         );
 
-        job.setLineSpeeds(baseJob.getLineSpeeds());
-        job.setMaintenance(true);
-        schedule.getJobs().add(job);
+        maintenanceJob.setLineSpeeds(baseJob.getLineSpeeds());
+        maintenanceJob.setMaintenance(true);
+        maintenanceJob.setLine(line);
+        lineJobs.add(insertIndex + 1, maintenanceJob);
+        fixLineJobs(line);
+        schedule.getJobs().add(maintenanceJob);
+        line.setFirstUnpinnedIndex(insertIndex+2);
 
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.write(schedule);
 
         return Response.ok(Map.of(
