@@ -202,7 +202,7 @@ private Map<String, Product> loadProductfromDB(){
 
         try {
             try (Connection connection = DriverManager.getConnection(dbUrl);
-                 PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS)) {
+                 PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS_FOR_SELECTED_DATE)) {
                 preparedStatement.setString(1, date + "T00:00:00");     // Параметр для v.DTI
                 preparedStatement.setString(2, "0119030000");          // Параметр для v.KSK
                 preparedStatement.setDouble(3, 0.1);                  // Параметр для m.MASSA
@@ -374,19 +374,19 @@ private Map<String, Product> loadProductfromDB(){
 
                 if (!result.containsKey(ssnpz)) {
                     result.put(ssnpz, row);
-                    stmt.setString(1, ksk);
-                    stmt.setString(2, kmc);
-                    stmt.setDate(3, dti);
-                    stmt.setInt(4, np);
-                    stmt.setInt(5, kolev);
-                    stmt.setInt(6, ux);
-                    stmt.setInt(7, isnpz);
-                    stmt.setInt(8, massa);
+                    stmt.setInt(1, isnpz);
+                    stmt.setString(2, ksk);
+                    stmt.setString(3, kmc);
+                    stmt.setDate(4, dti);
+                    stmt.setInt(5, np);
+                    stmt.setInt(6, kolev);
+                    stmt.setInt(7, ux);
+                    stmt.setInt(8, isnpz);
+                    stmt.setInt(9, massa);
                     int updatedRows = stmt.executeUpdate();
                 }
             }
         } catch (SQLException e) {
-            // можно логировать e
             throw new RuntimeException("Failed to load jobs from BD_VZPMC. " + e.getMessage(), e);
         }
 
@@ -407,7 +407,6 @@ private Map<String, Product> loadProductfromDB(){
                 int updatedRows = stmt.executeUpdate();
             }
         } catch (SQLException e) {
-            // можно логировать e
             throw new RuntimeException("Failed to update jobs to PLR_PDAYNP "+e.getMessage(), e);
         }
     }
