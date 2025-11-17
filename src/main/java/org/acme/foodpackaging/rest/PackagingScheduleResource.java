@@ -13,7 +13,9 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.LoadDTO;
+import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.persistence.*;
@@ -25,6 +27,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -62,6 +65,8 @@ public class PackagingScheduleResource {
     PinRequestDTO pinRequest;
 
     MoveJobsRequestDTO moveJobsRequest;
+
+    MaintenanceRequestDTO maintenanceRequestDTO;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -274,6 +279,63 @@ public class PackagingScheduleResource {
         }
     }
 
+    @POST
+    @Path("maintenance")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response addMaintenance(MaintenanceRequestDTO request) {
+        PackagingSchedule schedule = repository.read();
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+        int idx = request.getInsertIndex();
+
+        if (idx < 0 || idx >= schedule.getJobs().size()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid insertIndex: " + idx))
+                    .build();
+        }
+
+        Job baseJob = schedule.getJobs().get(idx);
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+
+        Product maintenanceProduct = schedule.getProducts().stream()
+                .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Maintenance product with id='MAINTENANCE' not found"));
+
+        Job job = new Job(
+                "MAINTENANCE",
+                request.getName(),
+                maintenanceProduct,
+                Duration.ofMinutes(90),   // duration
+                LocalDateTime.of(2025, 10, 4, 8, 0),                // minStartTime
+                LocalDateTime.of(2025, 10, 5, 2, 0),                // idealEndTime
+                LocalDateTime.of(2025, 10, 5, 7, 0),               // maxEndTime
+                1,                                                  // priority (1 → 10)
+                true,                                               // pinned
+                null,                                               // startCleaningDateTime
+                null                                                // startProductionDateTime
+        );
+
+        job.setLineSpeeds(baseJob.getLineSpeeds());
+        job.setMaintenance(true);
+        schedule.getJobs().add(job);
+
+        repository.write(schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Maintenance job added successfully",
+                "lineId", line.getId()
+        )).build();
+    }
 
     @POST
     @Path("pin")
