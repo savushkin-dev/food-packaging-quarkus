@@ -60,6 +60,17 @@ public class LoadData {
         Set<Product> productSet = new HashSet<>();
         List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, productSet);
         List<Product> products = new ArrayList<>(productSet);
+        Product maintenanceProduct = new Product(
+                "Maintenance Product",
+                 "MAINTENANCE",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+        );
+        products.add(maintenanceProduct);
         // Инициализация времени мойки между продукцией
         calculator.cleaningCalculate(products);
         solution.setLines(lines);
