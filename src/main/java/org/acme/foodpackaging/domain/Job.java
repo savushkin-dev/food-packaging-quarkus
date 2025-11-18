@@ -20,17 +20,18 @@ public class Job {
     @PlanningId
     private String id;
     private String name;
+    private String previousJobId;
+    private String nextJobId;
     private int np;
+    private int quantity;
+    private double mass;
 
     private Product product;
-    private int quantity;
     private Duration duration;
     private boolean maintenance;
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
-    private String previousJobId;
-    private String nextJobId;
 
     /**
      * Higher priority is a higher number.
@@ -84,12 +85,13 @@ public class Job {
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, int np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
+    public Job(String id, String name, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
                LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
         this.np = np;
         this.product = product;
+        this.mass = mass;
         this.quantity = quantity;
         this.minStartTime = minStartTime;
         this.idealEndTime = idealEndTime;
@@ -101,8 +103,8 @@ public class Job {
         this.priority = priority == 0 ? 1 : priority*10;
     }
 
-    public Job(String id, String name, int np, Product product, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
-        this(id, name, np, product, quantity, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
+    public Job(String id, String name, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
+        this(id, name, np, product, mass, quantity, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
     }
 
     @Override
@@ -129,6 +131,8 @@ public class Job {
     public Map<String, Map<String, Integer>> getLineSpeeds() {
         return lineSpeeds;
     }
+
+    public double getMass() { return mass; }
 
     public int getQuantity() { return quantity; }
 
@@ -198,6 +202,8 @@ public class Job {
     public void setDuration(Duration duration) { this.duration = duration; }
 
     public void setMaintenance(boolean maintenance) { this.maintenance = maintenance; }
+
+    public void setMass(double mass) { this.mass = mass; }
 
     public void setNextJobId(String nextJobId) { this.nextJobId = nextJobId; }
 
