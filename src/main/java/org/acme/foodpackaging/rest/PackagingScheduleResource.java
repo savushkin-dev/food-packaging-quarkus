@@ -65,6 +65,8 @@ public class PackagingScheduleResource {
 
     PinRequestDTO pinRequest;
 
+    UpdateDurationRequestDTO updateRequestDTO;
+
     MoveJobsRequestDTO moveJobsRequestDTO;
 
     RemoveJobRequestDTO removeJobRequestDTO;
@@ -358,6 +360,57 @@ public class PackagingScheduleResource {
                 line.setFirstUnpinnedIndex(jobCount);
             }
         }
+    }
+
+    @POST
+    @Path("update-duration")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateJobDuration(UpdateDurationRequestDTO request) {
+
+        PackagingSchedule schedule = repository.read();
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElse(null);
+
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Line not found: " + request.getLineId()))
+                    .build();
+        }
+
+        List<Job> jobs = line.getJobs();
+
+        int index = request.getIndex();
+        if (index < 0 || index >= jobs.size()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid job index: " + index))
+                    .build();
+        }
+
+        Job job = jobs.get(index);
+
+        job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+
+        fixLineJobs(line);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.write(schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Job duration updated",
+                "jobId", job.getId(),
+                "lineId", line.getId(),
+                "newDurationMinutes", request.getDurationMinutes()
+        )).build();
     }
 
     @POST
