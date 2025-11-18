@@ -270,9 +270,10 @@ public class PackagingScheduleResource {
         }
 
         fixLineJobs(fromLine);
-        if (!sameLine) fixLineJobs(toLine);
+        fromLine.setFirstUnpinnedIndex(0);
+        if (!sameLine) { fixLineJobs(toLine); toLine.setFirstUnpinnedIndex(0); }
+        fromLine.setFirstUnpinnedIndex(0);
 
-        fixPinIndexes(schedule);
         SolutionPostProcessor.sortJobsByNp(schedule);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
@@ -347,18 +348,6 @@ public class PackagingScheduleResource {
             current.setPreviousJob(i > 0 ? jobs.get(i - 1) : null);
             current.setNextJob(i < jobs.size() - 1 ? jobs.get(i + 1) : null);
             current.updateStartCleaningDateTime();
-        }
-    }
-    /**
-     * Корректирует FirstUnpinnedIndex
-     */
-    private void fixPinIndexes(PackagingSchedule schedule) {
-        for (Line line : schedule.getLines()) {
-            int jobCount = line.getJobs().size();
-            int firstUnpinned = line.getFirstUnpinnedIndex();
-            if (firstUnpinned > jobCount) {
-                line.setFirstUnpinnedIndex(jobCount);
-            }
         }
     }
 
