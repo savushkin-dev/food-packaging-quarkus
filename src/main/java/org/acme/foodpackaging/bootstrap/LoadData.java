@@ -204,6 +204,7 @@ private Map<String, Product> loadProductfromDB(){
                         int quantity = resultSet.getInt("KOLEV");          // количество
                         int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
                         int priority =resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
+                        double mass = resultSet.getDouble("MASSA");     // масса партии
                         String ean13 = resultSet.getString("EAN13");   // Идентификатор продукта EAN13
                         String kmc = resultSet.getString("KMC");      //  Идентификатор продукта ERP
                         String name = resultSet.getString("NAME");   // Название
@@ -216,7 +217,7 @@ private Map<String, Product> loadProductfromDB(){
                         productsSet.add(product); // Set для инициализации списк апродукта
                         // Создание партий
                         Job job = createJob(
-                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, quantity, priority,
+                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, mass, quantity, priority,
                                 MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
                         );
                         jobs.add(job);
@@ -272,9 +273,9 @@ private Map<String, Product> loadProductfromDB(){
     public Map<String, String> getLinesIdWithNamesMap(){
         return linesIdWithNamesMap;
     }
-    private Job createJob(String id, String jobName, int np, Product product, int quantity, int priority,
+    private Job createJob(String id, String jobName, int np, Product product, double mass, int quantity, int priority,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
-        return new Job (id, jobName, np, product, quantity,
+        return new Job (id, jobName, np, product, mass, quantity,
                     minStartDateTime,
                     idealEndDateTime,
                     maxEndDateTime, priority, false
