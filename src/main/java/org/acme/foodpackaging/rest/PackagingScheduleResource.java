@@ -14,10 +14,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.LoadDTO;
-import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
-import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
-import org.acme.foodpackaging.dto.PinRequestDTO;
+import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -68,7 +65,9 @@ public class PackagingScheduleResource {
 
     PinRequestDTO pinRequest;
 
-    MoveJobsRequestDTO moveJobsRequest;
+    MoveJobsRequestDTO moveJobsRequestDTO;
+
+    RemoveJobRequestDTO removeJobRequestDTO;
 
     MaintenanceRequestDTO maintenanceRequestDTO;
 
@@ -362,6 +361,57 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("removeJob")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response removeJob(RemoveJobRequestDTO request) {
+
+        PackagingSchedule schedule = repository.read();
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElse(null);
+
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Line not found: " + request.getLineId()))
+                    .build();
+        }
+
+        List<Job> lineJobs = line.getJobs();
+        int index = request.getIndex();
+
+        if (index < 0 || index >= lineJobs.size()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid index: " + index))
+                    .build();
+        }
+
+        Job jobToRemove = lineJobs.get(index);
+
+        lineJobs.remove(index);
+        schedule.getJobs().remove(jobToRemove);
+
+        fixLineJobs(line);
+        line.setFirstUnpinnedIndex(0);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.write(schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Job removed successfully",
+                "removedJobId", jobToRemove.getId()
+        )).build();
+    }
+
+
+    @POST
     @Path("maintenance")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -418,10 +468,10 @@ public class PackagingScheduleResource {
         maintenanceJob.setLineSpeeds(baseJob.getLineSpeeds());
         maintenanceJob.setMaintenance(true);
         maintenanceJob.setLine(line);
-        lineJobs.add(insertIndex + 1, maintenanceJob);
+        lineJobs.add(insertIndex, maintenanceJob);
         fixLineJobs(line);
         schedule.getJobs().add(maintenanceJob);
-        line.setFirstUnpinnedIndex(insertIndex+2);
+        line.setFirstUnpinnedIndex(insertIndex+1);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.write(schedule);
