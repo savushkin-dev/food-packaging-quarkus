@@ -275,8 +275,6 @@ public class PackagingScheduleResource {
         if (!sameLine) { fixLineJobs(toLine); toLine.setFirstUnpinnedIndex(0); }
         fromLine.setFirstUnpinnedIndex(0);
 
-        SolutionPostProcessor.sortJobsByNp(schedule);
-
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.write(schedule);
 
