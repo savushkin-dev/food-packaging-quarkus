@@ -2,8 +2,8 @@ package org.acme.foodpackaging.dto;
 
 public class RemoveJobRequestDTO {
     private String lineId;
-    private int index;
+    private int removeIndex;
 
     public String getLineId() { return lineId; }
-    public int getIndex() { return index; }
+    public int getRemoveIndex() { return removeIndex; }
 }

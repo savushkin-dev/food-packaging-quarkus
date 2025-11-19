@@ -426,7 +426,7 @@ public class PackagingScheduleResource {
         }
 
         List<Job> lineJobs = line.getJobs();
-        int index = request.getIndex();
+        int index = request.getRemoveIndex();
 
         if (index < 0 || index >= lineJobs.size()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -447,10 +447,9 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(
                 "status", "success",
                 "message", "Job removed successfully",
-                "removedJobId", jobToRemove.getId()
+                "removedJobByIndex", index
         )).build();
     }
-
 
     @POST
     @Path("maintenance")
