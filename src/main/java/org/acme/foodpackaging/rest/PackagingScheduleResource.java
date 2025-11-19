@@ -239,8 +239,9 @@ public class PackagingScheduleResource {
         if (!sameLine) {
             for (int i = fromIndex; i < fromEnd; i++) {
                 Job job = jobs.get(i);
+                if( job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
-
+                
                 Integer duration = job.getLineSpeeds()
                         .getOrDefault(toLine.getId(), Map.of())
                         .get(productType);
