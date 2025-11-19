@@ -486,7 +486,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Job baseJob = lineJobs.get(insertIndex);
+        Job baseJob = lineJobs.get(lineJobs.size() - 1);
 
         Product maintenanceProduct = schedule.getProducts().stream()
                 .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
@@ -510,7 +510,9 @@ public class PackagingScheduleResource {
         maintenanceJob.setLineSpeeds(baseJob.getLineSpeeds());
         maintenanceJob.setMaintenance(true);
         maintenanceJob.setLine(line);
-        lineJobs.add(insertIndex, maintenanceJob);
+
+        lineJobs.add(Math.min(insertIndex, lineJobs.size()), maintenanceJob);
+
         fixLineJobs(line);
         schedule.getJobs().add(maintenanceJob);
         line.setFirstUnpinnedIndex(insertIndex+1);
