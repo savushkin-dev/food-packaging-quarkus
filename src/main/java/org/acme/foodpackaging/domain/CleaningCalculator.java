@@ -73,7 +73,7 @@ public class CleaningCalculator {
             Map<Product, Duration> durations = new HashMap<>(products.size());
             for (Product previous : products) {
                 Duration duration;
-                if(current.getId().equals("MAINTENANCE")){
+                if(current.getId().equals("MAINTENANCE") || previous.getId().equals("MAINTENANCE")){
                     duration = Duration.ZERO;
                 }
               else if(current.getId().equals(previous.getId())){
