@@ -223,7 +223,11 @@ public class LoadData {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load jobs from DB", e);
         }
-
+        Product maintenanceProduct = new Product(  // фиктивный продукт для сервисной работы
+                "Maintenance Product",
+                "MAINTENANCE", "", "", "", "", "", ""
+        );
+        productsSet.add(maintenanceProduct);
         Map<String, Map<String, Integer>> lineSpeeds = loadSpeedsFromDB();
 
         for (Job job : jobs) {
