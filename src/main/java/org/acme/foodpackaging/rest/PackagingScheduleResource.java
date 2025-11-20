@@ -32,7 +32,6 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 import static org.acme.foodpackaging.sql.SqlQueries.INSERT_PDAY;
@@ -210,38 +209,68 @@ public class PackagingScheduleResource {
 
         return Response.ok("Sorted successfully").build();
     }
-
     private void reorderJobsByProductNp(PackagingSchedule schedule) {
 
         Map<Product, Deque<Job>> pools = new HashMap<>();
         for (Job job : schedule.getJobs()) {
             pools.computeIfAbsent(job.getProduct(), p -> new ArrayDeque<>()).add(job);
         }
-
         for (Deque<Job> deque : pools.values()) {
             List<Job> list = new ArrayList<>(deque);
-            list.sort(Comparator.comparing(Job::getNp).reversed());
+            list.sort(Comparator.comparing(Job::getNp));
             deque.clear();
             deque.addAll(list);
         }
 
+        Map<Product, Integer> appearanceCounter = new HashMap<>();
+
         for (Line line : schedule.getLines()) {
+
             List<Job> original = line.getJobs();
             List<Job> newOrder = new ArrayList<>();
-            List<Job> buffer = new ArrayList<>();
 
+            Map<Product, Integer> requiredCount = new LinkedHashMap<>();
+            for (Job j : original) {
+                Product p = j.getProduct();
+                requiredCount.put(p, requiredCount.getOrDefault(p, 0) + 1);
+            }
+
+            Map<Product, Iterator<Job>> productIterators = new HashMap<>();
+            for (Map.Entry<Product, Integer> e : requiredCount.entrySet()) {
+                Product product = e.getKey();
+                int cnt = e.getValue();
+
+                Deque<Job> pool = pools.get(product);
+                if (pool == null || pool.size() < cnt) {
+                    throw new IllegalStateException("Not enough jobs in pool for product "
+                            + product.getName() + " required=" + cnt + " available=" + (pool == null ? 0 : pool.size()));
+                }
+
+                List<Job> portion = new ArrayList<>(cnt);
+                for (int i = 0; i < cnt; i++) {
+                    portion.add(pool.pollFirst());
+                }
+
+                int appearance = appearanceCounter.getOrDefault(product, 0);
+                if ((appearance % 2) == 1) {
+                    Collections.reverse(portion);
+                }
+
+                productIterators.put(product, portion.iterator());
+            }
+
+            List<Job> buffer = new ArrayList<>();
             for (Job job : original) {
                 if (hadCleaningBefore(job)) {
                     if (!buffer.isEmpty()) {
-                        newOrder.addAll(fillSubchainFromPools(buffer, pools));
+                        newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
                         buffer.clear();
                     }
                 }
                 buffer.add(job);
             }
-
             if (!buffer.isEmpty()) {
-                newOrder.addAll(fillSubchainFromPools(buffer, pools));
+                newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
             }
 
             for (int i = 0; i < newOrder.size(); i++) {
@@ -252,17 +281,20 @@ public class PackagingScheduleResource {
                 current.setNextJob(next);
             }
 
-            newOrder.forEach(Job::updateStartCleaningDateTime);
+            for (Product p : requiredCount.keySet()) {
+                appearanceCounter.put(p, appearanceCounter.getOrDefault(p, 0) + 1);
+            }
 
             line.setJobs(newOrder);
         }
+
         List<Job> allJobs = new ArrayList<>();
         for (Line line : schedule.getLines()) {
             fixLineJobs(line);
             allJobs.addAll(line.getJobs());
         }
-        schedule.setJobs(allJobs);
 
+        schedule.setJobs(allJobs);
     }
 
     private boolean hadCleaningBefore(Job job) {
@@ -270,26 +302,20 @@ public class PackagingScheduleResource {
             return false;
         return job.getStartCleaningDateTime().isBefore(job.getStartProductionDateTime());
     }
-
-    private List<Job> fillSubchainFromPools(List<Job> subchain,
-                                            Map<Product, Deque<Job>> pools) {
-
-        List<Job> result = new ArrayList<>();
-
+    /** Заполняет подцепочку из заранее подготовленных итераторов для продуктов на линии */
+    private List<Job> fillSubchainFromIterators(List<Job> subchain, Map<Product, Iterator<Job>> productIterators) {
+        List<Job> result = new ArrayList<>(subchain.size());
         for (Job oldJob : subchain) {
-            Product product = oldJob.getProduct();
-            Deque<Job> pool = pools.get(product);
-
-            if (pool == null || pool.isEmpty()) {
-                throw new IllegalStateException("Pool empty for product: " + product.getName());
+            Product p = oldJob.getProduct();
+            Iterator<Job> it = productIterators.get(p);
+            if (it == null || !it.hasNext()) {
+                throw new IllegalStateException("No iterator or exhausted for product " + p.getName());
             }
-
-            Job newJob = pool.pollLast();
-            result.add(newJob);
+            result.add(it.next());
         }
-
         return result;
     }
+
     @POST
     @Path("moveJobs")
     @Consumes(MediaType.APPLICATION_JSON)
