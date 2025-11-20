@@ -300,8 +300,9 @@ public class PackagingScheduleResource {
         if (!sameLine) {
             for (int i = fromIndex; i < fromEnd; i++) {
                 Job job = jobs.get(i);
+                if( job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
-
+                
                 Integer duration = job.getLineSpeeds()
                         .getOrDefault(toLine.getId(), Map.of())
                         .get(productType);
@@ -331,10 +332,9 @@ public class PackagingScheduleResource {
         }
 
         fixLineJobs(fromLine);
-        if (!sameLine) fixLineJobs(toLine);
-
-        fixPinIndexes(schedule);
-        SolutionPostProcessor.sortJobsByNp(schedule);
+        fromLine.setFirstUnpinnedIndex(0);
+        if (!sameLine) { fixLineJobs(toLine); toLine.setFirstUnpinnedIndex(0); }
+        fromLine.setFirstUnpinnedIndex(0);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -409,18 +409,6 @@ public class PackagingScheduleResource {
             current.setPreviousJob(i > 0 ? jobs.get(i - 1) : null);
             current.setNextJob(i < jobs.size() - 1 ? jobs.get(i + 1) : null);
             current.updateStartCleaningDateTime();
-        }
-    }
-    /**
-     * Корректирует FirstUnpinnedIndex
-     */
-    private void fixPinIndexes(PackagingSchedule schedule) {
-        for (Line line : schedule.getLines()) {
-            int jobCount = line.getJobs().size();
-            int firstUnpinned = line.getFirstUnpinnedIndex();
-            if (firstUnpinned > jobCount) {
-                line.setFirstUnpinnedIndex(jobCount);
-            }
         }
     }
 
@@ -500,7 +488,7 @@ public class PackagingScheduleResource {
         }
 
         List<Job> lineJobs = line.getJobs();
-        int index = request.getIndex();
+        int index = request.getRemoveIndex();
 
         if (index < 0 || index >= lineJobs.size()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -521,10 +509,9 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(
                 "status", "success",
                 "message", "Job removed successfully",
-                "removedJobId", jobToRemove.getId()
+                "removedJobByIndex", index
         )).build();
     }
-
 
     @POST
     @Path("maintenance")
@@ -559,7 +546,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Job baseJob = lineJobs.get(insertIndex);
+        Job baseJob = lineJobs.get(lineJobs.size() - 1);
 
         Product maintenanceProduct = schedule.getProducts().stream()
                 .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
@@ -583,7 +570,9 @@ public class PackagingScheduleResource {
         maintenanceJob.setLineSpeeds(baseJob.getLineSpeeds());
         maintenanceJob.setMaintenance(true);
         maintenanceJob.setLine(line);
-        lineJobs.add(insertIndex, maintenanceJob);
+
+        lineJobs.add(Math.min(insertIndex, lineJobs.size()), maintenanceJob);
+
         fixLineJobs(line);
         schedule.getJobs().add(maintenanceJob);
         line.setFirstUnpinnedIndex(insertIndex+1);
