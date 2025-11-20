@@ -13,6 +13,7 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
@@ -31,6 +32,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 import static org.acme.foodpackaging.sql.SqlQueries.INSERT_PDAY;
@@ -194,7 +196,100 @@ public class PackagingScheduleResource {
                     .build();
         }
     }
+    @POST
+    @Path("sortByNp")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response sortByNp() {
 
+        PackagingSchedule schedule = repository.read();
+
+        reorderJobsByProductNp(schedule);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.write(schedule);
+
+        return Response.ok("Sorted successfully").build();
+    }
+
+    private void reorderJobsByProductNp(PackagingSchedule schedule) {
+
+        Map<Product, Deque<Job>> pools = new HashMap<>();
+        for (Job job : schedule.getJobs()) {
+            pools.computeIfAbsent(job.getProduct(), p -> new ArrayDeque<>()).add(job);
+        }
+
+        for (Deque<Job> deque : pools.values()) {
+            List<Job> list = new ArrayList<>(deque);
+            list.sort(Comparator.comparing(Job::getNp).reversed());
+            deque.clear();
+            deque.addAll(list);
+        }
+
+        for (Line line : schedule.getLines()) {
+            List<Job> original = line.getJobs();
+            List<Job> newOrder = new ArrayList<>();
+            List<Job> buffer = new ArrayList<>();
+
+            for (Job job : original) {
+                if (hadCleaningBefore(job)) {
+                    if (!buffer.isEmpty()) {
+                        newOrder.addAll(fillSubchainFromPools(buffer, pools));
+                        buffer.clear();
+                    }
+                }
+                buffer.add(job);
+            }
+
+            if (!buffer.isEmpty()) {
+                newOrder.addAll(fillSubchainFromPools(buffer, pools));
+            }
+
+            for (int i = 0; i < newOrder.size(); i++) {
+                Job prev = (i > 0) ? newOrder.get(i - 1) : null;
+                Job next = (i < newOrder.size() - 1) ? newOrder.get(i + 1) : null;
+                Job current = newOrder.get(i);
+                current.setPreviousJob(prev);
+                current.setNextJob(next);
+            }
+
+            newOrder.forEach(Job::updateStartCleaningDateTime);
+
+            line.setJobs(newOrder);
+        }
+        List<Job> allJobs = new ArrayList<>();
+        for (Line line : schedule.getLines()) {
+            fixLineJobs(line);
+            allJobs.addAll(line.getJobs());
+        }
+        schedule.setJobs(allJobs);
+
+    }
+
+    private boolean hadCleaningBefore(Job job) {
+        if (job.getStartCleaningDateTime() == null || job.getStartProductionDateTime() == null)
+            return false;
+        return job.getStartCleaningDateTime().isBefore(job.getStartProductionDateTime());
+    }
+
+    private List<Job> fillSubchainFromPools(List<Job> subchain,
+                                            Map<Product, Deque<Job>> pools) {
+
+        List<Job> result = new ArrayList<>();
+
+        for (Job oldJob : subchain) {
+            Product product = oldJob.getProduct();
+            Deque<Job> pool = pools.get(product);
+
+            if (pool == null || pool.isEmpty()) {
+                throw new IllegalStateException("Pool empty for product: " + product.getName());
+            }
+
+            Job newJob = pool.pollLast();
+            result.add(newJob);
+        }
+
+        return result;
+    }
     @POST
     @Path("moveJobs")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -225,7 +320,7 @@ public class PackagingScheduleResource {
 
         List<Job> jobs = fromLine.getJobs();
         int fromEnd = Math.min(fromIndex + count, jobs.size());
-        
+
         if (fromIndex < 0 || fromIndex >= jobs.size() || fromIndex >= fromEnd) {
             return Response.ok(Map.of("status", "success", "message", "Nothing to move")).build();
         }
@@ -251,21 +346,18 @@ public class PackagingScheduleResource {
             }
         }
 
-        // ----- no-op: вставка внутрь того же диапазона -----
         if (sameLine
                 && request.getInsertIndex() >= fromIndex
                 && request.getInsertIndex() <= fromEnd) {
             return Response.ok(Map.of("status", "success", "message", "No-op")).build();
         }
 
-        // ---- Выполняем перенос -----
         List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, request.getInsertIndex());
 
         if (moved.isEmpty()) {
             return Response.ok(Map.of("status", "success", "message", "No jobs moved")).build();
         }
 
-        // ---- фиксация (ваши методы) -----
         fixLineJobs(fromLine);
         if (!sameLine) fixLineJobs(toLine);
 
