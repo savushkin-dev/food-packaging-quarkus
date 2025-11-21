@@ -467,9 +467,9 @@ public class PackagingScheduleResource {
         }
 
         fixLineJobs(fromLine);
-        fromLine.setFirstUnpinnedIndex(0);
+        fromLine.setFirstUnpinnedIndex(request.getInsertIndex() + 1);
         if (!sameLine) { fixLineJobs(toLine); toLine.setFirstUnpinnedIndex(0); }
-        fromLine.setFirstUnpinnedIndex(0);
+        fromLine.setFirstUnpinnedIndex(request.getInsertIndex() + 1);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
