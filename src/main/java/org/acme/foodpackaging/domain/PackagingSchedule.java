@@ -89,4 +89,15 @@ public class PackagingSchedule {
         this.solverStatus = solverStatus;
     }
 
+    @Override
+    public String toString() {
+        return "PackagingSchedule{" +
+                "workCalendar=" + workCalendar +
+                ", products=" + products +
+                ", lines=" + lines +
+                ", jobs=" + jobs +
+                ", score=" + score +
+                ", solverStatus=" + solverStatus +
+                '}';
+    }
 }
