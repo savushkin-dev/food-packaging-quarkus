@@ -467,9 +467,8 @@ public class PackagingScheduleResource {
         }
 
         fixLineJobs(fromLine);
-        fromLine.setFirstUnpinnedIndex(request.getInsertIndex() + 1);
-        if (!sameLine) { fixLineJobs(toLine); toLine.setFirstUnpinnedIndex(0); }
-        fromLine.setFirstUnpinnedIndex(request.getInsertIndex() + 1);
+        fixPinnedJobs(fromLine);
+        if (!sameLine)  {fixLineJobs(toLine); fixPinnedJobs(toLine);}
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -544,6 +543,16 @@ public class PackagingScheduleResource {
             current.setPreviousJob(i > 0 ? jobs.get(i - 1) : null);
             current.setNextJob(i < jobs.size() - 1 ? jobs.get(i + 1) : null);
             current.updateStartCleaningDateTime();
+        }
+    }
+
+    private void fixPinnedJobs(Line line) {
+        List<Job> jobs = line.getJobs();
+        line.setFirstUnpinnedIndex(0);
+        for(int i = 0; i < jobs.size(); ++i){
+            if(jobs.get(i).isMaintenance()) {
+                line.setFirstUnpinnedIndex(i+1);
+            }
         }
     }
 
@@ -637,7 +646,7 @@ public class PackagingScheduleResource {
         schedule.getJobs().remove(jobToRemove);
 
         fixLineJobs(line);
-        line.setFirstUnpinnedIndex(0);
+        fixPinnedJobs(line);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
@@ -710,7 +719,7 @@ public class PackagingScheduleResource {
 
         fixLineJobs(line);
         schedule.getJobs().add(maintenanceJob);
-        line.setFirstUnpinnedIndex(insertIndex+1);
+        fixPinnedJobs(line);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
