@@ -2,6 +2,7 @@ package org.acme.foodpackaging.bootstrap;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.*;
@@ -14,8 +15,11 @@ import java.sql.*;
 
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
+
 
 @ApplicationScoped
 public class LoadData {
@@ -25,48 +29,54 @@ public class LoadData {
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
-    private LocalDateTime IDEAL_END_DATE_TIME;
-    private LocalDateTime MAX_END_DATE_TIME;
-    private LocalDateTime MIN_START_DATE_TIME;
-    private Map<String, Product> allProductsMap;
-    private Map<String, String> linesIdWithNamesMap;
-    private CleaningCalculator calculator;
+    private ConcurrentMap<String, String> linesIdWithNamesMap;
 
     @PostConstruct
-    private void init(){
+    private void init() {
         this.linesIdWithNamesMap = loadLinesIdWithNames();
     }
 
-    public void loadDataByDate(LocalDate START_DATE, LocalDate END_DATE, LocalDateTime idealEndDateTime,
-                               LocalDateTime maxEndDateTime, Map<String, LocalDateTime> lineStartsTime) {
-        this.MIN_START_DATE_TIME = Collections.min(lineStartsTime.values());
-        this.IDEAL_END_DATE_TIME = idealEndDateTime;
-        this.MAX_END_DATE_TIME = maxEndDateTime;
-        this.allProductsMap = loadProductfromDB();
-        this.calculator = new CleaningCalculator();
-        PackagingSchedule solution = initSolution(START_DATE, END_DATE, lineStartsTime);
-        repository.write(solution);
+    public PackagingSchedule loadDataByDate(LocalDate START_DATE, LocalDate END_DATE,
+                                            LocalDateTime idealEndDateTime,
+                                            LocalDateTime maxEndDateTime,
+                                            Map<String, LocalDateTime> lineStartsTime) {
+
+        LocalDateTime minStartDateTime = Collections.min(lineStartsTime.values());
+        Map<String, Product> allProductsMap = loadProductfromDB();
+        CleaningCalculator calculator = new CleaningCalculator();
+
+        return initSolution(START_DATE, END_DATE, lineStartsTime,
+                minStartDateTime, idealEndDateTime, maxEndDateTime,
+                allProductsMap, calculator);
     }
 
     @Transactional
     public PackagingSchedule initSolution(LocalDate START_DATE, LocalDate END_DATE,
-                                          Map<String, LocalDateTime> lineStartsTime) {
+                                          Map<String, LocalDateTime> lineStartsTime,
+                                          LocalDateTime minStartDateTime,
+                                          LocalDateTime idealEndDateTime,
+                                          LocalDateTime maxEndDateTime,
+                                          Map<String, Product> allProductsMap,
+                                          CleaningCalculator calculator) {
         PackagingSchedule solution = new PackagingSchedule();
-        // Инициализация даты
         solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
-        // Инициализация линий
+
         List<Line> lines = createLines(lineStartsTime.size(), lineStartsTime);
         Set<Product> productSet = new HashSet<>();
-        List<Job> jobs = loadJobs(String.valueOf(START_DATE), MIN_START_DATE_TIME, productSet);
+
+        List<Job> jobs = loadJobs(String.valueOf(START_DATE), minStartDateTime, idealEndDateTime,
+                maxEndDateTime, allProductsMap, productSet);
+
         List<Product> products = new ArrayList<>(productSet);
-        // Инициализация времени мойки между продукцией
         calculator.cleaningCalculate(products);
+
         solution.setLines(lines);
         solution.setProducts(products);
         solution.setJobs(jobs);
 
         return solution;
     }
+
     private Map<String, Map<String, Integer>> loadSpeedsFromDB() {
         Map<Pair<String, String>, Integer> mapSpeed = getSpeedsfromDB();
         Map<String, Map<String, Integer>> finalMap = new HashMap<>();
@@ -102,18 +112,7 @@ public class LoadData {
         return finalMap;
     }
 
-    private void exportCleaningTime(){
-        List<Product> allProducts = allProductsMap.values().stream().toList();
-        calculator.cleaningCalculate(allProducts);
-        try {
-            CleaningTimeToExcel cleaningTimeToExcel = new CleaningTimeToExcel(allProducts);
-        }
-        catch (Exception e){
-            System.err.println(e.getMessage());
-        }
-    }
-
-    private List<CleaningRule> loadCleaningRulesfromDB(){
+    private List<CleaningRule> loadCleaningRulesfromDB() {
 
         List<CleaningRule> rules = new ArrayList<>();
 
@@ -130,14 +129,13 @@ public class LoadData {
                 CleaningRule rule = new CleaningRule(parameter, from_value, to_value, duration);
                 rules.add(rule);
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to load cleaning rules from DB", e);
         }
         return rules;
     }
 
-    private Map<Pair<String, String>, Integer> getSpeedsfromDB(){
+    private Map<Pair<String, String>, Integer> getSpeedsfromDB() {
         Map<Pair<String, String>, Integer> lines = new HashMap<>();
 
         ResultSet resultSet = null;
@@ -153,74 +151,71 @@ public class LoadData {
                 lines.put(typeLine, Integer.valueOf(prod));
 
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to load lines from DB", e);
         }
         return lines;
     }
 
-private Map<String, Product> loadProductfromDB(){
+    private Map<String, Product> loadProductfromDB() {
         Map<String, Product> productsMap = new HashMap<>();
         ResultSet resultSet = null;
-    try (Connection connection = DriverManager.getConnection(dbUrl);
-         Statement statement = connection.createStatement();) {
-        resultSet = statement.executeQuery(LOAD_PRODUCTS);
+        try (Connection connection = DriverManager.getConnection(dbUrl);
+             Statement statement = connection.createStatement();) {
+            resultSet = statement.executeQuery(LOAD_PRODUCTS);
 
-        while (resultSet.next()) {
-            String kmc = resultSet.getString("KMC");
-            String krKmc = resultSet.getString("KRKMC");
-            String shortName = resultSet.getString("SNM");
-            String ean13 = resultSet.getString("EAN13");
-            String type = resultSet.getString("GRF");
-            String glaze = resultSet.getString("TGLAZ");
-            String curdMass = resultSet.getString("TMASS");
-            String filling = resultSet.getString("TFBF");
-            productsMap.put(kmc, new Product(shortName, kmc, krKmc, ean13, type, glaze, curdMass, filling));
+            while (resultSet.next()) {
+                String kmc = resultSet.getString("KMC");
+                String krKmc = resultSet.getString("KRKMC");
+                String shortName = resultSet.getString("SNM");
+                String ean13 = resultSet.getString("EAN13");
+                String type = resultSet.getString("GRF");
+                String glaze = resultSet.getString("TGLAZ");
+                String curdMass = resultSet.getString("TMASS");
+                String filling = resultSet.getString("TFBF");
+                productsMap.put(kmc, new Product(shortName, kmc, krKmc, ean13, type, glaze, curdMass, filling));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load products from DB", e);
         }
+        return productsMap;
     }
-    catch (SQLException e) {
-        throw new RuntimeException("Failed to load products from DB", e);
-    }
-    return productsMap;
-}
 
-    private List<Job> loadJobs(String date, LocalDateTime startDateTime, Set<Product> productsSet) {
+    // Обновляем loadJobs чтобы принимать параметры
+    private List<Job> loadJobs(String date, LocalDateTime minStartDateTime,
+                               LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime,
+                               Map<String, Product> allProductsMap, Set<Product> productsSet) {
         List<Job> jobs = new ArrayList<>();
 
-        try {
-            try (Connection connection = DriverManager.getConnection(dbUrl);
-                 PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS_FOR_SELECTED_DATE)) {
-                preparedStatement.setString(1, date + "T00:00:00");     // Параметр для v.DTI
-                preparedStatement.setString(2, "0119030000");          // Параметр для v.KSK
-                preparedStatement.setDouble(3, 0.1);                  // Параметр для m.MASSA
+        try (Connection connection = DriverManager.getConnection(dbUrl);
+             PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS_FOR_SELECTED_DATE)) {
+            preparedStatement.setString(1, date + "T00:00:00");     // Параметр для v.DTI
+            preparedStatement.setString(2, "0119030000");          // Параметр для v.KSK
+            preparedStatement.setDouble(3, 0.1);                  // Параметр для m.MASSA
 
-                int job_id = 0;
-                Duration duration;
-                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-
-                    while (resultSet.next()) {
-                        int quantity = resultSet.getInt("KOLEV");          // количество
-                        int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
-                        int priority =resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
-                        double mass = resultSet.getDouble("MASSA");     // масса партии
-                        String ean13 = resultSet.getString("EAN13");   // Идентификатор продукта EAN13
-                        String kmc = resultSet.getString("KMC");      //  Идентификатор продукта ERP
-                        String name = resultSet.getString("NAME");   // Название
-                        String shortName = resultSet.getString(("SNM"));        // Сокращенное название
-                        // Список со всем возможным ассортиментов продуктов
-                        Product product = allProductsMap.get(kmc);
-                        if (product == null) {
-                            throw new IllegalStateException("KMC=" + kmc + " не найден в таблице продукции для планировщика");
-                        }
-                        productsSet.add(product); // Set для инициализации списк апродукта
-                        // Создание партий
-                        Job job = createJob(
-                                String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, mass, quantity, priority,
-                                MIN_START_DATE_TIME, IDEAL_END_DATE_TIME, MAX_END_DATE_TIME
-                        );
-                        jobs.add(job);
+            int job_id = 0;
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    int quantity = resultSet.getInt("KOLEV");          // количество
+                    int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
+                    int priority = resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
+                    double mass = resultSet.getDouble("MASSA");     // масса партии
+                    String ean13 = resultSet.getString("EAN13");   // Идентификатор продукта EAN13
+                    String kmc = resultSet.getString("KMC");      //  Идентификатор продукта ERP
+                    String name = resultSet.getString("NAME");   // Название
+                    String shortName = resultSet.getString(("SNM"));        // Сокращенное название
+                    // Список со всем возможным ассортиментов продуктов
+                    Product product = allProductsMap.get(kmc);
+                    if (product == null) {
+                        throw new IllegalStateException("KMC=" + kmc + " не найден в таблице продукции для планировщика");
                     }
+                    productsSet.add(product); // Set для инициализации списк апродукта
+                    // Создание партий
+                    Job job = createJob(
+                            String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, mass, quantity, priority,
+                            minStartDateTime, idealEndDateTime, maxEndDateTime  // Используем параметры
+                    );
+                    jobs.add(job);
                 }
             }
 
@@ -234,24 +229,25 @@ private Map<String, Product> loadProductfromDB(){
         productsSet.add(maintenanceProduct);
         Map<String, Map<String, Integer>> lineSpeeds = loadSpeedsFromDB();
 
-        for(Job job : jobs){
+        for (Job job : jobs) {
             job.setLineSpeeds(lineSpeeds);
         }
+
         return jobs;
     }
 
-    private List<Line> createLines(int lineCount, Map<String, LocalDateTime> lineStartsTime){
+    private List<Line> createLines(int lineCount, Map<String, LocalDateTime> lineStartsTime) {
         List<Line> lines = new ArrayList<>(lineCount);
-        for( Map.Entry<String, LocalDateTime> entry : lineStartsTime.entrySet()){
-                String lineName = linesIdWithNamesMap.get(entry.getKey());
-                Line line = new Line(entry.getKey(), lineName, entry.getValue());
-                lines.add(line);
+        for (Map.Entry<String, LocalDateTime> entry : lineStartsTime.entrySet()) {
+            String lineName = linesIdWithNamesMap.get(entry.getKey());
+            Line line = new Line(entry.getKey(), lineName, entry.getValue());
+            lines.add(line);
         }
         return lines;
     }
 
-    private Map<String, String> loadLinesIdWithNames(){
-        Map<String, String> linesNamesById = new LinkedHashMap<>();
+    private ConcurrentMap<String, String> loadLinesIdWithNames() {
+        ConcurrentMap<String, String> linesNamesById = new ConcurrentHashMap<>();
         ResultSet resultSet = null;
         try (Connection connection = DriverManager.getConnection(dbUrl);
              Statement statement = connection.createStatement();) {
@@ -262,22 +258,22 @@ private Map<String, Product> loadProductfromDB(){
                 String lineName = resultSet.getString("SNM");
                 linesNamesById.put(lineId, lineName);
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to load lines id with names from DB", e);
         }
         return linesNamesById;
     }
 
-    public Map<String, String> getLinesIdWithNamesMap(){
+    public Map<String, String> getLinesIdWithNamesMap() {
         return linesIdWithNamesMap;
     }
+
     private Job createJob(String id, String jobName, int np, Product product, double mass, int quantity, int priority,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
-        return new Job (id, jobName, np, product, mass, quantity,
-                    minStartDateTime,
-                    idealEndDateTime,
-                    maxEndDateTime, priority, false
+        return new Job(id, jobName, np, product, mass, quantity,
+                minStartDateTime,
+                idealEndDateTime,
+                maxEndDateTime, priority, false
         );
     }
 
@@ -293,7 +289,7 @@ private Map<String, Product> loadProductfromDB(){
 
         // читаем партии из PLR_PDAYNP
         try (Connection conn = DriverManager.getConnection(dbUrl);
-            PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
+             PreparedStatement ps = conn.prepareStatement(LOAD_PDAY)) {
             ps.setString(1, startDate.toString() + "T00:00:00");     // Параметр для v.DTI start
             ps.setString(2, endDate.toString() + "T00:00:00");     // Параметр для v.DTI end
             ps.setString(3, "0119030000");                           // Параметр для v.KSK
@@ -400,7 +396,10 @@ private Map<String, Product> loadProductfromDB(){
                 int updatedRows = stmt.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to update jobs to PLR_PDAYNP "+e.getMessage(), e);
+
+            // можно логировать e
+            throw new RuntimeException("Failed to update jobs to PLR_PDAYNP " + e.getMessage(), e);
+
         }
     }
 }
