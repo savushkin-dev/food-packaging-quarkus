@@ -15,7 +15,6 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 
-
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 
 @ApplicationScoped
@@ -404,7 +403,4 @@ private Map<String, Product> loadProductfromDB(){
             throw new RuntimeException("Failed to update jobs to PLR_PDAYNP "+e.getMessage(), e);
         }
     }
-
-
-
 }

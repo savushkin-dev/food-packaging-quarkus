@@ -17,7 +17,6 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
-import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -37,7 +36,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
-import static org.acme.foodpackaging.sql.SqlQueries.INSERT_PDAY;
 
 @Path("schedule")
 public class PackagingScheduleResource {
@@ -66,16 +64,6 @@ public class PackagingScheduleResource {
 
     @Inject
     LoadData loadData;
-
-    PinRequestDTO pinRequest;
-
-    UpdateDurationRequestDTO updateRequestDTO;
-
-    MoveJobsRequestDTO moveJobsRequestDTO;
-
-    RemoveJobRequestDTO removeJobRequestDTO;
-
-    MaintenanceRequestDTO maintenanceRequestDTO;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -218,12 +206,16 @@ public class PackagingScheduleResource {
 
         return Response.ok("Sorted successfully").build();
     }
+
     private void reorderJobsByProductNp(PackagingSchedule schedule) {
 
         Map<Product, Deque<Job>> pools = new HashMap<>();
         for (Job job : schedule.getJobs()) {
-            pools.computeIfAbsent(job.getProduct(), p -> new ArrayDeque<>()).add(job);
+            if (!job.isMaintenance()) {
+                pools.computeIfAbsent(job.getProduct(), p -> new ArrayDeque<>()).add(job);
+            }
         }
+
         for (Deque<Job> deque : pools.values()) {
             List<Job> list = new ArrayList<>(deque);
             list.sort(Comparator.comparing(Job::getNp));
@@ -240,8 +232,10 @@ public class PackagingScheduleResource {
 
             Map<Product, Integer> requiredCount = new LinkedHashMap<>();
             for (Job j : original) {
-                Product p = j.getProduct();
-                requiredCount.put(p, requiredCount.getOrDefault(p, 0) + 1);
+                if (!j.isMaintenance()) {
+                    Product p = j.getProduct();
+                    requiredCount.put(p, requiredCount.getOrDefault(p, 0) + 1);
+                }
             }
 
             Map<Product, Iterator<Job>> productIterators = new HashMap<>();
@@ -251,8 +245,8 @@ public class PackagingScheduleResource {
 
                 Deque<Job> pool = pools.get(product);
                 if (pool == null || pool.size() < cnt) {
-                    throw new IllegalStateException("Not enough jobs in pool for product "
-                            + product.getName() + " required=" + cnt + " available=" + (pool == null ? 0 : pool.size()));
+                    throw new IllegalStateException(
+                            "Not enough jobs in pool for product " + product.getName());
                 }
 
                 List<Job> portion = new ArrayList<>(cnt);
@@ -270,14 +264,26 @@ public class PackagingScheduleResource {
 
             List<Job> buffer = new ArrayList<>();
             for (Job job : original) {
+
                 if (hadCleaningBefore(job)) {
                     if (!buffer.isEmpty()) {
                         newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
                         buffer.clear();
                     }
                 }
+
+                if (job.isMaintenance()) {
+                    if (!buffer.isEmpty()) {
+                        newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
+                        buffer.clear();
+                    }
+                    newOrder.add(job);
+                    continue;
+                }
+
                 buffer.add(job);
             }
+
             if (!buffer.isEmpty()) {
                 newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
             }
@@ -302,7 +308,6 @@ public class PackagingScheduleResource {
             fixLineJobs(line);
             allJobs.addAll(line.getJobs());
         }
-
         schedule.setJobs(allJobs);
     }
 
@@ -881,7 +886,6 @@ public class PackagingScheduleResource {
     public void stopSolving() {
         solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
         PackagingSchedule finalSchedule = repository.read();
-        SolutionPostProcessor.sortJobsByNp(finalSchedule);
         repository.write(finalSchedule);
         solverBusy.set(false);
     }
