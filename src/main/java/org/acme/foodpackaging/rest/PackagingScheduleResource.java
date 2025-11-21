@@ -42,10 +42,8 @@ import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 @ApplicationScoped
 public class PackagingScheduleResource {
 
-
     @Inject
     PackagingScheduleRepository repository;
-
 
     @Inject
     SolverManager<PackagingSchedule, String> solverManager;
@@ -206,14 +204,14 @@ public class PackagingScheduleResource {
     @POST
     @Path("sortByNp")
     @Produces(MediaType.TEXT_PLAIN)
-    public Response sortByNp() {
+    public Response sortByNp(@HeaderParam("X-Session-Id") String sessionId) {
 
-        PackagingSchedule schedule = repository.read();
+        PackagingSchedule schedule = repository.readForSession(sessionId);
 
         reorderJobsByProductNp(schedule);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.write(schedule);
+        repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Sorted successfully").build();
     }
@@ -358,7 +356,6 @@ public class PackagingScheduleResource {
                     .withProblemId(problemId)
                     .withProblemFinder(id -> repository.readForSession(sessionId))
                     .withBestSolutionConsumer(schedule -> {
-//                        SolutionPostProcessor.sortJobsByNp(schedule);
                         repository.writeForSession(sessionId, schedule);
                     })
                     .run();
@@ -390,7 +387,6 @@ public class PackagingScheduleResource {
         solverManager.terminateEarly(problemId);
 
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
-        SolutionPostProcessor.sortJobsByNp(finalSchedule);
         repository.writeForSession(sessionId, finalSchedule);
 
         return Response.ok(Map.of(
@@ -934,18 +930,6 @@ public class PackagingScheduleResource {
         }
         return true;
     }
-
-
-    @POST
-    @Path("stopSolving")
-    public void stopSolving() {
-        solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
-        PackagingSchedule finalSchedule = repository.read();
-        repository.write(finalSchedule);
-        solverBusy.set(false);
-    }
-
-
 
     public File exportTimeCompare(String date, PackagingSchedule solution) {
         ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
