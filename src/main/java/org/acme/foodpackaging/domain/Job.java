@@ -28,6 +28,7 @@ public class Job {
 
     private Product product;
     private Duration duration;
+    private boolean maintenance;
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
@@ -146,6 +147,8 @@ public class Job {
     }
 
     public Duration getDuration() {
+        if(isMaintenance()) return duration;
+
         Integer speed = getSpeed();
 
         if (speed == null || speed <= 0) {
@@ -184,11 +187,21 @@ public class Job {
         return productSpeeds.get(product.getType());
     }
 
+    public boolean isMaintenance() {
+        return maintenance;
+    }
+
     public boolean isPinned() {
         return pinned;
     }
 
     public Line getLine() { return line; }
+
+    public void setName(String name) { this.name = name; }
+
+    public void setDuration(Duration duration) { this.duration = duration; }
+
+    public void setMaintenance(boolean maintenance) { this.maintenance = maintenance; }
 
     public void setMass(double mass) { this.mass = mass; }
 
@@ -241,6 +254,10 @@ public class Job {
 
     public LocalDateTime getEndDateTime() {
         return endDateTime;
+    }
+
+    public LocalDateTime getMaxEndDateTime() {
+        return maxEndTime;
     }
 
     public void setEndDateTime(LocalDateTime endDateTime) {
