@@ -2,11 +2,9 @@ package org.acme.foodpackaging.bootstrap;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.persistence.CleaningTimeToExcel;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -17,7 +15,6 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 
@@ -403,6 +400,4 @@ public class LoadData {
 
         }
     }
-
-
 }
