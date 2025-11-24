@@ -15,6 +15,9 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.LoadDTO;
+import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
+import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -39,10 +42,8 @@ import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 @ApplicationScoped
 public class PackagingScheduleResource {
 
-
     @Inject
     PackagingScheduleRepository repository;
-
 
     @Inject
     SolverManager<PackagingSchedule, String> solverManager;
@@ -52,7 +53,6 @@ public class PackagingScheduleResource {
 
     @Inject
     LoadData loadData;
-
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -201,6 +201,143 @@ public class PackagingScheduleResource {
                     .build();
         }
     }
+    @POST
+    @Path("sortByNp")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response sortByNp(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        reorderJobsByProductNp(schedule);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Sorted successfully").build();
+    }
+
+    private void reorderJobsByProductNp(PackagingSchedule schedule) {
+
+        Map<Product, Deque<Job>> pools = new HashMap<>();
+        for (Job job : schedule.getJobs()) {
+            if (!job.isMaintenance()) {
+                pools.computeIfAbsent(job.getProduct(), p -> new ArrayDeque<>()).add(job);
+            }
+        }
+
+        for (Deque<Job> deque : pools.values()) {
+            List<Job> list = new ArrayList<>(deque);
+            list.sort(Comparator.comparing(Job::getNp));
+            deque.clear();
+            deque.addAll(list);
+        }
+
+        Map<Product, Integer> appearanceCounter = new HashMap<>();
+
+        for (Line line : schedule.getLines()) {
+
+            List<Job> original = line.getJobs();
+            List<Job> newOrder = new ArrayList<>();
+
+            Map<Product, Integer> requiredCount = new LinkedHashMap<>();
+            for (Job j : original) {
+                if (!j.isMaintenance()) {
+                    Product p = j.getProduct();
+                    requiredCount.put(p, requiredCount.getOrDefault(p, 0) + 1);
+                }
+            }
+
+            Map<Product, Iterator<Job>> productIterators = new HashMap<>();
+            for (Map.Entry<Product, Integer> e : requiredCount.entrySet()) {
+                Product product = e.getKey();
+                int cnt = e.getValue();
+
+                Deque<Job> pool = pools.get(product);
+                if (pool == null || pool.size() < cnt) {
+                    throw new IllegalStateException(
+                            "Not enough jobs in pool for product " + product.getName());
+                }
+
+                List<Job> portion = new ArrayList<>(cnt);
+                for (int i = 0; i < cnt; i++) {
+                    portion.add(pool.pollFirst());
+                }
+
+                int appearance = appearanceCounter.getOrDefault(product, 0);
+                if ((appearance % 2) == 1) {
+                    Collections.reverse(portion);
+                }
+
+                productIterators.put(product, portion.iterator());
+            }
+
+            List<Job> buffer = new ArrayList<>();
+            for (Job job : original) {
+
+                if (hadCleaningBefore(job)) {
+                    if (!buffer.isEmpty()) {
+                        newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
+                        buffer.clear();
+                    }
+                }
+
+                if (job.isMaintenance()) {
+                    if (!buffer.isEmpty()) {
+                        newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
+                        buffer.clear();
+                    }
+                    newOrder.add(job);
+                    continue;
+                }
+
+                buffer.add(job);
+            }
+
+            if (!buffer.isEmpty()) {
+                newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
+            }
+
+            for (int i = 0; i < newOrder.size(); i++) {
+                Job prev = (i > 0) ? newOrder.get(i - 1) : null;
+                Job next = (i < newOrder.size() - 1) ? newOrder.get(i + 1) : null;
+                Job current = newOrder.get(i);
+                current.setPreviousJob(prev);
+                current.setNextJob(next);
+            }
+
+            for (Product p : requiredCount.keySet()) {
+                appearanceCounter.put(p, appearanceCounter.getOrDefault(p, 0) + 1);
+            }
+
+            line.setJobs(newOrder);
+        }
+
+        List<Job> allJobs = new ArrayList<>();
+        for (Line line : schedule.getLines()) {
+            fixLineJobs(line);
+            allJobs.addAll(line.getJobs());
+        }
+        schedule.setJobs(allJobs);
+    }
+
+    private boolean hadCleaningBefore(Job job) {
+        if (job.getStartCleaningDateTime() == null || job.getStartProductionDateTime() == null)
+            return false;
+        return job.getStartCleaningDateTime().isBefore(job.getStartProductionDateTime());
+    }
+    /** Заполняет подцепочку из заранее подготовленных итераторов для продуктов на линии */
+    private List<Job> fillSubchainFromIterators(List<Job> subchain, Map<Product, Iterator<Job>> productIterators) {
+        List<Job> result = new ArrayList<>(subchain.size());
+        for (Job oldJob : subchain) {
+            Product p = oldJob.getProduct();
+            Iterator<Job> it = productIterators.get(p);
+            if (it == null || !it.hasNext()) {
+                throw new IllegalStateException("No iterator or exhausted for product " + p.getName());
+            }
+            result.add(it.next());
+        }
+        return result;
+    }
 
     @POST
     @Path("solve")
@@ -219,7 +356,6 @@ public class PackagingScheduleResource {
                     .withProblemId(problemId)
                     .withProblemFinder(id -> repository.readForSession(sessionId))
                     .withBestSolutionConsumer(schedule -> {
-//                        SolutionPostProcessor.sortJobsByNp(schedule);
                         repository.writeForSession(sessionId, schedule);
                     })
                     .run();
@@ -251,7 +387,6 @@ public class PackagingScheduleResource {
         solverManager.terminateEarly(problemId);
 
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
-        SolutionPostProcessor.sortJobsByNp(finalSchedule);
         repository.writeForSession(sessionId, finalSchedule);
 
         return Response.ok(Map.of(
@@ -292,7 +427,7 @@ public class PackagingScheduleResource {
 
         List<Job> jobs = fromLine.getJobs();
         int fromEnd = Math.min(fromIndex + count, jobs.size());
-        
+
         if (fromIndex < 0 || fromIndex >= jobs.size() || fromIndex >= fromEnd) {
             return Response.ok(Map.of("status", "success", "message", "Nothing to move")).build();
         }
@@ -332,9 +467,8 @@ public class PackagingScheduleResource {
         }
 
         fixLineJobs(fromLine);
-        fromLine.setFirstUnpinnedIndex(0);
-        if (!sameLine) { fixLineJobs(toLine); toLine.setFirstUnpinnedIndex(0); }
-        fromLine.setFirstUnpinnedIndex(0);
+        fixPinnedJobs(fromLine);
+        if (!sameLine)  {fixLineJobs(toLine); fixPinnedJobs(toLine);}
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -409,6 +543,16 @@ public class PackagingScheduleResource {
             current.setPreviousJob(i > 0 ? jobs.get(i - 1) : null);
             current.setNextJob(i < jobs.size() - 1 ? jobs.get(i + 1) : null);
             current.updateStartCleaningDateTime();
+        }
+    }
+
+    private void fixPinnedJobs(Line line) {
+        List<Job> jobs = line.getJobs();
+        line.setFirstUnpinnedIndex(0);
+        for(int i = 0; i < jobs.size(); ++i){
+            if(jobs.get(i).isMaintenance()) {
+                line.setFirstUnpinnedIndex(i+1);
+            }
         }
     }
 
@@ -502,7 +646,7 @@ public class PackagingScheduleResource {
         schedule.getJobs().remove(jobToRemove);
 
         fixLineJobs(line);
-        line.setFirstUnpinnedIndex(0);
+        fixPinnedJobs(line);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
@@ -575,7 +719,7 @@ public class PackagingScheduleResource {
 
         fixLineJobs(line);
         schedule.getJobs().add(maintenanceJob);
-        line.setFirstUnpinnedIndex(insertIndex+1);
+        fixPinnedJobs(line);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -795,10 +939,6 @@ public class PackagingScheduleResource {
         }
         return true;
     }
-
-
-
-
 
     public File exportTimeCompare(String date, PackagingSchedule solution) {
         ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
