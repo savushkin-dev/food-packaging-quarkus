@@ -34,7 +34,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
@@ -88,7 +87,6 @@ public class PackagingScheduleResource {
     @Path("load")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-
     public Response load(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
         LocalDate startDate = loadDTO.getStartDate();
@@ -146,8 +144,7 @@ public class PackagingScheduleResource {
     @Path("loadpday")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-
-    public Response loadpday(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response loadpday(LoadDTO loadDTO) {
 
         LocalDate startDate = loadDTO.getStartDate();
         LocalDate endDate = loadDTO.getEndDate();
@@ -171,18 +168,14 @@ public class PackagingScheduleResource {
     @Path("updatepday")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updatepday(Map<String, LocalDate> mapsnpz, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response updatepday(UpdatePDayDTO dto) {
         try {
 
-            PackagingSchedule currentSchedule = repository.readForSession(sessionId);
-            if (currentSchedule == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "No schedule loaded for session"))
-                        .build();
-            }
+            LoadDTO loadDTO = dto.getLoadDTO();
+            Map<String, LocalDate> mapsnpz = dto.getMapsnpz();
 
-            LocalDate startDate = currentSchedule.getWorkCalendar().getFromDate();
-            LocalDate endDate = currentSchedule.getWorkCalendar().getToDate();
+            LocalDate startDate = loadDTO.getStartDate();
+            LocalDate endDate = loadDTO.getEndDate();
 
             loadData.updatePDay(startDate, endDate, mapsnpz);
 
@@ -201,6 +194,7 @@ public class PackagingScheduleResource {
                     .build();
         }
     }
+
     @POST
     @Path("sortByNp")
     @Produces(MediaType.TEXT_PLAIN)
