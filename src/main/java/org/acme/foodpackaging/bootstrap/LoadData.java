@@ -8,6 +8,7 @@ import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.w3c.dom.ls.LSOutput;
 
 import java.sql.*;
 
@@ -381,23 +382,22 @@ public class LoadData {
 
     }
 
-    public void updatePDay(LocalDate startDate, LocalDate endDate, Map<String, LocalDate> mapsnpz) {
-
+    public void updatePDay(Map<String, LocalDate> mapsnpz) {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(UPDATE_PDAYDTF)) {
 
+            conn.setAutoCommit(false);
+
             for (Map.Entry<String, LocalDate> entry : mapsnpz.entrySet()) {
-                String key = entry.getKey();
-                LocalDate value = entry.getValue();
-                stmt.setDate(1, java.sql.Date.valueOf(value));
-                stmt.setString(2, key);
-                int updatedRows = stmt.executeUpdate();
+                stmt.setDate(1, java.sql.Date.valueOf(entry.getValue()));
+                stmt.setString(2, entry.getKey());
+                stmt.addBatch();
             }
+
+            stmt.executeBatch();
+            conn.commit();
         } catch (SQLException e) {
-
-            // можно логировать e
             throw new RuntimeException("Failed to update jobs to PLR_PDAYNP " + e.getMessage(), e);
-
         }
     }
 }
