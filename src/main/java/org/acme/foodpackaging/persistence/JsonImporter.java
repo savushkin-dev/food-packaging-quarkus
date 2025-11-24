@@ -99,7 +99,7 @@ public class JsonImporter {
                             .filter(j -> j.getLine() != null && j.getLine().getId().equals(line.getId()))
                             .sorted(Comparator.comparing(Job::getStartProductionDateTime,
                                     Comparator.nullsLast(Comparator.naturalOrder())))
-                            .toList();
+                            .collect(Collectors.toCollection(ArrayList::new));
                     line.setJobs(jobsForLine);
                 }
 
