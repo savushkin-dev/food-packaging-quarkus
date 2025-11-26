@@ -8,6 +8,8 @@ import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.ls.LSOutput;
 
 import java.sql.*;
@@ -18,10 +20,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
+import static org.acme.foodpackaging.sql.SqlQueries.UPDATE_PDAYDTF;
 
 
 @ApplicationScoped
 public class LoadData {
+
+    private static final Logger log = LoggerFactory.getLogger(LoadData.class);
+
     @Inject
     PackagingScheduleRepository repository;
 
@@ -382,6 +388,7 @@ public class LoadData {
 
     }
 
+
     public void updatePDay(Map<String, LocalDate> mapsnpz) {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(UPDATE_PDAYDTF)) {
@@ -400,4 +407,52 @@ public class LoadData {
             throw new RuntimeException("Failed to update jobs to PLR_PDAYNP " + e.getMessage(), e);
         }
     }
+
+    public void sendToWork(List<Job> jobs) {
+
+        String UPDATE_WORK = """
+                   update [MES].[dbo].[BD_VZPMC] set KRC=?, DATE_START where SNPZ=?
+                """;
+
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(dbUrl);
+            conn.setAutoCommit(false); // ручное управление транзакцией
+
+            try (PreparedStatement ps = conn.prepareStatement(UPDATE_WORK)) {
+                for (Job job : jobs) {
+                    ps.setString(1, job.getLine().getId()); // lineId → KRC
+                    ps.setObject(2, job.getStartProductionDateTime()); // DATE_START
+                    ps.setString(3, job.getSnpz()); // SNPZ
+                    ps.addBatch();
+                }
+
+                ps.executeBatch();
+                conn.commit(); // фиксируем транзакцию
+                log.info("Successfully UPDATE_WORK");
+            }
+        } catch (SQLException e) {
+            log.error("Error UPDATE_WORK, rollback", e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                    log.warn("Rollback UPDATE_WORK");
+                } catch (SQLException rollbackEx) {
+                    log.error("Error rollback", rollbackEx);
+                }
+            }
+            throw new RuntimeException("Error UPDATE_WORK, rollback", e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                    log.debug("Close connection UPDATE_WORK");
+                } catch (Exception closeEx) {
+                    log.error("Error close connection UPDATE_WORK", closeEx);
+                }
+            }
+        }
+    }
+
+
 }
