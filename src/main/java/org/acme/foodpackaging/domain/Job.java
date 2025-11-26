@@ -22,6 +22,7 @@ public class Job {
     private String name;
     private String previousJobId;
     private String nextJobId;
+    private int snpz;
     private int np;
     private int quantity;
     private double mass;
@@ -85,10 +86,11 @@ public class Job {
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
+    public Job(String id, String name, int snpz, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
                LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
+        this.snpz = snpz;
         this.np = np;
         this.product = product;
         this.mass = mass;
@@ -103,8 +105,8 @@ public class Job {
         this.priority = priority == 0 ? 1 : priority*10;
     }
 
-    public Job(String id, String name, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
-        this(id, name, np, product, mass, quantity, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
+    public Job(String id, String name, int snpz, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
+        this(id, name, snpz, np, product, mass, quantity, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
     }
 
     @Override
@@ -133,6 +135,10 @@ public class Job {
     }
 
     public double getMass() { return mass; }
+
+    public int getSnpz() {
+        return snpz;
+    }
 
     public int getQuantity() { return quantity; }
 
@@ -198,6 +204,8 @@ public class Job {
     public Line getLine() { return line; }
 
     public void setName(String name) { this.name = name; }
+
+    public void setSnpz(int snpz) { this.snpz = snpz; }
 
     public void setDuration(Duration duration) { this.duration = duration; }
 
