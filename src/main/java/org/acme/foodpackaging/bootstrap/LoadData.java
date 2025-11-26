@@ -8,17 +8,15 @@ import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.apache.commons.math3.util.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.w3c.dom.ls.LSOutput;
 
+import java.math.BigDecimal;
 import java.sql.*;
-
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
-
 
 @ApplicationScoped
 public class LoadData {
@@ -195,9 +193,12 @@ public class LoadData {
             int job_id = 0;
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
+                    BigDecimal npVal = resultSet.getBigDecimal("NP");
+                    if(npVal == null || npVal.intValue() == 0) continue;
+                    int np = npVal.intValue();
                     int quantity = resultSet.getInt("KOLEV");          // количество
-                    int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
                     int priority = resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
+                    int snpz = resultSet.getInt("SNPZ");
                     double mass = resultSet.getDouble("MASSA");     // масса партии
                     String ean13 = resultSet.getString("EAN13");   // Идентификатор продукта EAN13
                     String kmc = resultSet.getString("KMC");      //  Идентификатор продукта ERP
@@ -211,7 +212,7 @@ public class LoadData {
                     productsSet.add(product); // Set для инициализации списк апродукта
                     // Создание партий
                     Job job = createJob(
-                            String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, mass, quantity, priority,
+                            String.valueOf(++job_id), cleanSyrkiName(shortName), snpz, np, product, mass, quantity, priority,
                             minStartDateTime, idealEndDateTime, maxEndDateTime  // Используем параметры
                     );
                     jobs.add(job);
@@ -267,9 +268,9 @@ public class LoadData {
         return linesIdWithNamesMap;
     }
 
-    private Job createJob(String id, String jobName, int np, Product product, double mass, int quantity, int priority,
+    private Job createJob(String id, String jobName, int snpz, int np, Product product, double mass, int quantity, int priority,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
-        return new Job(id, jobName, np, product, mass, quantity,
+        return new Job(id, jobName, snpz, np, product, mass, quantity,
                 minStartDateTime,
                 idealEndDateTime,
                 maxEndDateTime, priority, false
