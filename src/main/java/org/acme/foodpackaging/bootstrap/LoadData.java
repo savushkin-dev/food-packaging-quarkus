@@ -12,8 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.ls.LSOutput;
 
-import java.sql.*;
 
+import java.math.BigDecimal;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,7 +22,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 import static org.acme.foodpackaging.sql.SqlQueries.UPDATE_PDAYDTF;
-
 
 @ApplicationScoped
 public class LoadData {
@@ -201,9 +201,12 @@ public class LoadData {
             int job_id = 0;
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
+                    BigDecimal npVal = resultSet.getBigDecimal("NP");
+                    if(npVal == null || npVal.intValue() == 0) continue;
+                    int np = npVal.intValue();
                     int quantity = resultSet.getInt("KOLEV");          // количество
-                    int np = resultSet.getObject("NP") != null ? resultSet.getInt("NP") : 0;
                     int priority = resultSet.getObject("UX") != null ? resultSet.getInt("UX") : 0;// Приоритет выполнения
+                    int snpz = resultSet.getInt("SNPZ");
                     double mass = resultSet.getDouble("MASSA");     // масса партии
                     String ean13 = resultSet.getString("EAN13");   // Идентификатор продукта EAN13
                     String kmc = resultSet.getString("KMC");      //  Идентификатор продукта ERP
@@ -217,7 +220,7 @@ public class LoadData {
                     productsSet.add(product); // Set для инициализации списк апродукта
                     // Создание партий
                     Job job = createJob(
-                            String.valueOf(++job_id), cleanSyrkiName(shortName), np, product, mass, quantity, priority,
+                            String.valueOf(++job_id), cleanSyrkiName(shortName), snpz, np, product, mass, quantity, priority,
                             minStartDateTime, idealEndDateTime, maxEndDateTime  // Используем параметры
                     );
                     jobs.add(job);
@@ -273,9 +276,9 @@ public class LoadData {
         return linesIdWithNamesMap;
     }
 
-    private Job createJob(String id, String jobName, int np, Product product, double mass, int quantity, int priority,
+    private Job createJob(String id, String jobName, int snpz, int np, Product product, double mass, int quantity, int priority,
                           LocalDateTime minStartDateTime, LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
-        return new Job(id, jobName, np, product, mass, quantity,
+        return new Job(id, jobName, snpz, np, product, mass, quantity,
                 minStartDateTime,
                 idealEndDateTime,
                 maxEndDateTime, priority, false
@@ -393,8 +396,6 @@ public class LoadData {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(UPDATE_PDAYDTF)) {
 
-            conn.setAutoCommit(false);
-
             for (Map.Entry<String, LocalDate> entry : mapsnpz.entrySet()) {
                 stmt.setDate(1, java.sql.Date.valueOf(entry.getValue()));
                 stmt.setString(2, entry.getKey());
@@ -402,8 +403,9 @@ public class LoadData {
             }
 
             stmt.executeBatch();
-            conn.commit();
+            log.info("Successfully UPDATE_PDAYDTF");
         } catch (SQLException e) {
+            log.error("Error UPDATE_PDAYDTF", e);
             throw new RuntimeException("Failed to update jobs to PLR_PDAYNP " + e.getMessage(), e);
         }
     }
@@ -417,13 +419,13 @@ public class LoadData {
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(dbUrl);
-            conn.setAutoCommit(false); // ручное управление транзакцией
+            conn.setAutoCommit(false); // ручное управление транзакцией для атомарности
 
             try (PreparedStatement ps = conn.prepareStatement(UPDATE_WORK)) {
                 for (Job job : jobs) {
                     ps.setString(1, job.getLine().getId()); // lineId → KRC
                     ps.setObject(2, job.getStartProductionDateTime()); // DATE_START
-                    ps.setString(3, job.getSnpz()); // SNPZ
+                    ps.setInt(3, job.getSnpz()); // SNPZ
                     ps.addBatch();
                 }
 
@@ -435,7 +437,7 @@ public class LoadData {
             log.error("Error UPDATE_WORK, rollback", e);
             if (conn != null) {
                 try {
-                    conn.rollback();
+                    conn.rollback(); // откатываем
                     log.warn("Rollback UPDATE_WORK");
                 } catch (SQLException rollbackEx) {
                     log.error("Error rollback", rollbackEx);
