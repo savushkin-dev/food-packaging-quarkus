@@ -89,10 +89,21 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response work(@HeaderParam("X-Session-Id") String sessionId) {
 
-        PackagingSchedule schedule = repository.readForSession(sessionId);
+        try {
+            PackagingSchedule schedule = repository.readForSession(sessionId);
+            if (schedule == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No schedule loaded"))
+                        .build();
+            }
 
-
-        return Response.ok(Map.of("message", "The task has been sent to work")).build();
+            loadData.sendToWork(schedule.getJobs());
+            return Response.ok(Map.of("message", "The task has been sent to work")).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed send task to work: " + e.getMessage()))
+                    .build();
+        }
     }
 
     @POST

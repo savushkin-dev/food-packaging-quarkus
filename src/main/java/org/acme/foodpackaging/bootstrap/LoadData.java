@@ -412,10 +412,6 @@ public class LoadData {
 
     public void sendToWork(List<Job> jobs) {
 
-        String UPDATE_WORK = """
-                   update [MES].[dbo].[BD_VZPMC] set KRC=?, DATE_START where SNPZ=?
-                """;
-
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(dbUrl);
@@ -423,9 +419,11 @@ public class LoadData {
 
             try (PreparedStatement ps = conn.prepareStatement(UPDATE_WORK)) {
                 for (Job job : jobs) {
-                    ps.setString(1, job.getLine().getId()); // lineId → KRC
-                    ps.setObject(2, job.getStartProductionDateTime()); // DATE_START
-                    ps.setInt(3, job.getSnpz()); // SNPZ
+                    ps.setString(1, job.getLine().getId());
+                    ps.setObject(2, job.getStartProductionDateTime());
+                    ps.setObject(3, job.getEndDateTime());
+                    ps.setLong(4, job.getDuration().toMinutes());
+                    ps.setInt(5, job.getSnpz());
                     ps.addBatch();
                 }
 
