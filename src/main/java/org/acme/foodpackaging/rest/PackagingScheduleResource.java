@@ -853,7 +853,7 @@ public class PackagingScheduleResource {
                         .entity(Map.of("status", "error", "message", "No schedule available to export."))
                         .build();
             }
-
+            System.out.println(sessionId);
             PlanFactAnalysis factAnalysis = new PlanFactAnalysis(
                     schedule.getWorkCalendar().getFromDate().toString()
             );
