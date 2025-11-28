@@ -59,6 +59,10 @@ public class PackagingScheduleResource {
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
+    public PackagingScheduleResource(){
+        loadData = new LoadData();
+    }
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public PackagingSchedule get(@HeaderParam("X-Session-Id") String sessionId) {
@@ -109,7 +113,6 @@ public class PackagingScheduleResource {
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
             }
-
 
             PackagingSchedule newSchedule = createNewSchedule(loadDTO);
             repository.writeForSession(sessionId, newSchedule);
@@ -186,6 +189,19 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "Failed to update jobs: " + e.getMessage()))
                     .build();
         }
+    }
+
+    @POST
+    @Path("updateOrderList")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response updateOrderList(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        loadData.refreshJobsNextDay(schedule);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Order list updated for planning").build();
     }
 
     @POST
@@ -718,7 +734,6 @@ public class PackagingScheduleResource {
         )).build();
     }
 
-
     @POST
     @Path("pin")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -894,8 +909,6 @@ public class PackagingScheduleResource {
     private String getProblemId(String sessionId) {
         return sessionId != null ? sessionId : "default";
     }
-
-
 
     private PackagingSchedule tryImportScheduleFromDb(LocalDate startDate) {
         try {
