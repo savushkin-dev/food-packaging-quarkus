@@ -16,10 +16,11 @@ public class LogService {
     RequestLogRepository requestLogRepository;
 
     @Transactional
-    public void logRequest(String login, String method, String query) {
+    public void logRequest(String login, String ip, String method, String query) {
         RequestLog log = RequestLog.builder()
                 .login(login)
                 .dateTime(LocalDateTime.now())
+                .ip(ip)
                 .method(method)
                 .query(query)
                 .build();
