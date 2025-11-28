@@ -28,6 +28,9 @@ public class RequestLog {
     @Column(name = "DT")
     private LocalDateTime dateTime;
 
+    @Column(name = "IP")
+    private String ip;
+
     @Column(name = "METHOD")
     private String method;
 

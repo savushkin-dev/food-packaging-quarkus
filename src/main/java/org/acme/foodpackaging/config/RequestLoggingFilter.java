@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.config;
 
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -15,8 +16,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
 @Provider
-@Priority(3)
+@Priority(2)
 public class RequestLoggingFilter implements ContainerRequestFilter {
+
+    @Inject
+    HttpServerRequest vertxRequest;
 
     @Inject
     LogService logService;
@@ -33,7 +37,28 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
 
         requestContext.setEntityStream(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
 
-        logService.logRequest(login, path.substring(path.lastIndexOf('/') + 1), body);
+        String ip = getIp(requestContext);
+
+        logService.logRequest(login, ip, path.substring(path.lastIndexOf('/') + 1), body);
     }
 
+
+    public String getIp(ContainerRequestContext requestContext){
+        // сначала пробуем заголовки от Nginx
+        String ip = requestContext.getHeaderString("X-Real-IP");
+        if (ip == null || ip.isBlank()) {
+            ip = requestContext.getHeaderString("X-Forwarded-For");
+        }
+
+        // если заголовков нет — берём реальный адрес
+        if (ip == null || ip.isBlank()) {
+            ip = vertxRequest.remoteAddress().host();
+        }
+
+        if (ip != null && !ip.isBlank()) {
+            return ip;
+        } else {
+            return "unknown";
+        }
+    }
 }
