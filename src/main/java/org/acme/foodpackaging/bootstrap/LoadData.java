@@ -15,6 +15,7 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 
@@ -28,9 +29,15 @@ public class LoadData {
 
     private ConcurrentMap<String, String> linesIdWithNamesMap;
 
+    private Map<String, Product> allProductsMap;
+
+    private CleaningCalculator calculator;
+
     @PostConstruct
     private void init() {
         this.linesIdWithNamesMap = loadLinesIdWithNames();
+        this.allProductsMap = loadProductfromDB();
+        this.calculator = new CleaningCalculator();
     }
 
     public PackagingSchedule loadDataByDate(LocalDate START_DATE, LocalDate END_DATE,
@@ -39,12 +46,9 @@ public class LoadData {
                                             Map<String, LocalDateTime> lineStartsTime) {
 
         LocalDateTime minStartDateTime = Collections.min(lineStartsTime.values());
-        Map<String, Product> allProductsMap = loadProductfromDB();
-        CleaningCalculator calculator = new CleaningCalculator();
 
         return initSolution(START_DATE, END_DATE, lineStartsTime,
-                minStartDateTime, idealEndDateTime, maxEndDateTime,
-                allProductsMap, calculator);
+                minStartDateTime, idealEndDateTime, maxEndDateTime);
     }
 
     @Transactional
@@ -52,16 +56,14 @@ public class LoadData {
                                           Map<String, LocalDateTime> lineStartsTime,
                                           LocalDateTime minStartDateTime,
                                           LocalDateTime idealEndDateTime,
-                                          LocalDateTime maxEndDateTime,
-                                          Map<String, Product> allProductsMap,
-                                          CleaningCalculator calculator) {
+                                          LocalDateTime maxEndDateTime) {
         PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE));
+        solution.setWorkCalendar(new WorkCalendar(START_DATE, END_DATE, minStartDateTime, idealEndDateTime, maxEndDateTime));
 
         List<Line> lines = createLines(lineStartsTime.size(), lineStartsTime);
         Set<Product> productSet = new HashSet<>();
 
-        List<Job> jobs = loadJobs(String.valueOf(START_DATE), minStartDateTime, idealEndDateTime,
+        List<Job> jobs = loadJobs(START_DATE, minStartDateTime, idealEndDateTime,
                 maxEndDateTime, allProductsMap, productSet);
 
         List<Product> products = new ArrayList<>(productSet);
@@ -72,6 +74,119 @@ public class LoadData {
         solution.setJobs(jobs);
 
         return solution;
+    }
+
+    public PackagingSchedule loadNextDay(PackagingSchedule solution) {
+
+        refreshJobsNextDay(solution);
+        return solution;
+
+    }
+
+    public record DbJobInfo(
+            int snpz,
+            int np,
+            int quantity,
+            int priority,
+            double mass,
+            String kmc,
+            LocalDateTime dti,
+            LocalDateTime dtf
+    ) {}
+
+    private Map<Integer, DbJobInfo> loadDbJobInfo(LocalDate planningDay) {
+
+        LocalDateTime planningDayStart = planningDay.atStartOfDay();
+        LocalDateTime nextDayStart = planningDay.plusDays(1).atStartOfDay();
+
+        Map<Integer, DbJobInfo> map = new HashMap<>();
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(LOAD_DLC_JOBS)) {
+
+            ps.setObject(1, planningDayStart);
+            ps.setObject(2, nextDayStart);
+            ps.setString(3, "0119030000");
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+
+                    BigDecimal npVal = rs.getBigDecimal("NP");
+                    if (npVal == null || npVal.intValue() == 0) continue;
+
+                    int np = npVal.intValue();
+
+                    DbJobInfo info = new DbJobInfo(
+                            rs.getInt("SNPZ"), np,
+                            rs.getInt("KOLEV"),
+                            rs.getInt("UX"),
+                            rs.getDouble("MASSA"),
+                            rs.getString("KMC"),
+                            rs.getTimestamp("DTI").toLocalDateTime(),
+                            rs.getTimestamp("DTF").toLocalDateTime()
+                    );
+
+                    map.put(info.snpz(), info);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed loading DbJobInfo", e);
+        }
+
+        return map;
+    }
+
+    public void refreshJobsNextDay(PackagingSchedule schedule) {
+
+        LocalDate planningDay = schedule.getWorkCalendar().getFromDate();
+
+        Map<Integer, DbJobInfo> dbJobsNextDay = loadDbJobInfo(planningDay);
+
+        List<Job> currentJobs = schedule.getJobs();
+
+        Map<Integer, Job> scheduleMap = currentJobs.stream()
+                .collect(Collectors.toMap(Job::getSnpz, j -> j));
+
+        List<Job> toAdd = new ArrayList<>();
+        List<Job> toRemove = new ArrayList<>();
+
+        for (DbJobInfo info : dbJobsNextDay.values()) {
+
+            if (!scheduleMap.containsKey(info.snpz())) {
+
+                Product product = allProductsMap.get(info.kmc());
+                if (product == null) {
+                    throw new IllegalStateException("Product not found KMC=" + info.kmc());
+                }
+
+                Job newJob = createJob(
+                        String.valueOf(info.snpz()),
+                        product.getName(),
+                        info.snpz(),
+                        info.np(),
+                        product,
+                        info.mass(),
+                        info.quantity(),
+                        info.priority(),
+                        schedule.getWorkCalendar().getMinStartDateTime(),
+                        schedule.getWorkCalendar().getIdealEndDateTime(),
+                        schedule.getWorkCalendar().getMaxEndDateTime()
+                );
+
+                toAdd.add(newJob);
+            }
+        }
+
+        for (Job job : currentJobs) {
+
+            if (!dbJobsNextDay.containsKey(job.getSnpz())) {
+                toRemove.add(job);
+            }
+        }
+
+        currentJobs.removeAll(toRemove);
+        currentJobs.addAll(toAdd);
     }
 
     private Map<String, Map<String, Integer>> loadSpeedsFromDB() {
@@ -179,14 +294,16 @@ public class LoadData {
     }
 
     // Обновляем loadJobs чтобы принимать параметры
-    private List<Job> loadJobs(String date, LocalDateTime minStartDateTime,
+    private List<Job> loadJobs(LocalDate date, LocalDateTime minStartDateTime,
                                LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime,
                                Map<String, Product> allProductsMap, Set<Product> productsSet) {
         List<Job> jobs = new ArrayList<>();
 
+        LocalDateTime dt = date.atStartOfDay();
+
         try (Connection connection = DriverManager.getConnection(dbUrl);
              PreparedStatement preparedStatement = connection.prepareStatement(LOAD_JOBS_FOR_SELECTED_DATE)) {
-            preparedStatement.setString(1, date + "T00:00:00");     // Параметр для v.DTI
+            preparedStatement.setObject(1, dt);    // Параметр для v.DTI
             preparedStatement.setString(2, "0119030000");          // Параметр для v.KSK
             preparedStatement.setDouble(3, 0.1);                  // Параметр для m.MASSA
 
