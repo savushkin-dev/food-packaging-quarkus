@@ -22,18 +22,18 @@ public class RequestLog {
     @Column(name = "F_ID")
     private Long id;
 
-    @Column(name = "LOGIN")
+    @Column(name = "LOGIN", columnDefinition = "CHAR(20)")
     private String login;
 
     @Column(name = "DT")
     private LocalDateTime dateTime;
 
-    @Column(name = "IP")
+    @Column(name = "IP", columnDefinition = "CHAR(15)")
     private String ip;
 
-    @Column(name = "METHOD")
+    @Column(name = "METHOD", columnDefinition = "CHAR(15)")
     private String method;
 
-    @Column(name = "QUERY")
+    @Column(name = "QUERY", columnDefinition = "CHAR(7000)")
     private String query;
 }
