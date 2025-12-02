@@ -39,7 +39,8 @@ class FoodPackingEnvironmentTest {
 
     void solve(EnvironmentMode environmentMode) {
         // Load the problem
-        PackagingSchedule problem = repository.read();
+        String sessionId = "1";
+        PackagingSchedule problem = repository.readForSession(sessionId);
 
         // Update the environment
         SolverConfig updatedConfig = solverConfig.copyConfig();

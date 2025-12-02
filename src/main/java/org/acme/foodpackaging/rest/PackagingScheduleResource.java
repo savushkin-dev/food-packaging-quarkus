@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.rest;
 
 import ai.timefold.solver.core.api.solver.*;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -13,9 +14,11 @@ import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
+import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -25,47 +28,30 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
-import static org.acme.foodpackaging.sql.SqlQueries.INSERT_PDAY;
 
 @Path("schedule")
+@ApplicationScoped
 public class PackagingScheduleResource {
 
-    // Атомарный флаг занятости решателя
-    private final AtomicBoolean solverBusy = new AtomicBoolean(false);
-
-    public static final String SINGLETON_SOLUTION_ID = "1";
-
-    private PackagingScheduleRepository repository;
-
-    private SolverManager<PackagingSchedule, String> solverManager;
-
-    private SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-
-    private SolverJob<PackagingSchedule, String> currentSolverSolution;
+    @Inject
+    PackagingScheduleRepository repository;
 
     @Inject
-    public PackagingScheduleResource(PackagingScheduleRepository repository,
-            SolverManager<PackagingSchedule, String> solverManager,
-            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager) {
-        this.repository = repository;
-        this.solverManager = solverManager;
-        this.solutionManager = solutionManager;
-    }
+    SolverManager<PackagingSchedule, String> solverManager;
+
+    @Inject
+    SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
 
     @Inject
     LoadData loadData;
-
-    PinRequestDTO pinRequest;
-
-    MoveJobsRequestDTO moveJobsRequest;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -73,29 +59,69 @@ public class PackagingScheduleResource {
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
-    String date;
+    public PackagingScheduleResource(){
+        loadData = new LoadData();
+    }
 
-    LoadDTO ldto;
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public PackagingSchedule get(@HeaderParam("X-Session-Id") String sessionId) {
+        SolverStatus solverStatus = solverManager.getSolverStatus(getProblemId(sessionId));
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
+        }
+
+        schedule.setSolverStatus(solverStatus);
+        return schedule;
+    }
+
+    @GET
+    @Path("lines")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, String> getLines() {
+        if (loadData == null) {
+            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+        }
+        return loadData.getLinesIdWithNamesMap();
+    }
+
+    @POST
+    @Path("work")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response work(@HeaderParam("X-Session-Id") String sessionId) {
+
+        try {
+            PackagingSchedule schedule = repository.readForSession(sessionId);
+            if (schedule == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No schedule loaded"))
+                        .build();
+            }
+
+            loadData.sendToWork(schedule.getJobs());
+            return Response.ok(Map.of("message", "The task has been sent to work")).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed send task to work: " + e.getMessage()))
+                    .build();
+        }
+    }
 
     @POST
     @Path("load")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response load(LoadDTO loadDTO) {
-
-        if (solverBusy.get()) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
-                    .build();
-        }
-
+    public Response load(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
         LocalDate startDate = loadDTO.getStartDate();
-        this.date = startDate.toString();
 
         try {
             if (!loadDTO.getFindSolvedInDb()) {
-                createNewSchedule(loadDTO);
+                PackagingSchedule createdSchedule = createNewSchedule(loadDTO);
+                repository.writeForSession(sessionId, createdSchedule);
                 return Response.ok(Map.of(
                         "message", "New schedule generated (forced) for date: " + startDate
                 )).build();
@@ -105,13 +131,16 @@ public class PackagingScheduleResource {
 
             if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
-                repository.write(schedule);
+                repository.writeForSession(sessionId, schedule);
                 return Response.ok(Map.of(
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
             }
 
-            createNewSchedule(loadDTO);
+            PackagingSchedule newSchedule = createNewSchedule(loadDTO);
+            repository.writeForSession(sessionId, newSchedule);
+
+
             return Response.ok(Map.of(
                     "message", "No saved schedule found — new data generated for date: " + startDate
             )).build();
@@ -127,8 +156,8 @@ public class PackagingScheduleResource {
         }
     }
 
-    private void createNewSchedule(LoadDTO loadDTO) {
-        loadData.loadDataByDate(
+    private PackagingSchedule createNewSchedule(LoadDTO loadDTO) {
+        return loadData.loadDataByDate(
                 loadDTO.getStartDate(),
                 loadDTO.getEndDate(),
                 loadDTO.getIdealEndDateTime(),
@@ -142,21 +171,12 @@ public class PackagingScheduleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response loadpday(LoadDTO loadDTO) {
-        if (solverBusy.get()) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
-                    .build();
-        }
 
         LocalDate startDate = loadDTO.getStartDate();
-        this.date = startDate.toString();
         LocalDate endDate = loadDTO.getEndDate();
-        ldto = loadDTO;
 
         try {
-
             Map<String, Map<String, Object>> res = loadData.loadPDay(startDate, endDate);
-
             return Response.ok(res).build();
 
         } catch (DateTimeParseException e) {
@@ -175,9 +195,8 @@ public class PackagingScheduleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updatepday(Map<String, LocalDate> mapsnpz) {
-
         try {
-            loadData.updatePDay(ldto.getStartDate(), ldto.getEndDate(), mapsnpz);
+            loadData.updatePDay(mapsnpz);
 
             return Response.ok(Map.of(
                     "status", "success",
@@ -196,12 +215,231 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("updateOrderList")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response updateOrderList(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
+        loadData.refreshJobsNextDay(schedule);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Order list updated for planning").build();
+    }
+
+    @POST
+    @Path("sortByNp")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response sortByNp(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        reorderJobsByProductNp(schedule);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Sorted successfully").build();
+    }
+
+    private void reorderJobsByProductNp(PackagingSchedule schedule) {
+
+        Map<Product, Deque<Job>> pools = new HashMap<>();
+        for (Job job : schedule.getJobs()) {
+            if (!job.isMaintenance()) {
+                pools.computeIfAbsent(job.getProduct(), p -> new ArrayDeque<>()).add(job);
+            }
+        }
+
+        for (Deque<Job> deque : pools.values()) {
+            List<Job> list = new ArrayList<>(deque);
+            list.sort(Comparator.comparing(Job::getNp));
+            deque.clear();
+            deque.addAll(list);
+        }
+
+        Map<Product, Integer> appearanceCounter = new HashMap<>();
+
+        for (Line line : schedule.getLines()) {
+
+            List<Job> original = line.getJobs();
+            List<Job> newOrder = new ArrayList<>();
+
+            Map<Product, Integer> requiredCount = new LinkedHashMap<>();
+            for (Job j : original) {
+                if (!j.isMaintenance()) {
+                    Product p = j.getProduct();
+                    requiredCount.put(p, requiredCount.getOrDefault(p, 0) + 1);
+                }
+            }
+
+            Map<Product, Iterator<Job>> productIterators = new HashMap<>();
+            for (Map.Entry<Product, Integer> e : requiredCount.entrySet()) {
+                Product product = e.getKey();
+                int cnt = e.getValue();
+
+                Deque<Job> pool = pools.get(product);
+                if (pool == null || pool.size() < cnt) {
+                    throw new IllegalStateException(
+                            "Not enough jobs in pool for product " + product.getName());
+                }
+
+                List<Job> portion = new ArrayList<>(cnt);
+                for (int i = 0; i < cnt; i++) {
+                    portion.add(pool.pollFirst());
+                }
+
+                int appearance = appearanceCounter.getOrDefault(product, 0);
+                if ((appearance % 2) == 1) {
+                    Collections.reverse(portion);
+                }
+
+                productIterators.put(product, portion.iterator());
+            }
+
+            List<Job> buffer = new ArrayList<>();
+            for (Job job : original) {
+
+                if (hadCleaningBefore(job)) {
+                    if (!buffer.isEmpty()) {
+                        newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
+                        buffer.clear();
+                    }
+                }
+
+                if (job.isMaintenance()) {
+                    if (!buffer.isEmpty()) {
+                        newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
+                        buffer.clear();
+                    }
+                    newOrder.add(job);
+                    continue;
+                }
+
+                buffer.add(job);
+            }
+
+            if (!buffer.isEmpty()) {
+                newOrder.addAll(fillSubchainFromIterators(buffer, productIterators));
+            }
+
+            for (int i = 0; i < newOrder.size(); i++) {
+                Job prev = (i > 0) ? newOrder.get(i - 1) : null;
+                Job next = (i < newOrder.size() - 1) ? newOrder.get(i + 1) : null;
+                Job current = newOrder.get(i);
+                current.setPreviousJob(prev);
+                current.setNextJob(next);
+            }
+
+            for (Product p : requiredCount.keySet()) {
+                appearanceCounter.put(p, appearanceCounter.getOrDefault(p, 0) + 1);
+            }
+
+            line.setJobs(newOrder);
+        }
+
+        List<Job> allJobs = new ArrayList<>();
+        for (Line line : schedule.getLines()) {
+            fixLineJobs(line);
+            allJobs.addAll(line.getJobs());
+        }
+        schedule.setJobs(allJobs);
+    }
+
+    private boolean hadCleaningBefore(Job job) {
+        if (job.getStartCleaningDateTime() == null || job.getStartProductionDateTime() == null)
+            return false;
+        return job.getStartCleaningDateTime().isBefore(job.getStartProductionDateTime());
+    }
+
+    /**
+     * Заполняет подцепочку из заранее подготовленных итераторов для продуктов на линии
+     */
+    private List<Job> fillSubchainFromIterators(List<Job> subchain, Map<Product, Iterator<Job>> productIterators) {
+        List<Job> result = new ArrayList<>(subchain.size());
+        for (Job oldJob : subchain) {
+            Product p = oldJob.getProduct();
+            Iterator<Job> it = productIterators.get(p);
+            if (it == null || !it.hasNext()) {
+                throw new IllegalStateException("No iterator or exhausted for product " + p.getName());
+            }
+            result.add(it.next());
+        }
+        return result;
+    }
+
+    @POST
+    @Path("solve")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response solve(@HeaderParam("X-Session-Id") String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Session ID is required"))
+                    .build();
+        }
+
+        try {
+            String problemId = getProblemId(sessionId);
+
+            solverManager.solveBuilder()
+                    .withProblemId(problemId)
+                    .withProblemFinder(id -> repository.readForSession(sessionId))
+                    .withBestSolutionConsumer(schedule -> {
+                        repository.writeForSession(sessionId, schedule);
+                    })
+                    .run();
+
+            return Response.ok(Map.of(
+                    "status", "started",
+                    "sessionId", sessionId,
+                    "message", "Solving started"
+            )).build();
+
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Failed to start solving: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("stopSolving")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response stopSolving(@HeaderParam("X-Session-Id") String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Session ID is required"))
+                    .build();
+        }
+
+        String problemId = getProblemId(sessionId);
+        solverManager.terminateEarly(problemId);
+
+        PackagingSchedule finalSchedule = repository.readForSession(sessionId);
+        repository.writeForSession(sessionId, finalSchedule);
+
+        return Response.ok(Map.of(
+                "status", "stopped",
+                "sessionId", sessionId,
+                "message", "Solving stopped"
+        )).build();
+    }
+
+    @POST
     @Path("moveJobs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response moveJobs(MoveJobsRequestDTO request) {
 
-        PackagingSchedule schedule = repository.read();
+    public Response moveJobs(MoveJobsRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "No schedule loaded"))
@@ -225,7 +463,7 @@ public class PackagingScheduleResource {
 
         List<Job> jobs = fromLine.getJobs();
         int fromEnd = Math.min(fromIndex + count, jobs.size());
-        
+
         if (fromIndex < 0 || fromIndex >= jobs.size() || fromIndex >= fromEnd) {
             return Response.ok(Map.of("status", "success", "message", "Nothing to move")).build();
         }
@@ -233,6 +471,7 @@ public class PackagingScheduleResource {
         if (!sameLine) {
             for (int i = fromIndex; i < fromEnd; i++) {
                 Job job = jobs.get(i);
+                if (job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
 
                 Integer duration = job.getLineSpeeds()
@@ -251,35 +490,34 @@ public class PackagingScheduleResource {
             }
         }
 
-        // ----- no-op: вставка внутрь того же диапазона -----
         if (sameLine
                 && request.getInsertIndex() >= fromIndex
                 && request.getInsertIndex() <= fromEnd) {
             return Response.ok(Map.of("status", "success", "message", "No-op")).build();
         }
 
-        // ---- Выполняем перенос -----
         List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, request.getInsertIndex());
 
         if (moved.isEmpty()) {
             return Response.ok(Map.of("status", "success", "message", "No jobs moved")).build();
         }
 
-        // ---- фиксация (ваши методы) -----
         fixLineJobs(fromLine);
-        if (!sameLine) fixLineJobs(toLine);
-
-        fixPinIndexes(schedule);
-        SolutionPostProcessor.sortJobsByNp(schedule);
+        fixPinnedJobs(fromLine);
+        if (!sameLine) {
+            fixLineJobs(toLine);
+            fixPinnedJobs(toLine);
+        }
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.write(schedule);
+        repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
                 "status", "success",
                 "message", "Jobs moved successfully"
         )).build();
     }
+
     /**
      * Перемещает подсписок из одного списка в другой и возвращает перемещённые задачи
      */
@@ -333,6 +571,7 @@ public class PackagingScheduleResource {
 
         return jobsToMove;
     }
+
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
@@ -346,26 +585,203 @@ public class PackagingScheduleResource {
             current.updateStartCleaningDateTime();
         }
     }
-    /**
-     * Корректирует FirstUnpinnedIndex
-     */
-    private void fixPinIndexes(PackagingSchedule schedule) {
-        for (Line line : schedule.getLines()) {
-            int jobCount = line.getJobs().size();
-            int firstUnpinned = line.getFirstUnpinnedIndex();
-            if (firstUnpinned > jobCount) {
-                line.setFirstUnpinnedIndex(jobCount);
+
+    private void fixPinnedJobs(Line line) {
+        List<Job> jobs = line.getJobs();
+        line.setFirstUnpinnedIndex(0);
+        for (int i = 0; i < jobs.size(); ++i) {
+            if (jobs.get(i).isMaintenance()) {
+                line.setFirstUnpinnedIndex(i + 1);
             }
         }
     }
 
+    @POST
+    @Path("update-duration")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateJobDuration(UpdateDurationRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElse(null);
+
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Line not found: " + request.getLineId()))
+                    .build();
+        }
+
+        List<Job> jobs = line.getJobs();
+
+        int index = request.getIndex();
+        if (index < 0 || index >= jobs.size()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid job index: " + index))
+                    .build();
+        }
+
+        Job job = jobs.get(index);
+
+        job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+
+        fixLineJobs(line);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Job duration updated",
+                "jobId", job.getId(),
+                "lineId", line.getId(),
+                "newDurationMinutes", request.getDurationMinutes()
+        )).build();
+    }
+
+    @POST
+    @Path("removeJob")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response removeJob(RemoveJobRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElse(null);
+
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Line not found: " + request.getLineId()))
+                    .build();
+        }
+
+        List<Job> lineJobs = line.getJobs();
+        int index = request.getRemoveIndex();
+
+        if (index < 0 || index >= lineJobs.size()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid index: " + index))
+                    .build();
+        }
+
+        Job jobToRemove = lineJobs.get(index);
+
+        lineJobs.remove(index);
+        schedule.getJobs().remove(jobToRemove);
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Job removed successfully",
+                "removedJobByIndex", index
+        )).build();
+    }
+
+    @POST
+    @Path("maintenance")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response addMaintenance(MaintenanceRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+        int insertIndex = request.getInsertIndex();
+
+        if (insertIndex < 0 || insertIndex >= schedule.getJobs().size()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid insertIndex: " + insertIndex))
+                    .build();
+        }
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+
+        List<Job> lineJobs = line.getJobs();
+
+        if (insertIndex > lineJobs.size() + 1) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error",
+                            "insertIndex must be between 0 and " + (lineJobs.size() + 1)))
+                    .build();
+        }
+
+        Job baseJob = lineJobs.get(lineJobs.size() - 1);
+
+        Product maintenanceProduct = schedule.getProducts().stream()
+                .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Maintenance product with id='MAINTENANCE' not found"));
+
+        Job maintenanceJob = new Job(
+                "MAINTENANCE-" + UUID.randomUUID(),
+                request.getName(),
+                maintenanceProduct,
+                Duration.ofMinutes(request.getDurationMinutes()),
+                baseJob.getMinStartTime(),
+                baseJob.getIdealEndTime(),
+                baseJob.getMaxEndDateTime(),
+                0,
+                true,
+                null,
+                null
+        );
+
+        maintenanceJob.setLineSpeeds(baseJob.getLineSpeeds());
+        maintenanceJob.setMaintenance(true);
+        maintenanceJob.setLine(line);
+
+        lineJobs.add(Math.min(insertIndex, lineJobs.size()), maintenanceJob);
+
+        fixLineJobs(line);
+        schedule.getJobs().add(maintenanceJob);
+        fixPinnedJobs(line);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Maintenance job added successfully",
+                "lineId", line.getId()
+        )).build();
+    }
 
     @POST
     @Path("pin")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response pin(PinRequestDTO pinRequest) {
-        PackagingSchedule solution = repository.read();
+    public Response pin(PinRequestDTO pinRequest, @HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule solution = repository.readForSession(sessionId);
+        if (solution == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
 
         Line pinnedLine = solution.getLines().stream()
                 .filter(l -> l.getId().equals(pinRequest.getLineId()))
@@ -374,7 +790,7 @@ public class PackagingScheduleResource {
 
         if (Boolean.TRUE.equals(pinRequest.getPinAll())) {
             pinnedLine.setFirstUnpinnedIndex(pinnedLine.getJobs().size());
-            repository.write(solution);
+            repository.writeForSession(sessionId, solution);
             return Response.ok(Map.of(
                     "status", "success",
                     "message", "All jobs on line " + pinnedLine.getId() + " were pinned successfully."
@@ -386,7 +802,7 @@ public class PackagingScheduleResource {
 
             if (count <= 0) {
                 pinnedLine.setFirstUnpinnedIndex(0);
-                repository.write(solution);
+                repository.writeForSession(sessionId, solution);
                 return Response.ok(Map.of(
                         "status", "success",
                         "message", "All jobs were unpinned (pinCount = 0)."
@@ -395,7 +811,7 @@ public class PackagingScheduleResource {
 
             int safeCount = Math.min(count, pinnedLine.getJobs().size());
             pinnedLine.setFirstUnpinnedIndex(safeCount);
-            repository.write(solution);
+            repository.writeForSession(sessionId, solution);
 
             return Response.ok(Map.of(
                     "status", "success",
@@ -404,12 +820,131 @@ public class PackagingScheduleResource {
         }
 
         pinnedLine.setFirstUnpinnedIndex(0);
-        repository.write(solution);
+        repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
                 "status", "success",
                 "message", "Line " + pinnedLine.getId() + " was fully unpinned."
         )).build();
+    }
+
+    @POST
+    @Path("saveToDb")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveToDb(@HeaderParam("X-Session-Id") String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Session ID is required"))
+                    .build();
+        }
+
+        JsonExporter jsonExporter = new JsonExporter(dbUrl);
+        try {
+            //Извлекаем план пользователя (черновик пользователя) по sessionId для того чтобы сохранить общий план
+            PackagingSchedule bestSolution = repository.readForSession(sessionId);
+            if (bestSolution == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("error", "No solution found for session: " + sessionId))
+                        .build();
+            }
+
+            jsonExporter.export(bestSolution);
+            return Response.ok(Map.of("message", "Saved to DB successfully")).build();
+        } catch (Exception e) {
+            return Response.serverError().entity("Save error: " + e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("removeSolution")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteSolutionByDate(@HeaderParam("X-Session-Id") String sessionId) {
+
+        //Получаем план для текущей сессии чтобы из него выявить дату удаляемого плана (но можно просто передавать дату в запросе как параметр как вариант)
+        PackagingSchedule currentSchedule = repository.readForSession(sessionId);
+        if (currentSchedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded for session"))
+                    .build();
+        }
+
+        String date = currentSchedule.getWorkCalendar().getFromDate().toString();
+
+        if (date.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("status", "error", "message", "Date field not set on server"))
+                    .build();
+        }
+        LocalDate removeDate = LocalDate.parse(date);
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement stmt = conn.prepareStatement(DELETE_SOLUTION_JSON)) {
+            stmt.setDate(1, java.sql.Date.valueOf(removeDate));
+            int updatedRows = stmt.executeUpdate();
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Solution removed for date: " + date + " (rows affected: " + updatedRows + ")"
+            )).build();
+
+        } catch (SQLException e) {
+            return Response.serverError()
+                    .entity(Map.of("status", "error", "message", "SQL error: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("export")
+    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public Response export(@HeaderParam("X-Session-Id") String sessionId) {
+        try {
+            PackagingSchedule schedule = repository.readForSession(sessionId);
+
+            if (schedule == null) {
+                return Response.status(Response.Status.NO_CONTENT)
+                        .entity(Map.of("status", "error", "message", "No schedule available to export."))
+                        .build();
+            }
+            System.out.println(sessionId);
+            PlanFactAnalysis factAnalysis = new PlanFactAnalysis(
+                    schedule.getWorkCalendar().getFromDate().toString()
+            );
+            factAnalysis.excelWrite(schedule.getJobs());
+            File planFactFile = factAnalysis.getExportFile();
+
+            if (planFactFile != null && planFactFile.exists()) {
+                byte[] fileContent = Files.readAllBytes(planFactFile.toPath());
+                return Response.ok(fileContent)
+                        .header("Content-Disposition", "attachment; filename=\"" + planFactFile.getName() + "\"")
+                        .build();
+            }
+
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Export completed successfully. Excel file saved in resources."
+            )).build();
+
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("status", "error", "message", "Export error: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @PUT
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("analyze")
+    public ScoreAnalysis<HardMediumSoftLongScore> analyze(@QueryParam("fetchPolicy") ScoreAnalysisFetchPolicy fetchPolicy,
+                                                          @HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule problem = repository.readForSession(sessionId);
+        return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
+
+    private String getProblemId(String sessionId) {
+        return sessionId != null ? sessionId : "default";
     }
 
     private PackagingSchedule tryImportScheduleFromDb(LocalDate startDate) {
@@ -426,15 +961,15 @@ public class PackagingScheduleResource {
             return false;
         }
 
-      if (!Objects.equals( (schedule.getJobs().get(0).getMaxEndTime()),loadDTO.getMaxEndDateTime() )) return false;
-      if (!Objects.equals((schedule.getJobs().get(0).getIdealEndTime()),loadDTO.getIdealEndDateTime())) return false;
+        if (!Objects.equals((schedule.getJobs().get(0).getMaxEndTime()), loadDTO.getMaxEndDateTime())) return false;
+        if (!Objects.equals((schedule.getJobs().get(0).getIdealEndTime()), loadDTO.getIdealEndDateTime())) return false;
 
-      Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
+        Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
 
         for (Line line : schedule.getLines()) {
             LocalTime lineStartTime = line.getStartDateTime().toLocalTime();
             LocalTime expectedStart = startTimesFromJson.get(line.getId()).toLocalTime();
-            
+
             if (!lineStartTime.equals(expectedStart)) {
                 return false;
             }
@@ -442,164 +977,8 @@ public class PackagingScheduleResource {
         return true;
     }
 
-    @GET
-    public PackagingSchedule get() {
-        // Get the solver status before loading the solution1
-        // to avoid the race condition that the solver terminates between them
-        SolverStatus solverStatus = solverManager.getSolverStatus(SINGLETON_SOLUTION_ID);
-        PackagingSchedule schedule = repository.read();
-        if (schedule == null) {
-            throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
-        }
-        schedule.setSolverStatus(solverStatus);
-
-        //Если планировщик сам перестал считать то принудительно освобождаем планировщик
-        if(solverStatus.name().equals("NOT_SOLVING") && solverBusy.get()){
-            solverBusy.set(false);
-        }
-
-        return schedule;
-    }
-
-    @GET
-    @Path("lines")
-    public Map<String,String> getLines() {
-        if(loadData==null){
-            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
-        }
-        return loadData.getLinesIdWithNamesMap();
-    }
-
-    @POST
-    @Path("solve")
-    public Response solve() {
-
-        // Устанавливаем блокировку
-        if (!solverBusy.compareAndSet(false, true)) {
-            return Response.status(Response.Status.CONFLICT)
-                    .entity(Map.of("error", "Решатель сейчас занят другим пользователем. Попробуйте позже."))
-                    .build();
-        }
-
-        try {
-            currentSolverSolution = solverManager.solveBuilder()
-                    .withProblemId(SINGLETON_SOLUTION_ID)
-                    .withProblemFinder(id -> repository.read())
-                    .withBestSolutionConsumer(schedule -> {
-                        repository.write(schedule);
-                    })
-                    .run();
-        } catch (Exception e){
-            solverBusy.set(false);
-        }
-
-        return Response.ok().build();
-    }
-
-    @POST
-    @Path("export")
-    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    public Response export() {
-        try {
-            PackagingSchedule schedule;
-
-            if (currentSolverSolution != null) {
-                schedule = currentSolverSolution.getFinalBestSolution();
-            } else {
-                schedule = repository.read();
-            }
-            if (schedule == null) {
-                return Response.status(Response.Status.NO_CONTENT)
-                        .entity(Map.of("status", "error", "message", "No schedule available to export."))
-                        .build();
-            }
-            PlanFactAnalysis factAnalysis = new PlanFactAnalysis(
-                    schedule.getWorkCalendar().getFromDate().toString()
-            );
-            factAnalysis.excelWrite(schedule.getJobs());
-            File planFactFile = factAnalysis.getExportFile();
-            if (planFactFile != null && planFactFile.exists()) {
-                byte[] fileContent = Files.readAllBytes(planFactFile.toPath());
-                return Response.ok(fileContent)
-                        .header("Content-Disposition", "attachment; filename=\"" + planFactFile.getName() + "\"")
-                        .build();
-            }
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Export completed successfully. Excel file saved in resources."
-            )).build();
-
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("status", "error", "message", "Export error: " + e.getMessage()))
-                    .build();
-        }
-    }
-
-    @POST
-    @Path("saveToDb")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response saveToDb() {
-        JsonExporter jsonExporter = new JsonExporter(dbUrl);
-        try {
-            PackagingSchedule bestSolution = currentSolverSolution.getFinalBestSolution();
-            jsonExporter.export(bestSolution);
-            return Response.ok(Map.of("message", "Saved to DB successfully")).build();
-        } catch (Exception e) {
-            return Response.serverError().entity("Save error: " + e.getMessage()).build();
-        }
-    }
-
-    @POST
-    @Path("removeSolution")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSolutionByDate() {
-
-        if (this.date == null || this.date.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("status", "error", "message", "Date field not set on server"))
-                    .build();
-        }
-        LocalDate removeDate = LocalDate.parse(date);
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(DELETE_SOLUTION_JSON)) {
-            stmt.setDate(1, java.sql.Date.valueOf(removeDate));
-            int updatedRows = stmt.executeUpdate();
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Solution removed for date: " + this.date + " (rows affected: " + updatedRows + ")"
-            )).build();
-
-        } catch (SQLException e) {
-            return Response.serverError()
-                    .entity(Map.of("status", "error", "message", "SQL error: " + e.getMessage()))
-                    .build();
-        }
-    }
-
-    @PUT
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("analyze")
-    public ScoreAnalysis<HardMediumSoftLongScore> analyze(@QueryParam("fetchPolicy") ScoreAnalysisFetchPolicy fetchPolicy) {
-        PackagingSchedule problem = repository.read();
-        return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
-    }
-
-    @POST
-    @Path("stopSolving")
-    public void stopSolving() {
-        solverManager.terminateEarly(SINGLETON_SOLUTION_ID);
-        PackagingSchedule finalSchedule = repository.read();
-        SolutionPostProcessor.sortJobsByNp(finalSchedule);
-        repository.write(finalSchedule);
-        solverBusy.set(false);
-    }
-
     public File exportTimeCompare(String date, PackagingSchedule solution) {
         ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
         return exporter.getExportedFile();
-
     }
 }
