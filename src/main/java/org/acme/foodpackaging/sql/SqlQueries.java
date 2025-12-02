@@ -13,6 +13,13 @@ public class SqlQueries {
     WHERE (v.KMC = m.KMC) AND (v.DTI = ?) AND (v.KSK = ?) AND (m.MASSA < ?)
     ORDER BY v.SNPZ
     """;
+    
+    public static final String LOAD_DLC_JOBS = """
+    SELECT m.SNM, v.[KMC], v.[DTI], v.[DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
+    FROM [MES].[dbo].[PLR_PDAYNP] AS v, NS_MC AS m
+    WHERE (v.KMC = m.KMC) AND  (v.DTF >= ?) AND (v.DTF < ?)  AND (v.KSK = ?)
+    ORDER BY v.SNPZ
+    """;
 
     public static final String LOAD_PDAY = """
         SELECT m.SNM, v.[KMC], v.[DTI], v.[DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
