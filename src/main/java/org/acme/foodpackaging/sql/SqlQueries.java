@@ -13,6 +13,13 @@ public class SqlQueries {
     WHERE (v.KMC = m.KMC) AND (v.DTI = ?) AND (v.KSK = ?) AND (m.MASSA < ?)
     ORDER BY v.SNPZ
     """;
+    
+    public static final String LOAD_DLC_JOBS = """
+    SELECT m.SNM, v.[KMC], v.[DTI], v.[DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
+    FROM [MES].[dbo].[PLR_PDAYNP] AS v, NS_MC AS m
+    WHERE (v.KMC = m.KMC) AND  (v.DTF >= ?) AND (v.DTF < ?)  AND (v.KSK = ?)
+    ORDER BY v.SNPZ
+    """;
 
     public static final String LOAD_PDAY = """
         SELECT m.SNM, v.[KMC], v.[DTI], v.[DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
@@ -139,5 +146,17 @@ public class SqlQueries {
         WHERE datetime1 >= ? AND datetime1 <= ?
         ORDER BY project, datetime1
         """;
+
+    public static final String UPDATE_WORK = """
+                update [MES].[dbo].[BD_VZPMC] 
+                set KRC=?, PDTN=?, PDTO=?, PDUR=? 
+                where SNPZ=?;
+                """;
+
+    public static final String REFRESH_FASP = "DECLARE @pdt1 datetime = GETDATE()-2, " +
+            "        @pdt2 datetime = GETDATE()+7, " +
+            "        @pkrca char(20) = ?, " +
+            "        @pksk  char(10) = ? " +
+            "EXEC mes_refreshfasp @pdt1, @pdt2, @pkrca, 1, 14, @pksk ";
 }
 

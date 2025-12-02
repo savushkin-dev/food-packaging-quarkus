@@ -57,6 +57,19 @@ public class JsonImporter {
                 PackagingSchedule schedule = objectMapper.readValue(json, PackagingSchedule.class);
 
                 Map<String, Product> productMap = mapById(schedule.getProducts(), Product::getId);
+                Product maintenanceProduct = schedule.getProducts().stream()
+                        .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            Product p = new Product(
+                                    "Maintenance Product",
+                                    "MAINTENANCE",
+                                    "", "", "", "", "", ""
+                            );
+                            schedule.getProducts().add(p);
+                            return p;
+                        });
+
                 Map<String, Line> lineMap = mapById(schedule.getLines(), Line::getId);
                 Map<String, Job> jobMap = mapById(schedule.getJobs(), Job::getId);
 
@@ -86,7 +99,7 @@ public class JsonImporter {
                             .filter(j -> j.getLine() != null && j.getLine().getId().equals(line.getId()))
                             .sorted(Comparator.comparing(Job::getStartProductionDateTime,
                                     Comparator.nullsLast(Comparator.naturalOrder())))
-                            .toList();
+                            .collect(Collectors.toCollection(ArrayList::new));
                     line.setJobs(jobsForLine);
                 }
 
