@@ -220,6 +220,13 @@ public class PackagingScheduleResource {
     public Response updateOrderList(@HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
         loadData.refreshJobsNextDay(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -863,7 +870,7 @@ public class PackagingScheduleResource {
 
         String date = currentSchedule.getWorkCalendar().getFromDate().toString();
 
-        if (date == null || date.isBlank()) {
+        if (date.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("status", "error", "message", "Date field not set on server"))
                     .build();

@@ -10,8 +10,6 @@ import org.apache.commons.math3.util.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.ls.LSOutput;
-
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -600,6 +598,4 @@ public class LoadData {
             }
         }
     }
-
-
 }
