@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
+import static org.acme.foodpackaging.domain.ScheduleFixUtils.*;
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 
 @ApplicationScoped
@@ -33,11 +34,14 @@ public class LoadData {
 
     private CleaningCalculator calculator;
 
+    Map<String, Map<String, Integer>> lineSpeeds;
+
     @PostConstruct
     private void init() {
         this.linesIdWithNamesMap = loadLinesIdWithNames();
         this.allProductsMap = loadProductfromDB();
         this.calculator = new CleaningCalculator();
+        this.lineSpeeds = loadSpeedsFromDB();
     }
 
     public PackagingSchedule loadDataByDate(LocalDate START_DATE, LocalDate END_DATE,
@@ -140,7 +144,6 @@ public class LoadData {
     public void refreshJobsNextDay(PackagingSchedule schedule) {
 
         LocalDate planningDay = schedule.getWorkCalendar().getFromDate();
-
         Map<Integer, DbJobInfo> dbJobsNextDay = loadDbJobInfo(planningDay);
 
         List<Job> currentJobs = schedule.getJobs();
@@ -151,42 +154,70 @@ public class LoadData {
         List<Job> toAdd = new ArrayList<>();
         List<Job> toRemove = new ArrayList<>();
 
+        boolean newProductsAppeared = false;
+
         for (DbJobInfo info : dbJobsNextDay.values()) {
 
             if (!scheduleMap.containsKey(info.snpz())) {
 
-                Product product = allProductsMap.get(info.kmc());
+                Product product = schedule.getProducts().stream()
+                        .filter(p -> p.getId().equals(info.kmc()))
+                        .findFirst()
+                        .orElse(null);
+
                 if (product == null) {
-                    throw new IllegalStateException("Product not found KMC=" + info.kmc());
+                    product = allProductsMap.get(info.kmc());
+                    if (product == null) {
+                        throw new IllegalStateException("Unknown product KMC=" + info.kmc());
+                    }
+                    schedule.getProducts().add(product);
+                    newProductsAppeared = true;
                 }
 
                 Job newJob = createJob(
                         String.valueOf(info.snpz()),
                         product.getName(),
-                        info.snpz(),
-                        info.np(),
-                        product,
-                        info.mass(),
-                        info.quantity(),
-                        info.priority(),
+                        info.snpz(), info.np(), product,
+                        info.mass(), info.quantity(), info.priority(),
                         schedule.getWorkCalendar().getMinStartDateTime(),
                         schedule.getWorkCalendar().getIdealEndDateTime(),
                         schedule.getWorkCalendar().getMaxEndDateTime()
                 );
 
+                newJob.setLineSpeeds(lineSpeeds);
                 toAdd.add(newJob);
             }
         }
 
         for (Job job : currentJobs) {
-
             if (!dbJobsNextDay.containsKey(job.getSnpz())) {
                 toRemove.add(job);
             }
         }
 
-        currentJobs.removeAll(toRemove);
-        currentJobs.addAll(toAdd);
+        for (Job jobToRemove : toRemove) {
+
+            schedule.getJobs().remove(jobToRemove);
+
+            for (Line line : schedule.getLines()) {
+
+                List<Job> lineJobs = line.getJobs();
+
+                int index = lineJobs.indexOf(jobToRemove);
+                if (index >= 0) {
+                    lineJobs.remove(index);
+
+                    fixLineJobs(line);
+                }
+            }
+        }
+
+        pinnAllLines(schedule.getLines());
+        schedule.getJobs().addAll(toAdd);
+
+        if (newProductsAppeared) {
+            calculator.cleaningCalculate(schedule.getProducts());
+        }
     }
 
     private Map<String, Map<String, Integer>> loadSpeedsFromDB() {
@@ -344,7 +375,6 @@ public class LoadData {
                 "MAINTENANCE", "", "", "", "", "", ""
         );
         productsSet.add(maintenanceProduct);
-        Map<String, Map<String, Integer>> lineSpeeds = loadSpeedsFromDB();
 
         for (Job job : jobs) {
             job.setLineSpeeds(lineSpeeds);
