@@ -152,5 +152,11 @@ public class SqlQueries {
                 set KRC=?, PDTN=?, PDTO=?, PDUR=? 
                 where SNPZ=?;
                 """;
+
+    public static final String REFRESH_FASP = "DECLARE @pdt1 datetime = GETDATE()-2, " +
+            "        @pdt2 datetime = GETDATE()+7, " +
+            "        @pkrca char(20) = ?, " +
+            "        @pksk  char(10) = ? " +
+            "EXEC mes_refreshfasp @pdt1, @pdt2, @pkrca, 1, 14, @pksk ";
 }
 

@@ -573,8 +573,17 @@ public class LoadData {
                     ps.setInt(5, job.getSnpz());
                     ps.addBatch();
                 }
-
                 ps.executeBatch();
+
+                try (PreparedStatement proc = conn.prepareStatement(REFRESH_FASP)) {
+                    proc.setString(1, "6000000");
+                    proc.setString(2, "0119030000");
+                    proc.execute();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    throw e;
+                }
+
                 conn.commit(); // фиксируем транзакцию
                 log.info("Successfully UPDATE_WORK");
             }
