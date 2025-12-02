@@ -88,6 +88,29 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("work")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response work(@HeaderParam("X-Session-Id") String sessionId) {
+
+        try {
+            PackagingSchedule schedule = repository.readForSession(sessionId);
+            if (schedule == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of("error", "No schedule loaded"))
+                        .build();
+            }
+
+            loadData.sendToWork(schedule.getJobs());
+            return Response.ok(Map.of("message", "The task has been sent to work")).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Failed send task to work: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
     @Path("load")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -328,7 +351,10 @@ public class PackagingScheduleResource {
             return false;
         return job.getStartCleaningDateTime().isBefore(job.getStartProductionDateTime());
     }
-    /** Заполняет подцепочку из заранее подготовленных итераторов для продуктов на линии */
+
+    /**
+     * Заполняет подцепочку из заранее подготовленных итераторов для продуктов на линии
+     */
     private List<Job> fillSubchainFromIterators(List<Job> subchain, Map<Product, Iterator<Job>> productIterators) {
         List<Job> result = new ArrayList<>(subchain.size());
         for (Job oldJob : subchain) {
@@ -438,9 +464,9 @@ public class PackagingScheduleResource {
         if (!sameLine) {
             for (int i = fromIndex; i < fromEnd; i++) {
                 Job job = jobs.get(i);
-                if( job.isMaintenance()) continue;
+                if (job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
-                
+
                 Integer duration = job.getLineSpeeds()
                         .getOrDefault(toLine.getId(), Map.of())
                         .get(productType);
@@ -471,7 +497,10 @@ public class PackagingScheduleResource {
 
         fixLineJobs(fromLine);
         fixPinnedJobs(fromLine);
-        if (!sameLine)  {fixLineJobs(toLine); fixPinnedJobs(toLine);}
+        if (!sameLine) {
+            fixLineJobs(toLine);
+            fixPinnedJobs(toLine);
+        }
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -535,6 +564,7 @@ public class PackagingScheduleResource {
 
         return jobsToMove;
     }
+
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
@@ -552,9 +582,9 @@ public class PackagingScheduleResource {
     private void fixPinnedJobs(Line line) {
         List<Job> jobs = line.getJobs();
         line.setFirstUnpinnedIndex(0);
-        for(int i = 0; i < jobs.size(); ++i){
-            if(jobs.get(i).isMaintenance()) {
-                line.setFirstUnpinnedIndex(i+1);
+        for (int i = 0; i < jobs.size(); ++i) {
+            if (jobs.get(i).isMaintenance()) {
+                line.setFirstUnpinnedIndex(i + 1);
             }
         }
     }
@@ -686,10 +716,10 @@ public class PackagingScheduleResource {
 
         List<Job> lineJobs = line.getJobs();
 
-        if (insertIndex >lineJobs.size()+1) {
+        if (insertIndex > lineJobs.size() + 1) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error",
-                            "insertIndex must be between 0 and " + (lineJobs.size() +1)))
+                            "insertIndex must be between 0 and " + (lineJobs.size() + 1)))
                     .build();
         }
 
@@ -868,7 +898,7 @@ public class PackagingScheduleResource {
                         .entity(Map.of("status", "error", "message", "No schedule available to export."))
                         .build();
             }
-
+            System.out.println(sessionId);
             PlanFactAnalysis factAnalysis = new PlanFactAnalysis(
                     schedule.getWorkCalendar().getFromDate().toString()
             );

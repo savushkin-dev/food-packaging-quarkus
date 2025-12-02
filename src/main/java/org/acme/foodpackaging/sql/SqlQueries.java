@@ -146,5 +146,11 @@ public class SqlQueries {
         WHERE datetime1 >= ? AND datetime1 <= ?
         ORDER BY project, datetime1
         """;
+
+    public static final String UPDATE_WORK = """
+                update [MES].[dbo].[BD_VZPMC] 
+                set KRC=?, PDTN=?, PDTO=?, PDUR=? 
+                where SNPZ=?;
+                """;
 }
 
