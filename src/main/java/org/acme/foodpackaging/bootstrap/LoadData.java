@@ -99,6 +99,7 @@ public class LoadData {
             int quantity,
             int priority,
             double mass,
+            String shortName,
             String kmc,
             LocalDateTime dti,
             LocalDateTime dtf
@@ -131,6 +132,7 @@ public class LoadData {
                             rs.getInt("KOLEV"),
                             rs.getInt("UX"),
                             rs.getDouble("MASSA"),
+                            rs.getString("SNM"),
                             rs.getString("KMC"),
                             rs.getTimestamp("DTI").toLocalDateTime(),
                             rs.getTimestamp("DTF").toLocalDateTime()
@@ -182,7 +184,7 @@ public class LoadData {
 
                 Job newJob = createJob(
                         String.valueOf(info.snpz()),
-                        product.getName(),
+                        info.shortName,
                         info.snpz(), info.np(), product,
                         info.mass(), info.quantity(), info.priority(),
                         schedule.getWorkCalendar().getMinStartDateTime(),
