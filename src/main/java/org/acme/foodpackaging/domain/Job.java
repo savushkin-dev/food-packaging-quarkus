@@ -51,10 +51,13 @@ public class Job {
     @Setter
     private boolean maintenance;
     @Getter
+    @Setter
     private LocalDateTime minStartTime;
     @Getter
+    @Setter
     private LocalDateTime idealEndTime;
     @Getter
+    @Setter
     private LocalDateTime maxEndTime;
 
     /**

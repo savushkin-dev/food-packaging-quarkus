@@ -3,9 +3,13 @@ package org.acme.foodpackaging.scheduleOperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class ScheduleFixUtils {
+    /**
+     * Восстанавливает previous/next и пересчитывает shadow variables в линии
+     */
     public static void fixLineJobs(Line line) {
         List<Job> jobs = line.getJobs();
         for (int i = 0; i < jobs.size(); i++) {
@@ -16,7 +20,9 @@ public class ScheduleFixUtils {
             current.updateStartCleaningDateTime();
         }
     }
-
+    /**
+     * Закрпеляет все что стоит до ремонтной работы, включая саму ремонтную работу
+     */
     public static void fixPinnedJobs(Line line) {
         List<Job> jobs = line.getJobs();
         line.setFirstUnpinnedIndex(0);
@@ -26,11 +32,33 @@ public class ScheduleFixUtils {
             }
         }
     }
-
+    /**
+     * Назначает общий maxEndDateTime для всех задач
+     */
+    public static void fixEndDateTime(List<Job> jobs, LocalDateTime maxEndDateTime) {
+       for(Job job : jobs){
+           job.setMaxEndTime(maxEndDateTime);
+        }
+    }
+    /**
+     * Меняет время старта линии
+     */
+    public static void setLineStartDateTime(Line line, LocalDateTime lineStartDateTime) {
+        line.setStartDateTime(lineStartDateTime);
+    }
+    /**
+     * Закрепляет/Открепляет весь план
+     */
     public static void pinnAllLines(List<Line> lines) {
 
         for(Line line : lines){
             line.setFirstUnpinnedIndex(line.getJobs().size());
+        }
+    }
+
+    public static void unPinnAllLines(List<Line> lines){
+        for(Line line : lines){
+            line.setFirstUnpinnedIndex(0);
         }
     }
 }
