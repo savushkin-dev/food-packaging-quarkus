@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.persistence;
 
+import lombok.Getter;
 import org.acme.foodpackaging.domain.Job;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -21,14 +22,11 @@ import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LABELING_CACTUS_COCONUT
 
 public class ExcelExporter {
 
+    @Getter
     private File exportedFile;
     private final int cellCount = 8;
     public ExcelExporter(String dbLabelingUrl, String date, List<Job> jobs) {
         importDataFromDB(dbLabelingUrl, date, jobs);
-    }
-
-    public File getExportedFile() {
-        return exportedFile;
     }
 
     private String  formatTime(Duration duration){

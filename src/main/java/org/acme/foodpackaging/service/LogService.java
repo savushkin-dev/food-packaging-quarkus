@@ -1,6 +1,5 @@
 package org.acme.foodpackaging.service;
 
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

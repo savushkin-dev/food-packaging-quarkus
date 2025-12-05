@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.persistence;
 
+import lombok.Getter;
 import org.acme.foodpackaging.domain.Job;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -50,6 +51,7 @@ public class PlanFactAnalysis {
             }
         }
     }
+    @Getter
     private File exportFile;
     private Map<Key, FactData> factedMap;
     private final int cellCount = 9;
@@ -73,10 +75,6 @@ public class PlanFactAnalysis {
             }
             return factedMap;
         }
-
-    public File getExportFile() {
-        return exportFile;
-    }
 
     private Map<Key, FactData> readDataFromDB() {
 
