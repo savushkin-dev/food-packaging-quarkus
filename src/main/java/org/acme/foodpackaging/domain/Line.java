@@ -9,20 +9,30 @@ import ai.timefold.solver.core.api.domain.lookup.PlanningId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
 import ai.timefold.solver.core.api.domain.variable.PlanningListVariable;
+import lombok.Getter;
+import lombok.Setter;
 
 @PlanningEntity
 public class Line {
 
+    @Getter
     @PlanningId
     private String id;
+    @Getter
     private String name;
+    @Getter
     private String operator;
+    @Setter
+    @Getter
     private LocalDateTime startDateTime;
 
+    @Setter
+    @Getter
     @JsonIgnore
     @PlanningListVariable
     private List<Job> jobs;
 
+    @Setter
     private int firstUnpinnedIndex;
 
     // No-arg constructor required for Timefold
@@ -53,31 +63,7 @@ public class Line {
     // Getters and setters
     // ************************************************************************
 
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
     @PlanningPinToIndex
     public int getFirstUnpinnedIndex() { return firstUnpinnedIndex; }
-
-    public String getOperator() {
-        return operator;
-    }
-
-    public LocalDateTime getStartDateTime() {
-        return startDateTime;
-    }
-
-    public List<Job> getJobs() {
-        return jobs;
-    }
-
-    public void setJobs(List<Job> jobs) { this.jobs = jobs; }
-
-    public void setFirstUnpinnedIndex( int firstUnpinnedIndex) { this.firstUnpinnedIndex = firstUnpinnedIndex; }
 
 }

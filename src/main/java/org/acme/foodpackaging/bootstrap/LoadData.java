@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-import static org.acme.foodpackaging.domain.ScheduleFixUtils.*;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils.*;
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 import static org.acme.foodpackaging.sql.SqlQueries.UPDATE_PDAYDTF;
 

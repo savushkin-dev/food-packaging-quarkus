@@ -20,6 +20,7 @@ import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
@@ -52,6 +53,9 @@ public class PackagingScheduleResource {
 
     @Inject
     LoadData loadData;
+
+    @Inject
+    MaintenanceJob maintenanceJob;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -699,75 +703,25 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("maintenance")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response addMaintenance(MaintenanceRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response addMaintenance(MaintenanceRequestDTO request,
+                                   @HeaderParam("X-Session-Id") String sessionId) {
+
         PackagingSchedule schedule = repository.readForSession(sessionId);
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
-        int insertIndex = request.getInsertIndex();
 
-        if (insertIndex < 0 || insertIndex >= schedule.getJobs().size()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid insertIndex: " + insertIndex))
-                    .build();
-        }
+        PackagingSchedule updated = maintenanceJob.addMaintenanceJob(schedule, request);
 
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
-
-        List<Job> lineJobs = line.getJobs();
-
-        if (insertIndex > lineJobs.size() + 1) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error",
-                            "insertIndex must be between 0 and " + (lineJobs.size() + 1)))
-                    .build();
-        }
-
-        Job baseJob = lineJobs.get(lineJobs.size() - 1);
-
-        Product maintenanceProduct = schedule.getProducts().stream()
-                .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Maintenance product with id='MAINTENANCE' not found"));
-
-        Job maintenanceJob = new Job(
-                "MAINTENANCE-" + UUID.randomUUID(),
-                request.getName(),
-                maintenanceProduct,
-                Duration.ofMinutes(request.getDurationMinutes()),
-                baseJob.getMinStartTime(),
-                baseJob.getIdealEndTime(),
-                baseJob.getMaxEndDateTime(),
-                0,
-                true,
-                null,
-                null
-        );
-
-        maintenanceJob.setLineSpeeds(baseJob.getLineSpeeds());
-        maintenanceJob.setMaintenance(true);
-        maintenanceJob.setLine(line);
-
-        lineJobs.add(Math.min(insertIndex, lineJobs.size()), maintenanceJob);
-
-        fixLineJobs(line);
-        schedule.getJobs().add(maintenanceJob);
-        fixPinnedJobs(line);
-
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
+        solutionManager.update(updated, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, updated);
 
         return Response.ok(Map.of(
                 "status", "success",
-                "message", "Maintenance job added successfully",
-                "lineId", line.getId()
+                "message", "Maintenance job added",
+                "lineId", request.getLineId()
         )).build();
     }
 
