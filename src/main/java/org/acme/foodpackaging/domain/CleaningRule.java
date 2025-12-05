@@ -1,9 +1,12 @@
 package org.acme.foodpackaging.domain;
 
+import lombok.Getter;
+
 public class CleaningRule {
     private String parameter;
     private String from;
     private String to;
+    @Getter
     private int duration;
 
     public CleaningRule(String parameter, String from, String to, int duration) {
@@ -16,6 +19,5 @@ public class CleaningRule {
     public String getParameter() { return parameter == null ? "" : parameter; }
     public String getFrom() { return from == null ? "" : from; }
     public String getTo() { return to == null ? "" : to; }
-    public int getDuration() { return duration; }
 }
 
