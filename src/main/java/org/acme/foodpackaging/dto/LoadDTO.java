@@ -2,6 +2,8 @@ package org.acme.foodpackaging.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,18 +15,25 @@ public class LoadDTO {
 
     private boolean findSolvedInDb;
 
+    @Setter
+    @Getter
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
+    @Setter
+    @Getter
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
+    @Getter
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
     private LocalDateTime idealEndDateTime;
 
+    @Getter
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
     private LocalDateTime maxEndDateTime;
 
+    @Getter
     @JsonDeserialize(using = LineStartTimesDeserializer.class)
     private Map<String, LocalTime> lineStartTimes;
 
@@ -33,22 +42,6 @@ public class LoadDTO {
     public Boolean getFindSolvedInDb() { return findSolvedInDb; }
     public void setFindSolvedInDb(Boolean findSolvedInDb) { this.findSolvedInDb = findSolvedInDb; }
 
-    public LocalDate getStartDate() { return startDate; }
-    public LocalDate getEndDate() { return endDate; }
-
-    public LocalDateTime getIdealEndDateTime() { return idealEndDateTime; }
-    public LocalDateTime getMaxEndDateTime() { return maxEndDateTime; }
-
-    public Map<String, LocalTime> getLineStartTimes() { return lineStartTimes; }
-
-    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
-    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
-
-    public void setIdealEndDateTime(LocalDateTime idealEndDateTime) { this.idealEndDateTime = idealEndDateTime; }
-    public void setMaxEndDateTime(LocalDateTime maxEndDateTime) { this.maxEndDateTime = maxEndDateTime; }
-
-    public void setLineStartTimes(Map<String, LocalTime> lineStartTimes) { this.lineStartTimes = lineStartTimes; }
-
     public Map<String, LocalDateTime> toLineStartDateTimeMap() {
         Map<String, LocalDateTime> result = new LinkedHashMap<>();
         for (Map.Entry<String, LocalTime> entry : lineStartTimes.entrySet()) {
@@ -56,7 +49,6 @@ public class LoadDTO {
         }
         return result;
     }
-
 }
 
 

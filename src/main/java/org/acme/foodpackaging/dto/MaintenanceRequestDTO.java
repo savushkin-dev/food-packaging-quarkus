@@ -11,7 +11,9 @@ public class MaintenanceRequestDTO {
     private String lineId;
     @Setter
     private String name;
-    private int insertIndex;
+    private Integer insertIndex;
+    private Integer updateIndex;
+    private Integer removeIndex;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
     private LocalDateTime startProductionDateTime;
@@ -20,5 +22,13 @@ public class MaintenanceRequestDTO {
 
     public boolean isEmptyLineMode() {
         return startProductionDateTime != null;
+    }
+
+    public boolean isUpdateLineMode() {
+        return updateIndex != null;
+    }
+
+    public boolean isRemoveLineMode() {
+        return removeIndex != null;
     }
 }

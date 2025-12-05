@@ -1,11 +1,9 @@
 package org.acme.foodpackaging.scheduleOperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils;
-import org.acme.foodpackaging.service.ScheduleLogService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -13,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils.fixLineJobs;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils.fixPinnedJobs;
+
 @ApplicationScoped
 public class MaintenanceJob {
-    @Inject
-    ScheduleLogService scheduleLogService;
-
     /**
      * Добавляет Maintenance Job на линию
      *
@@ -83,8 +81,56 @@ public class MaintenanceJob {
 
         schedule.getJobs().add(maintenanceJob);
 
-        LocalDateTime actualStart = maintenanceJob.getStartProductionDateTime();
-        LocalDateTime actualEnd = maintenanceJob.getEndDateTime();
+        return schedule;
+    }
+
+    public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
+                                                  MaintenanceRequestDTO request) {
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+
+        List<Job> lineJobs = line.getJobs();
+        int index = request.getRemoveIndex();
+
+        if (index < 0 || index >= lineJobs.size()) {
+            throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        }
+
+        Job jobToRemove = lineJobs.get(index);
+
+        lineJobs.remove(index);
+        schedule.getJobs().remove(jobToRemove);
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+
+        return schedule;
+
+    }
+
+    public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequestDTO request) {
+
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+
+        List<Job> jobs = line.getJobs();
+
+        int index = request.getUpdateIndex();
+        if (index < 0 || index >= jobs.size()) {
+            throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        }
+
+        Job job = jobs.get(index);
+
+        job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
 
         return schedule;
     }
