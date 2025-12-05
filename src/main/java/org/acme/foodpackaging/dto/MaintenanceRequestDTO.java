@@ -1,37 +1,24 @@
 package org.acme.foodpackaging.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Getter
 public class MaintenanceRequestDTO {
     private String lineId;
+    @Setter
     private String name;
     private int insertIndex;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
+    private LocalDateTime startProductionDateTime;
+
     private int durationMinutes;
 
-
-    public String getLineId() {
-        return lineId;
+    public boolean isEmptyLineMode() {
+        return startProductionDateTime != null;
     }
-
-    public void setLineId(String lineId) {
-        this.lineId = lineId;
-    }
-
-    public int getInsertIndex() {
-        return insertIndex;
-    }
-
-    public void setInsertIndex(int insertIndex) {
-        this.insertIndex = insertIndex;
-    }
-
-    public int getDurationMinutes() {
-        return durationMinutes;
-    }
-
-    public void setDurationMinutes(int durationMinutes) {
-        this.durationMinutes = durationMinutes;
-    }
-
-    public String getName() { return name; }
-
-    public void setName( String name) { this.name = name; }
 }

@@ -1,11 +1,11 @@
-package org.acme.foodpackaging.domain;
+package org.acme.foodpackaging.scheduleOperations.utils;
+
+import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.Line;
 
 import java.util.List;
 
-public final class ScheduleFixUtils {
-
-    private ScheduleFixUtils() {}
-
+public class ScheduleFixUtils {
     public static void fixLineJobs(Line line) {
         List<Job> jobs = line.getJobs();
         for (int i = 0; i < jobs.size(); i++) {
@@ -29,8 +29,8 @@ public final class ScheduleFixUtils {
 
     public static void pinnAllLines(List<Line> lines) {
 
-       for(Line line : lines){
-           line.setFirstUnpinnedIndex(line.getJobs().size());
-       }
+        for(Line line : lines){
+            line.setFirstUnpinnedIndex(line.getJobs().size());
+        }
     }
 }
