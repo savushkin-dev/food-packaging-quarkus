@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-import static org.acme.foodpackaging.domain.ScheduleFixUtils.*;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 import static org.acme.foodpackaging.sql.SqlQueries.UPDATE_PDAYDTF;
 
@@ -198,7 +198,7 @@ public class LoadData {
         }
 
         for (Job job : currentJobs) {
-            if (!dbJobsNextDay.containsKey(job.getSnpz())) {
+            if (!dbJobsNextDay.containsKey(job.getSnpz()) && !job.isMaintenance()) {
                 toRemove.add(job);
             }
         }

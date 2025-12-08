@@ -20,6 +20,7 @@ import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
@@ -28,13 +29,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
 @Path("schedule")
@@ -52,6 +53,9 @@ public class PackagingScheduleResource {
 
     @Inject
     LoadData loadData;
+
+    @Inject
+    MaintenanceJob maintenanceJob;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -212,6 +216,61 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "Failed to update jobs: " + e.getMessage()))
                     .build();
         }
+    }
+
+    @POST
+    @Path("lineStart")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdateDTO request) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+        Line line = schedule.getLines().stream()
+                .filter(l -> l.getId().equals(request.getLineId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+
+        setLineStartDateTime(line, request.getStartLineDateTime());
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "sessionId", sessionId,
+                "message", "Line start time updated"
+        )).build();
+    }
+
+    @POST
+    @Path("planEndTime")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updatePlanningEndTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdateDTO request) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
+                    .build();
+        }
+
+        schedule.getWorkCalendar().setMaxEndDateTime(request.getMaxEndDateTime());
+        fixEndDateTime(schedule.getJobs(), request.getMaxEndDateTime());
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(
+                "status", "success",
+                "sessionId", sessionId,
+                "message", "MaxEndDateTime updated"
+        )).build();
     }
 
     @POST
@@ -571,203 +630,37 @@ public class PackagingScheduleResource {
 
         return jobsToMove;
     }
-
     /**
-     * Восстанавливает previous/next и пересчитывает shadow variables в линии
+     * Операции для сервисной работы на линии
      */
-    private void fixLineJobs(Line line) {
-        List<Job> jobs = line.getJobs();
-        for (int i = 0; i < jobs.size(); i++) {
-            Job current = jobs.get(i);
-            current.setLine(line);
-            current.setPreviousJob(i > 0 ? jobs.get(i - 1) : null);
-            current.setNextJob(i < jobs.size() - 1 ? jobs.get(i + 1) : null);
-            current.updateStartCleaningDateTime();
-        }
-    }
-
-    private void fixPinnedJobs(Line line) {
-        List<Job> jobs = line.getJobs();
-        line.setFirstUnpinnedIndex(0);
-        for (int i = 0; i < jobs.size(); ++i) {
-            if (jobs.get(i).isMaintenance()) {
-                line.setFirstUnpinnedIndex(i + 1);
-            }
-        }
-    }
-
-    @POST
-    @Path("update-duration")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response updateJobDuration(UpdateDurationRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-        if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
-                    .build();
-        }
-
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElse(null);
-
-        if (line == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Line not found: " + request.getLineId()))
-                    .build();
-        }
-
-        List<Job> jobs = line.getJobs();
-
-        int index = request.getIndex();
-        if (index < 0 || index >= jobs.size()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid job index: " + index))
-                    .build();
-        }
-
-        Job job = jobs.get(index);
-
-        job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
-
-        fixLineJobs(line);
-
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
-
-        return Response.ok(Map.of(
-                "status", "success",
-                "message", "Job duration updated",
-                "jobId", job.getId(),
-                "lineId", line.getId(),
-                "newDurationMinutes", request.getDurationMinutes()
-        )).build();
-    }
-
-    @POST
-    @Path("removeJob")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response removeJob(RemoveJobRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-        if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
-                    .build();
-        }
-
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElse(null);
-
-        if (line == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Line not found: " + request.getLineId()))
-                    .build();
-        }
-
-        List<Job> lineJobs = line.getJobs();
-        int index = request.getRemoveIndex();
-
-        if (index < 0 || index >= lineJobs.size()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid index: " + index))
-                    .build();
-        }
-
-        Job jobToRemove = lineJobs.get(index);
-
-        lineJobs.remove(index);
-        schedule.getJobs().remove(jobToRemove);
-
-        fixLineJobs(line);
-        fixPinnedJobs(line);
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
-
-        return Response.ok(Map.of(
-                "status", "success",
-                "message", "Job removed successfully",
-                "removedJobByIndex", index
-        )).build();
-    }
-
     @POST
     @Path("maintenance")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response addMaintenance(MaintenanceRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response addMaintenance(MaintenanceRequestDTO request,
+                                   @HeaderParam("X-Session-Id") String sessionId) {
+
         PackagingSchedule schedule = repository.readForSession(sessionId);
+        PackagingSchedule updated;
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
-        int insertIndex = request.getInsertIndex();
-
-        if (insertIndex < 0 || insertIndex >= schedule.getJobs().size()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid insertIndex: " + insertIndex))
-                    .build();
-        }
-
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
-
-        List<Job> lineJobs = line.getJobs();
-
-        if (insertIndex > lineJobs.size() + 1) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error",
-                            "insertIndex must be between 0 and " + (lineJobs.size() + 1)))
-                    .build();
-        }
-
-        Job baseJob = lineJobs.get(lineJobs.size() - 1);
-
-        Product maintenanceProduct = schedule.getProducts().stream()
-                .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Maintenance product with id='MAINTENANCE' not found"));
-
-        Job maintenanceJob = new Job(
-                "MAINTENANCE-" + UUID.randomUUID(),
-                request.getName(),
-                maintenanceProduct,
-                Duration.ofMinutes(request.getDurationMinutes()),
-                baseJob.getMinStartTime(),
-                baseJob.getIdealEndTime(),
-                baseJob.getMaxEndDateTime(),
-                0,
-                true,
-                null,
-                null
-        );
-
-        maintenanceJob.setLineSpeeds(baseJob.getLineSpeeds());
-        maintenanceJob.setMaintenance(true);
-        maintenanceJob.setLine(line);
-
-        lineJobs.add(Math.min(insertIndex, lineJobs.size()), maintenanceJob);
-
-        fixLineJobs(line);
-        schedule.getJobs().add(maintenanceJob);
-        fixPinnedJobs(line);
-
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
+            if(request.isUpdateLineMode()){
+                updated = maintenanceJob.updateDuration(schedule, request);
+            }
+            else if(request.isRemoveLineMode()){
+                updated = maintenanceJob.removeMaintenanceJob(schedule, request);
+            }
+            else{
+                updated = maintenanceJob.addMaintenanceJob(schedule, request);
+            }
+        solutionManager.update(updated, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, updated);
 
         return Response.ok(Map.of(
                 "status", "success",
-                "message", "Maintenance job added successfully",
-                "lineId", line.getId()
+                "message", "Maintenance job added",
+                "lineId", request.getLineId()
         )).build();
     }
 
@@ -961,8 +854,8 @@ public class PackagingScheduleResource {
             return false;
         }
 
-        if (!Objects.equals((schedule.getJobs().get(0).getMaxEndTime()), loadDTO.getMaxEndDateTime())) return false;
-        if (!Objects.equals((schedule.getJobs().get(0).getIdealEndTime()), loadDTO.getIdealEndDateTime())) return false;
+        if (!Objects.equals((schedule.getJobs().getFirst().getMaxEndTime()), loadDTO.getMaxEndDateTime())) return false;
+        if (!Objects.equals((schedule.getJobs().getFirst().getIdealEndTime()), loadDTO.getIdealEndDateTime())) return false;
 
         Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
 

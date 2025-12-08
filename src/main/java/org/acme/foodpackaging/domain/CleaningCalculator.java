@@ -2,7 +2,6 @@ package org.acme.foodpackaging.domain;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.sql.*;
 import java.time.Duration;

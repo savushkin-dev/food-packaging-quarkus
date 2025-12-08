@@ -13,52 +13,94 @@ import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
 
 @PlanningEntity
 public class Job {
 
+    @Getter
     @PlanningId
     private String id;
+    @Setter
+    @Getter
     private String name;
+    @Setter
+    @Getter
     private String previousJobId;
+    @Setter
+    @Getter
     private String nextJobId;
+    @Setter
+    @Getter
     private int snpz;
+    @Getter
     private int np;
+    @Getter
     private int quantity;
+    @Getter
+    @Setter
     private double mass;
 
+    @Getter
+    @Setter
     private Product product;
+    @Setter
     private Duration duration;
+    @Getter
+    @Setter
     private boolean maintenance;
+    @Getter
+    @Setter
     private LocalDateTime minStartTime;
+    @Getter
+    @Setter
     private LocalDateTime idealEndTime;
+    @Getter
+    @Setter
     private LocalDateTime maxEndTime;
 
     /**
      * Higher priority is a higher number.
      */
+    @Getter
     private int priority;
+    @Setter
+    @Getter
     @PlanningPin
     private boolean pinned;
 
+    @Setter
+    @Getter
     @InverseRelationShadowVariable(sourceVariableName = "jobs")
     private Line line;
+    @Setter
+    @Getter
     @JsonIgnore
     @PreviousElementShadowVariable(sourceVariableName = "jobs")
     private Job previousJob;
+    @Setter
+    @Getter
     @JsonIgnore
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
 
+    @Setter
+    @Getter
     private Map<String, Map<String, Integer>> lineSpeeds;
-
     /**
      * Start is after cleanup.
      */
+    @Setter
+    @Getter
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime startCleaningDateTime;
+    @Setter
+    @Getter
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime startProductionDateTime;
+    @Setter
+    @Getter
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime endDateTime;
 
@@ -118,40 +160,6 @@ public class Job {
     // Getters and setters
     // ************************************************************************
 
-    public String getId() {
-        return id;
-    }
-
-    public String getPreviousJobId() {
-        return previousJobId;
-    }
-
-    public String getNextJobId() {
-        return nextJobId;
-    }
-
-    public Map<String, Map<String, Integer>> getLineSpeeds() {
-        return lineSpeeds;
-    }
-
-    public double getMass() { return mass; }
-
-    public int getSnpz() {
-        return snpz;
-    }
-
-    public int getQuantity() { return quantity; }
-
-    public int getNp() { return np; }
-
-    public String getName() {
-        return name;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
     public Duration getDuration() {
         if(isMaintenance()) return duration;
 
@@ -163,22 +171,6 @@ public class Job {
         final int IF_CHANGING_PACKAGING = 4;
         long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
         return Duration.ofMinutes(minutes);
-    }
-
-    public LocalDateTime getMinStartTime() {
-        return minStartTime;
-    }
-
-    public LocalDateTime getIdealEndTime() {
-        return idealEndTime;
-    }
-
-    public LocalDateTime getMaxEndTime() {
-        return maxEndTime;
-    }
-
-    public int getPriority() {
-        return priority;
     }
 
     @JsonIgnore
@@ -193,86 +185,9 @@ public class Job {
         return productSpeeds.get(product.getType());
     }
 
-    public boolean isMaintenance() {
-        return maintenance;
-    }
-
-    public boolean isPinned() {
-        return pinned;
-    }
-
-    public Line getLine() { return line; }
-
-    public void setName(String name) { this.name = name; }
-
-    public void setSnpz(int snpz) { this.snpz = snpz; }
-
-    public void setDuration(Duration duration) { this.duration = duration; }
-
-    public void setMaintenance(boolean maintenance) { this.maintenance = maintenance; }
-
-    public void setMass(double mass) { this.mass = mass; }
-
-    public void setNextJobId(String nextJobId) { this.nextJobId = nextJobId; }
-
-    public void setPreviousJobId(String previousJobId) { this.previousJobId = previousJobId; }
-
-    public void setLine(Line line) {
-        this.line = line;
-    }
-
-    public void setPinned(boolean pinned) {
-        this.pinned = pinned;
-    }
-
-    public Job getPreviousJob() {
-        return previousJob;
-    }
-
-    public void setPreviousJob(Job previousJob) {
-        this.previousJob = previousJob;
-    }
-
-    public Job getNextJob() {
-        return nextJob;
-    }
-
-    public  void setLineSpeeds(Map<String, Map<String, Integer>> lineSpeeds){
-        this.lineSpeeds = lineSpeeds;
-    }
-    public void setNextJob(Job nextJob) {
-        this.nextJob = nextJob;
-    }
-
-    public LocalDateTime getStartCleaningDateTime() {
-        return startCleaningDateTime;
-    }
-
-    public void setStartCleaningDateTime(LocalDateTime startCleaningDateTime) {
-        this.startCleaningDateTime = startCleaningDateTime;
-    }
-
-    public LocalDateTime getStartProductionDateTime() {
-        return startProductionDateTime;
-    }
-
-    public void setStartProductionDateTime(LocalDateTime startProductionDateTime) {
-        this.startProductionDateTime = startProductionDateTime;
-    }
-
-    public LocalDateTime getEndDateTime() {
-        return endDateTime;
-    }
-
     public LocalDateTime getMaxEndDateTime() {
         return maxEndTime;
     }
-
-    public void setEndDateTime(LocalDateTime endDateTime) {
-        this.endDateTime = endDateTime;
-    }
-
-    public void  setProduct(Product product) { this.product = product; }
 
     // ************************************************************************
     // Complex methods
