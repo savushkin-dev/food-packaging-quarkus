@@ -3,9 +3,9 @@ package org.acme.foodpackaging.domain;
 import lombok.Getter;
 
 public class CleaningRule {
-    private String parameter;
-    private String from;
-    private String to;
+    private final String parameter;
+    private final String from;
+    private final String to;
     @Getter
     private int duration;
 
