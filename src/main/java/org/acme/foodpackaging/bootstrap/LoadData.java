@@ -198,7 +198,7 @@ public class LoadData {
         }
 
         for (Job job : currentJobs) {
-            if (!dbJobsNextDay.containsKey(job.getSnpz())) {
+            if (!dbJobsNextDay.containsKey(job.getSnpz()) && !job.isMaintenance()) {
                 toRemove.add(job);
             }
         }
