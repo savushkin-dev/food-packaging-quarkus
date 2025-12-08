@@ -21,6 +21,7 @@ import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
+import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
@@ -35,6 +36,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
+import static io.smallrye.config._private.ConfigLogging.log;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
@@ -56,6 +58,9 @@ public class PackagingScheduleResource {
 
     @Inject
     MaintenanceJob maintenanceJob;
+
+    @Inject
+    MoveJobsService moveJobsService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -231,10 +236,7 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+        Line line = findLineById(schedule, request.getLineId());
 
         setLineStartDateTime(line, request.getStartLineDateTime());
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
@@ -417,7 +419,6 @@ public class PackagingScheduleResource {
             return false;
         return job.getStartCleaningDateTime().isBefore(job.getStartProductionDateTime());
     }
-
     /**
      * Заполняет подцепочку из заранее подготовленных итераторов для продуктов на линии
      */
@@ -490,12 +491,13 @@ public class PackagingScheduleResource {
                 "message", "Solving stopped"
         )).build();
     }
-
+    /**
+     * Перемещение задач на линиях
+     */
     @POST
     @Path("moveJobs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-
     public Response moveJobs(MoveJobsRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
@@ -505,130 +507,24 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Line fromLine = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getFromLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("fromLineId not found"));
+        try {
+            PackagingSchedule result = moveJobsService.moveJobs(schedule, request);
 
-        Line toLine = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getToLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("toLineId not found"));
+            solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
+            repository.writeForSession(sessionId, result);
 
-        boolean sameLine = fromLine.getId().equals(toLine.getId());
+            return Response.ok(Map.of("status", "success", "message", "Jobs moved successfully")).build();
 
-        int fromIndex = request.getFromIndex();
-        int count = request.getCount();
-
-        List<Job> jobs = fromLine.getJobs();
-        int fromEnd = Math.min(fromIndex + count, jobs.size());
-
-        if (fromIndex < 0 || fromIndex >= jobs.size() || fromIndex >= fromEnd) {
-            return Response.ok(Map.of("status", "success", "message", "Nothing to move")).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to move jobs", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Internal error"))
+                    .build();
         }
-
-        if (!sameLine) {
-            for (int i = fromIndex; i < fromEnd; i++) {
-                Job job = jobs.get(i);
-                if (job.isMaintenance()) continue;
-                String productType = job.getProduct().getType();
-
-                Integer duration = job.getLineSpeeds()
-                        .getOrDefault(toLine.getId(), Map.of())
-                        .get(productType);
-
-                if (duration == null || duration == 0) {
-                    return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(Map.of(
-                                    "error",
-                                    "Cannot move job \"" + job.getName() +
-                                            "\" to line \"" + toLine.getName() + "\": product type unsupported"
-                            ))
-                            .build();
-                }
-            }
-        }
-
-        if (sameLine
-                && request.getInsertIndex() >= fromIndex
-                && request.getInsertIndex() <= fromEnd) {
-            return Response.ok(Map.of("status", "success", "message", "No-op")).build();
-        }
-
-        List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, request.getInsertIndex());
-
-        if (moved.isEmpty()) {
-            return Response.ok(Map.of("status", "success", "message", "No jobs moved")).build();
-        }
-
-        fixLineJobs(fromLine);
-        fixPinnedJobs(fromLine);
-        if (!sameLine) {
-            fixLineJobs(toLine);
-            fixPinnedJobs(toLine);
-        }
-
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
-
-        return Response.ok(Map.of(
-                "status", "success",
-                "message", "Jobs moved successfully"
-        )).build();
-    }
-
-    /**
-     * Перемещает подсписок из одного списка в другой и возвращает перемещённые задачи
-     */
-    private List<Job> moveSubList(Line fromLine, int fromIndex, int count,
-                                  Line toLine, int insertIndex) {
-
-        boolean sameLine = fromLine.getId().equals(toLine.getId());
-
-        List<Job> fromJobs = new ArrayList<>(fromLine.getJobs());
-        List<Job> toJobs = sameLine ? fromJobs : new ArrayList<>(toLine.getJobs());
-
-        int fromEnd = Math.min(fromIndex + count, fromJobs.size());
-        if (fromIndex < 0 || fromIndex >= fromJobs.size() || fromIndex >= fromEnd) {
-            return Collections.emptyList();
-        }
-
-        List<Job> jobsToMove = new ArrayList<>();
-        for (int i = fromIndex; i < fromEnd; i++) {
-            jobsToMove.add(fromJobs.get(i));
-        }
-
-        for (int i = 0; i < jobsToMove.size(); i++) {
-            fromJobs.remove(fromIndex);
-        }
-
-        if (sameLine && insertIndex > fromIndex) {
-            insertIndex -= jobsToMove.size();
-        }
-
-        insertIndex = Math.max(0, Math.min(insertIndex, toJobs.size()));
-
-        List<Job> newToJobs = new ArrayList<>();
-
-        for (int i = 0; i < toJobs.size(); i++) {
-            if (i == insertIndex) {
-                newToJobs.addAll(jobsToMove);
-            }
-            newToJobs.add(toJobs.get(i));
-        }
-
-        if (insertIndex == toJobs.size()) {
-            newToJobs.addAll(jobsToMove);
-        }
-
-        fromLine.setJobs(fromJobs);
-        if (!sameLine) {
-            toLine.setJobs(newToJobs);
-        } else {
-            fromLine.setJobs(newToJobs);
-        }
-
-        return jobsToMove;
     }
     /**
      * Операции для сервисной работы на линии
