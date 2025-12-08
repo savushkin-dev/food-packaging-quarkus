@@ -11,10 +11,8 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.bootstrap.LoadData;
-import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
@@ -22,6 +20,7 @@ import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
+import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -32,8 +31,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
@@ -65,6 +62,9 @@ public class PackagingScheduleResource {
 
     @Inject
     SortByNpService sortByNpService;
+
+    @Inject
+    PinService pinService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -438,7 +438,9 @@ public class PackagingScheduleResource {
                 "lineId", request.getLineId()
         )).build();
     }
-
+    /**
+     * Закрепеляет/открепляет задачи на линииях
+     */
     @POST
     @Path("pin")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -451,51 +453,20 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Line pinnedLine = solution.getLines().stream()
-                .filter(l -> l.getId().equals(pinRequest.getLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + pinRequest.getLineId()));
+        Line line = findLineById(solution, pinRequest.getLineId());
 
-        if (Boolean.TRUE.equals(pinRequest.getPinAll())) {
-            pinnedLine.setFirstUnpinnedIndex(pinnedLine.getJobs().size());
-            repository.writeForSession(sessionId, solution);
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "All jobs on line " + pinnedLine.getId() + " were pinned successfully."
-            )).build();
-        }
+        pinService.pinLine(line, pinRequest);
 
-        if (pinRequest.getPinCount() != null) {
-            int count = pinRequest.getPinCount();
-
-            if (count <= 0) {
-                pinnedLine.setFirstUnpinnedIndex(0);
-                repository.writeForSession(sessionId, solution);
-                return Response.ok(Map.of(
-                        "status", "success",
-                        "message", "All jobs were unpinned (pinCount = 0)."
-                )).build();
-            }
-
-            int safeCount = Math.min(count, pinnedLine.getJobs().size());
-            pinnedLine.setFirstUnpinnedIndex(safeCount);
-            repository.writeForSession(sessionId, solution);
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "First " + safeCount + " jobs were pinned successfully."
-            )).build();
-        }
-
-        pinnedLine.setFirstUnpinnedIndex(0);
         repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
                 "status", "success",
-                "message", "Line " + pinnedLine.getId() + " was fully unpinned."
+                "message", "Line " + line.getId() + " updated successfully."
         )).build();
     }
-
+    /**
+     * Сохраняет план в бд в формате json строки
+     */
     @POST
     @Path("saveToDb")
     @Produces(MediaType.APPLICATION_JSON)
@@ -522,7 +493,9 @@ public class PackagingScheduleResource {
             return Response.serverError().entity("Save error: " + e.getMessage()).build();
         }
     }
-
+    /**
+     * Удаляет план из бд
+     */
     @POST
     @Path("removeSolution")
     @Produces(MediaType.APPLICATION_JSON)
