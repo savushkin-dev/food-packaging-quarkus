@@ -745,27 +745,6 @@ public class PackagingScheduleResource {
         }
     }
 
-    private boolean isScheduleCompatible(PackagingSchedule schedule, LoadDTO loadDTO) {
-        if (schedule.getLines().size() != loadDTO.getLineStartTimes().size()) {
-            return false;
-        }
-
-        if (!Objects.equals((schedule.getJobs().getFirst().getMaxEndTime()), loadDTO.getMaxEndDateTime())) return false;
-        if (!Objects.equals((schedule.getJobs().getFirst().getIdealEndTime()), loadDTO.getIdealEndDateTime())) return false;
-
-        Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
-
-        for (Line line : schedule.getLines()) {
-            LocalTime lineStartTime = line.getStartDateTime().toLocalTime();
-            LocalTime expectedStart = startTimesFromJson.get(line.getId()).toLocalTime();
-
-            if (!lineStartTime.equals(expectedStart)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public File exportTimeCompare(String date, PackagingSchedule solution) {
         ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
         return exporter.getExportedFile();
