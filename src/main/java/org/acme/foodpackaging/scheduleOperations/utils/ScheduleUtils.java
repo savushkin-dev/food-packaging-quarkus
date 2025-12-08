@@ -2,11 +2,12 @@ package org.acme.foodpackaging.scheduleOperations.utils;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
+import org.acme.foodpackaging.domain.PackagingSchedule;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class ScheduleFixUtils {
+public class ScheduleUtils {
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
@@ -36,9 +37,18 @@ public class ScheduleFixUtils {
      * Назначает общий maxEndDateTime для всех задач
      */
     public static void fixEndDateTime(List<Job> jobs, LocalDateTime maxEndDateTime) {
-       for(Job job : jobs){
-           job.setMaxEndTime(maxEndDateTime);
+        for(Job job : jobs){
+            job.setMaxEndTime(maxEndDateTime);
         }
+    }
+    /**
+     * Поиск линии в schedule по id
+     */
+    public static Line findLineById(PackagingSchedule schedule, String id){
+        return schedule.getLines().stream()
+                .filter(l -> l.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + id));
     }
     /**
      * Меняет время старта линии

@@ -3,7 +3,6 @@ package org.acme.foodpackaging.scheduleOperations;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
-import org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -11,8 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils.fixLineJobs;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils.fixPinnedJobs;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class MaintenanceJob {
@@ -26,10 +24,8 @@ public class MaintenanceJob {
     public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule,
                                                MaintenanceRequestDTO request) {
 
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+        Line line = findLineById(schedule, request.getLineId());
+        line.setStartDateTime(request.getStartProductionDateTime());
 
         List<Job> lineJobs = line.getJobs();
 
@@ -76,8 +72,8 @@ public class MaintenanceJob {
             lineJobs.add(insertIndex, maintenanceJob);
         }
 
-        ScheduleFixUtils.fixLineJobs(line);
-        ScheduleFixUtils.fixPinnedJobs(line);
+        fixLineJobs(line);
+        fixPinnedJobs(line);
 
         schedule.getJobs().add(maintenanceJob);
 
@@ -87,10 +83,7 @@ public class MaintenanceJob {
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
                                                   MaintenanceRequestDTO request) {
 
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+        Line line = findLineById(schedule, request.getLineId());
 
         List<Job> lineJobs = line.getJobs();
         int index = request.getRemoveIndex();
@@ -113,10 +106,7 @@ public class MaintenanceJob {
 
     public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequestDTO request) {
 
-        Line line = schedule.getLines().stream()
-                .filter(l -> l.getId().equals(request.getLineId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + request.getLineId()));
+        Line line = findLineById(schedule, request.getLineId());
 
         List<Job> jobs = line.getJobs();
 

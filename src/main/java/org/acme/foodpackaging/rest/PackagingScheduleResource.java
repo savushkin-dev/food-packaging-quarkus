@@ -35,7 +35,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleFixUtils.*;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
 @Path("schedule")
@@ -854,8 +854,8 @@ public class PackagingScheduleResource {
             return false;
         }
 
-        if (!Objects.equals((schedule.getJobs().get(0).getMaxEndTime()), loadDTO.getMaxEndDateTime())) return false;
-        if (!Objects.equals((schedule.getJobs().get(0).getIdealEndTime()), loadDTO.getIdealEndDateTime())) return false;
+        if (!Objects.equals((schedule.getJobs().getFirst().getMaxEndTime()), loadDTO.getMaxEndDateTime())) return false;
+        if (!Objects.equals((schedule.getJobs().getFirst().getIdealEndTime()), loadDTO.getIdealEndDateTime())) return false;
 
         Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
 
