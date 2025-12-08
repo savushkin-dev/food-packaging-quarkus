@@ -25,7 +25,6 @@ public class MaintenanceJob {
                                                MaintenanceRequestDTO request) {
 
         Line line = findLineById(schedule, request.getLineId());
-        line.setStartDateTime(request.getStartProductionDateTime());
 
         List<Job> lineJobs = line.getJobs();
 
@@ -60,6 +59,7 @@ public class MaintenanceJob {
         maintenanceJob.setLine(line);
 
         if (request.isEmptyLineMode()) {
+            line.setStartDateTime(request.getStartProductionDateTime());
             LocalDateTime startTime = request.getStartProductionDateTime();
             maintenanceJob.setStartCleaningDateTime(startTime);
             maintenanceJob.setStartProductionDateTime(startTime);
