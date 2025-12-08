@@ -1,5 +1,8 @@
 package org.acme.foodpackaging.domain;
 
+import lombok.Getter;
+
+@Getter
 public class SessionPackagingSchedule {
 
     private final PackagingSchedule schedule;
@@ -8,14 +11,6 @@ public class SessionPackagingSchedule {
     public SessionPackagingSchedule(PackagingSchedule schedule) {
         this.schedule = schedule;
         this.lastUpdated = System.currentTimeMillis();
-    }
-
-    public PackagingSchedule getSchedule() {
-        return schedule;
-    }
-
-    public long getLastUpdated() {
-        return lastUpdated;
     }
 
     public void updateTimestamp() {

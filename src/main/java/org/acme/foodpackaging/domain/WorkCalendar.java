@@ -1,8 +1,13 @@
 package org.acme.foodpackaging.domain;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 public class WorkCalendar {
 
     private LocalDate fromDate; // Inclusive
@@ -33,35 +38,4 @@ public class WorkCalendar {
         return fromDate + " - " + toDate;
     }
 
-    // ************************************************************************
-    // Getters and setters
-    // ************************************************************************
-
-    public void setFromDate(LocalDate fromDate) { this.fromDate = fromDate; }
-
-    public void setToDate(LocalDate toDate) { this.toDate = toDate; }
-
-    public void setMinStartDateTime(LocalDateTime minStartDateTime) { this.minStartDateTime = minStartDateTime; }
-
-    public void setIdealEndDateTime(LocalDateTime idealEndDateTime) { this.idealEndDateTime = idealEndDateTime; }
-
-    public void setMaxEndDateTime(LocalDateTime maxEndDateTime) { this.maxEndDateTime = maxEndDateTime; }
-
-    public LocalDate getFromDate() {
-        return fromDate;
-    }
-
-    public LocalDate getToDate() {
-        return toDate;
-    }
-
-    public LocalDateTime getMinStartDateTime() {
-        return minStartDateTime;
-    }
-
-    public LocalDateTime getIdealEndDateTime() {
-        return idealEndDateTime;
-    }
-
-    public LocalDateTime getMaxEndDateTime() { return maxEndDateTime; }
 }
