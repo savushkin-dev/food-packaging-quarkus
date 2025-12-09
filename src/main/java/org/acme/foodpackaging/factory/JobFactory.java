@@ -22,8 +22,6 @@ public class JobFactory {
 
         Job job = new Job(id, jobName, snpz, np, product, mass, quantity,
                 minStartDateTime, idealEndDateTime, maxEndDateTime, priority, false);
-
-        job.setLineSpeeds(loadDataService.getLineSpeeds());
         return job;
     }
 

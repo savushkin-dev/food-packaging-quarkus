@@ -1,10 +1,12 @@
 package org.acme.foodpackaging.scheduleOperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
+import org.acme.foodpackaging.service.load.LoadDataService;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +18,8 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class MoveJobsService {
+    @Inject
+    LoadDataService loadDataService;
     /**
      * Выполняет перемещение подпоследовательности задач.
      * Бросает IllegalArgumentException при некорректных входных данных.
@@ -45,7 +49,7 @@ public class MoveJobsService {
                 Job job = fromJobs.get(i);
                 if (job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
-                Integer duration = job.getLineSpeeds()
+                Integer duration = loadDataService.getLineSpeeds()
                         .getOrDefault(toLine.getId(), Map.of())
                         .get(productType);
                 if (duration == null || duration == 0) {

@@ -46,7 +46,7 @@ public class SpeedRepository implements PanacheRepository<LineSpeedEntity> {
             speedMap.get(pair.getFirst()).put(pair.getSecond(), speed);
         });
 
-        // добавляем пропущенные типы
+        // добавляет пропущенные типы
         speedMap.values().forEach(typeMap -> allTypes.forEach(t -> typeMap.putIfAbsent(t, 0)));
 
         return speedMap;

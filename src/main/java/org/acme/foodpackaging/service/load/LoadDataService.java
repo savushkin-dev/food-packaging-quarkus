@@ -9,6 +9,7 @@ import org.acme.foodpackaging.repository.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.LineRepository;
 import org.acme.foodpackaging.repository.ProductRepository;
 import org.acme.foodpackaging.repository.SpeedRepository;
+import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.CleaningCalculatorService;
 import org.apache.commons.math3.util.Pair;
 
@@ -44,7 +45,7 @@ public class LoadDataService {
         this.lines = lineRepository.loadLines();
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
-        this.lineSpeeds =speedRepository.createSpeedMap();
+        SpeedCacheUtils.init(speedRepository.createSpeedMap());
     }
 }
 
