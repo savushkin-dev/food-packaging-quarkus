@@ -80,6 +80,10 @@ public class MaintenanceJob {
         return schedule;
     }
 
+    public static Product getMaintenanceProduct() {
+       return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "", "");
+    }
+
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
                                                   MaintenanceRequestDTO request) {
 
