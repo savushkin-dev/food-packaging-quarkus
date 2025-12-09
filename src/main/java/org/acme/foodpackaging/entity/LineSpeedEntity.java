@@ -7,6 +7,12 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.UUID;
+
 @Setter
 @Getter
 @Entity
@@ -14,6 +20,9 @@ import lombok.Setter;
 public class LineSpeedEntity {
 
     @Id
+    @Column(name = "F_GUID")
+    private UUID id;
+
     @Column(name = "KRC")
     private String line;
 
