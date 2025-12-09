@@ -192,7 +192,7 @@ public class LoadData {
                         schedule.getWorkCalendar().getMaxEndDateTime()
                 );
 
-                newJob.setLineSpeeds(lineSpeeds);
+               // newJob.setLineSpeeds(lineSpeeds);
                 toAdd.add(newJob);
             }
         }
@@ -385,7 +385,7 @@ public class LoadData {
         productsSet.add(maintenanceProduct);
 
         for (Job job : jobs) {
-            job.setLineSpeeds(lineSpeeds);
+           // job.setLineSpeeds(lineSpeeds);
         }
 
         return jobs;

@@ -70,11 +70,6 @@ public class JobRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load jobs from DB", e);
         }
-
-        Map<String, Map<String, Integer>> lineSpeeds = loadDataService.getLineSpeeds();
-        for (Job job : jobs) {
-            job.setLineSpeeds(lineSpeeds);
-        }
         return jobs;
     }
 }

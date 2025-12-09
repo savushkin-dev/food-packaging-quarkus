@@ -47,9 +47,6 @@ public class ScheduleBuilder {
         List<Job> jobs = jobRepository.loadJobs(startDate, minStart, idealEnd, maxEnd);
         schedule.setJobs(jobs);
 
-        for(Job job : schedule.getJobs()){
-            job.setLineSpeeds(loadDataService.getLineSpeeds());
-        }
         Set<Product> productSet = jobs.stream()
                 .map(Job::getProduct)
                 .collect(Collectors.toSet());
