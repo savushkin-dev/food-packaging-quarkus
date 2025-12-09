@@ -22,6 +22,7 @@ import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
+import org.acme.foodpackaging.service.load.ScheduleBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
@@ -44,31 +45,25 @@ public class PackagingScheduleResource {
 
     @Inject
     PackagingScheduleRepository repository;
-
     @Inject
     SolverManager<PackagingSchedule, String> solverManager;
-
     @Inject
     SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-
     @Inject
     LoadData loadData;
-
     @Inject
     MaintenanceJob maintenanceJob;
-
     @Inject
     MoveJobsService moveJobsService;
-
     @Inject
     SortByNpService sortByNpService;
-
     @Inject
     PinService pinService;
+    @Inject
+    ScheduleBuilder scheduleBuilder;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
-
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
@@ -133,8 +128,9 @@ public class PackagingScheduleResource {
 
         try {
             if (!loadDTO.getFindSolvedInDb()) {
-                PackagingSchedule createdSchedule = createNewSchedule(loadDTO);
+                PackagingSchedule createdSchedule = buildNewSchedule(loadDTO);
                 repository.writeForSession(sessionId, createdSchedule);
+
                 return Response.ok(Map.of(
                         "message", "New schedule generated (forced) for date: " + startDate
                 )).build();
@@ -143,26 +139,30 @@ public class PackagingScheduleResource {
             PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
 
             if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
+
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
                 repository.writeForSession(sessionId, schedule);
+
                 return Response.ok(Map.of(
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
             }
 
-            PackagingSchedule newSchedule = createNewSchedule(loadDTO);
+            PackagingSchedule newSchedule = buildNewSchedule(loadDTO);
             repository.writeForSession(sessionId, newSchedule);
-
 
             return Response.ok(Map.of(
                     "message", "No saved schedule found — new data generated for date: " + startDate
             )).build();
 
         } catch (DateTimeParseException e) {
+
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
                     .build();
+
         } catch (Exception e) {
+
             return Response.serverError()
                     .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
                     .build();
@@ -595,6 +595,13 @@ public class PackagingScheduleResource {
         } catch (RuntimeException ignored) {
             return null;
         }
+    }
+
+    private PackagingSchedule buildNewSchedule(LoadDTO loadDTO) {
+        return scheduleBuilder.buildSchedule(
+                loadDTO,
+                loadDTO.toLineStartDateTimeMap()
+        );
     }
 
     public File exportTimeCompare(String date, PackagingSchedule solution) {

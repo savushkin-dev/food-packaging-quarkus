@@ -12,18 +12,17 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
+
 @ApplicationScoped
 public class ScheduleBuilder {
 
     @Inject
     LoadDataService loadDataService;
-
     @Inject
     JobLoaderService jobLoaderService;
-
     @Inject
     LineFactory lineFactory;
-
     @Inject
     CleaningCalculatorService cleaningCalculatorService;
 
@@ -50,6 +49,7 @@ public class ScheduleBuilder {
                 .map(Job::getProduct)
                 .collect(Collectors.toSet());
         schedule.setProducts(new ArrayList<>(productSet));
+        schedule.getProducts().add(getMaintenanceProduct());
 
         cleaningCalculatorService.cleaningCalculate(schedule.getProducts());
 

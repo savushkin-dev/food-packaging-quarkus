@@ -20,7 +20,6 @@ public class JobLoaderService {
 
     @Inject
     JobFactory jobFactory;
-
     @Inject
     LoadDataService loadDataService;
 
@@ -29,7 +28,6 @@ public class JobLoaderService {
 
     public List<Job> loadJobs(LocalDate date, LocalDateTime minStart, LocalDateTime idealEnd, LocalDateTime maxEnd) {
         List<Job> jobs = new ArrayList<>();
-        Set<Product> productsSet = new HashSet<>();
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(LOAD_JOBS_FOR_SELECTED_DATE)) {
@@ -56,7 +54,6 @@ public class JobLoaderService {
                     if (product == null) {
                         throw new IllegalStateException("Unknown product KMC=" + kmc);
                     }
-                    productsSet.add(product);
 
                     Job job = jobFactory.createJob(
                             String.valueOf(++jobId),
@@ -71,10 +68,6 @@ public class JobLoaderService {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load jobs from DB", e);
         }
-
-        // Maintenance продукт
-        Product maintenanceProduct = new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "", "");
-        productsSet.add(maintenanceProduct);
 
         return jobs;
     }
