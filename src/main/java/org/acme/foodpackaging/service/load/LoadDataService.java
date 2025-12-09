@@ -44,19 +44,9 @@ public class LoadDataService {
         this.lines = lineRepository.loadLines();
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
-        this.lineSpeeds = convert(speedRepository.loadSpeeds());
+        this.lineSpeeds =speedRepository.createSpeedMap();
     }
 
-    private Map<String, Map<String, Integer>> convert(Map<Pair<String, String>, Integer> raw) {
-        Map<String, Map<String, Integer>> map = new HashMap<>();
-        for (var e : raw.entrySet()) {
-            String line = e.getKey().getFirst();
-            String type = e.getKey().getSecond();
-            int speed = e.getValue();
-            map.computeIfAbsent(line, v -> new HashMap<>()).put(type, speed);
-        }
-        return map;
-    }
 }
 
 
