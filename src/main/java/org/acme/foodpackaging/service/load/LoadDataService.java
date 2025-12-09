@@ -16,6 +16,7 @@ import org.apache.commons.math3.util.Pair;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 @ApplicationScoped
 public class LoadDataService {
@@ -32,7 +33,7 @@ public class LoadDataService {
     CleaningCalculatorService cleaningCalculator;
 
     @Getter
-    private Map<String, String> lines;
+    private ConcurrentMap<String, String> lines;
     @Getter
     private Map<String, Product> products;
     @Getter
