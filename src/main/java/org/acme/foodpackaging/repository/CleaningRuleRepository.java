@@ -37,7 +37,6 @@ public class CleaningRuleRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load cleaning rules", e);
         }
-
         return rules;
     }
 }

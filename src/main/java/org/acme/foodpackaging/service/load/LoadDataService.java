@@ -46,7 +46,6 @@ public class LoadDataService {
         this.cleaningRules = cleaningRuleRepository.loadRules();
         this.lineSpeeds =speedRepository.createSpeedMap();
     }
-
 }
 
 
