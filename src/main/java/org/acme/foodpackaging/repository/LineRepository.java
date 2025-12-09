@@ -31,7 +31,6 @@ public class LineRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load lines from DB", e);
         }
-
         return lines;
     }
 }

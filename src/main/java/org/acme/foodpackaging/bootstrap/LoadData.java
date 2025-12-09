@@ -230,7 +230,7 @@ public class LoadData {
 
     private Map<String, Map<String, Integer>> loadSpeedsFromDB() {
         Map<Pair<String, String>, Integer> mapSpeed = getSpeedsfromDB();
-        Map<String, Map<String, Integer>> finalMap = new HashMap<>();
+        Map<String, Map<String, Integer>> speedMap = new HashMap<>();
 
         Set<String> allTypes = new HashSet<>();
         for (Pair<String, String> key : mapSpeed.keySet()) {
@@ -244,7 +244,7 @@ public class LoadData {
             String type = key.getSecond();
             Integer speed = entry.getValue();
 
-            finalMap.computeIfAbsent(line, l -> {
+            speedMap.computeIfAbsent(line, l -> {
                 Map<String, Integer> m = new HashMap<>();
                 for (String t : allTypes) {
                     m.put(t, 0);
@@ -252,15 +252,15 @@ public class LoadData {
                 return m;
             });
 
-            finalMap.get(line).put(type, speed);
+            speedMap.get(line).put(type, speed);
         }
-        for (Map<String, Integer> typeMap : finalMap.values()) {
+        for (Map<String, Integer> typeMap : speedMap.values()) {
             for (String type : allTypes) {
                 typeMap.putIfAbsent(type, 0);
             }
         }
 
-        return finalMap;
+        return speedMap;
     }
 
     private List<CleaningRule> loadCleaningRulesfromDB() {

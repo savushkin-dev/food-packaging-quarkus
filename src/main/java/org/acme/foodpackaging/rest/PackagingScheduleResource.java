@@ -22,7 +22,7 @@ import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
-import org.acme.foodpackaging.service.load.ScheduleBuilder;
+import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;

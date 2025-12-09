@@ -1,23 +1,25 @@
-package org.acme.foodpackaging.service.load;
+package org.acme.foodpackaging.repository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.foodpackaging.factory.JobFactory;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.factory.JobFactory;
+import org.acme.foodpackaging.service.load.LoadDataService;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS_FOR_SELECTED_DATE;
 
 @ApplicationScoped
-public class JobLoaderService {
-
+public class JobRepository {
     @Inject
     JobFactory jobFactory;
     @Inject
@@ -73,7 +75,6 @@ public class JobLoaderService {
         for (Job job : jobs) {
             job.setLineSpeeds(lineSpeeds);
         }
-
         return jobs;
     }
 }

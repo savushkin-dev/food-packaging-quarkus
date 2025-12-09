@@ -36,14 +36,12 @@ public class ProductRepository {
                         rs.getString("TMASS"),
                         rs.getString("TFBF")
                 );
-
                 map.put(rs.getString("KMC"), p);
             }
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load products", e);
         }
-
         return map;
     }
 }

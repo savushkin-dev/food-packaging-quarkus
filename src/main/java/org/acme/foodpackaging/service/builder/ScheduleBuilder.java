@@ -1,11 +1,13 @@
-package org.acme.foodpackaging.service.load;
+package org.acme.foodpackaging.service.builder;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.factory.LineFactory;
+import org.acme.foodpackaging.repository.JobRepository;
 import org.acme.foodpackaging.service.CleaningCalculatorService;
+import org.acme.foodpackaging.service.load.LoadDataService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,7 +22,7 @@ public class ScheduleBuilder {
     @Inject
     LoadDataService loadDataService;
     @Inject
-    JobLoaderService jobLoaderService;
+    JobRepository jobRepository;
     @Inject
     LineFactory lineFactory;
     @Inject
@@ -42,7 +44,7 @@ public class ScheduleBuilder {
                 .toList();
         schedule.setLines(lines);
 
-        List<Job> jobs = jobLoaderService.loadJobs(startDate, minStart, idealEnd, maxEnd);
+        List<Job> jobs = jobRepository.loadJobs(startDate, minStart, idealEnd, maxEnd);
         schedule.setJobs(jobs);
 
         for(Job job : schedule.getJobs()){

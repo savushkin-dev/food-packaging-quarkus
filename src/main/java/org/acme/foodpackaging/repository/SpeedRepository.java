@@ -1,86 +1,54 @@
 package org.acme.foodpackaging.repository;
 
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.apache.commons.math3.util.Pair;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.acme.foodpackaging.entity.LineSpeedEntity;
 
-import java.sql.*;
-import java.util.*;
-
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_LINES_SPEEDS;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
-public class SpeedRepository {
-
-    @Inject
-    @ConfigProperty(name = "db.url")
-    String dbUrl;
+public class SpeedRepository implements PanacheRepository<LineSpeedEntity> {
     /**
-     * Возвращает готовую структуру line -> (type -> speed)
+     * Загружает все строки из БД в Map<Pair<line, type>, speed>
      */
-    public Map<String, Map<String, Integer>> createSpeedMap() {
-        Map<Pair<String, String>, Integer> rawSpeeds = loadSpeeds();
-        return groupSpeeds(rawSpeeds);
-    }
-    /**
-     * Достаёт скорости: (line, type) -> speed
-     */
-    private Map<Pair<String, String>, Integer> loadSpeeds() {
+    public Map<Pair<String, String>, Integer> loadSpeeds() {
         Map<Pair<String, String>, Integer> result = new HashMap<>();
 
-        try (Connection connection = DriverManager.getConnection(dbUrl);
-             Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery(LOAD_LINES_SPEEDS)) {
+        List<LineSpeedEntity> lineSpeeds = find("speed IS NOT NULL").list();
 
-            while (rs.next()) {
-                String line = rs.getString("KRC");
-                String type = rs.getString("GRF");
-                int speed = rs.getInt("PROD");
+        for (LineSpeedEntity line : lineSpeeds) {
+            Pair<String, String> key = new Pair<>(line.getLine(), line.getType());
 
-                result.put(new Pair<>(line, type), speed);
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to load speeds from DB", e);
+            result.putIfAbsent(key, line.getSpeed());
         }
 
         return result;
     }
     /**
-     * Группировка по линиям + заполнение нулями отсувующих
+     * Группирует в Map<line, Map<type, speed>>
      */
-    private Map<String, Map<String, Integer>> groupSpeeds(Map<Pair<String, String>, Integer> rawSpeeds) {
+    public Map<String, Map<String, Integer>> createSpeedMap() {
+        Map<Pair<String, String>, Integer> rawSpeeds = loadSpeeds();
+        Map<String, Map<String, Integer>> speedMap = new HashMap<>();
 
-        Map<String, Map<String, Integer>> finalMap = new HashMap<>();
-        Set<String> allTypes = new HashSet<>();
-        // Собирает все типы продуктов
-        for (Pair<String, String> key : rawSpeeds.keySet()) {
-            allTypes.add(key.getSecond());
-        }
-        // Заполняет скорости
-        for (var entry : rawSpeeds.entrySet()) {
-            Pair<String, String> pair = entry.getKey();
-            String line = pair.getFirst();
-            String type = pair.getSecond();
-            Integer speed = entry.getValue();
+        var allTypes = rawSpeeds.keySet().stream().map(Pair::getSecond).toList();
 
-            finalMap.computeIfAbsent(line, l -> {
+        rawSpeeds.forEach((pair, speed) -> {
+            speedMap.computeIfAbsent(pair.getFirst(), l -> {
                 Map<String, Integer> map = new HashMap<>();
-                for (String t : allTypes) {
-                    map.put(t, 0);
-                }
+                allTypes.forEach(t -> map.put(t, 0));
                 return map;
             });
 
-            finalMap.get(line).put(type, speed);
-        }
+            speedMap.get(pair.getFirst()).put(pair.getSecond(), speed);
+        });
 
-        for (var typeMap : finalMap.values()) {
-            for (String type : allTypes) {
-                typeMap.putIfAbsent(type, 0);
-            }
-        }
-        return finalMap;
+        // добавляем пропущенные типы
+        speedMap.values().forEach(typeMap -> allTypes.forEach(t -> typeMap.putIfAbsent(t, 0)));
+
+        return speedMap;
     }
 }
