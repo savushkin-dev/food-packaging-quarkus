@@ -1,47 +1,38 @@
 package org.acme.foodpackaging.repository;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.acme.foodpackaging.entity.NS_McEntity;
+import org.acme.foodpackaging.entity.products.ProductEntity;
 import org.acme.foodpackaging.domain.Product;
 
-import java.sql.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_PRODUCTS;
 
 @ApplicationScoped
 public class ProductRepository {
 
-    @Inject
-    @ConfigProperty(name = "db.url")
-    String dbUrl;
-
     public Map<String, Product> loadProducts() {
-        Map<String, Product> map = new HashMap<>();
 
-        try (Connection connection = DriverManager.getConnection(dbUrl);
-             Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery(LOAD_PRODUCTS)) {
+        List<ProductEntity> rows = ProductEntity.find("deletedFlag = 0").list();
 
-            while (rs.next()) {
-                Product p = new Product(
-                        rs.getString("SNM"),
-                        rs.getString("KMC"),
-                        rs.getString("KRKMC"),
-                        rs.getString("EAN13"),
-                        rs.getString("GRF"),
-                        rs.getString("TGLAZ"),
-                        rs.getString("TMASS"),
-                        rs.getString("TFBF")
-                );
-                map.put(rs.getString("KMC"), p);
+        Map<String, Product> result = new HashMap<>();
+
+        for (ProductEntity p : rows) {
+
+            NS_McEntity n = p.ns;
+            if (n == null) {
+                throw new IllegalStateException("Missing NS_MC record for KMC=" + p.kmc);
             }
 
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to load products", e);
+            Product product = new Product(
+                    n.shortName,
+                    p.kmc, n.krkmc, p.ean13,
+                    p.type, p.glaze, p.mass, p.filling
+            );
+
+            result.put(p.kmc, product);
         }
-        return map;
+        return result;
     }
 }
