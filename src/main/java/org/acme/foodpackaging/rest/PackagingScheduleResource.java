@@ -23,6 +23,7 @@ import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
+import org.acme.foodpackaging.service.load.LoadDataService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
@@ -61,6 +62,8 @@ public class PackagingScheduleResource {
     PinService pinService;
     @Inject
     ScheduleBuilder scheduleBuilder;
+    @Inject
+    LoadDataService loadDataService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -89,10 +92,10 @@ public class PackagingScheduleResource {
     @Path("lines")
     @Produces(MediaType.APPLICATION_JSON)
     public Map<String, String> getLines() {
-        if (loadData == null) {
+        if (loadDataService == null) {
             throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
         }
-        return loadData.getLinesIdWithNamesMap();
+        return loadDataService.getLines();
     }
 
     @POST
