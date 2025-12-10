@@ -3,7 +3,7 @@ package org.acme.foodpackaging.repository;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.CleaningRule;
-import org.acme.foodpackaging.entity.CleaningRuleEntity;
+import org.acme.foodpackaging.entity.products.CleaningRuleEntity;
 
 import java.util.List;
 

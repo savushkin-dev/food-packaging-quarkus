@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.entity;
+package org.acme.foodpackaging.entity.products;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
