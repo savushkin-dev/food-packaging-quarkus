@@ -6,7 +6,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
-import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,19 +1,17 @@
-package org.acme.foodpackaging.service.load;
+package org.acme.foodpackaging.persistence.load;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.repository.CleaningRuleRepository;
-import org.acme.foodpackaging.repository.LineRepository;
-import org.acme.foodpackaging.repository.ProductRepository;
-import org.acme.foodpackaging.repository.SpeedRepository;
+import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
+import org.acme.foodpackaging.repository.lines.LineRepository;
+import org.acme.foodpackaging.repository.products.ProductRepository;
+import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
-import org.acme.foodpackaging.service.CleaningCalculatorService;
-import org.apache.commons.math3.util.Pair;
+import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;

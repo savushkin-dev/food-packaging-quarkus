@@ -6,7 +6,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.ext.Provider;
-import org.acme.foodpackaging.service.LogService;
+import org.acme.foodpackaging.service.log.LogService;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

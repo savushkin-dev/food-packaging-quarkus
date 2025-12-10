@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.repository;
+package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -7,8 +7,8 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.entity.NS_McEntity;
 import org.acme.foodpackaging.entity.jobs.JobEntity;
 import org.acme.foodpackaging.factory.JobFactory;
-import org.acme.foodpackaging.service.load.JobDBLoader;
-import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.persistence.load.JobDBLoader;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
