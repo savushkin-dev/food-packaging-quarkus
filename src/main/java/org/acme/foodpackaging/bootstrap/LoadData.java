@@ -108,7 +108,7 @@ public class LoadData {
     private Map<Integer, DbJobInfo> loadDbJobInfo(LocalDate planningDay) {
 
         LocalDateTime planningDayStart = planningDay.atStartOfDay();
-        LocalDateTime nextDayStart = planningDay.plusDays(1).atStartOfDay();
+        LocalDateTime nextDayStart = planningDay.plusDays(2).atStartOfDay();
 
         Map<Integer, DbJobInfo> map = new HashMap<>();
 
