@@ -5,9 +5,9 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.factory.LineFactory;
-import org.acme.foodpackaging.repository.JobRepository;
-import org.acme.foodpackaging.service.CleaningCalculatorService;
-import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.service.products.CleaningCalculatorService;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

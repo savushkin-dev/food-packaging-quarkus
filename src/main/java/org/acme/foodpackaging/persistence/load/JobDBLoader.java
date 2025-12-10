@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.service.load;
+package org.acme.foodpackaging.persistence.load;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;

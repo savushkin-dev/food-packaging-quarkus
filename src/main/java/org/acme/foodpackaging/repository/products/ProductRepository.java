@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.repository;
+package org.acme.foodpackaging.repository.products;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.entity.NS_McEntity;
