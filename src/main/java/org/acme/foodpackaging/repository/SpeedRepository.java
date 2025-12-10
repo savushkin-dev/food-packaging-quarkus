@@ -3,7 +3,7 @@ package org.acme.foodpackaging.repository;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.commons.math3.util.Pair;
-import org.acme.foodpackaging.entity.LineSpeedEntity;
+import org.acme.foodpackaging.entity.lines.LineSpeedEntity;
 
 import java.util.HashMap;
 import java.util.List;

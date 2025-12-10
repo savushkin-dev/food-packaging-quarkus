@@ -2,7 +2,7 @@ package org.acme.foodpackaging.repository;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.LineEntity;
+import org.acme.foodpackaging.entity.lines.LineEntity;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
