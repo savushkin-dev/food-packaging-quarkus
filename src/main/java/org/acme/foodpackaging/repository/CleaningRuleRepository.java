@@ -1,42 +1,28 @@
 package org.acme.foodpackaging.repository;
 
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.CleaningRule;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import jakarta.inject.Inject;
+import org.acme.foodpackaging.entity.CleaningRuleEntity;
 
-import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_CLEANING_RULES;
-
 @ApplicationScoped
-public class CleaningRuleRepository {
-
-    @Inject
-    @ConfigProperty(name = "db.url")
-    String dbUrl;
+public class CleaningRuleRepository implements PanacheRepository<CleaningRuleEntity> {
 
     public List<CleaningRule> loadRules() {
-        List<CleaningRule> rules = new ArrayList<>();
 
-        try (Connection connection = DriverManager.getConnection(dbUrl);
-             Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery(LOAD_CLEANING_RULES)) {
+        List<CleaningRuleEntity> rows =
+                find("deletedFlag = 0 and krc = ?1 and duration is not null order by npar",
+                        "170610000000")
+                        .list();
 
-            while (rs.next()) {
-                rules.add(new CleaningRule(
-                        rs.getString("NPAR"),
-                        rs.getString("FROM_VALUE"),
-                        rs.getString("TO_VALUE"),
-                        rs.getInt("DUR")
-                ));
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to load cleaning rules", e);
-        }
-        return rules;
+        return rows.stream()
+                .map(r -> new CleaningRule(
+                        r.npar,
+                        r.fromValue, r.toValue,
+                        r.duration
+                ))
+                .toList();
     }
 }
