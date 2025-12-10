@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.entity;
+package org.acme.foodpackaging.entity.lines;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
