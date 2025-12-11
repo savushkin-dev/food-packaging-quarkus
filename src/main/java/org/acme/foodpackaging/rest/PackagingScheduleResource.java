@@ -18,6 +18,9 @@ import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.persistence.load.excelDataExport.ExcelExporter;
+import org.acme.foodpackaging.persistence.load.excelDataExport.PlanFactAnalysis;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
@@ -28,17 +31,12 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static io.smallrye.config._private.ConfigLogging.log;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
-import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
 @Path("schedule")
 @ApplicationScoped
@@ -64,6 +62,8 @@ public class PackagingScheduleResource {
     ScheduleBuilder scheduleBuilder;
     @Inject
     LoadDataService loadDataService;
+    @Inject
+    UploadDataService uploadDataService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -133,7 +133,7 @@ public class PackagingScheduleResource {
             PackagingSchedule schedule = null;
 
             if (loadDTO.getFindSolvedInDb()) {
-                schedule = tryImportScheduleFromDb(startDate);
+                schedule = loadDataService.loadScheduleFromDb(startDate);
             }
             if (schedule != null) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
@@ -143,9 +143,9 @@ public class PackagingScheduleResource {
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
             }
-
             PackagingSchedule newSchedule = buildNewSchedule(loadDTO);
             repository.writeForSession(sessionId, newSchedule);
+
             return Response.ok(Map.of(
                     "message", (loadDTO.getFindSolvedInDb()
                             ? "No saved schedule found — new data generated for date: "
@@ -156,7 +156,6 @@ public class PackagingScheduleResource {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
                     .build();
-
         } catch (Exception e) {
             return Response.serverError()
                     .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
@@ -454,71 +453,32 @@ public class PackagingScheduleResource {
      */
     @POST
     @Path("saveToDb")
-    @Produces(MediaType.APPLICATION_JSON)
     public Response saveToDb(@HeaderParam("X-Session-Id") String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Session ID is required"))
+
+        PackagingSchedule bestSolution = repository.readForSession(sessionId);
+        if (bestSolution == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No solution for session"))
                     .build();
         }
-
-        JsonExporter jsonExporter = new JsonExporter(dbUrl);
-        try {
-            //Извлекаем план пользователя (черновик пользователя) по sessionId для того чтобы сохранить общий план
-            PackagingSchedule bestSolution = repository.readForSession(sessionId);
-            if (bestSolution == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "No solution found for session: " + sessionId))
-                        .build();
-            }
-
-            jsonExporter.export(bestSolution);
-            return Response.ok(Map.of("message", "Saved to DB successfully")).build();
-        } catch (Exception e) {
-            return Response.serverError().entity("Save error: " + e.getMessage()).build();
-        }
+        uploadDataService.saveSchedule(bestSolution);
+        return Response.ok(Map.of("message", "Saved successfully")).build();
     }
     /**
      * Удаляет план из бд
      */
     @POST
     @Path("removeSolution")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSolutionByDate(@HeaderParam("X-Session-Id") String sessionId) {
+    public Response remove(@HeaderParam("X-Session-Id") String sessionId) {
 
-        //Получаем план для текущей сессии чтобы из него выявить дату удаляемого плана (но можно просто передавать дату в запросе как параметр как вариант)
-        PackagingSchedule currentSchedule = repository.readForSession(sessionId);
-        if (currentSchedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded for session"))
-                    .build();
-        }
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) return Response.status(400).entity("Schedule not loaded").build();
 
-        String date = currentSchedule.getWorkCalendar().getFromDate().toString();
+        LocalDate date = schedule.getWorkCalendar().getFromDate();
+        int rows = uploadDataService.deleteSchedule(date);
 
-        if (date.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("status", "error", "message", "Date field not set on server"))
-                    .build();
-        }
-        LocalDate removeDate = LocalDate.parse(date);
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(DELETE_SOLUTION_JSON)) {
-            stmt.setDate(1, java.sql.Date.valueOf(removeDate));
-            int updatedRows = stmt.executeUpdate();
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Solution removed for date: " + date + " (rows affected: " + updatedRows + ")"
-            )).build();
-
-        } catch (SQLException e) {
-            return Response.serverError()
-                    .entity(Map.of("status", "error", "message", "SQL error: " + e.getMessage()))
-                    .build();
-        }
+        return Response.ok(Map.of("rows", rows, "date", date.toString())).build();
     }
-
     @POST
     @Path("export")
     @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -571,15 +531,6 @@ public class PackagingScheduleResource {
 
     private String getProblemId(String sessionId) {
         return sessionId != null ? sessionId : "default";
-    }
-
-    private PackagingSchedule tryImportScheduleFromDb(LocalDate startDate) {
-        try {
-            JsonImporter importer = new JsonImporter(dbUrl, startDate);
-            return importer.importFromDb();
-        } catch (RuntimeException ignored) {
-            return null;
-        }
     }
 
     private PackagingSchedule buildNewSchedule(LoadDTO loadDTO) {

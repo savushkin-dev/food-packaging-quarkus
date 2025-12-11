@@ -1,10 +1,12 @@
-package org.acme.foodpackaging.persistence;
+package org.acme.foodpackaging.persistence.scheduleSaving;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.*;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
 import java.sql.*;
@@ -16,17 +18,10 @@ import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.SELECT_SOLUTION_FROM_JSON;
 
-public class JsonImporter {
-    private final String dbUrl;
-    private final ObjectMapper objectMapper;
-    private final LocalDate dt;
-
-    public JsonImporter(String dbUrl, LocalDate dt) {
-        this.dbUrl = dbUrl;
-        this.dt = dt;
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
-    }
+@ApplicationScoped
+public class SolutionImport {
+    @ConfigProperty(name = "db.url")
+    String dbUrl;
 
     private static <T> Map<String, T> mapById(Collection<T> list, Function<T, String> keyExtractor) {
         if (list == null) return Collections.emptyMap();
@@ -35,7 +30,9 @@ public class JsonImporter {
                 .collect(Collectors.toMap(keyExtractor, Function.identity(), (a, b) -> a));
     }
 
-    public PackagingSchedule importFromDb() {
+    public PackagingSchedule importFromDb(LocalDate dt) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(SELECT_SOLUTION_FROM_JSON)) {
 
@@ -43,7 +40,7 @@ public class JsonImporter {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
-                    throw new IllegalStateException("No saved schedule found for DT=" + dt);
+                    return null;
                 }
 
                 String json = rs.getString("PLAN");

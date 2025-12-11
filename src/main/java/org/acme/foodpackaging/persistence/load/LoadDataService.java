@@ -5,6 +5,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.persistence.scheduleSaving.SolutionExport;
+import org.acme.foodpackaging.persistence.scheduleSaving.SolutionImport;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
@@ -12,6 +14,7 @@ import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -29,6 +32,8 @@ public class LoadDataService {
     CleaningRuleRepository cleaningRuleRepository;
     @Inject
     CleaningCalculatorService cleaningCalculator;
+    @Inject
+    SolutionImport solutionImport;
 
     @Getter
     private ConcurrentMap<String, String> lines;
@@ -45,6 +50,10 @@ public class LoadDataService {
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
         SpeedCacheUtils.init(speedRepository.createSpeedMap());
+    }
+
+    public PackagingSchedule loadScheduleFromDb(LocalDate date) {
+        return solutionImport.importFromDb(date);
     }
 }
 
