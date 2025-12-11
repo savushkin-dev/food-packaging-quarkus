@@ -11,6 +11,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
@@ -527,7 +531,39 @@ public class LoadData {
                     stmt.setInt(7, ux);
                     stmt.setInt(8, isnpz);
                     stmt.setInt(9, massa);
+//                    int updatedRows = stmt.executeUpdate();
+
+                    long startTime = System.currentTimeMillis();
                     int updatedRows = stmt.executeUpdate();
+                    long endTime = System.currentTimeMillis();
+                    long durationMs = endTime - startTime;
+
+
+                    String insertLog = String.format(
+                            "[%s] rows=%d INSERT INTO PLR_PDAYNP (SNPZ, KSK, KMC, DTI, NP, KOLEV, UX, SNPZ_DUP, MASSA) " +
+                                    "VALUES (%d, '%s', '%s', '%s', %d, %d, %d, %d, %d); -- time=%d ms",
+                            java.time.LocalDateTime.now(),
+                            updatedRows,
+                            isnpz,
+                            ksk,
+                            kmc,
+                            dti.toString(),
+                            np,
+                            kolev,
+                            ux,
+                            isnpz,
+                            massa,
+                            durationMs
+                    );
+
+                    try (FileWriter fw = new FileWriter("queries.log", true);
+                         BufferedWriter bw = new BufferedWriter(fw);
+                         PrintWriter out = new PrintWriter(bw)) {
+                        out.println(insertLog);
+                    } catch (IOException e) {
+                        log.error("Failed to write queries.log: {}", insertLog, e);
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (SQLException e) {
