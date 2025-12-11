@@ -10,7 +10,7 @@ public class SqlQueries {
     SELECT v.KSK, v.SNPZ, v.DTI, v.DTM, v.KMC, v.EMK, v.KOLMV, v.MASSA, v.KOLEV, v.NP, v.UX,
            m.MASSA, m.EAN13, m.SNM, m.NAME
     FROM [MES].[dbo].[BD_VZPMC] AS v, NS_MC AS m
-    WHERE (v.KMC = m.KMC) AND (v.DTI = ?) AND (v.KSK = ?) AND (m.MASSA < ?)
+    WHERE (v.KMC = m.KMC) AND (v.DTI = ?) AND (v.KSK = ?) AND (m.MASSA < ?) and (v.F_DEL=0) and (v.np > 0)
     ORDER BY v.SNPZ
     """;
     
@@ -39,7 +39,7 @@ public class SqlQueries {
     public static final String LOAD_VZPMC = """
         SELECT m.SNM, v.[KMC], v.[DTI], '' as [DTF], v.[NP], v.[KOLEV], v.[UX], v.[SNPZ], v.[MASSA]
         FROM [MES].[dbo].[BD_VZPMC] AS v, NS_MC AS m
-        WHERE (v.KMC = m.KMC) AND (v.DTI >= ?) AND (v.DTI < ?) AND (v.KSK = ?) AND (m.MASSA < ?)
+        WHERE (v.KMC = m.KMC) AND (v.DTI >= ?) AND (v.DTI < ?) AND (v.KSK = ?) AND (m.MASSA < ?) and (v.F_DEL=0) and (v.np > 0)
         ORDER BY v.SNPZ
     """;
 
