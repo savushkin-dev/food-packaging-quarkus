@@ -1,16 +1,13 @@
 package org.acme.foodpackaging.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class PinRequestDTO {
     private String lineId;
     private Integer pinCount;
     private Boolean pinAll;
 
-    public String getLineId() { return lineId; }
-    public void setLineId(String lineId) { this.lineId = lineId; }
-
-    public Integer getPinCount() { return pinCount; }
-    public void setPinCount(Integer pinCount) { this.pinCount = pinCount; }
-
-    public Boolean getPinAll() { return pinAll; }
-    public void setPinAll(Boolean pinAll) { this.pinAll = pinAll; }
 }
