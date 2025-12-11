@@ -144,7 +144,7 @@ public class PackagingScheduleResource {
                 )).build();
             }
 
-            PackagingSchedule newSchedule = createNewSchedule(loadDTO);
+            PackagingSchedule newSchedule = buildNewSchedule(loadDTO);
             repository.writeForSession(sessionId, newSchedule);
             return Response.ok(Map.of(
                     "message", (loadDTO.getFindSolvedInDb()
