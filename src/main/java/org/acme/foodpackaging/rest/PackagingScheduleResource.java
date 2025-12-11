@@ -130,28 +130,26 @@ public class PackagingScheduleResource {
         LocalDate startDate = loadDTO.getStartDate();
 
         try {
-            if (!loadDTO.getFindSolvedInDb()) {
-                PackagingSchedule createdSchedule = buildNewSchedule(loadDTO);
-                repository.writeForSession(sessionId, createdSchedule);
-                return Response.ok(Map.of(
-                        "message", "New schedule generated (forced) for date: " + startDate
-                )).build();
+            PackagingSchedule schedule = null;
+
+            if (loadDTO.getFindSolvedInDb()) {
+                schedule = tryImportScheduleFromDb(startDate);
             }
-
-            PackagingSchedule schedule = tryImportScheduleFromDb(startDate);
-            if (schedule != null && isScheduleCompatible(schedule, loadDTO)) {
-
+            if (schedule != null) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
                 repository.writeForSession(sessionId, schedule);
+
                 return Response.ok(Map.of(
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
             }
 
-            PackagingSchedule newSchedule = buildNewSchedule(loadDTO);
+            PackagingSchedule newSchedule = createNewSchedule(loadDTO);
             repository.writeForSession(sessionId, newSchedule);
             return Response.ok(Map.of(
-                    "message", "No saved schedule found — new data generated for date: " + startDate
+                    "message", (loadDTO.getFindSolvedInDb()
+                            ? "No saved schedule found — new data generated for date: "
+                            : "New schedule generated (forced) for date: ") + startDate
             )).build();
 
         } catch (DateTimeParseException e) {
