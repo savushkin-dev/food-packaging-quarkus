@@ -1,8 +1,11 @@
 package org.acme.foodpackaging.scheduleOperations.utils;
 
+import lombok.Getter;
+
 import java.util.Map;
 
 public class SpeedCacheUtils {
+    @Getter
     private static Map<String, Map<String, Integer>> lineSpeeds;
 
     public static void init(Map<String, Map<String, Integer>> speeds) {

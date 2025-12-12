@@ -7,6 +7,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +50,7 @@ public class MoveJobsService {
                 Job job = fromJobs.get(i);
                 if (job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
-                Integer duration = loadDataService.getLineSpeeds()
+                Integer duration = SpeedCacheUtils.getLineSpeeds()
                         .getOrDefault(toLine.getId(), Map.of())
                         .get(productType);
                 if (duration == null || duration == 0) {

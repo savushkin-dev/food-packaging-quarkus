@@ -16,7 +16,9 @@ public class DbJobInfoRepository implements PanacheRepository<PlrPdaynp> {
         LocalDateTime dayStart = planningDay.atStartOfDay();
         LocalDateTime nextDay = planningDay.plusDays(1).atStartOfDay();
 
-        return find("dtf >= ?1 AND dtf < ?2 AND ksk = ?3", dayStart, nextDay, ksk)
-                .list();
+        return find(
+                "dtf >= ?1 AND dtf < ?2 AND ksk = ?3",
+                dayStart, nextDay, ksk
+        ).list();
     }
 }
