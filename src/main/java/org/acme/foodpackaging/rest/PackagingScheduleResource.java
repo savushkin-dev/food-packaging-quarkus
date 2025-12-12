@@ -70,20 +70,15 @@ public class PackagingScheduleResource {
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
-    public PackagingScheduleResource(){
-        loadData = new LoadData();
-    }
-
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public PackagingSchedule get(@HeaderParam("X-Session-Id") String sessionId) {
+
         SolverStatus solverStatus = solverManager.getSolverStatus(getProblemId(sessionId));
         PackagingSchedule schedule = repository.readForSession(sessionId);
-
         if (schedule == null) {
             throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
         }
-
         schedule.setSolverStatus(solverStatus);
         return schedule;
     }
@@ -111,8 +106,7 @@ public class PackagingScheduleResource {
                         .entity(Map.of("error", "No schedule loaded"))
                         .build();
             }
-
-            loadData.sendToWork(schedule.getJobs());
+            uploadDataService.sendToWork(schedule.getJobs());
             return Response.ok(Map.of("message", "The task has been sent to work")).build();
         } catch (Exception e) {
             return Response.serverError()
@@ -173,7 +167,7 @@ public class PackagingScheduleResource {
         LocalDate endDate = loadDTO.getEndDate();
 
         try {
-            Map<String, Map<String, Object>> res = loadData.loadPDay(startDate, endDate);
+            Map<String, Map<String, Object>> res = uploadDataService.loadPDay(startDate, endDate);
             return Response.ok(res).build();
 
         } catch (DateTimeParseException e) {
@@ -193,7 +187,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response updatepday(Map<String, LocalDate> mapsnpz) {
         try {
-            loadData.updatePDay(mapsnpz);
+            uploadDataService.updatePDay(mapsnpz);
 
             return Response.ok(Map.of(
                     "status", "success",
@@ -276,7 +270,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        loadData.refreshJobsNextDay(schedule);
+        loadDataService.refreshJobsNextDay(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
