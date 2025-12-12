@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static io.smallrye.config._private.ConfigLogging.log;
 import static org.acme.foodpackaging.sql.SqlQueries.*;
 
 @ApplicationScoped
@@ -125,27 +126,28 @@ public class UploadDataService {
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement stmt = conn.prepareStatement(UPDATE_PDAYDTF)) {
 
-            for (var entry : mapsnpz.entrySet()) {
+            for (Map.Entry<String, LocalDate> entry : mapsnpz.entrySet()) {
                 stmt.setDate(1, java.sql.Date.valueOf(entry.getValue()));
                 stmt.setString(2, entry.getKey());
                 stmt.addBatch();
             }
-            stmt.executeBatch();
 
+            stmt.executeBatch();
+            log.info("Successfully UPDATE_PDAYDTF");
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to update PLR_PDAYNP", e);
+            log.error("Error UPDATE_PDAYDTF", e);
+            throw new RuntimeException("Failed to update jobs to PLR_PDAYNP " + e.getMessage(), e);
         }
     }
-
     /**
      * Отправляет задачи в работу (UPDATE_WORK + процедура)
      */
     public void sendToWork(List<Job> jobs) {
-        Connection conn = null;
 
+        Connection conn = null;
         try {
             conn = DriverManager.getConnection(dbUrl);
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(false); // ручное управление транзакцией для атомарности
 
             try (PreparedStatement ps = conn.prepareStatement(UPDATE_WORK)) {
                 for (Job job : jobs) {
@@ -157,27 +159,38 @@ public class UploadDataService {
                     ps.addBatch();
                 }
                 ps.executeBatch();
+
+                try (PreparedStatement proc = conn.prepareStatement(REFRESH_FASP)) {
+                    proc.setString(1, "6000000");
+                    proc.setString(2, "0119030000");
+                    proc.execute();
+                } catch (SQLException e) {
+                    e.fillInStackTrace();
+                    throw e;
+                }
+
+                conn.commit(); // фиксируем транзакцию
+                log.info("Successfully UPDATE_WORK");
             }
-
-            try (PreparedStatement proc = conn.prepareStatement(REFRESH_FASP)) {
-                proc.setString(1, "6000000");
-                proc.setString(2, "0119030000");
-                proc.execute();
-            }
-
-            conn.commit();
-
         } catch (SQLException e) {
+            log.error("Error UPDATE_WORK, rollback", e);
             if (conn != null) {
                 try {
-                    conn.rollback();
-                } catch (SQLException ignored) {}
+                    conn.rollback(); // откатываем
+                    log.warn("Rollback UPDATE_WORK");
+                } catch (SQLException rollbackEx) {
+                    log.error("Error rollback", rollbackEx);
+                }
             }
-            throw new RuntimeException("sendToWork failed", e);
-
+            throw new RuntimeException("Error UPDATE_WORK, rollback", e);
         } finally {
             if (conn != null) {
-                try { conn.close(); } catch (Exception ignored) {}
+                try {
+                    conn.close();
+                    log.debug("Close connection UPDATE_WORK");
+                } catch (Exception closeEx) {
+                    log.error("Error close connection UPDATE_WORK", closeEx);
+                }
             }
         }
     }

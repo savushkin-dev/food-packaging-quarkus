@@ -12,6 +12,7 @@ import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
 import java.time.LocalDate;
@@ -34,6 +35,8 @@ public class LoadDataService {
     CleaningCalculatorService cleaningCalculator;
     @Inject
     SolutionImport solutionImport;
+    @Inject
+    JobRefreshService jobRefreshService;
 
     @Getter
     private ConcurrentMap<String, String> lines;
@@ -54,6 +57,10 @@ public class LoadDataService {
 
     public PackagingSchedule loadScheduleFromDb(LocalDate date) {
         return solutionImport.importFromDb(date);
+    }
+
+    public void refreshJobsNextDay(PackagingSchedule schedule) {
+        jobRefreshService.refreshJobsNextDay(schedule);
     }
 }
 
