@@ -1,10 +1,8 @@
 package org.acme.foodpackaging.entity.jobs;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import org.acme.foodpackaging.entity.NS_McEntity;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -41,9 +39,11 @@ public class PlrPdaynp extends PanacheEntityBase {
     @Column(name = "DTF")
     public LocalDateTime dtf;
 
-    @Column(name = "SNM")
-    public String shortName;
-
     @Column(name = "KSK")
     public String ksk;
+
+    @ManyToOne
+    @JoinColumn(name = "KMC", referencedColumnName = "KMC", insertable = false, updatable = false)
+    public NS_McEntity productInfo;
+
 }

@@ -7,12 +7,11 @@ import org.acme.foodpackaging.record.DbJobInfo;
 @ApplicationScoped
 public class DbJobMapper {
     public DbJobInfo toInfo(PlrPdaynp e) {
-
         return new DbJobInfo(
                 e.snpz, e.np,
                 e.quantity, e.priority, e.mass,
-                e.shortName, e.kmc,
-                e.dti, e.dtf
+                e.productInfo != null ? e.productInfo.shortName : null,
+                e.kmc, e.dti, e.dtf
         );
     }
 }
