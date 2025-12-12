@@ -10,7 +10,6 @@ import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 
 import jakarta.ws.rs.core.Response;
-import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
@@ -48,8 +47,6 @@ public class PackagingScheduleResource {
     SolverManager<PackagingSchedule, String> solverManager;
     @Inject
     SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-    @Inject
-    LoadData loadData;
     @Inject
     MaintenanceJob maintenanceJob;
     @Inject
