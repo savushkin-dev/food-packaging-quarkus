@@ -156,7 +156,7 @@ public class LoadData {
 
         List<Job> currentJobs = schedule.getJobs();
 
-        Map<Integer, Job> scheduleMap = currentJobs.stream()
+        Map<Integer, Job> scheduleMap = currentJobs.stream().filter(j -> !j.isMaintenance())
                 .collect(Collectors.toMap(Job::getSnpz, j -> j));
 
         List<Job> toAdd = new ArrayList<>();
