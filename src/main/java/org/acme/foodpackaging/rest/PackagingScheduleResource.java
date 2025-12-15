@@ -26,6 +26,7 @@ import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.jobs.JobService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
@@ -439,6 +440,24 @@ public class PackagingScheduleResource {
                 "message", "Line " + line.getId() + " updated successfully."
         )).build();
     }
+
+    @Inject
+    JobService jobService;
+
+    @POST
+    @Path("save")
+    public Response save(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule bestSolution = repository.readForSession(sessionId);
+        if (bestSolution == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No solution for session"))
+                    .build();
+        }
+        jobService.saveJobsByType(bestSolution);
+        return Response.ok(Map.of("message", "Saved successfully")).build();
+    }
+
     /**
      * Сохраняет план в бд в формате json строки
      */
