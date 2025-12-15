@@ -128,27 +128,23 @@ public class Job {
         this.pinned = pinned;
     }
 
-    public Job(String id, String name, int snpz, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned,
+    public Job(String id, int snpz, int np, String name, Product product, double mass, int quantity, Duration duration, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority,
                LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
-        this.name = name;
         this.snpz = snpz;
         this.np = np;
+        this.name = name;
         this.product = product;
         this.mass = mass;
         this.quantity = quantity;
+        this.duration = duration;
         this.minStartTime = minStartTime;
         this.idealEndTime = idealEndTime;
         this.maxEndTime = maxEndTime;
+        this.priority = priority == 0 ? 1 : priority*10;
         this.startCleaningDateTime = startCleaningDateTime;
         this.startProductionDateTime = startProductionDateTime;
-        this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(getDuration());
-        this.pinned = pinned;
-        this.priority = priority == 0 ? 1 : priority*10;
-    }
-
-    public Job(String id, String name, int snpz, int np, Product product, double mass, int quantity, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, boolean pinned) {
-        this(id, name, snpz, np, product, mass, quantity, minStartTime, idealEndTime, maxEndTime, priority, pinned, null, null);
+        this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
     }
 
     @Override

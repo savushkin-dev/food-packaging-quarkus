@@ -45,11 +45,12 @@ public class JobRepository {
                         "Unknown product KMC=" + r.kmc());
             }
 
+            LocalDateTime startProductionDateTime = r.startProductionDateTime() != null ? r.startProductionDateTime().toLocalDateTime() : null;
+
             Job job = jobFactory.createJob(
-                  String.valueOf(r.snpz()),
-                    jobFactory.nameCleaner(r.shortName()), r.snpz().intValueExact(), safe(r.np()), product,
-                    r.mass(), safe(r.quantity()), safe(r.priority()),
-                    from, from.plusHours(2), to
+                  String.valueOf(r.snpz()), r.snpz().intValueExact(), r.np(),
+                    jobFactory.nameCleaner(r.shortName()), product, r.mass(), r.quantity(), safe(r.duration()),
+                    from, from.plusHours(2), to, r.priority(), startProductionDateTime
             );
 
             jobs.add(job);
