@@ -5,10 +5,17 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Entity
 @Table(name = "BD_VZPMC", schema = "dbo")
 public class VzPMCEntity extends PanacheEntityBase {
@@ -38,7 +45,19 @@ public class VzPMCEntity extends PanacheEntityBase {
     @Column(name = "MASSA")
     public Double mass;
 
-    @Column(name = "SNM")
-    public String shortName;
+//    @Column(name = "SNM")
+//    public String shortName;
+
+    @Column(name = "KRC", columnDefinition = "CHAR(12)")
+    private String krc;
+
+    @Column(name = "PDTN")
+    private LocalDateTime pdtn;
+
+    @Column(name = "PDTO")
+    private LocalDateTime pdto;
+
+    @Column(name = "PDUR")
+    private Integer pdur;
 }
 
