@@ -7,7 +7,6 @@ import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
@@ -27,11 +26,6 @@ public class MaintenanceJob {
         Line line = findLineById(schedule, request.getLineId());
 
         List<Job> lineJobs = line.getJobs();
-
-        Map<String, Map<String, Integer>> lineSpeeds =
-                schedule.getJobs().isEmpty()
-                        ? Map.of()
-                        : schedule.getJobs().getFirst().getLineSpeeds();
 
         Product maintenanceProduct = schedule.getProducts().stream()
                 .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
@@ -54,7 +48,6 @@ public class MaintenanceJob {
                 null
         );
 
-        maintenanceJob.setLineSpeeds(lineSpeeds);
         maintenanceJob.setMaintenance(true);
         maintenanceJob.setLine(line);
 
@@ -78,6 +71,10 @@ public class MaintenanceJob {
         schedule.getJobs().add(maintenanceJob);
 
         return schedule;
+    }
+
+    public static Product getMaintenanceProduct() {
+       return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "", "");
     }
 
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,

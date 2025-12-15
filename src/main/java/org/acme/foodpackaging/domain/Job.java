@@ -15,6 +15,7 @@ import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
+import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
 @PlanningEntity
 public class Job {
@@ -85,9 +86,8 @@ public class Job {
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
 
-    @Setter
-    @Getter
-    private Map<String, Map<String, Integer>> lineSpeeds;
+    @JsonIgnore
+    private SpeedCacheUtils speedCache;
     /**
      * Start is after cleanup.
      */
@@ -175,14 +175,8 @@ public class Job {
 
     @JsonIgnore
     public Integer getSpeed() {
-        if (line == null || product == null || product.getType() == null) {
-            return null;
-        }
-        Map<String, Integer> productSpeeds = lineSpeeds.get(line.getId());
-        if (productSpeeds == null) {
-            return null;
-        }
-        return productSpeeds.get(product.getType());
+        if (line == null || product == null || product.getType() == null) return null;
+        return SpeedCacheUtils.getSpeed(line.getId(), product.getType());
     }
 
     public LocalDateTime getMaxEndDateTime() {
