@@ -44,7 +44,7 @@ public class ScheduleBuilder {
                 .toList();
         schedule.setLines(lines);
 
-        List<Job> jobs = jobRepository.loadJobs(startDate, minStart, idealEnd, maxEnd);
+        List<Job> jobs = jobRepository.loadJobs(startDate);
         schedule.setJobs(jobs);
 
         Set<Product> productSet = jobs.stream()

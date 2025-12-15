@@ -4,11 +4,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.entity.NS_McEntity;
-import org.acme.foodpackaging.entity.jobs.JobEntity;
 import org.acme.foodpackaging.factory.JobFactory;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.record.DbJobRow;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,48 +24,47 @@ public class JobRepository {
     @Inject
     JobDBLoader jobDBLoader;
 
-    public List<Job> loadJobs(LocalDate date,
-                              LocalDateTime minStart,
-                              LocalDateTime idealEnd,
-                              LocalDateTime maxEnd) {
+    public List<Job> loadJobs(LocalDate date) {
+        LocalDateTime from = date.atStartOfDay().minusDays(1);
+        LocalDateTime to = from.plusDays(2);
 
-        LocalDateTime targetDate = date.atStartOfDay();
-        String ksk = "0119030000";
-        double maxMass = 0.1;
-
-        List<JobEntity> rows = jobDBLoader.loadJobs(targetDate, ksk, maxMass);
+        List<DbJobRow> rows =
+                jobDBLoader.loadJobRows(
+                        from, to, "0119030000"
+                );
 
         List<Job> jobs = new ArrayList<>();
-        int jobId = 0;
 
-        for (JobEntity v : rows) {
+        for (DbJobRow r : rows) {
 
-            if (v.np == null || v.np.intValue() == 0) continue;
+            Product product =
+                    loadDataService.getProducts().get(r.kmc());
 
-            NS_McEntity m = v.mc;
-
-            int np = v.np.intValue();
-            int quantity = v.quantity != null ? v.quantity : 0;
-            int priority = v.priority != null ? v.priority : 0;
-            int snpz = v.snpz != null ? v.snpz : 0;
-            double mass = v.massa != null ? v.massa : 0.0;
-
-            Product product = loadDataService.getProducts().get(v.kmc);
             if (product == null) {
-                throw new IllegalStateException("Unknown product KMC=" + v.kmc);
+                throw new IllegalStateException(
+                        "Unknown product KMC=" + r.kmc());
             }
-
+int id =0;
             Job job = jobFactory.createJob(
-                    String.valueOf(++jobId),
-                    jobFactory.nameCleaner(m.shortName),
-                    snpz, np,
-                    product, mass, quantity, priority,
-                    minStart, idealEnd, maxEnd
+                    String.valueOf(++id),
+                    jobFactory.nameCleaner(r.shortName()), id, safe(r.np()), product,
+                    r.mass(), safe(r.quantity()), safe(r.priority()),
+                    from, from.plusHours(2), to
             );
 
             jobs.add(job);
         }
+
         return jobs;
     }
+
+    private int safe(Integer v) {
+        return v != null ? v : 0;
+    }
+
+    private double safe(Double v) {
+        return v != null ? v : 0.0;
+    }
 }
+
 

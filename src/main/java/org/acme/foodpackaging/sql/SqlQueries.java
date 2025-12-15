@@ -6,6 +6,32 @@ public class SqlQueries {
 
     }
 
+    public static final String LOAD_JOBS_db =  """
+SELECT
+    v.SNPZ,
+    v.KMC,
+    m.SNM,
+    v.DTI,
+    v.NP,
+    v.MASSA,
+    v.KOLEV,
+    v.UX,
+    v.KRC,
+    v.PDTN,
+    v.PDTO,
+    v.PDUR
+FROM MES.dbo.BD_VZPMC v
+JOIN MES.dbo.NS_MC m ON v.KMC = m.KMC
+            WHERE v.DTI >= CAST(?1 AS datetime)
+                        AND v.DTI <  CAST(?2 AS datetime)
+                        AND v.KSK = ?3
+                        AND v.F_DEL = 0
+                        AND v.NP > 0
+            
+ORDER BY v.KRC, v.PDTN
+
+""";
+
     public static final String LOAD_JOBS = """
     SELECT v.KSK, v.SNPZ, v.DTI, v.DTM, v.KMC, v.EMK, v.KOLMV, v.MASSA, v.KOLEV, v.NP, v.UX,
            m.MASSA, m.EAN13, m.SNM, m.NAME
