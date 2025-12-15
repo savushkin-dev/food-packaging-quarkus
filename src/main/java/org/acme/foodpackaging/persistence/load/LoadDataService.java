@@ -7,6 +7,7 @@ import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.scheduleSaving.SolutionExport;
 import org.acme.foodpackaging.persistence.scheduleSaving.SolutionImport;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
@@ -37,6 +38,8 @@ public class LoadDataService {
     SolutionImport solutionImport;
     @Inject
     JobRefreshService jobRefreshService;
+    @Inject
+    JobRepository jobRepository;
 
     @Getter
     private ConcurrentMap<String, String> lines;

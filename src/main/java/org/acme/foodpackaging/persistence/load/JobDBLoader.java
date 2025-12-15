@@ -1,23 +1,33 @@
 package org.acme.foodpackaging.persistence.load;
 
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.jobs.JobEntity;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import org.acme.foodpackaging.record.DbJobRow;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.acme.foodpackaging.sql.SqlQueries.LOAD_JOBS_db;
+
 @ApplicationScoped
-public class JobDBLoader implements PanacheRepository<JobEntity> {
+public class JobDBLoader {
 
-    public List<JobEntity> loadJobs(LocalDateTime date, String ksk, double maxMass) {
+    @Inject
+    EntityManager em;
 
-        return find("""
-            dtf = ?1
-            and ksk = ?2
-            and mc.massa < ?3
-            order by kmc, np
-            """, date, ksk, maxMass)
-                .list();
+    @SuppressWarnings("unchecked")
+    public List<DbJobRow> loadJobRows(
+            LocalDateTime from,
+            LocalDateTime to,
+            String ksk
+    ) {
+        return (List<DbJobRow>) em
+                .createNativeQuery(LOAD_JOBS_db, "DbJobRowMapping")
+                .setParameter(1, Timestamp.valueOf(from))
+                .setParameter(2, Timestamp.valueOf(to))
+                .setParameter(3, ksk)
+                .getResultList();
     }
 }
