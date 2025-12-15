@@ -10,7 +10,6 @@ import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 
 import jakarta.ws.rs.core.Response;
-import org.acme.foodpackaging.bootstrap.LoadData;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
@@ -18,25 +17,25 @@ import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.persistence.load.excelDataExport.ExcelExporter;
+import org.acme.foodpackaging.persistence.load.excelDataExport.PlanFactAnalysis;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
+import org.acme.foodpackaging.service.builder.ScheduleBuilder;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static io.smallrye.config._private.ConfigLogging.log;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
-import static org.acme.foodpackaging.sql.SqlQueries.DELETE_SOLUTION_JSON;
 
 @Path("schedule")
 @ApplicationScoped
@@ -44,48 +43,39 @@ public class PackagingScheduleResource {
 
     @Inject
     PackagingScheduleRepository repository;
-
     @Inject
     SolverManager<PackagingSchedule, String> solverManager;
-
     @Inject
     SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-
-    @Inject
-    LoadData loadData;
-
     @Inject
     MaintenanceJob maintenanceJob;
-
     @Inject
     MoveJobsService moveJobsService;
-
     @Inject
     SortByNpService sortByNpService;
-
     @Inject
     PinService pinService;
+    @Inject
+    ScheduleBuilder scheduleBuilder;
+    @Inject
+    LoadDataService loadDataService;
+    @Inject
+    UploadDataService uploadDataService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
-
     @ConfigProperty(name = "db.url")
     String dbUrl;
-
-    public PackagingScheduleResource(){
-        loadData = new LoadData();
-    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public PackagingSchedule get(@HeaderParam("X-Session-Id") String sessionId) {
+
         SolverStatus solverStatus = solverManager.getSolverStatus(getProblemId(sessionId));
         PackagingSchedule schedule = repository.readForSession(sessionId);
-
         if (schedule == null) {
             throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
         }
-
         schedule.setSolverStatus(solverStatus);
         return schedule;
     }
@@ -94,10 +84,10 @@ public class PackagingScheduleResource {
     @Path("lines")
     @Produces(MediaType.APPLICATION_JSON)
     public Map<String, String> getLines() {
-        if (loadData == null) {
+        if (loadDataService == null) {
             throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
         }
-        return loadData.getLinesIdWithNamesMap();
+        return loadDataService.getLines();
     }
 
     @POST
@@ -113,8 +103,7 @@ public class PackagingScheduleResource {
                         .entity(Map.of("error", "No schedule loaded"))
                         .build();
             }
-
-            loadData.sendToWork(schedule.getJobs());
+            uploadDataService.sendToWork(schedule.getJobs());
             return Response.ok(Map.of("message", "The task has been sent to work")).build();
         } catch (Exception e) {
             return Response.serverError()
@@ -135,7 +124,7 @@ public class PackagingScheduleResource {
             PackagingSchedule schedule = null;
 
             if (loadDTO.getFindSolvedInDb()) {
-                schedule = tryImportScheduleFromDb(startDate);
+                schedule = loadDataService.loadScheduleFromDb(startDate);
             }
             if (schedule != null) {
                 solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
@@ -145,7 +134,7 @@ public class PackagingScheduleResource {
                         "message", "Saved schedule imported for date: " + startDate
                 )).build();
             }
-            PackagingSchedule newSchedule = createNewSchedule(loadDTO);
+            PackagingSchedule newSchedule = buildNewSchedule(loadDTO);
             repository.writeForSession(sessionId, newSchedule);
 
             return Response.ok(Map.of(
@@ -175,7 +164,7 @@ public class PackagingScheduleResource {
         LocalDate endDate = loadDTO.getEndDate();
 
         try {
-            Map<String, Map<String, Object>> res = loadData.loadPDay(startDate, endDate);
+            Map<String, Map<String, Object>> res = uploadDataService.loadPDay(startDate, endDate);
             return Response.ok(res).build();
 
         } catch (DateTimeParseException e) {
@@ -195,7 +184,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response updatepday(Map<String, LocalDate> mapsnpz) {
         try {
-            loadData.updatePDay(mapsnpz);
+            uploadDataService.updatePDay(mapsnpz);
 
             return Response.ok(Map.of(
                     "status", "success",
@@ -278,7 +267,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        loadData.refreshJobsNextDay(schedule);
+        loadDataService.refreshJobsNextDay(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
@@ -455,71 +444,32 @@ public class PackagingScheduleResource {
      */
     @POST
     @Path("saveToDb")
-    @Produces(MediaType.APPLICATION_JSON)
     public Response saveToDb(@HeaderParam("X-Session-Id") String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Session ID is required"))
+
+        PackagingSchedule bestSolution = repository.readForSession(sessionId);
+        if (bestSolution == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No solution for session"))
                     .build();
         }
-
-        JsonExporter jsonExporter = new JsonExporter(dbUrl);
-        try {
-            //Извлекаем план пользователя (черновик пользователя) по sessionId для того чтобы сохранить общий план
-            PackagingSchedule bestSolution = repository.readForSession(sessionId);
-            if (bestSolution == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "No solution found for session: " + sessionId))
-                        .build();
-            }
-
-            jsonExporter.export(bestSolution);
-            return Response.ok(Map.of("message", "Saved to DB successfully")).build();
-        } catch (Exception e) {
-            return Response.serverError().entity("Save error: " + e.getMessage()).build();
-        }
+        uploadDataService.saveSchedule(bestSolution);
+        return Response.ok(Map.of("message", "Saved successfully")).build();
     }
     /**
      * Удаляет план из бд
      */
     @POST
     @Path("removeSolution")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteSolutionByDate(@HeaderParam("X-Session-Id") String sessionId) {
+    public Response remove(@HeaderParam("X-Session-Id") String sessionId) {
 
-        //Получаем план для текущей сессии чтобы из него выявить дату удаляемого плана (но можно просто передавать дату в запросе как параметр как вариант)
-        PackagingSchedule currentSchedule = repository.readForSession(sessionId);
-        if (currentSchedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded for session"))
-                    .build();
-        }
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) return Response.status(400).entity("Schedule not loaded").build();
 
-        String date = currentSchedule.getWorkCalendar().getFromDate().toString();
+        LocalDate date = schedule.getWorkCalendar().getFromDate();
+        int rows = uploadDataService.deleteSchedule(date);
 
-        if (date.isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("status", "error", "message", "Date field not set on server"))
-                    .build();
-        }
-        LocalDate removeDate = LocalDate.parse(date);
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement stmt = conn.prepareStatement(DELETE_SOLUTION_JSON)) {
-            stmt.setDate(1, java.sql.Date.valueOf(removeDate));
-            int updatedRows = stmt.executeUpdate();
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Solution removed for date: " + date + " (rows affected: " + updatedRows + ")"
-            )).build();
-
-        } catch (SQLException e) {
-            return Response.serverError()
-                    .entity(Map.of("status", "error", "message", "SQL error: " + e.getMessage()))
-                    .build();
-        }
+        return Response.ok(Map.of("rows", rows, "date", date.toString())).build();
     }
-
     @POST
     @Path("export")
     @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -574,21 +524,9 @@ public class PackagingScheduleResource {
         return sessionId != null ? sessionId : "default";
     }
 
-    private PackagingSchedule tryImportScheduleFromDb(LocalDate startDate) {
-        try {
-            JsonImporter importer = new JsonImporter(dbUrl, startDate);
-            return importer.importFromDb();
-        } catch (RuntimeException ignored) {
-            return null;
-        }
-    }
-
-    private PackagingSchedule createNewSchedule(LoadDTO loadDTO) {
-        return loadData.loadDataByDate(
-                loadDTO.getStartDate(),
-                loadDTO.getEndDate(),
-                loadDTO.getIdealEndDateTime(),
-                loadDTO.getMaxEndDateTime(),
+    private PackagingSchedule buildNewSchedule(LoadDTO loadDTO) {
+        return scheduleBuilder.buildSchedule(
+                loadDTO,
                 loadDTO.toLineStartDateTimeMap()
         );
     }

@@ -1,10 +1,12 @@
-package org.acme.foodpackaging.persistence;
+package org.acme.foodpackaging.persistence.scheduleSaving;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,12 +15,14 @@ import java.time.LocalDate;
 
 import static org.acme.foodpackaging.sql.SqlQueries.UPSERT_SOLUTION_TO_JSON;
 
-public class JsonExporter {
-    private final ObjectMapper mapper;
-    private final String dbUrl;
+@ApplicationScoped
+public class SolutionExport {
 
-    public JsonExporter(String dbUrl) {
-        this.dbUrl = dbUrl;
+    @ConfigProperty(name = "db.url")
+    String dbUrl;
+
+    private final ObjectMapper mapper;
+    public SolutionExport() {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
         this.mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -33,21 +37,17 @@ public class JsonExporter {
 
             job.setPreviousJobId(prevId);
             job.setNextJobId(nextId);
-
         }
 
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(schedule);
-
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement ps = conn.prepareStatement(UPSERT_SOLUTION_TO_JSON)) {
 
             ps.setString(1, "170610000000");
-
             LocalDate dt = schedule.getWorkCalendar().getFromDate();
             ps.setDate(2, java.sql.Date.valueOf(dt));
 
             ps.setString(3, json);
-
             ps.executeUpdate();
         }
     }
