@@ -23,7 +23,7 @@ import java.util.UUID;
                         @ColumnResult(name = "KRC", type = String.class),
                         @ColumnResult(name = "PDTN", type = Timestamp.class),
                         @ColumnResult(name = "PDTO", type = Timestamp.class),
-                        @ColumnResult(name = "PDUR", type = BigDecimal.class)
+                        @ColumnResult(name = "PDUR", type = Integer.class)
                 }
         )
 )
