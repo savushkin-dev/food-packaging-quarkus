@@ -26,7 +26,7 @@ public class JobRepository {
 
     public List<Job> loadJobs(LocalDate date) {
         LocalDateTime from = date.atStartOfDay().minusDays(1);
-        LocalDateTime to = from.plusDays(2);
+        LocalDateTime to = from.plusDays(3);
 
         List<DbJobRow> rows =
                 jobDBLoader.loadJobRows(
@@ -44,10 +44,10 @@ public class JobRepository {
                 throw new IllegalStateException(
                         "Unknown product KMC=" + r.kmc());
             }
-int id =0;
+
             Job job = jobFactory.createJob(
-                    String.valueOf(++id),
-                    jobFactory.nameCleaner(r.shortName()), id, safe(r.np()), product,
+                  String.valueOf(r.snpz()),
+                    jobFactory.nameCleaner(r.shortName()), r.snpz().intValueExact(), safe(r.np()), product,
                     r.mass(), safe(r.quantity()), safe(r.priority()),
                     from, from.plusHours(2), to
             );
