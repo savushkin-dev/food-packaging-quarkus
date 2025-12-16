@@ -14,11 +14,8 @@ import org.acme.foodpackaging.persistence.load.LoadDataService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.pinnAllLines;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.setLineStartByEarliestJob;
 
 @ApplicationScoped
 public class ScheduleBuilder {

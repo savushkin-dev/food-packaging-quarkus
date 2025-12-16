@@ -13,7 +13,7 @@ public record DbJobRow(
         Integer quantity,      // KOLEV
         Integer priority,      // UX
         String krc,
-        Timestamp startProductionDateTime,
+        Timestamp startProductionDateTime, // PDTN
         Timestamp endDateTime,
         Integer duration        // numeric(7,2)
 ) {}

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
@@ -62,8 +63,24 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             for (Job job : mutableJobs) {
                 job.setLine(line);
             }
-
+            initLineStartDateTime(line);
             fixLineJobs(line);
         }
+    }
+
+    /**
+     * Ищет и назначет мимнальное время старта у задач на линии
+     */
+    private void initLineStartDateTime(Line line) {
+
+        if (line.getJobs() == null || line.getJobs().isEmpty()) {
+            return;
+        }
+
+        line.getJobs().stream()
+                .map(Job::getStartProductionDateTime)
+                .filter(Objects::nonNull)
+                .min(LocalDateTime::compareTo).ifPresent(line::setStartDateTime);
+
     }
 }
