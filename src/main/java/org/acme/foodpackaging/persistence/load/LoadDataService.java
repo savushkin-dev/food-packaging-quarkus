@@ -62,6 +62,8 @@ public class LoadDataService {
         return solutionImport.importFromDb(date);
     }
 
+    public List<Job> getAllJobs(LocalDate date) { return jobRepository.getAllJobs(date); }
+
     public void refreshJobsNextDay(PackagingSchedule schedule) {
         jobRefreshService.refreshJobsNextDay(schedule);
     }

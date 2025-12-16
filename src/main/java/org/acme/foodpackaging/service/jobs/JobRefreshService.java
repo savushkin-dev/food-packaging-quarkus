@@ -68,7 +68,7 @@ public class JobRefreshService {
                 }
 
                 Job newJob = jobFactory.createJob(
-                        String.valueOf(info.snpz()),info.snpz(), info.np(),
+                        String.valueOf(info.snpz()),info.kmc(), info.snpz(), info.np(),
                         info.shortName(), product, info.mass(),info.quantity(), 15,
                         schedule.getWorkCalendar().getMinStartDateTime(),
                         schedule.getWorkCalendar().getIdealEndDateTime(),

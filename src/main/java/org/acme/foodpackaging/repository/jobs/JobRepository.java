@@ -2,6 +2,7 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.Getter;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.factory.JobFactory;
@@ -14,6 +15,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.removeJobsWithoutLine;
+
 @ApplicationScoped
 public class JobRepository {
 
@@ -24,7 +27,10 @@ public class JobRepository {
     @Inject
     JobDBLoader jobDBLoader;
 
-    public List<Job> loadJobs(LocalDate date) {
+    @Getter
+    private List<Job> allJobs;
+
+    public void loadAllJobs(LocalDate date) {
         LocalDateTime from = date.atStartOfDay().minusDays(1);
         LocalDateTime to = from.plusDays(3);
 
@@ -33,7 +39,7 @@ public class JobRepository {
                         from, to, "0119030000"
                 );
 
-        List<Job> jobs = new ArrayList<>();
+         allJobs = new ArrayList<>();
 
         for (DbJobRow r : rows) {
 
@@ -48,15 +54,25 @@ public class JobRepository {
             LocalDateTime startProductionDateTime = r.startProductionDateTime() != null ? r.startProductionDateTime().toLocalDateTime() : null;
 
             Job job = jobFactory.createJob(
-                  String.valueOf(r.snpz()), r.snpz().intValueExact(), r.np(),
+                  String.valueOf(r.snpz()), r.krc(), r.snpz().intValueExact(), r.np(),
                     jobFactory.nameCleaner(r.shortName()), product, r.mass(), r.quantity(), safe(r.duration()),
                     from, from.plusHours(2), to, r.priority(), startProductionDateTime
             );
 
-            jobs.add(job);
+            allJobs.add(job);
         }
+    }
 
-        return jobs;
+    public List<Job> getPlannedJobs() {
+
+        List<Job> assignedJobs = new ArrayList<>(allJobs);
+        removeJobsWithoutLine(assignedJobs);
+        return assignedJobs;
+    }
+
+    public List<Job> getAllJobs(LocalDate date){
+        loadAllJobs(date);
+        return allJobs;
     }
 
     private int safe(Integer v) {

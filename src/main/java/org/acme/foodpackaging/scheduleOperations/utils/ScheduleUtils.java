@@ -3,13 +3,9 @@ package org.acme.foodpackaging.scheduleOperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.LoadDTO;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 public class ScheduleUtils {
     /**
@@ -65,8 +61,35 @@ public class ScheduleUtils {
      */
     public static void pinnAllLines(List<Line> lines) {
 
-        for(Line line : lines){
+        LocalDateTime maxEndTime = lines.stream()
+                .map(Line::getJobs)
+                .filter(jobs -> jobs != null && !jobs.isEmpty())
+                .map(jobs -> jobs.getLast().getEndDateTime())
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+
+        for (Line line : lines) {
+            if (maxEndTime != null) {
+                line.setStartDateTime(maxEndTime);
+            }
             line.setFirstUnpinnedIndex(line.getJobs().size());
+        }
+    }
+    /**
+     * Находит время старта линии
+     */
+    public static void setLineStartByEarliestJob(List<Line> lines) {
+
+        LocalDateTime minStartTime = lines.stream()
+                .flatMap(line -> line.getJobs().stream())
+                .map(Job::getStartProductionDateTime)
+                .min(LocalDateTime::compareTo)
+                .orElse(null);
+
+        for (Line line : lines) {
+            if (minStartTime != null) {
+                line.setStartDateTime(minStartTime);
+            }
         }
     }
 
@@ -76,26 +99,13 @@ public class ScheduleUtils {
         }
     }
     /**
-     * Проверяет был ли уже план с такими же входными данными
+     * Удяляет неназначенные задачи
      */
-    public static boolean isScheduleCompatible(PackagingSchedule schedule, LoadDTO loadDTO) {
-        if (schedule.getLines().size() != loadDTO.getLineStartTimes().size()) {
-            return false;
+    public static void removeJobsWithoutLine(List<Job> jobs) {
+        if (jobs == null || jobs.isEmpty()) {
+            return;
         }
-
-        if (!Objects.equals((schedule.getJobs().getFirst().getMaxEndTime()), loadDTO.getMaxEndDateTime())) return false;
-        if (!Objects.equals((schedule.getJobs().getFirst().getIdealEndTime()), loadDTO.getIdealEndDateTime())) return false;
-
-        Map<String, LocalDateTime> startTimesFromJson = loadDTO.toLineStartDateTimeMap();
-
-        for (Line line : schedule.getLines()) {
-            LocalTime lineStartTime = line.getStartDateTime().toLocalTime();
-            LocalTime expectedStart = startTimesFromJson.get(line.getId()).toLocalTime();
-
-            if (!lineStartTime.equals(expectedStart)) {
-                return false;
-            }
-        }
-        return true;
+        jobs.removeIf(job -> job.getLineId() == null);
     }
+
 }

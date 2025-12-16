@@ -6,6 +6,8 @@ import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.repository.lines.LineRepository;
+import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
@@ -15,6 +17,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.pinnAllLines;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.setLineStartByEarliestJob;
 
 @ApplicationScoped
 public class ScheduleBuilder {
@@ -23,6 +27,10 @@ public class ScheduleBuilder {
     LoadDataService loadDataService;
     @Inject
     JobRepository jobRepository;
+    @Inject
+    LineRepository lineRepository;
+    @Inject
+    ProductRepository productRepository;
     @Inject
     LineFactory lineFactory;
     @Inject
@@ -38,22 +46,17 @@ public class ScheduleBuilder {
 
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate, endDate, minStart, idealEnd, maxEnd));
+        jobRepository.loadAllJobs(startDate);
 
-        List<Line> lines = lineStartsTime.entrySet().stream()
-                .map(e -> lineFactory.createLine(e.getKey(), e.getValue()))
-                .toList();
+        List<Line> lines = lineRepository.getLines(lineStartsTime);
+        List<Job> jobs = jobRepository.getPlannedJobs();
+        List<Product> products = productRepository.getProductList(jobs);
+
+        lineRepository.initJobListOnLine(lines, jobs);
+
         schedule.setLines(lines);
-
-        List<Job> jobs = jobRepository.loadJobs(startDate);
         schedule.setJobs(jobs);
-
-        Set<Product> productSet = jobs.stream()
-                .map(Job::getProduct)
-                .collect(Collectors.toSet());
-        schedule.setProducts(new ArrayList<>(productSet));
-        schedule.getProducts().add(getMaintenanceProduct());
-
-        cleaningCalculatorService.cleaningCalculate(schedule.getProducts());
+        schedule.setProducts(products);
 
         return schedule;
     }
