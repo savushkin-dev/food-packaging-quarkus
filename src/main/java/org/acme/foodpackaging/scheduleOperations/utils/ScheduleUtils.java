@@ -76,31 +76,13 @@ public class ScheduleUtils {
             line.setFirstUnpinnedIndex(line.getJobs().size());
         }
     }
-    /**
-     * Находит время старта линии
-     */
-    public static void setLineStartByEarliestJob(List<Line> lines) {
-
-        LocalDateTime minStartTime = lines.stream()
-                .flatMap(line -> line.getJobs().stream())
-                .map(Job::getStartProductionDateTime)
-                .min(LocalDateTime::compareTo)
-                .orElse(null);
-
-        for (Line line : lines) {
-            if (minStartTime != null) {
-                line.setStartDateTime(minStartTime);
-            }
-        }
-    }
-
     public static void unPinnAllLines(List<Line> lines){
         for(Line line : lines){
             line.setFirstUnpinnedIndex(0);
         }
     }
     /**
-     * Удяляет неназначенные задачи
+     * Удаляет неназначенные задачи
      */
     public static void removeJobsWithoutLine(List<Job> jobs) {
         if (jobs == null || jobs.isEmpty()) {
