@@ -21,6 +21,7 @@ import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.load.excelDataExport.ExcelExporter;
 import org.acme.foodpackaging.persistence.load.excelDataExport.PlanFactAnalysis;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
@@ -84,17 +85,17 @@ public class PackagingScheduleResource {
         return schedule;
     }
 
-    @GET
+    @POST
     @Path("jobs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Job> getJobs(
+    public List<DbJobRow> getJobs(
             LoadDTO loadDTO,
             @HeaderParam("X-Session-Id") String sessionId) {
         if (loadDataService == null) {
             throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
         }
-        return loadDataService.getAllJobs(loadDTO.getStartDate());
+        return loadDataService.getDBJobRowList(loadDTO.getStartDate());
     }
 
     @GET

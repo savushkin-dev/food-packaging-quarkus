@@ -28,20 +28,22 @@ public class JobRepository {
     JobDBLoader jobDBLoader;
 
     @Getter
+    private List<DbJobRow> dbJobRowList;
+    @Getter
     private List<Job> allJobs;
 
     public void loadAllJobs(LocalDate date) {
+
         LocalDateTime from = date.atStartOfDay().minusDays(1);
         LocalDateTime to = from.plusDays(3);
 
-        List<DbJobRow> rows =
-                jobDBLoader.loadJobRows(
-                        from, to, "0119030000"
-                );
+          allJobs = new ArrayList<>();
 
-         allJobs = new ArrayList<>();
-
-        for (DbJobRow r : rows) {
+         this.dbJobRowList = jobDBLoader.loadJobRows(
+                 from, to, "0119030000"
+         );
+         ;
+        for (DbJobRow r : getDbJobRowList()) {
 
             Product product =
                     loadDataService.getProducts().get(r.kmc());
@@ -75,6 +77,10 @@ public class JobRepository {
         return allJobs;
     }
 
+    public List<DbJobRow> getDbJobs(LocalDate date){
+        loadAllJobs(date);
+        return dbJobRowList;
+    }
     private int safe(Integer v) {
         return v != null ? v : 0;
     }

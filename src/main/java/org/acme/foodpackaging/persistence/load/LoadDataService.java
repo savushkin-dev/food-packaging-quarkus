@@ -7,6 +7,7 @@ import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.scheduleSaving.SolutionExport;
 import org.acme.foodpackaging.persistence.scheduleSaving.SolutionImport;
+import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
@@ -49,6 +50,8 @@ public class LoadDataService {
     private Map<String, Map<String, Integer>> lineSpeeds;
     @Getter
     private List<CleaningRule> cleaningRules;
+    @Getter
+    private List<DbJobRow> dbJobRowList;
 
     @PostConstruct
     void init() {
@@ -62,7 +65,7 @@ public class LoadDataService {
         return solutionImport.importFromDb(date);
     }
 
-    public List<Job> getAllJobs(LocalDate date) { return jobRepository.getAllJobs(date); }
+    public List<DbJobRow> getDBJobRowList(LocalDate date) { return jobRepository.getDbJobs(date); }
 
     public void refreshJobsNextDay(PackagingSchedule schedule) {
         jobRefreshService.refreshJobsNextDay(schedule);

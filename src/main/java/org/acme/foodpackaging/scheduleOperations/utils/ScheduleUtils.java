@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 public class ScheduleUtils {
     /**
@@ -107,5 +108,4 @@ public class ScheduleUtils {
         }
         jobs.removeIf(job -> job.getLineId() == null);
     }
-
 }

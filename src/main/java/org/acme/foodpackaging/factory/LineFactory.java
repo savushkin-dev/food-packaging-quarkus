@@ -15,6 +15,6 @@ public class LineFactory {
 
     public Line createLine(String lineId, LocalDateTime startTime) {
         String name = loadDataService.getLines().get(lineId);
-        return new Line(lineId, name, startTime);
+        return new Line(lineId, name);
     }
 }
