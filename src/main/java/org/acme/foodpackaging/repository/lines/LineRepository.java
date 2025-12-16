@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.pinnAllLines;
 
 @ApplicationScoped
 public class LineRepository  implements PanacheRepository<LineEntity> {
@@ -42,19 +43,16 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
                 .map(e -> lineFactory.createLine(e.getKey(), e.getValue()))
                 .toList();
     }
+    /**
+     * Ищет и назначет мимнальное время старта у задач на линии
+     */
+    public void initJobListOnLine(List<Line> lines, List<Job> jobs) {
 
-    public void initJobListOnLine(List<Line> lines, List<Job> jobs){
-        /*
-          Группировка jobs по lineId
-          заполнение списков jobs у lines
-          каждому job проставляется ссылка на line
-         */
         Map<String, List<Job>> jobsByLineId = jobs.stream()
                 .filter(job -> job.getLineId() != null)
                 .collect(Collectors.groupingBy(Job::getLineId));
 
         for (Line line : lines) {
-
             List<Job> lineJobs = jobsByLineId.getOrDefault(line.getId(), List.of());
             List<Job> mutableJobs = new ArrayList<>(lineJobs);
 
@@ -63,24 +61,45 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             for (Job job : mutableJobs) {
                 job.setLine(line);
             }
-            initLineStartDateTime(line);
+        }
+        pinnAllLines(lines);
+        //  Найти конец самой длинной линии
+        LocalDateTime maxEndTime = findMaxEndTime(lines);
+
+        // Проставяет старт всем линиям
+        for (Line line : lines) {
+            initLineStartDateTime(line, maxEndTime);
             fixLineJobs(line);
         }
     }
 
-    /**
-     * Ищет и назначет мимнальное время старта у задач на линии
-     */
-    private void initLineStartDateTime(Line line) {
+    private LocalDateTime findMaxEndTime(List<Line> lines) {
 
-        if (line.getJobs() == null || line.getJobs().isEmpty()) {
-            return;
-        }
-
-        line.getJobs().stream()
-                .map(Job::getStartProductionDateTime)
+        return lines.stream()
+                .map(Line::getJobs)
+                .filter(jobs -> jobs != null && !jobs.isEmpty())
+                .map(List::getLast) // последний job на линии
+                .map(Job::getEndDateTime)
                 .filter(Objects::nonNull)
-                .min(LocalDateTime::compareTo).ifPresent(line::setStartDateTime);
-
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
     }
+
+    private void initLineStartDateTime(Line line, LocalDateTime fallbackStartTime) {
+
+        // Если jobs есть — берём самое раннее начало
+        if (line.getJobs() != null && !line.getJobs().isEmpty()) {
+
+            line.getJobs().stream()
+                    .map(Job::getStartProductionDateTime)
+                    .filter(Objects::nonNull)
+                    .min(LocalDateTime::compareTo).ifPresent(line::setStartDateTime);
+
+        }
+        // Если jobs нет — берём конец самой длинной линии
+        else if (fallbackStartTime != null) {
+            line.setStartDateTime(fallbackStartTime);
+        }
+    }
+
 }
