@@ -31,12 +31,6 @@ public class Job {
     private String name;
     @Setter
     @Getter
-    private String previousJobId;
-    @Setter
-    @Getter
-    private String nextJobId;
-    @Setter
-    @Getter
     private int snpz;
     @Getter
     private int np;

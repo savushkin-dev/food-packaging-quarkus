@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.persistence.load;
+package org.acme.foodpackaging.persistence.db;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

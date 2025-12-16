@@ -5,8 +5,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.persistence.scheduleSaving.SolutionExport;
-import org.acme.foodpackaging.persistence.scheduleSaving.SolutionImport;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
@@ -36,8 +34,6 @@ public class LoadDataService {
     @Inject
     CleaningCalculatorService cleaningCalculator;
     @Inject
-    SolutionImport solutionImport;
-    @Inject
     JobRefreshService jobRefreshService;
     @Inject
     JobRepository jobRepository;
@@ -61,15 +57,8 @@ public class LoadDataService {
         SpeedCacheUtils.init(speedRepository.createSpeedMap());
     }
 
-    public PackagingSchedule loadScheduleFromDb(LocalDate date) {
-        return solutionImport.importFromDb(date);
-    }
-
     public List<DbJobRow> getDBJobRowList(LocalDate date) { return jobRepository.getDbJobs(date); }
 
-    public void refreshJobsNextDay(PackagingSchedule schedule) {
-        jobRefreshService.refreshJobsNextDay(schedule);
-    }
 }
 
 
