@@ -3,7 +3,6 @@ package org.acme.foodpackaging.service.builder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
@@ -15,7 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.pinnAllLines;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.extractLineNumber;
 
 @ApplicationScoped
 public class ScheduleBuilder {
@@ -33,20 +32,20 @@ public class ScheduleBuilder {
     @Inject
     CleaningCalculatorService cleaningCalculatorService;
 
-    public PackagingSchedule buildSchedule(LoadDTO loadDTO, Map<String, LocalDateTime> lineStartsTime) {
+    public PackagingSchedule buildSchedule(LocalDate startDate) {
 
-        LocalDate startDate = loadDTO.getStartDate();
-        LocalDate endDate = loadDTO.getEndDate();
-        LocalDateTime minStart = Collections.min(lineStartsTime.values());
-        LocalDateTime idealEnd = loadDTO.getIdealEndDateTime();
-        LocalDateTime maxEnd = loadDTO.getMaxEndDateTime();
+        LocalDate endDate = startDate.plusDays(2);
+        LocalDateTime minStart = startDate.minusDays(1).atStartOfDay();
+        LocalDateTime idealEnd = endDate.atStartOfDay().plusHours(2);
+        LocalDateTime maxEnd = endDate.atStartOfDay().plusHours(3);
 
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate, endDate, minStart, idealEnd, maxEnd));
         jobRepository.loadAllJobs(startDate);
 
-        List<Line> lines = lineRepository.getLines(lineStartsTime);
-        List<Job> jobs = jobRepository.getPlannedJobs();
+        List<Line> lines = lineRepository.getLines();
+
+        List<Job> jobs = jobRepository.getJobs();
         List<Product> products = productRepository.getProductList(jobs);
 
         lineRepository.initJobListOnLine(lines, jobs);

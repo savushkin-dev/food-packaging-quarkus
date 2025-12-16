@@ -13,8 +13,7 @@ public class LineFactory {
     @Inject
     LoadDataService loadDataService;
 
-    public Line createLine(String lineId, LocalDateTime startTime) {
-        String name = loadDataService.getLines().get(lineId);
+    public Line createLine(String lineId, String name) {
         return new Line(lineId, name);
     }
 }

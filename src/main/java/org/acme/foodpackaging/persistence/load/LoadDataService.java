@@ -15,7 +15,6 @@ import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -56,9 +55,6 @@ public class LoadDataService {
         this.cleaningRules = cleaningRuleRepository.loadRules();
         SpeedCacheUtils.init(speedRepository.createSpeedMap());
     }
-
-    public List<DbJobRow> getDBJobRowList(LocalDate date) { return jobRepository.getDbJobs(date); }
-
 }
 
 
