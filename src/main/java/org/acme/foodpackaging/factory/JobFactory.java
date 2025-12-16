@@ -15,12 +15,12 @@ public class JobFactory {
     @Inject
     LoadDataService loadDataService;
 
-    public Job createJob(String id, int snpz, int np, String jobName, Product product, double mass,
+    public Job createJob(String id, String lineId, int snpz, int np, String jobName, Product product, double mass,
             int quantity, int duration, LocalDateTime minStartDateTime,
                          LocalDateTime idealEndDateTime,
                          LocalDateTime maxEndDateTime,  int priority, LocalDateTime startProductionDateTime) {
 
-        return new Job(id, snpz, np, jobName, product, mass, quantity, Duration.ofMinutes(duration),
+        return new Job(id, lineId, snpz, np, jobName, product, mass, quantity, Duration.ofMinutes(duration),
                 minStartDateTime, idealEndDateTime, maxEndDateTime, priority, null, startProductionDateTime);
     }
 

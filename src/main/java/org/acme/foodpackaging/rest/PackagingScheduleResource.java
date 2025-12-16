@@ -10,6 +10,7 @@ import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 
 import jakarta.ws.rs.core.Response;
+import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadDTO;
@@ -20,6 +21,7 @@ import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.load.excelDataExport.ExcelExporter;
 import org.acme.foodpackaging.persistence.load.excelDataExport.PlanFactAnalysis;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
@@ -61,6 +63,8 @@ public class PackagingScheduleResource {
     LoadDataService loadDataService;
     @Inject
     UploadDataService uploadDataService;
+    @Inject
+    JobRepository jobRepository;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -78,6 +82,19 @@ public class PackagingScheduleResource {
         }
         schedule.setSolverStatus(solverStatus);
         return schedule;
+    }
+
+    @GET
+    @Path("jobs")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Job> getJobs(
+            LoadDTO loadDTO,
+            @HeaderParam("X-Session-Id") String sessionId) {
+        if (loadDataService == null) {
+            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+        }
+        return loadDataService.getAllJobs(loadDTO.getStartDate());
     }
 
     @GET
@@ -121,21 +138,9 @@ public class PackagingScheduleResource {
         LocalDate startDate = loadDTO.getStartDate();
 
         try {
-            PackagingSchedule schedule = null;
-
-            if (loadDTO.getFindSolvedInDb()) {
-                schedule = loadDataService.loadScheduleFromDb(startDate);
-            }
-            if (schedule != null) {
-                solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
-                repository.writeForSession(sessionId, schedule);
-
-                return Response.ok(Map.of(
-                        "message", "Saved schedule imported for date: " + startDate
-                )).build();
-            }
-            PackagingSchedule newSchedule = buildNewSchedule(loadDTO);
-            repository.writeForSession(sessionId, newSchedule);
+            PackagingSchedule schedule = buildNewSchedule(loadDTO);
+            solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+            repository.writeForSession(sessionId, schedule);
 
             return Response.ok(Map.of(
                     "message", (loadDTO.getFindSolvedInDb()
