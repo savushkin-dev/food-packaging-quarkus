@@ -3,7 +3,6 @@ package org.acme.foodpackaging.persistence;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.domain.SessionPackagingSchedule;
 
 import java.util.concurrent.ConcurrentHashMap;
 

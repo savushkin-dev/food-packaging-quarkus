@@ -15,8 +15,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.removeJobsWithoutLine;
-
 @ApplicationScoped
 public class JobRepository {
 
@@ -30,20 +28,22 @@ public class JobRepository {
     @Getter
     private List<DbJobRow> dbJobRowList;
     @Getter
-    private List<Job> allJobs;
+    private List<Job> jobs;
 
     public void loadAllJobs(LocalDate date) {
 
         LocalDateTime from = date.atStartOfDay().minusDays(1);
         LocalDateTime to = from.plusDays(3);
 
-          allJobs = new ArrayList<>();
+          jobs = new ArrayList<>();
 
          this.dbJobRowList = jobDBLoader.loadJobRows(
                  from, to, "0119030000"
          );
-         ;
+
         for (DbJobRow r : getDbJobRowList()) {
+
+            if(r.krc() == null) continue;
 
             Product product =
                     loadDataService.getProducts().get(r.kmc());
@@ -61,26 +61,10 @@ public class JobRepository {
                     from, from.plusHours(2), to, r.priority(), startProductionDateTime
             );
 
-            allJobs.add(job);
+            jobs.add(job);
         }
     }
 
-    public List<Job> getPlannedJobs() {
-
-        List<Job> assignedJobs = new ArrayList<>(allJobs);
-        removeJobsWithoutLine(assignedJobs);
-        return assignedJobs;
-    }
-
-    public List<Job> getAllJobs(LocalDate date){
-        loadAllJobs(date);
-        return allJobs;
-    }
-
-    public List<DbJobRow> getDbJobs(LocalDate date){
-        loadAllJobs(date);
-        return dbJobRowList;
-    }
     private int safe(Integer v) {
         return v != null ? v : 0;
     }

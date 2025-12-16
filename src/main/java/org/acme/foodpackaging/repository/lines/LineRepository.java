@@ -7,6 +7,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.entity.lines.LineEntity;
 import org.acme.foodpackaging.factory.LineFactory;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
 
     @Inject
     LineFactory lineFactory;
+    @Inject
+    LoadDataService loadDataService;
     /**
      * Загружает id и название линии
      */
@@ -38,11 +41,16 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
                 ));
     }
 
-    public List<Line> getLines(Map<String, LocalDateTime> lineStartsTime){
-        return lineStartsTime.entrySet().stream()
-                .map(e -> lineFactory.createLine(e.getKey(), e.getValue()))
+    public List<Line> getLines() {
+
+        return loadDataService.getLines().entrySet().stream()
+                .map(e -> lineFactory.createLine(
+                        e.getKey(),
+                        e.getValue()
+                ))
                 .toList();
     }
+
     /**
      * Ищет и назначет мимнальное время старта у задач на линии
      */
@@ -101,5 +109,4 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             line.setStartDateTime(fallbackStartTime);
         }
     }
-
 }

@@ -1,6 +1,7 @@
-package org.acme.foodpackaging.domain;
+package org.acme.foodpackaging.persistence;
 
 import lombok.Getter;
+import org.acme.foodpackaging.domain.PackagingSchedule;
 
 @Getter
 public class SessionPackagingSchedule {

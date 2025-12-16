@@ -28,10 +28,7 @@ import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static io.smallrye.config._private.ConfigLogging.log;
@@ -82,19 +79,6 @@ public class PackagingScheduleResource {
         return schedule;
     }
 
-    @POST
-    @Path("jobs")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<DbJobRow> getJobs(
-            LoadDTO loadDTO,
-            @HeaderParam("X-Session-Id") String sessionId) {
-        if (loadDataService == null) {
-            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
-        }
-        return loadDataService.getDBJobRowList(loadDTO.getStartDate());
-    }
-
     @GET
     @Path("lines")
     @Produces(MediaType.APPLICATION_JSON)
@@ -128,34 +112,24 @@ public class PackagingScheduleResource {
     }
 
     @POST
-    @Path("load")
+    @Path("init")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response load(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public List<DbJobRow> init(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
         LocalDate startDate = loadDTO.getStartDate();
 
-        try {
-            PackagingSchedule schedule = buildNewSchedule(loadDTO);
+            PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
             solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
             repository.writeForSession(sessionId, schedule);
 
-            return Response.ok(Map.of(
-                    "message", (loadDTO.getFindSolvedInDb()
-                            ? "No saved schedule found — new data generated for date: "
-                            : "New schedule generated (forced) for date: ") + startDate
-            )).build();
+            if (loadDataService == null) {
+                throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+            }
 
-        } catch (DateTimeParseException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
-                    .build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
-                    .build();
-        }
+            return jobRepository.getDbJobRowList();
     }
+
     @POST
     @Path("lineStart")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -409,10 +383,4 @@ public class PackagingScheduleResource {
         return sessionId != null ? sessionId : "default";
     }
 
-    private PackagingSchedule buildNewSchedule(LoadDTO loadDTO) {
-        return scheduleBuilder.buildSchedule(
-                loadDTO,
-                loadDTO.toLineStartDateTimeMap()
-        );
-    }
 }

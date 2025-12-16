@@ -7,6 +7,8 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ScheduleUtils {
     /**
@@ -90,4 +92,19 @@ public class ScheduleUtils {
         }
         jobs.removeIf(job -> job.getLineId() == null);
     }
+    /**
+     * Сортирует линии по названию
+     */
+    public static final Pattern LINE_NUMBER = Pattern.compile("(\\d+)");
+
+    public static int extractLineNumber(String name) {
+        if (name == null) return Integer.MAX_VALUE;
+
+        Matcher m = LINE_NUMBER.matcher(name);
+        if (m.find()) {
+            return Integer.parseInt(m.group(1));
+        }
+        return Integer.MAX_VALUE;
+    }
+
 }
