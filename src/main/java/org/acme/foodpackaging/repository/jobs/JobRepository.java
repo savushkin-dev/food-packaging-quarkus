@@ -6,7 +6,7 @@ import lombok.Getter;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.factory.JobFactory;
-import org.acme.foodpackaging.persistence.load.JobDBLoader;
+import org.acme.foodpackaging.persistence.db.JobDBLoader;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 

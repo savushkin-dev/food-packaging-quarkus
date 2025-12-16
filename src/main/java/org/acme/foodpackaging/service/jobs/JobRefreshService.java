@@ -8,8 +8,8 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.factory.JobFactory;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.persistence.load.UpdateJobLoaderService;
 import org.acme.foodpackaging.record.DbJobInfo;
+import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
 import java.time.LocalDate;
@@ -26,18 +26,16 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.pinn
 public class JobRefreshService {
 
     @Inject
-    UpdateJobLoaderService jobLoader;
-    @Inject
     CleaningCalculatorService cleaningCalculator;
     @Inject
     LoadDataService loadDataService;
     @Inject
     JobFactory jobFactory;
 
-    public void refreshJobsNextDay(PackagingSchedule schedule) {
+    /*public void refreshJobsNextDay(PackagingSchedule schedule) {
 
         LocalDate planningDay = schedule.getWorkCalendar().getFromDate();
-        Map<Integer, DbJobInfo> dbJobsNextDay = jobLoader.loadDbJobInfo(planningDay);
+        Map<Integer, DbJobRow> dbJobsNextDay = jobLoader.loadDbJobInfo(planningDay);
 
         List<Job> currentJobs = schedule.getJobs();
 
@@ -104,5 +102,5 @@ public class JobRefreshService {
         if (newProductsAppeared) {
             cleaningCalculator.cleaningCalculate(schedule.getProducts());
         }
-    }
+    }*/
 }

@@ -2,7 +2,6 @@ package org.acme.foodpackaging.entity.products;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
-import org.acme.foodpackaging.entity.NS_McEntity;
 
 import java.util.UUID;
 

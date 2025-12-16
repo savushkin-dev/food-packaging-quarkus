@@ -3,7 +3,7 @@ package org.acme.foodpackaging.repository.products;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.entity.NS_McEntity;
+import org.acme.foodpackaging.entity.products.NS_McEntity;
 import org.acme.foodpackaging.entity.products.ProductEntity;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
@@ -34,7 +34,7 @@ public class ProductRepository {
 
             Product product = new Product(
                     n.shortName,
-                    p.kmc, n.krkmc, p.ean13,
+                    p.kmc, n.krkmc,
                     p.type, p.glaze, p.mass, p.filling
             );
 

@@ -17,8 +17,6 @@ import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
-import org.acme.foodpackaging.persistence.load.excelDataExport.ExcelExporter;
-import org.acme.foodpackaging.persistence.load.excelDataExport.PlanFactAnalysis;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
@@ -158,55 +156,6 @@ public class PackagingScheduleResource {
                     .build();
         }
     }
-
-    @POST
-    @Path("loadpday")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response loadpday(LoadDTO loadDTO) {
-
-        LocalDate startDate = loadDTO.getStartDate();
-        LocalDate endDate = loadDTO.getEndDate();
-
-        try {
-            Map<String, Map<String, Object>> res = uploadDataService.loadPDay(startDate, endDate);
-            return Response.ok(res).build();
-
-        } catch (DateTimeParseException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
-                    .build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed to load production order: " + e.getMessage()))
-                    .build();
-        }
-    }
-
-    @POST
-    @Path("updatepday")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response updatepday(Map<String, LocalDate> mapsnpz) {
-        try {
-            uploadDataService.updatePDay(mapsnpz);
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Jobs DTF updates successfully"
-            )).build();
-
-        } catch (DateTimeParseException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
-                    .build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed to update jobs: " + e.getMessage()))
-                    .build();
-        }
-    }
-
     @POST
     @Path("lineStart")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -272,7 +221,6 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        loadDataService.refreshJobsNextDay(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
@@ -444,74 +392,6 @@ public class PackagingScheduleResource {
                 "message", "Line " + line.getId() + " updated successfully."
         )).build();
     }
-    /**
-     * Сохраняет план в бд в формате json строки
-     */
-    @POST
-    @Path("saveToDb")
-    public Response saveToDb(@HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule bestSolution = repository.readForSession(sessionId);
-        if (bestSolution == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "No solution for session"))
-                    .build();
-        }
-        uploadDataService.saveSchedule(bestSolution);
-        return Response.ok(Map.of("message", "Saved successfully")).build();
-    }
-    /**
-     * Удаляет план из бд
-     */
-    @POST
-    @Path("removeSolution")
-    public Response remove(@HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-        if (schedule == null) return Response.status(400).entity("Schedule not loaded").build();
-
-        LocalDate date = schedule.getWorkCalendar().getFromDate();
-        int rows = uploadDataService.deleteSchedule(date);
-
-        return Response.ok(Map.of("rows", rows, "date", date.toString())).build();
-    }
-    @POST
-    @Path("export")
-    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    public Response export(@HeaderParam("X-Session-Id") String sessionId) {
-        try {
-            PackagingSchedule schedule = repository.readForSession(sessionId);
-
-            if (schedule == null) {
-                return Response.status(Response.Status.NO_CONTENT)
-                        .entity(Map.of("status", "error", "message", "No schedule available to export."))
-                        .build();
-            }
-            System.out.println(sessionId);
-            PlanFactAnalysis factAnalysis = new PlanFactAnalysis(
-                    schedule.getWorkCalendar().getFromDate().toString()
-            );
-            factAnalysis.excelWrite(schedule.getJobs());
-            File planFactFile = factAnalysis.getExportFile();
-
-            if (planFactFile != null && planFactFile.exists()) {
-                byte[] fileContent = Files.readAllBytes(planFactFile.toPath());
-                return Response.ok(fileContent)
-                        .header("Content-Disposition", "attachment; filename=\"" + planFactFile.getName() + "\"")
-                        .build();
-            }
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Export completed successfully. Excel file saved in resources."
-            )).build();
-
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("status", "error", "message", "Export error: " + e.getMessage()))
-                    .build();
-        }
-    }
 
     @PUT
     @Consumes({MediaType.APPLICATION_JSON})
@@ -534,10 +414,5 @@ public class PackagingScheduleResource {
                 loadDTO,
                 loadDTO.toLineStartDateTimeMap()
         );
-    }
-
-    public File exportTimeCompare(String date, PackagingSchedule solution) {
-        ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
-        return exporter.getExportedFile();
     }
 }
