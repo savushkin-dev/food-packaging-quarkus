@@ -13,6 +13,7 @@ import org.acme.foodpackaging.record.DbJobRow;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,8 @@ public class JobRepository {
     @Getter
     private Map<Integer, DbJobRow> dbJobRowMap;
     @Getter
+    private  Map<Integer, Job> jobIdMap;
+    @Getter
     private List<Job> jobs;
     @Getter
     private LocalDateTime from;
@@ -39,6 +42,7 @@ public class JobRepository {
 
         this.from = date.atStartOfDay().minusDays(1);
         this.to = from.plusDays(3);
+        this.jobIdMap = new HashMap<>();
         this.dbJobRowMap = jobDBLoader.loadJobRowMapFromDb(
                 from, to, "0119030000"
         );
@@ -52,26 +56,45 @@ public class JobRepository {
         for (DbJobRow r : getDbJobRowMap().values()) {
 
             if(r.krc() == null) continue;
-
-            Product product =
-                    loadDataService.getProducts().get(r.kmc());
-
-            if (product == null) {
-                throw new IllegalStateException(
-                        "Unknown product KMC=" + r.kmc());
-            }
-
-            LocalDateTime startProductionDateTime = r.startProductionDateTime() != null ? r.startProductionDateTime().toLocalDateTime() : null;
-
-            Job job = jobFactory.createJob(
-                    String.valueOf(r.snpz()), r.krc(), r.snpz().intValueExact(), r.np(),
-                    jobFactory.nameCleaner(r.shortName()), product, r.mass(), r.quantity(), safe(r.duration()),
-                    from, from.plusHours(2), to, r.priority(), startProductionDateTime
-            );
+            Job job = createJobById(r.snpz().intValueExact());
 
             jobs.add(job);
         }
     }
+
+    public Job createJobById(int snpz) {
+
+        Job existing = jobIdMap.get(snpz);
+        if (existing != null) {
+            return existing;
+        }
+
+        DbJobRow row = dbJobRowMap.get(snpz);
+        if (row == null) {
+            throw new IllegalArgumentException("Unknown SNPZ=" + snpz);
+        }
+
+        Product product = loadDataService.getProducts().get(row.kmc());
+        if (product == null) {
+            throw new IllegalStateException("Unknown product KMC=" + row.kmc());
+        }
+
+        LocalDateTime startProductionDateTime =
+                row.startProductionDateTime() != null
+                        ? row.startProductionDateTime().toLocalDateTime()
+                        : null;
+
+        Job job = jobFactory.createJob(
+                String.valueOf(row.snpz()), row.krc(), snpz,
+                row.np(), jobFactory.nameCleaner(row.shortName()), product,
+                row.mass(), row.quantity(), safe(row.duration()), from, from.plusHours(2), to,
+                row.priority(), startProductionDateTime
+        );
+
+        jobIdMap.put(snpz, job);
+        return job;
+    }
+
 
     public List<DbJobRow> getDbJobRowList() {
         if (dbJobRowMap == null || dbJobRowMap.isEmpty()) {
