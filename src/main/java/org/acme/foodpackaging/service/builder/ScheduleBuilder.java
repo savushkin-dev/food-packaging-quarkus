@@ -14,8 +14,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.extractLineNumber;
-
 @ApplicationScoped
 public class ScheduleBuilder {
 
@@ -41,10 +39,9 @@ public class ScheduleBuilder {
 
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate, endDate, minStart, idealEnd, maxEnd));
-        jobRepository.loadAllJobs(startDate);
+        jobRepository.init(startDate);
 
         List<Line> lines = lineRepository.getLines();
-
         List<Job> jobs = jobRepository.getJobs();
         List<Product> products = productRepository.getProductList(jobs);
 

@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class JobRepository {
@@ -26,22 +27,29 @@ public class JobRepository {
     JobDBLoader jobDBLoader;
 
     @Getter
-    private List<DbJobRow> dbJobRowList;
+    private Map<Integer, DbJobRow> dbJobRowMap;
     @Getter
     private List<Job> jobs;
+    @Getter
+    private LocalDateTime from;
+    @Getter
+    private LocalDateTime to;
 
-    public void loadAllJobs(LocalDate date) {
+    public void init(LocalDate date){
 
-        LocalDateTime from = date.atStartOfDay().minusDays(1);
-        LocalDateTime to = from.plusDays(3);
+        this.from = date.atStartOfDay().minusDays(1);
+        this.to = from.plusDays(3);
+        this.dbJobRowMap = jobDBLoader.loadJobRowMapFromDb(
+                from, to, "0119030000"
+        );
+        createJobList();
+    }
 
-          jobs = new ArrayList<>();
+    private void createJobList() {
 
-         this.dbJobRowList = jobDBLoader.loadJobRows(
-                 from, to, "0119030000"
-         );
+          this.jobs = new ArrayList<>();
 
-        for (DbJobRow r : getDbJobRowList()) {
+        for (DbJobRow r : getDbJobRowMap().values()) {
 
             if(r.krc() == null) continue;
 
@@ -56,13 +64,20 @@ public class JobRepository {
             LocalDateTime startProductionDateTime = r.startProductionDateTime() != null ? r.startProductionDateTime().toLocalDateTime() : null;
 
             Job job = jobFactory.createJob(
-                  String.valueOf(r.snpz()), r.krc(), r.snpz().intValueExact(), r.np(),
+                    String.valueOf(r.snpz()), r.krc(), r.snpz().intValueExact(), r.np(),
                     jobFactory.nameCleaner(r.shortName()), product, r.mass(), r.quantity(), safe(r.duration()),
                     from, from.plusHours(2), to, r.priority(), startProductionDateTime
             );
 
             jobs.add(job);
         }
+    }
+
+    public List<DbJobRow> getDbJobRowList() {
+        if (dbJobRowMap == null || dbJobRowMap.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(dbJobRowMap.values());
     }
 
     private int safe(Integer v) {
