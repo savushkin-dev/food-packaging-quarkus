@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.service;
+package org.acme.foodpackaging.service.log;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
