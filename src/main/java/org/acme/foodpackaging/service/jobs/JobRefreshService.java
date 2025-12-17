@@ -4,103 +4,50 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.factory.JobFactory;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.record.DbJobInfo;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.service.products.CleaningCalculatorService;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.pinnAllLines;
 
 @ApplicationScoped
 public class JobRefreshService {
 
     @Inject
-    CleaningCalculatorService cleaningCalculator;
-    @Inject
-    LoadDataService loadDataService;
-    @Inject
-    JobFactory jobFactory;
+    JobRepository jobRepository;
 
-    /*public void refreshJobsNextDay(PackagingSchedule schedule) {
+    public void applySelection(Map<Integer, Boolean> selection) {
+        for (Map.Entry<Integer, Boolean> entry : selection.entrySet()) {
+            Integer snpz = entry.getKey();
+            boolean enabled = entry.getValue();
 
-        LocalDate planningDay = schedule.getWorkCalendar().getFromDate();
-        Map<Integer, DbJobRow> dbJobsNextDay = jobLoader.loadDbJobInfo(planningDay);
+            if (enabled) {
+                if (!jobRepository.getJobIdMap().containsKey(snpz)) {
+                    DbJobRow row = jobRepository.getDbJobRowMap().get(snpz);
+                    if (row != null) {
+                        Job job = jobRepository.createJobById(row.snpz().intValueExact());
 
-        List<Job> currentJobs = schedule.getJobs();
-
-        Map<Integer, Job> scheduleMap = currentJobs.stream().filter(j -> !j.isMaintenance())
-                .collect(Collectors.toMap(Job::getSnpz, j -> j));
-
-        List<Job> toAdd = new ArrayList<>();
-        List<Job> toRemove = new ArrayList<>();
-
-        boolean newProductsAppeared = false;
-
-        for (DbJobInfo info : dbJobsNextDay.values()) {
-
-            if (!scheduleMap.containsKey(info.snpz())) {
-
-                Product product = schedule.getProducts().stream()
-                        .filter(p -> p.getId().equals(info.kmc()))
-                        .findFirst()
-                        .orElse(loadDataService.getProducts().get(info.kmc()));
-
-                if (product == null) {
-                    throw new IllegalStateException("Unknown product KMC=" + info.kmc());
+                        jobRepository.getJobs().add(job);
+                        jobRepository.getJobIdMap().put(snpz, job);}
                 }
+            } else {
+                Job job = jobRepository.getJobIdMap().remove(snpz);
+                if (job != null) {
+                    jobRepository.getJobs().remove(job);
 
-                if (!schedule.getProducts().contains(product)) {
-                    schedule.getProducts().add(product);
-                    newProductsAppeared = true;
-                }
-
-                Job newJob = jobFactory.createJob(
-                        String.valueOf(info.snpz()),info.kmc(), info.snpz(), info.np(),
-                        info.shortName(), product, info.mass(),info.quantity(), 15,
-                        schedule.getWorkCalendar().getMinStartDateTime(),
-                        schedule.getWorkCalendar().getIdealEndDateTime(),
-                        schedule.getWorkCalendar().getMaxEndDateTime(),
-                        info.priority(), LocalDateTime.now()
-                );
-
-                toAdd.add(newJob);
-            }
-        }
-
-        for (Job job : currentJobs) {
-            if (!dbJobsNextDay.containsKey(job.getSnpz()) && !job.isMaintenance()) {
-                toRemove.add(job);
-            }
-        }
-
-        for (Job jobToRemove : toRemove) {
-            schedule.getJobs().remove(jobToRemove);
-
-            for (Line line : schedule.getLines()) {
-                int index = line.getJobs().indexOf(jobToRemove);
-                if (index >= 0) {
-                    line.getJobs().remove(index);
-                    fixLineJobs(line);
+                    Line line = job.getLine();
+                    if (line != null) {
+                        line.getJobs().remove(job);
+                        job.setLine(null);
+                    }
                 }
             }
         }
+    }
 
-        pinnAllLines(schedule.getLines());
-        schedule.getJobs().addAll(toAdd);
-
-        if (newProductsAppeared) {
-            cleaningCalculator.cleaningCalculate(schedule.getProducts());
+    private void rebuildId() {
+        jobRepository.getJobIdMap().clear();
+        for (Job j : jobRepository.getJobs()) {
+            jobRepository.getJobIdMap().put(j.getSnpz(), j);
         }
-    }*/
+    }
 }

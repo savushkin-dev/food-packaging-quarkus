@@ -26,6 +26,7 @@ import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -60,6 +61,8 @@ public class PackagingScheduleResource {
     UploadDataService uploadDataService;
     @Inject
     JobRepository jobRepository;
+    @Inject
+    JobRefreshService jobRefreshService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -128,6 +131,13 @@ public class PackagingScheduleResource {
             }
 
             return jobRepository.getDbJobRowList();
+    }
+
+    @POST
+    @Path("/selection")
+    public Response applySelection(JobSelectionDTO dto) {
+        jobRefreshService.applySelection(dto.selection());
+        return Response.ok().build();
     }
 
     @POST
