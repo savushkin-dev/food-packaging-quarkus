@@ -2,22 +2,31 @@ package org.acme.foodpackaging.domain;
 
 import ai.timefold.solver.core.api.domain.lookup.PlanningId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Duration;
 import java.util.Map;
 
 public class Product {
 
+    @Getter
     @PlanningId
     private String id;
+    @Setter
+    @Getter
     private String name;
+    @Setter
+    @Getter
     private String krKmc;
     private String ean13;
+    @Setter
     private String type;
     private String glaze;
     private String filling;
     private String curdMass;
     /** The map key is previous product on assembly line. */
+    @Setter
     @JsonIgnore
     private Map<Product, Duration> cleaningDurations;
 
@@ -65,35 +74,9 @@ public class Product {
 
     public String getCurdMass() { return curdMass == null ? "" : curdMass; }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getEan13() {
-        return ean13;
-    }
-
-    public String getKrKmc() {
-        return krKmc;
-    }
-
-    public String getName() {
-        return name;
-    }
-    
-    public void setKrKmc(String krKmc){ this.krKmc = krKmc; }
-
-    public void setName(String name) {
-        this.name = name;
-    }
     @JsonIgnore
     public Map<Product, Duration> getCleaningDurations() {
         return cleaningDurations;
     }
 
-    public void setCleaningDurations(Map<Product, Duration> cleaningDurations) {
-        this.cleaningDurations = cleaningDurations;
-    }
-
-    public void setType(String type) { this.type = type; }
 }
