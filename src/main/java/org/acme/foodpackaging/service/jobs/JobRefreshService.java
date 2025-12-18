@@ -4,10 +4,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
+import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.repository.products.ProductRepository;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
@@ -17,25 +18,27 @@ public class JobRefreshService {
 
     @Inject
     JobRepository jobRepository;
+    @Inject
+    ProductRepository productRepository;
 
-    public List<Job> applySelection(Map<Integer, Boolean> selection) {
+    public PackagingSchedule applySelection(Map<Integer, Boolean> selection, PackagingSchedule solution) {
         for (Map.Entry<Integer, Boolean> entry : selection.entrySet()) {
             Integer snpz = entry.getKey();
             boolean enabled = entry.getValue();
 
             if (enabled) {
-                if (!jobRepository.getJobIdMap().containsKey(snpz)) {
-                    DbJobRow row = jobRepository.getDbJobRowMap().get(snpz);
+                if (!solution.getJobIdMap().containsKey(snpz)) {
+                    DbJobRow row = solution.getDbJobRowMap().get(snpz);
                     if (row != null) {
-                        Job job = jobRepository.createJobById(row.snpz().intValueExact());
+                        Job job = jobRepository.createJobById(row.snpz().intValueExact(), solution);
 
-                        jobRepository.getJobs().add(job);
-                        jobRepository.getJobIdMap().put(snpz, job);}
+                        solution.getJobs().add(job);
+                        solution.getJobIdMap().put(snpz, job);}
                 }
             } else {
-                Job job = jobRepository.getJobIdMap().remove(snpz);
+                Job job = solution.getJobIdMap().remove(snpz);
                 if (job != null) {
-                    jobRepository.getJobs().remove(job);
+                    solution.getJobs().remove(job);
 
                     Line line = job.getLine();
                     if (line != null) {
@@ -50,14 +53,15 @@ public class JobRefreshService {
                     }
                 }
             }
-        rebuildId();
-        return jobRepository.getJobs();
+        rebuildId(solution);
+        solution.setProducts(productRepository.getProductList(solution.getJobs()));
+        return solution;
         }
 
-    private void rebuildId() {
-        jobRepository.getJobIdMap().clear();
-        for (Job j : jobRepository.getJobs()) {
-            jobRepository.getJobIdMap().put(j.getSnpz(), j);
+    private void rebuildId(PackagingSchedule solution) {
+        solution.getJobIdMap().clear();
+        for (Job j : solution.getJobs()) {
+           solution.getJobIdMap().put(j.getSnpz(), j);
         }
     }
 }

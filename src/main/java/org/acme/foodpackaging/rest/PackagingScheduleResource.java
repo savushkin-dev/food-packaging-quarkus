@@ -130,17 +130,16 @@ public class PackagingScheduleResource {
                 throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
             }
 
-            return jobRepository.getDbJobRowList();
+            return jobRepository.getDbJobRowList(schedule.getDbJobRowMap());
     }
 
     @POST
     @Path("/selection")
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionDTO dto) {
 
-        PackagingSchedule updatedSchedule = repository.readForSession(sessionId);
-        updatedSchedule.setJobs(jobRefreshService.applySelection(dto.selection()));
+        PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
+                repository.readForSession(sessionId));
 
-        updatedSchedule = scheduleBuilder.updateProductList(repository.readForSession(sessionId));
         solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId,updatedSchedule);
 
