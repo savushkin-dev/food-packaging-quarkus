@@ -7,6 +7,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
@@ -17,7 +18,7 @@ public class JobRefreshService {
     @Inject
     JobRepository jobRepository;
 
-    public void applySelection(Map<Integer, Boolean> selection) {
+    public List<Job> applySelection(Map<Integer, Boolean> selection) {
         for (Map.Entry<Integer, Boolean> entry : selection.entrySet()) {
             Integer snpz = entry.getKey();
             boolean enabled = entry.getValue();
@@ -50,6 +51,7 @@ public class JobRefreshService {
                 }
             }
         rebuildId();
+        return jobRepository.getJobs();
         }
 
     private void rebuildId() {
