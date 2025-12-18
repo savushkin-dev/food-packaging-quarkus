@@ -136,11 +136,12 @@ public class PackagingScheduleResource {
     @POST
     @Path("/selection")
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionDTO dto) {
+
         jobRefreshService.applySelection(dto.selection());
-        repository.writeForSession(
-                sessionId,
-                scheduleBuilder.updateProductList(repository.readForSession(sessionId))
-        );
+        PackagingSchedule updatedSchedule = scheduleBuilder.updateProductList(repository.readForSession(sessionId));
+        solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId,updatedSchedule);
+
         return Response.ok().build();
     }
 
