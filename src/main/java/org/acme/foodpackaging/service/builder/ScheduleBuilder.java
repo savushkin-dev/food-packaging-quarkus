@@ -39,16 +39,16 @@ public class ScheduleBuilder {
 
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate, endDate, minStart, idealEnd, maxEnd));
-        jobRepository.init(startDate);
+        schedule.setDbJobRowMap(jobRepository.getDbJobRowMap(startDate));
+        jobRepository.initSolutionJobList(schedule);
 
         List<Line> lines = lineRepository.getLines();
-        List<Job> jobs = jobRepository.getJobs();
-        List<Product> products = productRepository.getProductList(jobs);
+        List<Product> products = productRepository.getProductList(schedule.getJobs());
 
-        lineRepository.initJobListOnLine(lines, jobs);
+        lineRepository.initJobListOnLine(lines, schedule.getJobs());
 
         schedule.setLines(lines);
-        schedule.setJobs(jobs);
+        schedule.setJobs(schedule.getJobs());
         schedule.setProducts(products);
 
         return schedule;

@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import lombok.Getter;
 import lombok.Setter;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.factory.JobFactory;
 import org.acme.foodpackaging.persistence.db.JobDBLoader;
@@ -27,54 +28,37 @@ public class JobRepository {
     LoadDataService loadDataService;
     @Inject
     JobDBLoader jobDBLoader;
-    @Setter
-    @Getter
-    private Map<Integer, DbJobRow> dbJobRowMap;
-    @Setter
-    @Getter
-    private  Map<Integer, Job> jobIdMap;
-    @Setter
-    @Getter
-    private List<Job> jobs;
-    @Setter
-    @Getter
-    private LocalDateTime from;
-    @Setter
-    @Getter
-    private LocalDateTime to;
 
-    public void init(LocalDate date){
-
-        this.from = date.atStartOfDay().minusDays(1);
-        this.to = from.plusDays(3);
-        this.jobIdMap = new HashMap<>();
-        this.dbJobRowMap = jobDBLoader.loadJobRowMapFromDb(
+    public Map<Integer, DbJobRow> getDbJobRowMap(LocalDate date){
+        LocalDateTime from = date.atStartOfDay().minusDays(1);
+        LocalDateTime to = from.plusDays(3);
+        return jobDBLoader.loadJobRowMapFromDb(
                 from, to, "0119030000"
         );
-        createJobList();
     }
 
-    private void createJobList() {
+    public void initSolutionJobList(PackagingSchedule solution) {
 
-          this.jobs = new ArrayList<>();
+          List<Job> jobs = new ArrayList<>();
 
-        for (DbJobRow r : getDbJobRowMap().values()) {
+        for (DbJobRow r : solution.getDbJobRowMap().values()) {
 
             if(r.krc() == null) continue;
-            Job job = createJobById(r.snpz().intValueExact());
+            Job job = createJobById(r.snpz().intValueExact(), solution);
 
             jobs.add(job);
         }
+        solution.setJobs(jobs);
     }
 
-    public Job createJobById(int snpz) {
+    public Job createJobById(int snpz, PackagingSchedule solution) {
 
-        Job existing = jobIdMap.get(snpz);
+        Job existing = solution.getJobIdMap().get(snpz);
         if (existing != null) {
             return existing;
         }
 
-        DbJobRow row = dbJobRowMap.get(snpz);
+        DbJobRow row = solution.getDbJobRowMap().get(snpz);
         if (row == null) {
             throw new IllegalArgumentException("Unknown SNPZ=" + snpz);
         }
@@ -92,29 +76,26 @@ public class JobRepository {
         Job job = jobFactory.createJob(
                 String.valueOf(row.snpz()), row.krc(), snpz,
                 row.np(), jobFactory.nameCleaner(row.shortName()), product,
-                row.mass(), row.quantity(), safe(row.duration()), from, from.plusHours(2), to,
+                row.mass(), row.quantity(), safe(row.duration()), solution.getWorkCalendar().getMinStartDateTime(),
+                solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
                 row.priority(), startProductionDateTime
         );
 
-        jobIdMap.put(snpz, job);
+        solution.getJobIdMap().put(snpz, job);
         return job;
     }
 
-
-    public List<DbJobRow> getDbJobRowList() {
-        if (dbJobRowMap == null || dbJobRowMap.isEmpty()) {
+    public List<DbJobRow> getDbJobRowList(Map<Integer, DbJobRow> rows) {
+        if (rows == null || rows.isEmpty()) {
             return List.of();
         }
-        return new ArrayList<>(dbJobRowMap.values());
+        return new ArrayList<>(rows.values());
     }
 
     private int safe(Integer v) {
         return v != null ? v : 0;
     }
 
-    private double safe(Double v) {
-        return v != null ? v : 0.0;
-    }
 }
 
 
