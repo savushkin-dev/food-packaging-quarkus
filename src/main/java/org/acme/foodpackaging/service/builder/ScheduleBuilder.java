@@ -53,5 +53,11 @@ public class ScheduleBuilder {
 
         return schedule;
     }
+
+    public PackagingSchedule updateProductList(PackagingSchedule schedule){
+        List<Product> updatedProductList = productRepository.getProductList(schedule.getJobs());
+        schedule.setProducts(updatedProductList);
+        return schedule;
+    }
 }
 
