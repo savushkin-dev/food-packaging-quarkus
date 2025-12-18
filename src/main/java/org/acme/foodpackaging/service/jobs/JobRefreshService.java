@@ -9,6 +9,8 @@ import org.acme.foodpackaging.repository.jobs.JobRepository;
 
 import java.util.Map;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
+
 @ApplicationScoped
 public class JobRefreshService {
 
@@ -38,11 +40,16 @@ public class JobRefreshService {
                     if (line != null) {
                         line.getJobs().remove(job);
                         job.setLine(null);
+
+                        fixLineJobs(line);
+                        if(line.getFirstUnpinnedIndex()>line.getJobs().size()) {
+                            line.setFirstUnpinnedIndex(line.getJobs().size());
+                            }
+                        }
                     }
                 }
             }
         }
-    }
 
     private void rebuildId() {
         jobRepository.getJobIdMap().clear();
