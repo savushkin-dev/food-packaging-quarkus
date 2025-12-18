@@ -49,6 +49,7 @@ public class JobRefreshService {
                     }
                 }
             }
+        rebuildId();
         }
 
     private void rebuildId() {
