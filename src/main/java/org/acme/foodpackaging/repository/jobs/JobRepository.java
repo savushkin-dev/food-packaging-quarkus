@@ -3,6 +3,7 @@ package org.acme.foodpackaging.repository.jobs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
+import lombok.Setter;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.factory.JobFactory;
@@ -26,15 +27,19 @@ public class JobRepository {
     LoadDataService loadDataService;
     @Inject
     JobDBLoader jobDBLoader;
-
+    @Setter
     @Getter
     private Map<Integer, DbJobRow> dbJobRowMap;
+    @Setter
     @Getter
     private  Map<Integer, Job> jobIdMap;
+    @Setter
     @Getter
     private List<Job> jobs;
+    @Setter
     @Getter
     private LocalDateTime from;
+    @Setter
     @Getter
     private LocalDateTime to;
 
