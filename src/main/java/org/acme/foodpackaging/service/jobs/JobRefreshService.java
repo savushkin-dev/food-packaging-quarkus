@@ -30,7 +30,7 @@ public class JobRefreshService {
                 if (!solution.getJobIdMap().containsKey(snpz)) {
                     DbJobRow row = solution.getDbJobRowMap().get(snpz);
                     if (row != null) {
-                        Job job = jobRepository.createJobById(row.snpz().intValueExact(), solution);
+                        Job job = jobRepository.createJobById(row.snpz().intValueExact(), false, solution);
 
                         solution.getJobs().add(job);
                         solution.getJobIdMap().put(snpz, job);}

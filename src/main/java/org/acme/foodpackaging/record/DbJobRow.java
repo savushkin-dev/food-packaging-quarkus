@@ -4,16 +4,16 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 public record DbJobRow(
-        BigDecimal snpz,       // numeric(12,0)
-        String kmc,
-        String shortName,      // SNM
         Timestamp dti,
+        String kmc,
         Integer np,
-        double mass,
         Integer quantity,      // KOLEV
-        Integer priority,      // UX
-        String krc,
+        double mass,
         Timestamp startProductionDateTime, // PDTN
         Timestamp endDateTime,
-        Integer duration        // numeric(7,2)
+        Integer duration,      // numeric(7,2)
+        BigDecimal snpz,       // numeric(12,0)
+        Integer priority,      // UX
+        String lineId,        // krc
+        String shortName      // SNM
 ) {}

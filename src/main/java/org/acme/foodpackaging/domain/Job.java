@@ -17,68 +17,46 @@ import lombok.Getter;
 import lombok.Setter;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
+@Getter
+@Setter
 @PlanningEntity
 public class Job {
 
-    @Getter
     @PlanningId
     private String id;
-    @Setter
-    @Getter
+    private String f_Id;
     private String lineId;
-    @Setter
-    @Getter
     private String name;
-    @Setter
-    @Getter
+
     private int snpz;
-    @Getter
     private int np;
-    @Getter
     private int quantity;
-    @Getter
-    @Setter
+
     private double mass;
 
-    @Getter
-    @Setter
     private Product product;
-    @Setter
     private Duration duration;
-    @Getter
-    @Setter
     private boolean maintenance;
-    @Getter
-    @Setter
+
     private LocalDateTime minStartTime;
-    @Getter
-    @Setter
     private LocalDateTime idealEndTime;
-    @Getter
-    @Setter
     private LocalDateTime maxEndTime;
 
     /**
      * Higher priority is a higher number.
      */
-    @Getter
     private int priority;
-    @Setter
-    @Getter
+
     @PlanningPin
     private boolean pinned;
 
-    @Setter
-    @Getter
     @InverseRelationShadowVariable(sourceVariableName = "jobs")
     private Line line;
-    @Setter
-    @Getter
+
     @JsonIgnore
     @PreviousElementShadowVariable(sourceVariableName = "jobs")
     private Job previousJob;
-    @Setter
-    @Getter
+
     @JsonIgnore
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
@@ -88,16 +66,12 @@ public class Job {
     /**
      * Start is after cleanup.
      */
-    @Setter
-    @Getter
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime startCleaningDateTime;
-    @Setter
-    @Getter
+
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime startProductionDateTime;
-    @Setter
-    @Getter
+
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime endDateTime;
 
@@ -206,5 +180,4 @@ public class Job {
         var endTime = startProduction == null ? null : startProduction.plus(getDuration());
         setEndDateTime(endTime);
     }
-
 }

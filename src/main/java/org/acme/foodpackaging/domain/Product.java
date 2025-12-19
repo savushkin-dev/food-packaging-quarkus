@@ -9,14 +9,12 @@ import java.time.Duration;
 import java.util.Map;
 
 @Setter
+@Getter
 public class Product {
 
-    @Getter
     @PlanningId
     private String id;
-    @Getter
     private String name;
-    @Getter
     private String krKmc;
     private String type;
     private String glaze;
