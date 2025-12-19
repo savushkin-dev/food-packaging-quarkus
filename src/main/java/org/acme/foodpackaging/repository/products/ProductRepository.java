@@ -43,13 +43,22 @@ public class ProductRepository {
         return result;
     }
 
-    public List<Product> getProductList(List<Job> jobs){
+    public List<Product> getProductList(List<Job> jobs) {
 
         List<Product> productList = jobs.stream()
-                .map(Job::getProduct).distinct().collect(Collectors.toList());
-        productList.add(getMaintenanceProduct());
+                .filter(j -> !j.isMaintenance())
+                .map(Job::getProduct)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Product maintenanceProduct = getMaintenanceProduct();
+        productList.add(maintenanceProduct);
+
+        jobs.stream()
+                .filter(Job::isMaintenance)
+                .forEach(j -> j.setProduct(maintenanceProduct));
 
         cleaningCalculator.cleaningCalculate(productList);
-        return  productList;
+        return productList;
     }
 }
