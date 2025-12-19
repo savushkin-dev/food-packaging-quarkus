@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
+import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.entity.lines.LineEntity;
 import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
@@ -54,13 +55,13 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
     /**
      * Ищет и назначет мимнальное время старта у задач на линии
      */
-    public void initJobListOnLine(List<Line> lines, List<Job> jobs) {
+    public void initJobListOnLine(PackagingSchedule solution) {
 
-        Map<String, List<Job>> jobsByLineId = jobs.stream()
+        Map<String, List<Job>> jobsByLineId = solution.getJobs().stream()
                 .filter(job -> job.getLineId() != null)
                 .collect(Collectors.groupingBy(Job::getLineId));
 
-        for (Line line : lines) {
+        for (Line line : solution.getLines()) {
             List<Job> lineJobs = jobsByLineId.getOrDefault(line.getId(), List.of());
             List<Job> mutableJobs = new ArrayList<>(lineJobs);
 
@@ -70,12 +71,12 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
                 job.setLine(line);
             }
         }
-        pinnAllLines(lines);
+        pinnAllLines(solution.getLines());
         //  Найти конец самой длинной линии
-        LocalDateTime maxEndTime = findMaxEndTime(lines);
+        LocalDateTime maxEndTime = findMaxEndTime(solution.getLines());
 
         // Проставяет старт всем линиям
-        for (Line line : lines) {
+        for (Line line : solution.getLines()) {
             initLineStartDateTime(line, maxEndTime);
             fixLineJobs(line);
         }
