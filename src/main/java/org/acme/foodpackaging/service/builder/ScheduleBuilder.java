@@ -11,7 +11,6 @@ import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @ApplicationScoped
@@ -32,13 +31,8 @@ public class ScheduleBuilder {
 
     public PackagingSchedule buildSchedule(LocalDate startDate) {
 
-        LocalDate endDate = startDate.plusDays(2);
-        LocalDateTime minStart = startDate.minusDays(1).atStartOfDay();
-        LocalDateTime idealEnd = endDate.atStartOfDay().plusHours(2);
-        LocalDateTime maxEnd = endDate.atStartOfDay().plusHours(3);
-
         PackagingSchedule schedule = new PackagingSchedule();
-        schedule.setWorkCalendar(new WorkCalendar(startDate, endDate, minStart, idealEnd, maxEnd));
+        schedule.setWorkCalendar(new WorkCalendar(startDate));
 
         schedule.setDbJobRowMap(jobRepository.getDbJobRowMap(
                 schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
@@ -48,15 +42,11 @@ public class ScheduleBuilder {
         );
 
         jobRepository.initSolutionJobList(schedule);
-
         List<Line> lines = lineRepository.getLines();
         List<Product> products = productRepository.getProductList(schedule.getJobs());
-
-        lineRepository.initJobListOnLine(lines, schedule.getJobs());
-
         schedule.setLines(lines);
-        schedule.setJobs(schedule.getJobs());
         schedule.setProducts(products);
+        lineRepository.initJobListOnLine(schedule);
 
         return schedule;
     }
