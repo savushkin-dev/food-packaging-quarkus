@@ -43,8 +43,8 @@ public class JobService {
                         .snpz(job.getSnpz())
                         .build();
 
-                if (job.getFId() != null) {
-                    OeePevEntity existing = oeePevRepository.findByFId(job.getFId());
+                if (!job.getId().startsWith("MAINTENANCE")) {
+                    OeePevEntity existing = oeePevRepository.findByFId(Long.parseLong(job.getId()));
                     if (existing != null) {
                         existing.setKrc(job.getLine().getId());
                         existing.setPdtn(job.getStartProductionDateTime());
@@ -83,7 +83,7 @@ public class JobService {
                         existing.setReason(null);
                         existing.setNote(job.getName());
 
-                        oeePevRepository.persist(existing);
+//                        oeePevRepository.persist(existing);
                     } else {
                         OeePevEntity entityForInsert = OeePevEntity.builder()
                                 .krc(job.getLine().getId())
@@ -99,20 +99,20 @@ public class JobService {
                                 .snpz(job.getSnpz())
                                 .build();
 
-                        oeePevRepository.persist(entityForInsert);
+//                        oeePevRepository.persist(entityForInsert);
                     }
                 }
-
-                vzPMCRepository.updateBySnpz(
-                        job.getSnpz(),
-                        job.getStartProductionDateTime(),
-                        job.getEndDateTime(),
-                        (int) Duration.between(
-                                job.getStartProductionDateTime(),
-                                job.getEndDateTime()
-                        ).toMinutes(),
-                        job.getLine().getId()
-                );
+                System.out.println();
+//                vzPMCRepository.updateBySnpz(
+//                        job.getSnpz(),
+//                        job.getStartProductionDateTime(),
+//                        job.getEndDateTime(),
+//                        (int) Duration.between(
+//                                job.getStartProductionDateTime(),
+//                                job.getEndDateTime()
+//                        ).toMinutes(),
+//                        job.getLine().getId()
+//                );
 
             }
         }

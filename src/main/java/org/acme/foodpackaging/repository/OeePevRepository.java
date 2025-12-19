@@ -13,10 +13,9 @@ public class OeePevRepository implements PanacheRepository<OeePevEntity> {
         return find("fId", fId).firstResult();
     }
 
-    public OeePevEntity findBySnpz(long snpz) {
+    public OeePevEntity findBySnpz(int snpz) {
         return find("snpz", snpz).firstResult();
     }
-
 
 
 }
