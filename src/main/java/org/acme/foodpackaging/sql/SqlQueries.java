@@ -6,21 +6,49 @@ public class SqlQueries {
 
     }
 
-    public static final String LOAD_JOBS_db =  """
-SELECT
-   v.SNPZ, v.KMC, m.SNM, v.DTI, v.NP,
-   v.MASSA, v.KOLEV, v.UX, v.KRC,
-   v.PDTN, v.PDTO, v.PDUR
-FROM MES.dbo.BD_VZPMC v
-JOIN MES.dbo.NS_MC m ON v.KMC = m.KMC
-WHERE v.DTI >= CAST(?1 AS datetime)
-    AND v.DTI <  CAST(?2 AS datetime)
-    AND v.KSK = ?3
-    AND v.F_DEL = 0
-    AND v.NP > 0
-ORDER BY v.KRC, v.PDTN
-
+    public static final String LOAD_JOBS_DB =  """
+ SELECT
+ v.DTI, v.KMC, v.NP, v.KOLEV, v.MASSA, v.PDTN,
+ v.PDTO, v.PDUR, v.SNPZ, v.UX, v.KRC, m.SNM
+ FROM [MES].[dbo].[BD_VZPMC] AS v
+    JOIN [MES].[dbo].[NS_MC] AS m
+      ON v.KMC = m.KMC
+WHERE
+   v.DTI >= CAST(?1 AS datetime)
+   AND v.DTI <  CAST(?2 AS datetime)
+   AND v.KSK = ?3
+   AND v.F_DEL = 0
+   AND v.NP > 0
+   AND (
+     v.PDTN IS NULL
+     OR v.PDTN >= CAST(?4 AS datetime)
+     )
+   ORDER BY
+     v.KRC, v.PDTN
 """;
+    public static final String LOAD_MAINTENANCE_DB = """
+    SELECT
+        v.F_ID, v.KRC,
+        v.PDTN, v.PDTO,
+        v.PDUR, v.SNPZ, v.NOTE
+    FROM [MES].[dbo].[OEE_PEV] v
+    WHERE
+        (
+            v.PDTN >= ?1
+            AND v.PDTN < ?2
+        )
+        OR
+        (
+            v.PDTO >= ?3
+            AND v.PDTO < ?4
+        )
+        AND v.SNPZ = 0
+    ORDER BY
+        v.KRC,
+        v.PDTN
+""";
+
+
 
     public static final String LOAD_JOBS = """
     SELECT v.KSK, v.SNPZ, v.DTI, v.DTM, v.KMC, v.EMK, v.KOLMV, v.MASSA, v.KOLEV, v.NP, v.UX,

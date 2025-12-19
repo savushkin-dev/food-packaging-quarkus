@@ -12,27 +12,22 @@ import ai.timefold.solver.core.api.domain.variable.PlanningListVariable;
 import lombok.Getter;
 import lombok.Setter;
 
+@Setter
+@Getter
 @PlanningEntity
 public class Line {
 
-    @Getter
     @PlanningId
     private String id;
-    @Getter
     private String name;
-    @Getter
     private String operator;
-    @Setter
-    @Getter
+
     private LocalDateTime startDateTime;
 
-    @Setter
-    @Getter
     @JsonIgnore
     @PlanningListVariable
     private List<Job> jobs;
 
-    @Setter
     private int firstUnpinnedIndex;
 
     // No-arg constructor required for Timefold

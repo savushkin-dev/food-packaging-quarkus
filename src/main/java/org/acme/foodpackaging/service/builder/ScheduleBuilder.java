@@ -39,7 +39,14 @@ public class ScheduleBuilder {
 
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate, endDate, minStart, idealEnd, maxEnd));
-        schedule.setDbJobRowMap(jobRepository.getDbJobRowMap(startDate));
+
+        schedule.setDbJobRowMap(jobRepository.getDbJobRowMap(
+                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
+        );
+        schedule.setDbMaintenanceRowMap(jobRepository.getDbMaintenanceRowMap(
+                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
+        );
+
         jobRepository.initSolutionJobList(schedule);
 
         List<Line> lines = lineRepository.getLines();
