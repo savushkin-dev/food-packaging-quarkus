@@ -78,33 +78,9 @@ public class ScheduleUtils {
             line.setFirstUnpinnedIndex(line.getJobs().size());
         }
     }
-    public static void unPinnAllLines(List<Line> lines){
-        for(Line line : lines){
+    public static void unPinnAllLines(List<Line> lines) {
+        for (Line line : lines) {
             line.setFirstUnpinnedIndex(0);
         }
     }
-    /**
-     * Удаляет неназначенные задачи
-     */
-    public static void removeJobsWithoutLine(List<Job> jobs) {
-        if (jobs == null || jobs.isEmpty()) {
-            return;
-        }
-        jobs.removeIf(job -> job.getLineId() == null);
-    }
-    /**
-     * Сортирует линии по названию
-     */
-    public static final Pattern LINE_NUMBER = Pattern.compile("(\\d+)");
-
-    public static int extractLineNumber(String name) {
-        if (name == null) return Integer.MAX_VALUE;
-
-        Matcher m = LINE_NUMBER.matcher(name);
-        if (m.find()) {
-            return Integer.parseInt(m.group(1));
-        }
-        return Integer.MAX_VALUE;
-    }
-
 }
