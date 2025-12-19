@@ -1,16 +1,23 @@
 package org.acme.foodpackaging.repository.products;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.NS_McEntity;
+import jakarta.inject.Inject;
+import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.entity.products.NS_McEntity;
 import org.acme.foodpackaging.entity.products.ProductEntity;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 
 @ApplicationScoped
 public class ProductRepository {
+
+    @Inject
+    CleaningCalculatorService cleaningCalculator;
 
     public Map<String, Product> loadProducts() {
 
@@ -27,12 +34,22 @@ public class ProductRepository {
 
             Product product = new Product(
                     n.shortName,
-                    p.kmc, n.krkmc, p.ean13,
+                    p.kmc, n.krkmc,
                     p.type, p.glaze, p.mass, p.filling
             );
 
             result.put(p.kmc, product);
         }
         return result;
+    }
+
+    public List<Product> getProductList(List<Job> jobs){
+
+        List<Product> productList = jobs.stream()
+                .map(Job::getProduct).distinct().collect(Collectors.toList());
+        productList.add(getMaintenanceProduct());
+
+        cleaningCalculator.cleaningCalculate(productList);
+        return  productList;
     }
 }
