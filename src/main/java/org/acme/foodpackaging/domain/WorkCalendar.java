@@ -28,7 +28,6 @@ public class WorkCalendar {
         this.fromDate = fromDate.minusDays(1);
         this.toDate = fromDate.plusDays(3);
         this.minStartDateTime = fromDate.atStartOfDay();
-        this.idealEndDateTime = fromDate.atStartOfDay().plusHours(2);
         this.maxEndDateTime = toDate.atStartOfDay().plusHours(7);
     }
 
