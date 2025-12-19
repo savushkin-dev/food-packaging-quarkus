@@ -24,6 +24,10 @@ public class WorkCalendar {
         this.toDate = toDate;
     }
 
+    public WorkCalendar(LocalDate fromDate){
+        this.fromDate = fromDate.minusDays(1);
+        this.toDate = fromDate.plusDays(3);
+    }
     public WorkCalendar(LocalDate fromDate, LocalDate toDate, LocalDateTime minStartDateTime,
                         LocalDateTime idealEndDateTime, LocalDateTime maxEndDateTime) {
         this.fromDate = fromDate;

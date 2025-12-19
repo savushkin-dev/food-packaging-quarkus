@@ -5,8 +5,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.persistence.scheduleSaving.SolutionExport;
-import org.acme.foodpackaging.persistence.scheduleSaving.SolutionImport;
+import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
@@ -15,7 +15,6 @@ import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -34,9 +33,9 @@ public class LoadDataService {
     @Inject
     CleaningCalculatorService cleaningCalculator;
     @Inject
-    SolutionImport solutionImport;
-    @Inject
     JobRefreshService jobRefreshService;
+    @Inject
+    JobRepository jobRepository;
 
     @Getter
     private ConcurrentMap<String, String> lines;
@@ -46,6 +45,8 @@ public class LoadDataService {
     private Map<String, Map<String, Integer>> lineSpeeds;
     @Getter
     private List<CleaningRule> cleaningRules;
+    @Getter
+    private List<DbJobRow> dbJobRowList;
 
     @PostConstruct
     void init() {
@@ -53,14 +54,6 @@ public class LoadDataService {
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
         SpeedCacheUtils.init(speedRepository.createSpeedMap());
-    }
-
-    public PackagingSchedule loadScheduleFromDb(LocalDate date) {
-        return solutionImport.importFromDb(date);
-    }
-
-    public void refreshJobsNextDay(PackagingSchedule schedule) {
-        jobRefreshService.refreshJobsNextDay(schedule);
     }
 }
 
