@@ -3,18 +3,16 @@ package org.acme.foodpackaging.service.builder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.dto.LoadDTO;
 import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.repository.lines.LineRepository;
+import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 
 @ApplicationScoped
 public class ScheduleBuilder {
@@ -24,37 +22,48 @@ public class ScheduleBuilder {
     @Inject
     JobRepository jobRepository;
     @Inject
+    LineRepository lineRepository;
+    @Inject
+    ProductRepository productRepository;
+    @Inject
     LineFactory lineFactory;
     @Inject
     CleaningCalculatorService cleaningCalculatorService;
 
-    public PackagingSchedule buildSchedule(LoadDTO loadDTO, Map<String, LocalDateTime> lineStartsTime) {
+    public PackagingSchedule buildSchedule(LocalDate startDate) {
 
-        LocalDate startDate = loadDTO.getStartDate();
-        LocalDate endDate = loadDTO.getEndDate();
-        LocalDateTime minStart = Collections.min(lineStartsTime.values());
-        LocalDateTime idealEnd = loadDTO.getIdealEndDateTime();
-        LocalDateTime maxEnd = loadDTO.getMaxEndDateTime();
+        LocalDate endDate = startDate.plusDays(2);
+        LocalDateTime minStart = startDate.minusDays(1).atStartOfDay();
+        LocalDateTime idealEnd = endDate.atStartOfDay().plusHours(2);
+        LocalDateTime maxEnd = endDate.atStartOfDay().plusHours(3);
 
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate, endDate, minStart, idealEnd, maxEnd));
 
-        List<Line> lines = lineStartsTime.entrySet().stream()
-                .map(e -> lineFactory.createLine(e.getKey(), e.getValue()))
-                .toList();
+        schedule.setDbJobRowMap(jobRepository.getDbJobRowMap(
+                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
+        );
+        schedule.setDbMaintenanceRowMap(jobRepository.getDbMaintenanceRowMap(
+                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
+        );
+
+        jobRepository.initSolutionJobList(schedule);
+
+        List<Line> lines = lineRepository.getLines();
+        List<Product> products = productRepository.getProductList(schedule.getJobs());
+
+        lineRepository.initJobListOnLine(lines, schedule.getJobs());
+
         schedule.setLines(lines);
+        schedule.setJobs(schedule.getJobs());
+        schedule.setProducts(products);
 
-        List<Job> jobs = jobRepository.loadJobs(startDate, minStart, idealEnd, maxEnd);
-        schedule.setJobs(jobs);
+        return schedule;
+    }
 
-        Set<Product> productSet = jobs.stream()
-                .map(Job::getProduct)
-                .collect(Collectors.toSet());
-        schedule.setProducts(new ArrayList<>(productSet));
-        schedule.getProducts().add(getMaintenanceProduct());
-
-        cleaningCalculatorService.cleaningCalculate(schedule.getProducts());
-
+    public PackagingSchedule updateProductList(PackagingSchedule schedule){
+        List<Product> updatedProductList = productRepository.getProductList(schedule.getJobs());
+        schedule.setProducts(updatedProductList);
         return schedule;
     }
 }

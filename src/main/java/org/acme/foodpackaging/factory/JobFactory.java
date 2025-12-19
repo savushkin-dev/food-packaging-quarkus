@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @ApplicationScoped
@@ -14,15 +15,13 @@ public class JobFactory {
     @Inject
     LoadDataService loadDataService;
 
-    public Job createJob(String id, String jobName, int snpz, int np, Product product,
-                         double mass, int quantity, int priority,
-                         LocalDateTime minStartDateTime,
+    public Job createJob(String id, String lineId, int snpz, int np, String jobName, Product product, double mass,
+            int quantity, int duration, LocalDateTime minStartDateTime,
                          LocalDateTime idealEndDateTime,
-                         LocalDateTime maxEndDateTime) {
+                         LocalDateTime maxEndDateTime,  int priority, LocalDateTime startProductionDateTime) {
 
-        Job job = new Job(id, jobName, snpz, np, product, mass, quantity,
-                minStartDateTime, idealEndDateTime, maxEndDateTime, priority, false);
-        return job;
+        return new Job(id, lineId, snpz, np, jobName, product, mass, quantity, Duration.ofMinutes(duration),
+                minStartDateTime, idealEndDateTime, maxEndDateTime, priority, null, startProductionDateTime);
     }
 
     public String nameCleaner(String input) {

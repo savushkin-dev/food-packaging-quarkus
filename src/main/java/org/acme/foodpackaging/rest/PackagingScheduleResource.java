@@ -17,21 +17,19 @@ import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
 import org.acme.foodpackaging.dto.PinRequestDTO;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
-import org.acme.foodpackaging.persistence.load.excelDataExport.ExcelExporter;
-import org.acme.foodpackaging.persistence.load.excelDataExport.PlanFactAnalysis;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static io.smallrye.config._private.ConfigLogging.log;
@@ -61,6 +59,10 @@ public class PackagingScheduleResource {
     LoadDataService loadDataService;
     @Inject
     UploadDataService uploadDataService;
+    @Inject
+    JobRepository jobRepository;
+    @Inject
+    JobRefreshService jobRefreshService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -113,93 +115,35 @@ public class PackagingScheduleResource {
     }
 
     @POST
-    @Path("load")
+    @Path("init")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response load(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public List<DbJobRow> init(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
         LocalDate startDate = loadDTO.getStartDate();
 
-        try {
-            PackagingSchedule schedule = null;
+            PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
+            solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+            repository.writeForSession(sessionId, schedule);
 
-            if (loadDTO.getFindSolvedInDb()) {
-                schedule = loadDataService.loadScheduleFromDb(startDate);
+            if (loadDataService == null) {
+                throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
             }
-            if (schedule != null) {
-                solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_SHADOW_VARIABLES_ONLY);
-                repository.writeForSession(sessionId, schedule);
 
-                return Response.ok(Map.of(
-                        "message", "Saved schedule imported for date: " + startDate
-                )).build();
-            }
-            PackagingSchedule newSchedule = buildNewSchedule(loadDTO);
-            repository.writeForSession(sessionId, newSchedule);
-
-            return Response.ok(Map.of(
-                    "message", (loadDTO.getFindSolvedInDb()
-                            ? "No saved schedule found — new data generated for date: "
-                            : "New schedule generated (forced) for date: ") + startDate
-            )).build();
-
-        } catch (DateTimeParseException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
-                    .build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed to load schedule: " + e.getMessage()))
-                    .build();
-        }
+            return jobRepository.getDbJobRowList(schedule.getDbJobRowMap());
     }
 
     @POST
-    @Path("loadpday")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response loadpday(LoadDTO loadDTO) {
+    @Path("/selection")
+    public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionDTO dto) {
 
-        LocalDate startDate = loadDTO.getStartDate();
-        LocalDate endDate = loadDTO.getEndDate();
+        PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
+                repository.readForSession(sessionId));
 
-        try {
-            Map<String, Map<String, Object>> res = uploadDataService.loadPDay(startDate, endDate);
-            return Response.ok(res).build();
+        solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId,updatedSchedule);
 
-        } catch (DateTimeParseException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
-                    .build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed to load production order: " + e.getMessage()))
-                    .build();
-        }
-    }
-
-    @POST
-    @Path("updatepday")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response updatepday(Map<String, LocalDate> mapsnpz) {
-        try {
-            uploadDataService.updatePDay(mapsnpz);
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Jobs DTF updates successfully"
-            )).build();
-
-        } catch (DateTimeParseException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Invalid date format. Please use YYYY-MM-DD"))
-                    .build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed to update jobs: " + e.getMessage()))
-                    .build();
-        }
+        return Response.ok().build();
     }
 
     @POST
@@ -267,7 +211,6 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        loadDataService.refreshJobsNextDay(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
@@ -439,74 +382,6 @@ public class PackagingScheduleResource {
                 "message", "Line " + line.getId() + " updated successfully."
         )).build();
     }
-    /**
-     * Сохраняет план в бд в формате json строки
-     */
-    @POST
-    @Path("saveToDb")
-    public Response saveToDb(@HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule bestSolution = repository.readForSession(sessionId);
-        if (bestSolution == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "No solution for session"))
-                    .build();
-        }
-        uploadDataService.saveSchedule(bestSolution);
-        return Response.ok(Map.of("message", "Saved successfully")).build();
-    }
-    /**
-     * Удаляет план из бд
-     */
-    @POST
-    @Path("removeSolution")
-    public Response remove(@HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-        if (schedule == null) return Response.status(400).entity("Schedule not loaded").build();
-
-        LocalDate date = schedule.getWorkCalendar().getFromDate();
-        int rows = uploadDataService.deleteSchedule(date);
-
-        return Response.ok(Map.of("rows", rows, "date", date.toString())).build();
-    }
-    @POST
-    @Path("export")
-    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    public Response export(@HeaderParam("X-Session-Id") String sessionId) {
-        try {
-            PackagingSchedule schedule = repository.readForSession(sessionId);
-
-            if (schedule == null) {
-                return Response.status(Response.Status.NO_CONTENT)
-                        .entity(Map.of("status", "error", "message", "No schedule available to export."))
-                        .build();
-            }
-            System.out.println(sessionId);
-            PlanFactAnalysis factAnalysis = new PlanFactAnalysis(
-                    schedule.getWorkCalendar().getFromDate().toString()
-            );
-            factAnalysis.excelWrite(schedule.getJobs());
-            File planFactFile = factAnalysis.getExportFile();
-
-            if (planFactFile != null && planFactFile.exists()) {
-                byte[] fileContent = Files.readAllBytes(planFactFile.toPath());
-                return Response.ok(fileContent)
-                        .header("Content-Disposition", "attachment; filename=\"" + planFactFile.getName() + "\"")
-                        .build();
-            }
-
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Export completed successfully. Excel file saved in resources."
-            )).build();
-
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("status", "error", "message", "Export error: " + e.getMessage()))
-                    .build();
-        }
-    }
 
     @PUT
     @Consumes({MediaType.APPLICATION_JSON})
@@ -524,15 +399,4 @@ public class PackagingScheduleResource {
         return sessionId != null ? sessionId : "default";
     }
 
-    private PackagingSchedule buildNewSchedule(LoadDTO loadDTO) {
-        return scheduleBuilder.buildSchedule(
-                loadDTO,
-                loadDTO.toLineStartDateTimeMap()
-        );
-    }
-
-    public File exportTimeCompare(String date, PackagingSchedule solution) {
-        ExcelExporter exporter = new ExcelExporter(dbLabelingUrl, date, solution.getJobs());
-        return exporter.getExportedFile();
-    }
 }
