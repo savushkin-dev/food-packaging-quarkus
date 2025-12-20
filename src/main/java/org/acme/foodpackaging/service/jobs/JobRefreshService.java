@@ -54,7 +54,7 @@ public class JobRefreshService {
                 }
             }
         rebuildId(solution);
-        solution.setProducts(productRepository.getProductList(solution.getJobs()));
+        solution.setProducts(productRepository.getProductList(solution));
         return solution;
         }
 
