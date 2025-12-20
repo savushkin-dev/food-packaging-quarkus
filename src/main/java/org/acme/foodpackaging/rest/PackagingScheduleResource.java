@@ -26,6 +26,7 @@ import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.jobs.JobSaveService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -63,6 +64,8 @@ public class PackagingScheduleResource {
     JobRepository jobRepository;
     @Inject
     JobRefreshService jobRefreshService;
+    @Inject
+    JobSaveService jobSaveService;
 
     @ConfigProperty(name = "dbLabeling.url")
     String dbLabelingUrl;
@@ -382,6 +385,31 @@ public class PackagingScheduleResource {
                 "message", "Line " + line.getId() + " updated successfully."
         )).build();
     }
+
+    /**
+     * Сохраняет план
+     */
+    @POST
+    @Path("save")
+    public Response save(@HeaderParam("X-Session-Id") String sessionId) {
+
+        try {
+            PackagingSchedule bestSolution = repository.readForSession(sessionId);
+            if (bestSolution == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(Map.of("error", "No solution for session"))
+                        .build();
+            }
+            jobSaveService.saveJobsByType(bestSolution);
+            return Response.ok(Map.of("message", "Saved successfully")).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Saving error: " + e.getMessage()))
+                    .build();
+        }
+
+    }
+
 
     @PUT
     @Consumes({MediaType.APPLICATION_JSON})

@@ -75,6 +75,10 @@ public class Job {
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime endDateTime;
 
+    @Setter
+    @Getter
+    private Long fId;
+
     // No-arg constructor required for Timefold
     public Job() {
     }
