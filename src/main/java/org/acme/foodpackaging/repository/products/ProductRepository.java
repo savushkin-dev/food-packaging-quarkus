@@ -3,12 +3,16 @@ package org.acme.foodpackaging.repository.products;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.entity.products.NS_McEntity;
 import org.acme.foodpackaging.entity.products.ProductEntity;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
+import org.acme.foodpackaging.record.DbJobRow;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
@@ -18,6 +22,8 @@ public class ProductRepository {
 
     @Inject
     CleaningCalculatorService cleaningCalculator;
+    @Inject
+    LoadDataService loadDataService;
 
     public Map<String, Product> loadProducts() {
 
@@ -43,22 +49,39 @@ public class ProductRepository {
         return result;
     }
 
-    public List<Product> getProductList(List<Job> jobs) {
+    public List<Product> getProductList(PackagingSchedule solution) {
 
-        List<Product> productList = jobs.stream()
-                .filter(j -> !j.isMaintenance())
-                .map(Job::getProduct)
-                .distinct()
-                .collect(Collectors.toList());
+        List<Product> productList =
+                solution.getDbJobRowMap().values().stream()
+                        .map(DbJobRow::kmc)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .map(kmc -> {
+                            Product product = loadDataService
+                                    .getProducts()
+                                    .get(kmc);
 
+                            if (product == null) {
+                                throw new IllegalStateException(
+                                        "Product not found for KMC: " + kmc
+                                );
+                            }
+                            return product;
+                        })
+                        .collect(Collectors.toCollection(ArrayList::new));
+
+        // --- Maintenance ---
         Product maintenanceProduct = getMaintenanceProduct();
         productList.add(maintenanceProduct);
 
-        jobs.stream()
-                .filter(Job::isMaintenance)
-                .forEach(j -> j.setProduct(maintenanceProduct));
+        if (!solution.getJobs().isEmpty()) {
+            solution.getJobs().stream()
+                    .filter(Job::isMaintenance)
+                    .forEach(j -> j.setProduct(maintenanceProduct));
+        }
 
         cleaningCalculator.cleaningCalculate(productList);
         return productList;
     }
+
 }
