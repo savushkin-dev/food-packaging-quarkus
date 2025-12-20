@@ -56,28 +56,36 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
      */
     public void initJobListOnLine(PackagingSchedule solution) {
 
-        Map<String, List<Job>> jobsByLineId = solution.getJobs().stream()
-                .filter(job -> job.getLineId() != null)
-                .collect(Collectors.groupingBy(Job::getLineId));
-
-        for (Line line : solution.getLines()) {
-            List<Job> lineJobs = jobsByLineId.getOrDefault(line.getId(), List.of());
-            List<Job> mutableJobs = new ArrayList<>(lineJobs);
-
-            line.setJobs(mutableJobs);
-
-            for (Job job : mutableJobs) {
-                job.setLine(line);
+        if(solution.getJobs().isEmpty()){
+            LocalDateTime startLineDateTime = solution.getWorkCalendar().getMinStartDateTime().plusHours(8);
+            for(Line line : solution.getLines()){
+                line.setStartDateTime(startLineDateTime);
             }
         }
-        pinnAllLines(solution.getLines());
-        //  Найти конец самой длинной линии
-        LocalDateTime maxEndTime = findMaxEndTime(solution.getLines());
+        else {
+            Map<String, List<Job>> jobsByLineId = solution.getJobs().stream()
+                    .filter(job -> job.getLineId() != null)
+                    .collect(Collectors.groupingBy(Job::getLineId));
 
-        // Проставяет старт всем линиям
-        for (Line line : solution.getLines()) {
-            initLineStartDateTime(line, maxEndTime);
-            fixLineJobs(line);
+            for (Line line : solution.getLines()) {
+                List<Job> lineJobs = jobsByLineId.getOrDefault(line.getId(), List.of());
+                List<Job> mutableJobs = new ArrayList<>(lineJobs);
+
+                line.setJobs(mutableJobs);
+
+                for (Job job : mutableJobs) {
+                    job.setLine(line);
+                }
+            }
+            pinnAllLines(solution.getLines());
+            //  Найти конец самой длинной линии
+            LocalDateTime maxEndTime = findMaxEndTime(solution.getLines());
+
+            // Проставяет старт всем линиям
+            for (Line line : solution.getLines()) {
+                initLineStartDateTime(line, maxEndTime);
+                fixLineJobs(line);
+            }
         }
     }
 
