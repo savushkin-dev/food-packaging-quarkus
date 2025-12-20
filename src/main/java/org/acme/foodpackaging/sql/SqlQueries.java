@@ -19,6 +19,7 @@ WHERE
    AND v.KSK = ?3
    AND v.F_DEL = 0
    AND v.NP > 0
+   AND m.massa<0.1
    AND (
      v.PDTN IS NULL
      OR v.PDTN >= CAST(?4 AS datetime)
@@ -43,6 +44,7 @@ WHERE
             AND v.PDTO < ?4
         )
         AND v.SNPZ = 0
+        AND v.F_DEL = 0
     ORDER BY
         v.KRC,
         v.PDTN
