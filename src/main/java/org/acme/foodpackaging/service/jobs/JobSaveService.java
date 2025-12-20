@@ -12,7 +12,7 @@ import org.acme.foodpackaging.repository.VzPMCRepository;
 import java.time.Duration;
 
 @ApplicationScoped
-public class JobService {
+public class JobSaveService {
 
     @Inject
     VzPMCRepository vzPMCRepository;
@@ -81,9 +81,9 @@ public class JobService {
                         ).toMinutes());
                         existing.setEvtype(null);
                         existing.setReason(null);
-                        existing.setNote(job.getName());
+                        existing.setNote("Мойка, переналадка");
 
-//                        oeePevRepository.persist(existing);
+                        oeePevRepository.persist(existing);
                     } else {
                         OeePevEntity entityForInsert = OeePevEntity.builder()
                                 .krc(job.getLine().getId())
@@ -95,24 +95,24 @@ public class JobService {
                                 ).toMinutes())
                                 .evtype(null)
                                 .reason(null)
-                                .note(job.getName())
+                                .note("Мойка, переналадка")
                                 .snpz(job.getSnpz())
                                 .build();
 
-//                        oeePevRepository.persist(entityForInsert);
+                        oeePevRepository.persist(entityForInsert);
                     }
                 }
-                System.out.println();
-//                vzPMCRepository.updateBySnpz(
-//                        job.getSnpz(),
-//                        job.getStartProductionDateTime(),
-//                        job.getEndDateTime(),
-//                        (int) Duration.between(
-//                                job.getStartProductionDateTime(),
-//                                job.getEndDateTime()
-//                        ).toMinutes(),
-//                        job.getLine().getId()
-//                );
+
+                vzPMCRepository.updateBySnpz(
+                        job.getSnpz(),
+                        job.getStartProductionDateTime(),
+                        job.getEndDateTime(),
+                        (int) Duration.between(
+                                job.getStartProductionDateTime(),
+                                job.getEndDateTime()
+                        ).toMinutes(),
+                        job.getLine().getId()
+                );
 
             }
         }
