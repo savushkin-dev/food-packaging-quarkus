@@ -34,6 +34,7 @@ WHERE
         v.PDUR, v.SNPZ, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
+      v.SNPZ = 0 AND (
         (
             v.PDTN >= ?1
             AND v.PDTN < ?2
