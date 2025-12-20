@@ -60,6 +60,12 @@ public class ScheduleUtils {
         line.setStartDateTime(lineStartDateTime);
     }
     /**
+     * Меняет максимальное время завершения работы линии
+     */
+    public static void setLineMaxEndDateTime(Line line, LocalDateTime lineMaxEndDateTime) {
+        line.setMaxEndTime(lineMaxEndDateTime);
+    }
+    /**
      * Закрепляет/Открепляет весь план
      */
     public static void pinnAllLines(List<Line> lines) {

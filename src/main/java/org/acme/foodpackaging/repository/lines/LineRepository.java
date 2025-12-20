@@ -57,6 +57,7 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             LocalDateTime startLineDateTime = solution.getWorkCalendar().getMinStartDateTime().plusHours(8);
             for(Line line : solution.getLines()){
                 line.setStartDateTime(startLineDateTime);
+                line.setMaxEndTime(startLineDateTime.plusDays(1).toLocalDate().atStartOfDay().plusHours(3));
             }
         }
         else {
@@ -74,16 +75,34 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
                     job.setLine(line);
                 }
             }
-        }
-        pinnAllLines(solution.getLines());
-        //  Конец самой длинной линии
-        LocalDateTime maxEndTime = findMaxEndTime(solution.getLines());
+            pinnAllLines(solution.getLines());
+            //  Найти конец самой длинной линии
+            LocalDateTime lineEndTime = findMaxEndTime(solution.getLines());
 
-        // Проставяет старт всем линиям
-        for (Line line : solution.getLines()) {
+            // Проставяет старт всем линиям
+            for (Line line : solution.getLines()) {
 
-            initLineStartDateTime(line, maxEndTime);
-            line.getJobs().sort(Comparator.comparing(Job::getStartProductionDateTime));
+                initLineStartDateTime(line, lineEndTime);
+
+                List<Job> jobs = line.getJobs();
+                if (jobs == null || jobs.isEmpty()) {
+                    continue;
+                }
+
+                jobs.sort(Comparator.comparing(
+                        Job::getStartProductionDateTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ));
+
+                fixLineJobs(line);
+
+                Job lastJob = jobs.getLast();
+                if (lastJob.getEndDateTime() != null) {
+                    line.setMaxEndTime(
+                            lastJob.getEndDateTime().plusHours(20)
+                    );
+                }
+            }
         }
     }
 

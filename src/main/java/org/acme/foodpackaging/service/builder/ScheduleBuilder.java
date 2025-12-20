@@ -38,6 +38,7 @@ public class ScheduleBuilder {
         schedule.setLines(lines);
         schedule.setProducts(products);
         lineRepository.initJobListOnLine(schedule);
+        schedule.setDateForEmptySolution(startDate);
 
         return schedule;
     }
