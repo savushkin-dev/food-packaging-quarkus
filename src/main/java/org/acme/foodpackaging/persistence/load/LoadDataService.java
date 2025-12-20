@@ -12,8 +12,6 @@ import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
-import org.acme.foodpackaging.service.jobs.JobRefreshService;
-import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
 import java.util.List;
 import java.util.Map;
