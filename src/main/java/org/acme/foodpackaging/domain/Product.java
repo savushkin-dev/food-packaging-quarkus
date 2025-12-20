@@ -7,26 +7,21 @@ import lombok.Setter;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 
+@Setter
+@Getter
 public class Product {
 
-    @Getter
     @PlanningId
     private String id;
-    @Setter
-    @Getter
     private String name;
-    @Setter
-    @Getter
     private String krKmc;
-    private String ean13;
-    @Setter
     private String type;
     private String glaze;
     private String filling;
     private String curdMass;
     /** The map key is previous product on assembly line. */
-    @Setter
     @JsonIgnore
     private Map<Product, Duration> cleaningDurations;
 
@@ -38,11 +33,10 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String name, String id, String krKmc, String ean13,  String type, String glaze, String curdMass, String filling ) {
+    public Product(String name, String id, String krKmc,  String type, String glaze, String curdMass, String filling ) {
         this.name = name;
         this.id = id;
         this.krKmc = krKmc;
-        this.ean13 = ean13;
         this.type = type;
         this.glaze = glaze;
         this.curdMass = curdMass;
@@ -62,7 +56,6 @@ public class Product {
         }
         return cleanupDuration;
     }
-
     // ************************************************************************
     // Getters and setters
     // ************************************************************************
