@@ -66,7 +66,7 @@ public class PackagingScheduleResource {
     JobRefreshService jobRefreshService;
     @Inject
     JobSaveService jobSaveService;
-    
+
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
