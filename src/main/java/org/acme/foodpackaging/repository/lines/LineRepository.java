@@ -51,7 +51,6 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
                 ))
                 .toList();
     }
-
     /**
      * Ищет и назначет мимнальное время старта у задач на линии
      */
