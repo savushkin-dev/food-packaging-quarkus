@@ -23,6 +23,7 @@ public class Line {
     private String operator;
 
     private LocalDateTime startDateTime;
+    private LocalDateTime maxEndTime;
 
     @JsonIgnore
     @PlanningListVariable
