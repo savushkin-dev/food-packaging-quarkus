@@ -34,24 +34,23 @@ WHERE
         v.PDUR, v.SNPZ, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
-      v.SNPZ = 0 AND (
-        (
-            v.PDTN >= ?1
-            AND v.PDTN < ?2
-        )
-        OR
-        (
-            v.PDTO >= ?3
-            AND v.PDTO < ?4
-        )
-        AND v.SNPZ = 0
+        v.SNPZ = 0
         AND v.F_DEL = 0
+        AND (
+            (
+                v.PDTN >= ?1
+                AND v.PDTN < ?2
+            )
+            OR
+            (
+                v.PDTO >= ?3
+                AND v.PDTO < ?4
+            )
+        )
     ORDER BY
         v.KRC,
         v.PDTN
 """;
-
-
 
     public static final String LOAD_JOBS = """
     SELECT v.KSK, v.SNPZ, v.DTI, v.DTM, v.KMC, v.EMK, v.KOLMV, v.MASSA, v.KOLEV, v.NP, v.UX,
