@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.domain;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,16 @@ public class PackagingSchedule {
         jobIdMap = new HashMap<>();
     }
 
+    public boolean isEmptySolution(){
+        return jobs.isEmpty();
+    }
+
+    public void setDateForEmptySolution(LocalDate startDate ) {
+        if (isEmptySolution()) {
+            workCalendar.setFromDate(startDate);
+            workCalendar.setToDate(startDate.plusDays(1));
+        }
+    }
     // ************************************************************************
     // Getters and setters
     // ************************************************************************
