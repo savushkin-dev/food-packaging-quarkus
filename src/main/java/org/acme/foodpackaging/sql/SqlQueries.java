@@ -33,6 +33,7 @@ WHERE
         v.PDUR, v.SNPZ, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
+      v.SNPZ = 0 AND (
         (
             v.PDTN >= ?1
             AND v.PDTN < ?2
@@ -42,7 +43,7 @@ WHERE
             v.PDTO >= ?3
             AND v.PDTO < ?4
         )
-        AND v.SNPZ = 0
+       )
     ORDER BY
         v.KRC,
         v.PDTN
