@@ -1,11 +1,14 @@
 package org.acme.foodpackaging.solver;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 import ai.timefold.solver.core.api.score.stream.*;
 
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.Line;
 
 public class FoodPackagingConstraintProvider implements ConstraintProvider {
 
@@ -13,7 +16,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
     public Constraint[] defineConstraints(ConstraintFactory factory) {
         return new Constraint[] {
                 // Hard constraints
-                maxEndDateTime(factory),
+                maxEndDateTimePerLine(factory),
                 forbidZeroSpeedProducts(factory),
                 // Medium constraints
                 minimizeCleaningDuration(factory),
@@ -25,6 +28,40 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
     // ************************************************************************
     // Hard constraints
     // ************************************************************************
+    protected Constraint maxEndDateTimePerLine(ConstraintFactory factory) {
+        return factory.forEach(Line.class)
+                .filter(line ->
+                        line.getMaxEndTime() != null
+                                && line.getJobs() != null
+                                && !line.getJobs().isEmpty()
+                )
+                .filter(line -> {
+                    LocalDateTime lineEnd =
+                            line.getJobs().stream()
+                                    .map(Job::getEndDateTime)
+                                    .filter(Objects::nonNull)
+                                    .max(LocalDateTime::compareTo)
+                                    .orElse(null);
+
+                    return lineEnd != null && lineEnd.isAfter(line.getMaxEndTime());
+                })
+                .penalizeLong(
+                        HardMediumSoftLongScore.ONE_HARD,
+                        line -> {
+                            LocalDateTime lineEnd =
+                                    line.getJobs().stream()
+                                            .map(Job::getEndDateTime)
+                                            .filter(Objects::nonNull)
+                                            .max(LocalDateTime::compareTo)
+                                            .orElse(line.getMaxEndTime());
+
+                            return Duration
+                                    .between(line.getMaxEndTime(), lineEnd)
+                                    .toMinutes();
+                        }
+                )
+                .asConstraint("Max end date time per line");
+    }
 
     protected Constraint maxEndDateTime(ConstraintFactory factory) {
         return factory.forEach(Job.class)

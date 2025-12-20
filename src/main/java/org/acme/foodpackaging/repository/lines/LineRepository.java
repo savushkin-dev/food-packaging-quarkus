@@ -60,6 +60,7 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             LocalDateTime startLineDateTime = solution.getWorkCalendar().getMinStartDateTime().plusHours(8);
             for(Line line : solution.getLines()){
                 line.setStartDateTime(startLineDateTime);
+                line.setMaxEndTime(startLineDateTime.plusDays(1).plusHours(3));
             }
         }
         else {
@@ -79,12 +80,16 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             }
             pinnAllLines(solution.getLines());
             //  Найти конец самой длинной линии
-            LocalDateTime maxEndTime = findMaxEndTime(solution.getLines());
+            LocalDateTime lineEndTime = findMaxEndTime(solution.getLines());
 
             // Проставяет старт всем линиям
             for (Line line : solution.getLines()) {
-                initLineStartDateTime(line, maxEndTime);
+
+                initLineStartDateTime(line, lineEndTime);
                 fixLineJobs(line);
+
+                LocalDateTime maxEndTime = line.getJobs().getLast().getEndDateTime().plusHours(20);
+                line.setMaxEndTime(maxEndTime);
             }
         }
     }
