@@ -11,10 +11,7 @@ import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
@@ -77,15 +74,16 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
                     job.setLine(line);
                 }
             }
-            pinnAllLines(solution.getLines());
-            //  Найти конец самой длинной линии
-            LocalDateTime maxEndTime = findMaxEndTime(solution.getLines());
+        }
+        pinnAllLines(solution.getLines());
+        //  Конец самой длинной линии
+        LocalDateTime maxEndTime = findMaxEndTime(solution.getLines());
 
-            // Проставяет старт всем линиям
-            for (Line line : solution.getLines()) {
-                initLineStartDateTime(line, maxEndTime);
-                fixLineJobs(line);
-            }
+        // Проставяет старт всем линиям
+        for (Line line : solution.getLines()) {
+
+            initLineStartDateTime(line, maxEndTime);
+            line.getJobs().sort(Comparator.comparing(Job::getStartProductionDateTime));
         }
     }
 
