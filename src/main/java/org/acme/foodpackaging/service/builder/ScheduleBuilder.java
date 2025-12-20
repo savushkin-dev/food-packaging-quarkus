@@ -43,7 +43,7 @@ public class ScheduleBuilder {
 
         jobRepository.initSolutionJobList(schedule);
         List<Line> lines = lineRepository.getLines();
-        List<Product> products = productRepository.getProductList(schedule.getJobs());
+        List<Product> products = productRepository.getProductList(schedule);
         schedule.setLines(lines);
         schedule.setProducts(products);
         lineRepository.initJobListOnLine(schedule);
@@ -52,7 +52,7 @@ public class ScheduleBuilder {
     }
 
     public PackagingSchedule updateProductList(PackagingSchedule schedule){
-        List<Product> updatedProductList = productRepository.getProductList(schedule.getJobs());
+        List<Product> updatedProductList = productRepository.getProductList(schedule);
         schedule.setProducts(updatedProductList);
         return schedule;
     }
