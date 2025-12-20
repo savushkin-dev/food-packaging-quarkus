@@ -57,7 +57,7 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             LocalDateTime startLineDateTime = solution.getWorkCalendar().getMinStartDateTime().plusHours(8);
             for(Line line : solution.getLines()){
                 line.setStartDateTime(startLineDateTime);
-                line.setMaxEndTime(startLineDateTime.plusDays(1).plusHours(3));
+                line.setMaxEndTime(startLineDateTime.plusDays(1).toLocalDate().atStartOfDay().plusHours(3));
             }
         }
         else {
@@ -83,13 +83,26 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
             for (Line line : solution.getLines()) {
 
                 initLineStartDateTime(line, lineEndTime);
-                line.getJobs().sort(Comparator.comparing(Job::getStartProductionDateTime));
+
+                List<Job> jobs = line.getJobs();
+                if (jobs == null || jobs.isEmpty()) {
+                    continue;
+                }
+
+                jobs.sort(Comparator.comparing(
+                        Job::getStartProductionDateTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ));
+
                 fixLineJobs(line);
 
-                LocalDateTime maxEndTime = line.getJobs().getLast().getEndDateTime().plusHours(20);
-                line.setMaxEndTime(maxEndTime);
+                Job lastJob = jobs.getLast();
+                if (lastJob.getEndDateTime() != null) {
+                    line.setMaxEndTime(
+                            lastJob.getEndDateTime().plusHours(20)
+                    );
+                }
             }
-           
         }
     }
 
