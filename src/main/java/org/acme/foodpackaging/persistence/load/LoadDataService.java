@@ -30,12 +30,6 @@ public class LoadDataService {
     SpeedRepository speedRepository;
     @Inject
     CleaningRuleRepository cleaningRuleRepository;
-    @Inject
-    CleaningCalculatorService cleaningCalculator;
-    @Inject
-    JobRefreshService jobRefreshService;
-    @Inject
-    JobRepository jobRepository;
 
     @Getter
     private ConcurrentMap<String, String> lines;
