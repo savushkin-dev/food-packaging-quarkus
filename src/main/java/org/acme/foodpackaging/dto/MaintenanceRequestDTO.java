@@ -6,10 +6,11 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Setter
 @Getter
 public class MaintenanceRequestDTO {
+
     private String lineId;
-    @Setter
     private String name;
     private Integer insertIndex;
     private Integer updateIndex;

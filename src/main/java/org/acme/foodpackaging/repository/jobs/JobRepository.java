@@ -3,17 +3,23 @@ package org.acme.foodpackaging.repository.jobs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.entity.NS_McEntity;
-import org.acme.foodpackaging.entity.jobs.JobEntity;
 import org.acme.foodpackaging.factory.JobFactory;
-import org.acme.foodpackaging.persistence.load.JobDBLoader;
+import org.acme.foodpackaging.persistence.db.JobDBLoader;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.DbMaintenanceRow;
+import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 
 @ApplicationScoped
 public class JobRepository {
@@ -24,49 +30,106 @@ public class JobRepository {
     LoadDataService loadDataService;
     @Inject
     JobDBLoader jobDBLoader;
+    @Inject
+    MaintenanceJob maintenanceJob;
 
-    public List<Job> loadJobs(LocalDate date,
-                              LocalDateTime minStart,
-                              LocalDateTime idealEnd,
-                              LocalDateTime maxEnd) {
+    public Map<Integer, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to){
+        return jobDBLoader.loadJobRowMapFromDb(
+                from.atStartOfDay(), to.atStartOfDay(), "0119030000"
+        );
+    }
 
-        LocalDateTime targetDate = date.atStartOfDay();
-        String ksk = "0119030000";
-        double maxMass = 0.1;
+    public Map<Integer, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to){
+        return jobDBLoader.loadMaintenanceRowMapFromDb(
+                from.atStartOfDay(), to.atStartOfDay()
+        );
+    }
 
-        List<JobEntity> rows = jobDBLoader.loadJobs(targetDate, ksk, maxMass);
+    public void initSolutionJobList(PackagingSchedule solution) {
 
-        List<Job> jobs = new ArrayList<>();
-        int jobId = 0;
+          List<Job> jobs = new ArrayList<>();
 
-        for (JobEntity v : rows) {
+        for (DbJobRow r : solution.getDbJobRowMap().values()) {
 
-            if (v.np == null || v.np.intValue() == 0) continue;
-
-            NS_McEntity m = v.mc;
-
-            int np = v.np.intValue();
-            int quantity = v.quantity != null ? v.quantity : 0;
-            int priority = v.priority != null ? v.priority : 0;
-            int snpz = v.snpz != null ? v.snpz : 0;
-            double mass = v.massa != null ? v.massa : 0.0;
-
-            Product product = loadDataService.getProducts().get(v.kmc);
-            if (product == null) {
-                throw new IllegalStateException("Unknown product KMC=" + v.kmc);
-            }
-
-            Job job = jobFactory.createJob(
-                    String.valueOf(++jobId),
-                    jobFactory.nameCleaner(m.shortName),
-                    snpz, np,
-                    product, mass, quantity, priority,
-                    minStart, idealEnd, maxEnd
-            );
+            if(r.lineId() == null) continue;
+            Job job = createJobById(r.snpz().intValueExact(), false, solution);
 
             jobs.add(job);
         }
-        return jobs;
+
+        for (DbMaintenanceRow rm : solution.getDbMaintenanceRowMap().values()) {
+
+            if(rm.lineId() == null) continue;
+            Job job = createJobById(rm.f_id(), true, solution);
+
+            jobs.add(job);
+        }
+        solution.setJobs(jobs);
     }
+
+    public Job createJobById(int id, boolean serviceWork, PackagingSchedule solution) {
+
+        Job job = new Job();
+
+        if(serviceWork){
+
+            DbMaintenanceRow row = solution.getDbMaintenanceRowMap().get(id);
+
+            job = jobFactory.createJob(
+                    String.valueOf(row.f_id()), row.lineId(), row.snpz().intValueExact(),
+                    -1, row.shortName(), getMaintenanceProduct(), -1,
+                    -1, safe(row.duration()), solution.getWorkCalendar().getMinStartDateTime(),
+                    solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
+                    0, getStartProductionDateTime(row.startProductionDateTime())
+            );
+
+            job.setMaintenance(true);
+        }
+        else {
+
+            Job existing = solution.getJobIdMap().get(id);
+            if (existing != null) {
+                return existing;
+            }
+
+            DbJobRow row = solution.getDbJobRowMap().get(id);
+            if (row == null) {
+                throw new IllegalArgumentException("Unknown SNPZ=" + id);
+            }
+
+            Product product = loadDataService.getProducts().get(row.kmc());
+            if (product == null) {
+                throw new IllegalStateException("Unknown product KMC=" + row.kmc());
+            }
+
+            job = jobFactory.createJob(
+                    String.valueOf(row.snpz()), row.lineId(), row.snpz().intValueExact(),
+                    row.np(), jobFactory.nameCleaner(row.shortName()), product,
+                    row.mass(), row.quantity(), safe(row.duration()), solution.getWorkCalendar().getMinStartDateTime(),
+                    solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
+                    row.priority(), getStartProductionDateTime(row.startProductionDateTime())
+            );
+            solution.getJobIdMap().put(row.snpz().intValueExact(), job);
+        }
+        return job;
+    }
+
+    public LocalDateTime getStartProductionDateTime(Timestamp startProductionDateTime){
+        return startProductionDateTime != null
+                ? startProductionDateTime.toLocalDateTime()
+                : null;
+    }
+    public List<DbJobRow> getDbJobRowList(Map<Integer, DbJobRow> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(rows.values());
+    }
+
+    private int safe(Integer v) {
+        return v != null ? v : 0;
+    }
+
 }
+
 

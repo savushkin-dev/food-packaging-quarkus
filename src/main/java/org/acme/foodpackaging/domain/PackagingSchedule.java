@@ -1,6 +1,9 @@
 package org.acme.foodpackaging.domain;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ai.timefold.solver.core.api.domain.solution.PlanningEntityCollectionProperty;
 import ai.timefold.solver.core.api.domain.solution.PlanningScore;
@@ -12,6 +15,8 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 import ai.timefold.solver.core.api.solver.SolverStatus;
 import lombok.Getter;
 import lombok.Setter;
+import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.DbMaintenanceRow;
 
 @Setter
 @Getter
@@ -31,6 +36,12 @@ public class PackagingSchedule {
     @ValueRangeProvider
     private List<Job> jobs;
 
+    private Map<Integer, DbJobRow> dbJobRowMap;
+
+    private Map<Integer, DbMaintenanceRow> dbMaintenanceRowMap;
+
+    private  Map<Integer, Job> jobIdMap;
+
     @PlanningScore
     private HardMediumSoftLongScore score;
 
@@ -39,8 +50,19 @@ public class PackagingSchedule {
 
     // No-arg constructor required for Timefold
     public PackagingSchedule() {
+        jobIdMap = new HashMap<>();
     }
 
+    public boolean isEmptySolution(){
+        return jobs.isEmpty();
+    }
+
+    public void setDateForEmptySolution(LocalDate startDate ) {
+        if (isEmptySolution()) {
+            workCalendar.setFromDate(startDate);
+            workCalendar.setToDate(startDate.plusDays(1));
+        }
+    }
     // ************************************************************************
     // Getters and setters
     // ************************************************************************
@@ -55,5 +77,6 @@ public class PackagingSchedule {
                 ", score=" + score +
                 ", solverStatus=" + solverStatus +
                 '}';
+
     }
 }
