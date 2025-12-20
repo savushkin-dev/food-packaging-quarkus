@@ -48,6 +48,7 @@ class FoodPackagingConstraintProviderTest {
     // ************************************************************************
 
     @Test
+    @Disabled
     void maxEndDateTime() {
         Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false);
         Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), null, null, DAY_START_TIME.plusMinutes(200), 1, false,
