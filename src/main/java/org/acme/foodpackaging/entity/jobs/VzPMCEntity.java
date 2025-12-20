@@ -45,8 +45,8 @@ public class VzPMCEntity extends PanacheEntityBase {
     @Column(name = "MASSA")
     public Double mass;
 
-//    @Column(name = "SNM")
-//    public String shortName;
+    @Column(name = "SNM")
+    public String shortName;
 
     @Column(name = "KRC", columnDefinition = "CHAR(12)")
     private String krc;
