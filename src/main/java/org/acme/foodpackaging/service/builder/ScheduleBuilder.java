@@ -3,12 +3,9 @@ package org.acme.foodpackaging.service.builder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
-import org.acme.foodpackaging.service.products.CleaningCalculatorService;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -17,17 +14,11 @@ import java.util.*;
 public class ScheduleBuilder {
 
     @Inject
-    LoadDataService loadDataService;
-    @Inject
     JobRepository jobRepository;
     @Inject
     LineRepository lineRepository;
     @Inject
     ProductRepository productRepository;
-    @Inject
-    LineFactory lineFactory;
-    @Inject
-    CleaningCalculatorService cleaningCalculatorService;
 
     public PackagingSchedule buildSchedule(LocalDate startDate) {
 
@@ -43,7 +34,7 @@ public class ScheduleBuilder {
 
         jobRepository.initSolutionJobList(schedule);
         List<Line> lines = lineRepository.getLines();
-        List<Product> products = productRepository.getProductList(schedule.getJobs());
+        List<Product> products = productRepository.getProductList(schedule);
         schedule.setLines(lines);
         schedule.setProducts(products);
         lineRepository.initJobListOnLine(schedule);
@@ -52,7 +43,7 @@ public class ScheduleBuilder {
     }
 
     public PackagingSchedule updateProductList(PackagingSchedule schedule){
-        List<Product> updatedProductList = productRepository.getProductList(schedule.getJobs());
+        List<Product> updatedProductList = productRepository.getProductList(schedule);
         schedule.setProducts(updatedProductList);
         return schedule;
     }

@@ -12,8 +12,6 @@ import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
-import org.acme.foodpackaging.service.jobs.JobRefreshService;
-import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 
 import java.util.List;
 import java.util.Map;
@@ -30,12 +28,6 @@ public class LoadDataService {
     SpeedRepository speedRepository;
     @Inject
     CleaningRuleRepository cleaningRuleRepository;
-    @Inject
-    CleaningCalculatorService cleaningCalculator;
-    @Inject
-    JobRefreshService jobRefreshService;
-    @Inject
-    JobRepository jobRepository;
 
     @Getter
     private ConcurrentMap<String, String> lines;
