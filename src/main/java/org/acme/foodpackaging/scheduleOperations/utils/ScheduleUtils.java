@@ -29,12 +29,25 @@ public class ScheduleUtils {
      */
     public static void fixPinnedJobs(Line line) {
         List<Job> jobs = line.getJobs();
-        line.setFirstUnpinnedIndex(0);
-        for(int i = 0; i < jobs.size(); ++i){
-            if(jobs.get(i).isMaintenance()) {
-                line.setFirstUnpinnedIndex(i+1);
+
+        int lastPinnedIndex = -1;
+
+        for (int i = 0; i < jobs.size(); i++) {
+            Job job = jobs.get(i);
+
+            // Старые задачи всегда pinned
+            if (job.getLineId() != null) {
+                lastPinnedIndex = i;
+                continue;
+            }
+
+            // Maintenance тоже pinned
+            if (job.isMaintenance()) {
+                lastPinnedIndex = i;
             }
         }
+
+        line.setFirstUnpinnedIndex(lastPinnedIndex + 1);
     }
     /**
      * Назначает общий maxEndDateTime для всех задач
