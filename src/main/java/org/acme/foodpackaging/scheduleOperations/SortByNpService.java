@@ -66,7 +66,7 @@ public class SortByNpService {
         Map<Product, Deque<Job>> pools = new HashMap<>();
 
         for (Job job : schedule.getJobs()) {
-            if (!job.isMaintenance()) {
+            if (!job.isMaintenance() && job.getLineId() == null) {
                 pools.computeIfAbsent(job.getProduct(), p -> new ArrayDeque<>()).add(job);
             }
         }
@@ -148,7 +148,7 @@ public class SortByNpService {
     private Map<Product, Integer> extractRequiredCounts(List<Job> original) {
         Map<Product, Integer> required = new LinkedHashMap<>();
         for (Job j : original) {
-            if (!j.isMaintenance()) {
+            if (!j.isMaintenance() && j.getLineId() == null) {
                 Product p = j.getProduct();
                 required.put(p, required.getOrDefault(p, 0) + 1);
             }
@@ -203,6 +203,16 @@ public class SortByNpService {
         List<Job> buffer = new ArrayList<>();
 
         for (Job job : original) {
+
+            if (job.getLineId() != null) {
+
+                if (!buffer.isEmpty()) {
+                    result.addAll(fillSubchain(buffer, iters));
+                    buffer.clear();
+                }
+                result.add(job);
+                continue;
+            }
             // Граница подцепочки — была мойка перед задачей
             if (hadCleaningBefore(job)) {
                 if (!buffer.isEmpty()) {

@@ -161,15 +161,21 @@ public class PackagingScheduleResource {
                     .build();
         }
         Line line = findLineById(solution, request.getLineId());
+        if(line.getJobs().isEmpty()) {
+            setLineStartDateTime(line, request.getStartLineDateTime());
 
-        setLineStartDateTime(line, request.getStartLineDateTime());
-        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, solution);
-
+            solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+            repository.writeForSession(sessionId, solution);
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "sessionId", sessionId,
+                    "message", "Line start time updated"
+            )).build();
+        }
         return Response.ok(Map.of(
                 "status", "success",
                 "sessionId", sessionId,
-                "message", "Line start time updated"
+                "message", "Line has jobs. Start time is not updated"
         )).build();
     }
 
