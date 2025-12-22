@@ -1,9 +1,11 @@
 package org.acme.foodpackaging.service.products;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.CleaningRule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.sql.SqlQueries;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -12,7 +14,7 @@ import java.sql.*;
 import java.time.Duration;
 import java.util.*;
 
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_CLEANING_RULES;
+
 
 @ApplicationScoped
 public class CleaningCalculatorService {
@@ -22,11 +24,16 @@ public class CleaningCalculatorService {
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
-    public CleaningCalculatorService() {
+    @Inject
+    SqlQueries sqlQueries;
 
+    public CleaningCalculatorService() {
         Config config = ConfigProvider.getConfig();
         dbUrl = config.getValue("db.url", String.class);
+    }
 
+    @PostConstruct
+    void init() {
         // Загружаем правила уборки из базы данных.
         // Эти правила определяют длительность мойки при переходе от одного продукта к другому
         // по отдельным параметрам (тип, глазурь, масса, наполнитель).
@@ -178,7 +185,7 @@ public class CleaningCalculatorService {
         try (Connection connection = DriverManager.getConnection(dbUrl);
              Statement statement = connection.createStatement()) {
 
-            resultSet = statement.executeQuery(LOAD_CLEANING_RULES);
+            resultSet = statement.executeQuery(sqlQueries.getLoadCleaningRules());
 
             while (resultSet.next()) {
                 String parameter = resultSet.getString("NPAR");
