@@ -67,8 +67,6 @@ public class PackagingScheduleResource {
     @Inject
     JobSaveService jobSaveService;
 
-    @ConfigProperty(name = "dbLabeling.url")
-    String dbLabelingUrl;
     @ConfigProperty(name = "db.url")
     String dbUrl;
 
@@ -155,18 +153,18 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdateDTO request) {
 
-        PackagingSchedule schedule = repository.readForSession(sessionId);
+        PackagingSchedule solution = repository.readForSession(sessionId);
 
-        if (schedule == null) {
+        if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
-        Line line = findLineById(schedule, request.getLineId());
+        Line line = findLineById(solution, request.getLineId());
 
         setLineStartDateTime(line, request.getStartLineDateTime());
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
+        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
                 "status", "success",
@@ -176,28 +174,29 @@ public class PackagingScheduleResource {
     }
 
     @POST
-    @Path("planEndTime")
+    @Path("lineMaxEnd")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updatePlanningEndTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdateDTO request) {
+    public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdateDTO request) {
 
-        PackagingSchedule schedule = repository.readForSession(sessionId);
+        PackagingSchedule solution = repository.readForSession(sessionId);
 
-        if (schedule == null) {
+        if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
 
-        schedule.getWorkCalendar().setMaxEndDateTime(request.getMaxEndDateTime());
-        fixEndDateTime(schedule.getJobs(), request.getMaxEndDateTime());
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
+        Line line = findLineById(solution, request.getLineId());
+
+        setLineMaxEndDateTime(line, request.getLineMaxEndDateTime());
+        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
                 "status", "success",
                 "sessionId", sessionId,
-                "message", "MaxEndDateTime updated"
+                "message", "Line end time updated"
         )).build();
     }
 
