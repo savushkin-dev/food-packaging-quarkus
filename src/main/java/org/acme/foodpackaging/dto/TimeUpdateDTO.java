@@ -15,12 +15,6 @@ public class TimeUpdateDTO {
     private LocalDateTime startLineDateTime;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
-    private LocalDateTime minStartDateTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
-    private LocalDateTime idealDateTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
-    private LocalDateTime maxEndDateTime;
+    private LocalDateTime lineMaxEndDateTime;
 
 }

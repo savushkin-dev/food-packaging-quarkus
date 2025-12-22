@@ -42,7 +42,6 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         logService.logRequest(login, ip, path.substring(path.lastIndexOf('/') + 1), body);
     }
 
-
     public String getIp(ContainerRequestContext requestContext){
         // сначала пробуем заголовки от Nginx
         String ip = requestContext.getHeaderString("X-Real-IP");
