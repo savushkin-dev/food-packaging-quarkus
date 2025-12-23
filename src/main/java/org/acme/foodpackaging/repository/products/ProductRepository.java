@@ -25,6 +25,14 @@ public class ProductRepository {
     @Inject
     LoadDataService loadDataService;
 
+/**
+ * Загружает правила мойки из базы данных.
+ * Каждый ряд в таблице описывает:
+ * NPAR — параметр (1–тип, 2–глазурь, 3–масса, 4–наполнитель)
+ * FROM_VALUE — значение параметра исходного продукта
+ * TO_VALUE — значение параметра целевого продукта
+ * DUR — длительность мойки
+ * */
     public Map<String, Product> loadProducts() {
 
         List<ProductEntity> rows = ProductEntity.find("deletedFlag = 0").list();
@@ -80,7 +88,7 @@ public class ProductRepository {
                     .forEach(j -> j.setProduct(maintenanceProduct));
         }
 
-        cleaningCalculator.cleaningCalculate(productList);
+        cleaningCalculator.cleaningCalculate(productList, loadDataService.getCleaningRules());
         return productList;
     }
 

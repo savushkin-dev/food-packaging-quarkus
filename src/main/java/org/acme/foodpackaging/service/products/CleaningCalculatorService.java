@@ -1,16 +1,12 @@
 package org.acme.foodpackaging.service.products;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.CleaningRule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.sql.SqlQueries;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.sql.*;
 import java.time.Duration;
 import java.util.*;
 
@@ -26,26 +22,6 @@ public class CleaningCalculatorService {
 
     @Inject
     SqlQueries sqlQueries;
-
-    public CleaningCalculatorService() {
-        Config config = ConfigProvider.getConfig();
-        dbUrl = config.getValue("db.url", String.class);
-    }
-
-    @PostConstruct
-    void init() {
-        // Загружаем правила уборки из базы данных.
-        // Эти правила определяют длительность мойки при переходе от одного продукта к другому
-        // по отдельным параметрам (тип, глазурь, масса, наполнитель).
-        this.rules = loadCleaningRulesfromDB();
-    }
-
-    public CleaningCalculatorService(List<CleaningRule> rules) {
-
-        // Альтернативный конструктор: позволяет передать правила вручную.
-        // Используется в тестах или при автономной работе без БД.
-        this.rules = rules;
-    }
     /**
      * Определяет длительность мойки при переходе от продукта *from* к продукту *to*.
      * Логика:
@@ -131,7 +107,9 @@ public class CleaningCalculatorService {
      * - если все параметры совпадают, но id разные → смена упаковки (10 минут)
      * - иначе — рассчитываем по правилам БД через getCleaningTime()
      */
-    public void cleaningCalculate(List<Product> products) {
+    public void cleaningCalculate(List<Product> products, List<CleaningRule> rules) {
+
+        this.rules = rules;
 
         for (Product current : products) {
             Map<Product, Duration> durations = new HashMap<>(products.size());
@@ -168,38 +146,6 @@ public class CleaningCalculatorService {
             // Присваиваем рассчитанную таблицу переходов
             current.setCleaningDurations(durations);
         }
-    }
-    /**
-     * Загружает правила мойки из базы данных.
-     * Каждый ряд в таблице описывает:
-     * NPAR — параметр (1–тип, 2–глазурь, 3–масса, 4–наполнитель)
-     * FROM_VALUE — значение параметра исходного продукта
-     * TO_VALUE — значение параметра целевого продукта
-     * DUR — длительность мойки
-     */
-    private List<CleaningRule> loadCleaningRulesfromDB() {
-
-        this.rules = new ArrayList<>();
-
-        ResultSet resultSet = null;
-        try (Connection connection = DriverManager.getConnection(dbUrl);
-             Statement statement = connection.createStatement()) {
-
-            resultSet = statement.executeQuery(sqlQueries.getLoadCleaningRules());
-
-            while (resultSet.next()) {
-                String parameter = resultSet.getString("NPAR");
-                String from_value = resultSet.getString("FROM_VALUE");
-                String to_value = resultSet.getString("TO_VALUE");
-                int duration = resultSet.getInt("DUR");
-
-                CleaningRule rule = new CleaningRule(parameter, from_value, to_value, duration);
-                rules.add(rule);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to load cleaning rules from DB", e);
-        }
-        return rules;
     }
 }
 
