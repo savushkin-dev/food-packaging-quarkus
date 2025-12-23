@@ -40,12 +40,7 @@ public class MaintenanceJob {
                 maintenanceProduct,
                 Duration.ofMinutes(request.getDurationMinutes()),
                 schedule.getWorkCalendar().getMinStartDateTime(),
-                schedule.getWorkCalendar().getIdealEndDateTime(),
-                schedule.getWorkCalendar().getMaxEndDateTime(),
-                0,
-                true,
-                null,
-                null
+                null, null, 0, true, null, null
         );
 
         maintenanceJob.setMaintenance(true);
