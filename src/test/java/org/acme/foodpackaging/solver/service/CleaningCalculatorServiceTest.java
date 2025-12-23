@@ -22,7 +22,9 @@ class CleaningCalculatorServiceTest {
                 new CleaningRule("1", "Кактус", "", 180)    // Кактус → ANY
         );
 
-        return new CleaningCalculatorService();
+        CleaningCalculatorService cleaningCalculatorService = new CleaningCalculatorService();
+        cleaningCalculatorService.setRules(rules);
+        return cleaningCalculatorService;
     }
 
     private Product product(String type) {
