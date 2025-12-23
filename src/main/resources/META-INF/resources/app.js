@@ -101,30 +101,13 @@ function refreshSchedule() {
 
     $.each(schedule.jobs, (index, job) => {
       byJobGroupDataSet.add({id : job.id, content: job.name});
-      byJobItemDataSet.add({
-        id: job.id + "_readyToIdealEnd", group: job.id,
-        start: job.minStartTime,
-        end: job.idealEndTime,
-        type: "background",
-        style: "background-color: #8AE23433"
-      });
-      byJobItemDataSet.add({
-        id: job.id + "_idealEndToDue", group: job.id,
-        start: job.idealEndTime,
-        end: job.maxEndTime,
-        type: "background",
-        style: "background-color: #FCAF3E33"
-      });
 
       if (job.line == null || job.startCleaningDateTime == null || job.startProductionDateTime == null || job.endDateTime == null) {
         unassignedJobsCount++;
         const durationMinutes = JSJoda.Duration.ofSeconds(job.duration).toMinutes();
         const unassignedJobElement = $(`<div class="card-body p-2"/>`)
           .append($(`<h5 class="card-title mb-1"/>`).text(job.name))
-          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`${Math.floor(durationMinutes / 60)} hours ${durationMinutes % 60} mins`))
           .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Min: ${JSJoda.LocalDateTime.parse(job.minStartTime).format(dateTimeFormat)}`))
-          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Ideal: ${JSJoda.LocalDateTime.parse(job.idealEndTime).format(dateTimeFormat)}`))
-          .append($(`<p class="card-text ms-2 mb-0"/>`).text(`Max: ${JSJoda.LocalDateTime.parse(job.maxEndTime).format(dateTimeFormat)}`));
         const byJobJobElement = $(`<div/>`)
           .append($(`<h5 class="card-title mb-1"/>`).text(`Unassigned`));
         unassignedJobs.append($(`<div class="col"/>`).append($(`<div class="card"/>`).append(unassignedJobElement)));
@@ -136,7 +119,6 @@ function refreshSchedule() {
         });
       } else {
         const beforeReady = JSJoda.LocalDateTime.parse(job.startProductionDateTime).isBefore(JSJoda.LocalDateTime.parse(job.minStartTime));
-        const afterDue = JSJoda.LocalDateTime.parse(job.endDateTime).isAfter(JSJoda.LocalDateTime.parse(job.maxEndTime));
                const startJob = JSJoda.LocalDateTime.parse(job.startProductionDateTime);
                const endJob = JSJoda.LocalDateTime.parse(job.endDateTime);
 
@@ -204,10 +186,7 @@ function refreshSchedule() {
           byLineJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
           byJobJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
         }
-        if (afterDue) {
-          byLineJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`After due (too late)`));
-          byJobJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`After due (too late)`));
-        }
+
         byLineItemDataSet.add({
           id : job.id + "_cleaning", group: job.line.id,
           content:byLineCleaningElement.html(),
@@ -337,18 +316,12 @@ function refreshSolvingButtons(solving) {
   if (solving) {
     $("#solveButton").hide();
     $("#stopSolvingButton").show();
-    $("#exportButton").prop("disabled", true);
-    $("#saveButton").prop("disabled", true);
-    $("#removeButton").prop("disabled", true);
     if (autoRefreshIntervalId == null) {
       autoRefreshIntervalId = setInterval(refreshSchedule, 2000);
     }
   } else {
     $("#solveButton").show();
     $("#stopSolvingButton").hide();
-    $("#exportButton").prop("disabled", false);
-    $("#saveButton").prop("disabled", false);
-    $("#removeButton").prop("disabled", false);
     if (autoRefreshIntervalId != null) {
       clearInterval(autoRefreshIntervalId);
       autoRefreshIntervalId = null;
