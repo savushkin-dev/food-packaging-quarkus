@@ -88,7 +88,8 @@ public class ProductRepository {
                     .forEach(j -> j.setProduct(maintenanceProduct));
         }
 
-        cleaningCalculator.cleaningCalculate(productList, loadDataService.getCleaningRules());
+        cleaningCalculator.setRules(loadDataService.getCleaningRules());
+        cleaningCalculator.cleaningCalculate(productList);
         return productList;
     }
 

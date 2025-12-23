@@ -2,6 +2,8 @@ package org.acme.foodpackaging.service.products;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.Getter;
+import lombok.Setter;
 import org.acme.foodpackaging.domain.CleaningRule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.sql.SqlQueries;
@@ -11,9 +13,11 @@ import java.time.Duration;
 import java.util.*;
 
 
-
+@Getter
+@Setter
 @ApplicationScoped
 public class CleaningCalculatorService {
+
     private List<CleaningRule> rules;
 
     @Inject
@@ -107,9 +111,7 @@ public class CleaningCalculatorService {
      * - если все параметры совпадают, но id разные → смена упаковки (10 минут)
      * - иначе — рассчитываем по правилам БД через getCleaningTime()
      */
-    public void cleaningCalculate(List<Product> products, List<CleaningRule> rules) {
-
-        this.rules = rules;
+    public void cleaningCalculate(List<Product> products) {
 
         for (Product current : products) {
             Map<Product, Duration> durations = new HashMap<>(products.size());
