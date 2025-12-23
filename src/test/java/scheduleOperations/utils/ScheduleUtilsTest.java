@@ -111,7 +111,7 @@ class ScheduleUtilsTest {
         assertThrows(IllegalArgumentException.class,
                 () -> ScheduleUtils.findLineById(schedule, "not found"));
     }
-    
+
     @Test
     void setLineStartDateTime() {
         LocalDateTime newStart = LocalDateTime.now().plusDays(1);
