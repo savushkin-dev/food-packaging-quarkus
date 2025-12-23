@@ -25,7 +25,7 @@ class MaintenanceJobTest {
         maintenanceJob = new MaintenanceJob();
 
         // Line, schedule
-        line = new Line("line1", "Line 1", "operator", LocalDateTime.of(2025,12,23,8,0));
+        line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
         schedule = new PackagingSchedule();
         schedule.setLines(List.of(line));
 
@@ -53,7 +53,7 @@ class MaintenanceJobTest {
         SpeedCacheUtils.init(speeds);
 
         schedule.setProducts(List.of(maintenanceProduct, normalProduct));
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2025,12,23)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.now()));
         schedule.setJobs(new ArrayList<>());
     }
 
@@ -64,7 +64,7 @@ class MaintenanceJobTest {
         request.setName("Maintenance 1");
         request.setDurationMinutes(30);
         // emptyLineMode
-        request.setStartProductionDateTime(LocalDateTime.of(2025, 12, 23, 8, 0));
+        request.setStartProductionDateTime(LocalDateTime.now());
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
