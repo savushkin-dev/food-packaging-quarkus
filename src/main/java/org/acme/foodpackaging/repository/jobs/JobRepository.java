@@ -11,6 +11,7 @@ import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.DbMaintenanceRow;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -33,9 +34,12 @@ public class JobRepository {
     @Inject
     MaintenanceJob maintenanceJob;
 
+    @ConfigProperty(name = "ksk")
+    String ksk;
+
     public Map<Integer, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to){
         return jobDBLoader.loadJobRowMapFromDb(
-                from.atStartOfDay(), to.atStartOfDay(), "0119030000"
+                from.atStartOfDay(), to.atStartOfDay(), ksk
         );
     }
 
