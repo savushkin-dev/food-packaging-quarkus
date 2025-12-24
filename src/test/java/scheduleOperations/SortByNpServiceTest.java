@@ -21,6 +21,10 @@ class SortByNpServiceTest {
     private Product vanilla;
     private Line line1;
     private Line line2;
+    private Line line3;
+    private Line line4;
+    private Line line5;
+    private Line line6;
     private PackagingSchedule schedule;
 
     @BeforeEach
@@ -31,9 +35,13 @@ class SortByNpServiceTest {
 
         line1 = new Line("L1", "Line 1");
         line2 = new Line("L2", "Line 2");
+        line3 = new Line("L3", "Line 3");
+        line4 = new Line("L4", "Line 4");
+        line5 = new Line("L5", "Line 5");
+        line6 = new Line("L6", "Line 6");
 
         schedule = new PackagingSchedule();
-        schedule.setLines(List.of(line1, line2));
+        schedule.setLines(List.of(line1, line2, line3, line4, line5, line6));
     }
 
     private Job job(String name, int np, Product product) {
@@ -147,5 +155,40 @@ class SortByNpServiceTest {
                 List.of("J2", "CLEAN", "J1"),
                 line1.getJobs().stream().map(Job::getName).toList()
         );
+    }
+
+    @Test
+    void OrderAcrossMultipleLinesForSingleProduct() {
+        Job j1 = job("J1", 1, vanilla);
+        Job j2 = job("J2", 2, vanilla);
+        Job j3 = job("J3", 3, vanilla);
+        Job j4 = job("J4", 4, vanilla);
+        Job j5 = job("J5", 5, vanilla);
+        Job j6 = job("J6", 6, vanilla);
+        Job j7 = job("J7", 7, vanilla);
+        Job j8 = job("J8", 8, vanilla);
+        Job j9 = job("J9", 9, vanilla);
+        Job j10 = job("J10", 10, vanilla);
+        Job j11 = job("J11", 11, vanilla);
+        Job j12 = job("J12", 12, vanilla);
+        Job j13 = job("J13", 13, vanilla);
+
+        line1.setJobs(List.of(j1, j2, j3));
+        line2.setJobs(List.of(j4, j5));
+        line3.setJobs(List.of(j6, j7, j8));
+        line4.setJobs(List.of(j9, j10));
+        line5.setJobs(List.of(j11, j12));
+        line6.setJobs(List.of(j13));
+
+        schedule.setJobs(List.of(j1, j2, j3, j4, j5, j6, j7, j8, j9, j10, j11, j12, j13));
+
+        service.reorderJobsByProductNp(schedule);
+
+        assertEquals(List.of(1, 2, 3), line1.getJobs().stream().map(Job::getNp).toList());
+        assertEquals(List.of(5, 4), line2.getJobs().stream().map(Job::getNp).toList());
+        assertEquals(List.of(6, 7, 8), line3.getJobs().stream().map(Job::getNp).toList());
+        assertEquals(List.of(10, 9), line4.getJobs().stream().map(Job::getNp).toList());
+        assertEquals(List.of(11, 12), line5.getJobs().stream().map(Job::getNp).toList());
+        assertEquals(List.of(13), line6.getJobs().stream().map(Job::getNp).toList());
     }
 }
