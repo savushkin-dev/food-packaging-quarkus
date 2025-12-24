@@ -15,6 +15,12 @@ public class UploadDataService {
 
     @ConfigProperty(name = "db.url")
     String dbUrl;
+
+    @ConfigProperty(name = "ksk")
+    String ksk;
+
+    @ConfigProperty(name = "krca")
+    String krca;
     /**
      * Отправляет задачи в работу (UPDATE_WORK + процедура)
      */
@@ -37,8 +43,8 @@ public class UploadDataService {
                 ps.executeBatch();
 
                 try (PreparedStatement proc = conn.prepareStatement(REFRESH_FASP)) {
-                    proc.setString(1, "6000000");
-                    proc.setString(2, "0119030000");
+                    proc.setString(1, krca);
+                    proc.setString(2, ksk);
                     proc.execute();
                 } catch (SQLException e) {
                     e.fillInStackTrace();
