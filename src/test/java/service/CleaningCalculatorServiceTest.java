@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.solver.service;
+package service;
 
 import org.acme.foodpackaging.domain.CleaningRule;
 import org.acme.foodpackaging.domain.Product;
