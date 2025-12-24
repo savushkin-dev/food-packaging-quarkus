@@ -8,8 +8,10 @@ import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SortByNpServiceTest {
@@ -97,18 +99,47 @@ class SortByNpServiceTest {
 
     @Test
     void notReorderMaintenanceJobs() {
-        Job j1 = job("J1", 2, vanilla);
-        Job j2 = job("J2", 1, vanilla);
+        Job j1 = job("J1", 1, vanilla);
+        Job j2 = job("J2", 2, vanilla);
+        Job j3 = job("J3", 3, vanilla);
+        Job j4 = job("J4", 4, vanilla);
 
         Job maintenance = new Job();
-        maintenance.setName("CLEAN");
+        maintenance.setName("MAINTENANCE");
+        maintenance.setProduct(getMaintenanceProduct());
         maintenance.setMaintenance(true);
         maintenance.setLineId("L1");
 
-        line1.setJobs(List.of(j1, maintenance, j2));
+        line1.setJobs(List.of(j3, j2, maintenance, j1,j4));
         line2.setJobs(List.of());
 
-        schedule.setJobs(List.of(j1, maintenance, j2));
+        schedule.setJobs(List.of(j3, j2, maintenance, j1,j4));
+
+        service.reorderJobsByProductNp(schedule);
+
+        assertEquals(
+                List.of("J1", "J2", "MAINTENANCE", "J3", "J4"),
+                line1.getJobs().stream().map(Job::getName).toList()
+        );
+    }
+
+    @Test
+    void notReorderJobsAcrossCleaning() {
+        Job j1 = job("J1", 2, vanilla);
+        Job j2 = job("J2", 1, vanilla);
+
+        Job cleaning = new Job();
+        cleaning.setName("CLEAN");
+        cleaning.setMaintenance(false);
+        cleaning.setLineId("L1");
+
+        cleaning.setStartCleaningDateTime(LocalDateTime.of(2025, 1, 1, 8, 0));
+        cleaning.setStartProductionDateTime(LocalDateTime.of(2025, 1, 1, 9, 0));
+
+        line1.setJobs(List.of(j1, cleaning, j2));
+        line2.setJobs(List.of());
+
+        schedule.setJobs(List.of(j1, cleaning, j2));
 
         service.reorderJobsByProductNp(schedule);
 
