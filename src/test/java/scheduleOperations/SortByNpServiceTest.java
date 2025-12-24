@@ -191,4 +191,35 @@ class SortByNpServiceTest {
         assertEquals(List.of(11, 12), line5.getJobs().stream().map(Job::getNp).toList());
         assertEquals(List.of(13), line6.getJobs().stream().map(Job::getNp).toList());
     }
+
+    @Test
+    void onlyUnassignedJobsAreSorted() {
+
+        // Линии 1,2 — часть задач unassigned (lineId == null), часть assigned
+        Job j1 = job("J1", 12, vanilla); j1.setLineId("1");
+        Job j2 = job("J2", 14, vanilla); j2.setLineId("1");
+        Job j3 = job("J3", 24, vanilla);
+        Job j4 = job("J4", 27, vanilla);
+        line1.setJobs(List.of(j1, j2, j3, j4));
+
+        Job j5 = job("J5", 10, vanilla); j5.setLineId("2");
+        Job j6 = job("J6", 3, vanilla);  j6.setLineId("2");
+        Job j7 = job("J7", 53, vanilla);
+        Job j8 = job("J8", 54, vanilla);
+        line2.setJobs(List.of(j5, j6, j7, j8));
+
+        schedule.setJobs(List.of(j1,j2,j3,j4,j5,j6,j7,j8));
+        schedule.setLines(List.of(line1, line2));
+
+        service.reorderJobsByProductNp(schedule);
+
+        // Проверяем, что на линии 1 порядок не изменился
+        assertEquals(List.of(12,14,24,27),
+                line1.getJobs().stream().map(Job::getNp).toList());
+
+        // На линии 2 только новые загруженные задачи из пула должны быть отсортированы
+        // Проверим конкретно NP последовательность, assigned задачи остаются на месте
+        assertEquals(List.of(10,3,54,53),
+                line2.getJobs().stream().map(Job::getNp).toList());
+    }
 }
