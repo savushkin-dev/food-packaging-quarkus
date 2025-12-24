@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 
 import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 
@@ -123,11 +124,19 @@ public class JobRepository {
                 ? startProductionDateTime.toLocalDateTime()
                 : null;
     }
+
     public List<DbJobRow> getDbJobRowList(Map<Integer, DbJobRow> rows) {
         if (rows == null || rows.isEmpty()) {
             return List.of();
         }
-        return new ArrayList<>(rows.values());
+
+        return rows.values().stream()
+                .sorted(
+                        Comparator
+                                .comparing(DbJobRow::kmc, Comparator.nullsLast(String::compareTo))
+                                .thenComparing(DbJobRow::np, Comparator.nullsLast(Integer::compareTo))
+                )
+                .toList();
     }
 
     private int safe(Integer v) {
