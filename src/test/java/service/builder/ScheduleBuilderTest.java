@@ -44,21 +44,14 @@ class ScheduleBuilderTest {
     void buildScheduleShouldAssembleSchedule() {
         LocalDate date = LocalDate.of(2025, 12, 24);
 
-        // Моки репозиториев
         Map<Integer, DbJobRow> jobRows = Map.of(
                 1, new DbJobRow(
                         new Timestamp(System.currentTimeMillis()),
-                        "KMC1",
-                        10,           // np
-                        5,            // quantity
-                        2.0,          // mass
-                        new Timestamp(System.currentTimeMillis()), // startProduction
-                        new Timestamp(System.currentTimeMillis()), // endDateTime
-                        5,            // duration
-                        new BigDecimal("123"), // snpz
-                        1,            // priority
-                        null,         // lineId
-                        "Vanilla"     // shortName
+                        "KMC1", 10, 5, 2.0,
+                        new Timestamp(System.currentTimeMillis()),
+                        new Timestamp(System.currentTimeMillis()),
+                        5, new BigDecimal("123"),
+                        1, null, "Vanilla"
                 )
         );
 
@@ -78,7 +71,7 @@ class ScheduleBuilderTest {
         List<Product> products = List.of(new Product("VAN", "Vanilla"));
         doAnswer(invocation -> {
             PackagingSchedule sched = invocation.getArgument(0);
-            sched.setJobs(new ArrayList<>()); // пустой список задач
+            sched.setJobs(new ArrayList<>());
             return null;
         }).when(jobRepository).initSolutionJobList(any());
 
@@ -90,14 +83,12 @@ class ScheduleBuilderTest {
 
         PackagingSchedule schedule = builder.buildSchedule(date);
 
-        // Проверяем, что schedule заполнен корректно
         assertEquals(jobRows, schedule.getDbJobRowMap());
         assertEquals(maintenanceRows, schedule.getDbMaintenanceRowMap());
         assertEquals(lines, schedule.getLines());
         assertEquals(products, schedule.getProducts());
         assertEquals(date, schedule.getWorkCalendar().getFromDate());
 
-        // Проверяем, что методы репозиториев были вызваны
         verify(jobRepository).getDbJobRowMap(any(), any());
         verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobRepository).initSolutionJobList(schedule);
