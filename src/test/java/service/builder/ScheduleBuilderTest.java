@@ -82,17 +82,8 @@ class ScheduleBuilderTest {
             return null;
         }).when(jobRepository).initSolutionJobList(any());
 
-        doAnswer(invocation -> {
-            PackagingSchedule sched = invocation.getArgument(0);
-            for (Line line : sched.getLines()) {
-                line.setJobs(new ArrayList<>()); // пустой список задач на линии
-            }
-            return null;
-        }).when(lineRepository).initJobListOnLine(any());
-
         when(jobRepository.getDbJobRowMap(any(), any())).thenReturn(jobRows);
         when(jobRepository.getDbMaintenanceRowMap(any(), any())).thenReturn(maintenanceRows);
-        doNothing().when(jobRepository).initSolutionJobList(any());
         when(lineRepository.getLines()).thenReturn(lines);
         doNothing().when(lineRepository).initJobListOnLine(any());
         when(productRepository.getProductList(any())).thenReturn(products);

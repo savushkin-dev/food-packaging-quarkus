@@ -53,8 +53,8 @@ public class PackagingSchedule {
         jobIdMap = new HashMap<>();
     }
 
-    public boolean isEmptySolution(){
-        return jobs.isEmpty();
+    public boolean isEmptySolution() {
+        return jobs == null || jobs.isEmpty();
     }
 
     public void setDateForEmptySolution(LocalDate startDate ) {
