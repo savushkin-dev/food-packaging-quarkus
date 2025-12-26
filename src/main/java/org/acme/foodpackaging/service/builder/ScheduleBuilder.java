@@ -6,6 +6,8 @@ import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
+import org.acme.foodpackaging.service.lines.LineSchedulingService;
+import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -16,7 +18,9 @@ public class ScheduleBuilder {
     @Inject
     JobRepository jobRepository;
     @Inject
-    LineRepository lineRepository;
+    LineService lineService;
+    @Inject
+    LineSchedulingService lineSchedulingService;
     @Inject
     ProductRepository productRepository;
 
@@ -33,11 +37,11 @@ public class ScheduleBuilder {
         );
 
         jobRepository.initSolutionJobList(schedule);
-        List<Line> lines = lineRepository.getLines();
+        List<Line> lines = lineService.getLines();
         List<Product> products = productRepository.getProductList(schedule);
         schedule.setLines(lines);
         schedule.setProducts(products);
-        lineRepository.initJobListOnLine(schedule);
+        lineSchedulingService.initJobListOnLine(schedule);
         schedule.setDateForEmptySolution(startDate);
 
         return schedule;

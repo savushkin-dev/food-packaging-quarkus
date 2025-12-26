@@ -5,6 +5,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -82,21 +83,25 @@ public class ScheduleUtils {
      * Закрепляет/Открепляет весь план
      */
     public static void pinnAllLines(List<Line> lines) {
-
         LocalDateTime maxEndTime = lines.stream()
                 .map(Line::getJobs)
-                .filter(jobs -> jobs != null && !jobs.isEmpty())
-                .map(jobs -> jobs.getLast().getEndDateTime())
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .map(Job::getEndDateTime)
+                .filter(Objects::nonNull)
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
 
         for (Line line : lines) {
+            if (line.getJobs() == null) line.setJobs(new ArrayList<>());
             if (maxEndTime != null) {
                 line.setStartDateTime(maxEndTime);
             }
             line.setFirstUnpinnedIndex(line.getJobs().size());
         }
     }
+
     public static void unPinnAllLines(List<Line> lines) {
         for (Line line : lines) {
             line.setFirstUnpinnedIndex(0);
