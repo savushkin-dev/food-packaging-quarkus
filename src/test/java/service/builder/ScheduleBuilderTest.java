@@ -41,7 +41,7 @@ class ScheduleBuilderTest {
     ProductRepository productRepository;
 
     @Test
-    void buildScheduleShouldAssembleSchedule() {
+    void buildSchedule() {
         LocalDate date = LocalDate.of(2025, 12, 24);
 
         Map<Integer, DbJobRow> jobRows = Map.of(
@@ -98,7 +98,7 @@ class ScheduleBuilderTest {
     }
 
 @Test
-void updateProductListShouldRefreshProducts() {
+void updateProductList() {
     PackagingSchedule schedule = new PackagingSchedule();
     List<Product> newProducts = List.of(new Product("VAN", "Vanilla"));
     when(productRepository.getProductList(schedule)).thenReturn(newProducts);
