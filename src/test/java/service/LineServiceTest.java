@@ -2,7 +2,7 @@ package service;
 
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.factory.LineFactory;
-import org.acme.foodpackaging.repository.lines.LineRepository;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,13 +26,13 @@ class LineServiceTest {
     LineService lineService;
 
     @Mock
-    LineRepository lineRepository;
+    LoadDataService loadDataService;
     @Mock
     LineFactory lineFactory;
 
     @Test
     void getLines() {
-        when(lineRepository.loadLines())
+        when(loadDataService.getLines())
                 .thenReturn(new ConcurrentHashMap<>(Map.of("L1", "Line 1")));
 
         Line line = new Line("L1", "Line 1");
