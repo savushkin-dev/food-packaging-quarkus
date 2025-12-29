@@ -6,7 +6,6 @@ import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.entity.lines.LineEntity;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
@@ -36,8 +35,6 @@ public class LoadDataService {
     private Map<String, Map<String, Integer>> lineSpeeds;
     @Getter
     private List<CleaningRule> cleaningRules;
-    @Getter
-    private List<DbJobRow> dbJobRowList;
 
     @PostConstruct
     void init() {

@@ -9,8 +9,7 @@ import org.acme.foodpackaging.factory.JobFactory;
 import org.acme.foodpackaging.persistence.db.JobDBLoader;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.DbMaintenanceRow;
-import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.sql.Timestamp;
@@ -31,8 +30,6 @@ public class JobRepository {
     LoadDataService loadDataService;
     @Inject
     JobDBLoader jobDBLoader;
-    @Inject
-    MaintenanceJob maintenanceJob;
 
     @ConfigProperty(name = "ksk")
     String ksk;
@@ -43,7 +40,7 @@ public class JobRepository {
         );
     }
 
-    public Map<Integer, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to){
+    public Map<Long, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to){
         return jobDBLoader.loadMaintenanceRowMapFromDb(
                 from.atStartOfDay(), to.atStartOfDay()
         );
@@ -63,8 +60,8 @@ public class JobRepository {
 
         for (DbMaintenanceRow rm : solution.getDbMaintenanceRowMap().values()) {
 
-            if(rm.lineId() == null) continue;
-            Job job = createJobById(rm.f_id(), true, solution);
+            if(rm.getLineId() == null) continue;
+            Job job = createJobById((int) rm.getFId(), true, solution);
 
             jobs.add(job);
         }
@@ -80,11 +77,11 @@ public class JobRepository {
             DbMaintenanceRow row = solution.getDbMaintenanceRowMap().get(id);
 
             job = jobFactory.createJob(
-                    String.valueOf(row.f_id()), row.lineId(), row.snpz().intValueExact(),
-                    -1, row.shortName(), getMaintenanceProduct(), -1,
-                    -1, safe(row.duration()), solution.getWorkCalendar().getMinStartDateTime(),
+                    String.valueOf(row.getFId()), row.getLineId(), row.getSnpz().intValueExact(),
+                    -1, row.getShortName(), getMaintenanceProduct(), -1,
+                    -1, safe(row.getDuration()), solution.getWorkCalendar().getMinStartDateTime(),
                     solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
-                    0, getStartProductionDateTime(row.startProductionDateTime())
+                    0, getStartProductionDateTime(row.getStartProductionDateTime())
             );
 
             job.setMaintenance(true);
