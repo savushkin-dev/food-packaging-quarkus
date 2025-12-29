@@ -34,7 +34,12 @@ public class ProductEntity extends PanacheEntityBase {
     @Column(name = "F_DEL")
     public Integer deletedFlag;
 
-    @OneToOne
-    @JoinColumn(name = "KMC", referencedColumnName = "KMC", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "KMC",
+        referencedColumnName = "KMC",
+        insertable = false,
+        updatable = false
+    )
     public NS_McEntity ns;
 }
