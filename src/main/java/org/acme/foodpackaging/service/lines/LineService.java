@@ -4,7 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.factory.LineFactory;
-import org.acme.foodpackaging.repository.lines.LineRepository;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.util.Comparator;
 import java.util.List;
@@ -16,12 +16,12 @@ import java.util.regex.Pattern;
 public class LineService {
 
     @Inject
-    LineRepository lineRepository;
+    LoadDataService loadDataService;
     @Inject
     LineFactory lineFactory;
 
     public List<Line> getLines() {
-        return lineRepository.loadLines().entrySet().stream()
+        return loadDataService.getLines().entrySet().stream()
                 .sorted(lineNameComparator())
                 .map(e -> lineFactory.createLine(e.getKey(), e.getValue()))
                 .toList();
@@ -38,7 +38,7 @@ public class LineService {
         if (matcher.find()) {
             return Integer.parseInt(matcher.group(1));
         }
-        return Integer.MAX_VALUE; // names without a number go to the end
+        return Integer.MAX_VALUE;
     }
 }
 
