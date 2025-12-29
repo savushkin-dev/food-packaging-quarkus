@@ -9,6 +9,8 @@ import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
+import org.acme.foodpackaging.service.lines.LineSchedulingService;
+import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,7 +38,9 @@ class ScheduleBuilderTest {
     @Mock
     JobRepository jobRepository;
     @Mock
-    LineRepository lineRepository;
+    LineService lineService;
+    @Mock
+    LineSchedulingService lineSchedulingService;
     @Mock
     ProductRepository productRepository;
 
@@ -77,8 +81,8 @@ class ScheduleBuilderTest {
 
         when(jobRepository.getDbJobRowMap(any(), any())).thenReturn(jobRows);
         when(jobRepository.getDbMaintenanceRowMap(any(), any())).thenReturn(maintenanceRows);
-        when(lineRepository.getLines()).thenReturn(lines);
-        doNothing().when(lineRepository).initJobListOnLine(any());
+        when(lineService.getLines()).thenReturn(lines);
+        doNothing().when(lineSchedulingService).initJobListOnLine(any());
         when(productRepository.getProductList(any())).thenReturn(products);
 
         PackagingSchedule schedule = builder.buildSchedule(date);
@@ -92,8 +96,8 @@ class ScheduleBuilderTest {
         verify(jobRepository).getDbJobRowMap(any(), any());
         verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobRepository).initSolutionJobList(schedule);
-        verify(lineRepository).getLines();
-        verify(lineRepository).initJobListOnLine(schedule);
+        verify(lineService).getLines();
+        verify(lineSchedulingService).initJobListOnLine(schedule);
         verify(productRepository).getProductList(schedule);
     }
 
