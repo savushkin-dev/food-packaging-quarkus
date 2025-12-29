@@ -12,23 +12,6 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class SpeedRepository implements PanacheRepository<LineEntity> {
 
-    public Map<LineTypeKey, Integer> loadSpeeds() {
-        return find("speed is not null")
-                .stream()
-                .collect(Collectors.toMap(
-                        e -> new LineTypeKey(
-                                e.getLineId().trim(),
-                                e.getType().trim()
-                        ),
-                        LineEntity::getSpeed,
-                        (existing, ignored) -> existing
-                ));
-    }
-
-    public Map<String, Map<String, Integer>> createSpeedMap() {
-        return createSpeedMap(loadSpeeds());
-    }
-
     public static Map<String, Map<String, Integer>> createSpeedMap(
             Map<LineTypeKey, Integer> rawSpeeds) {
 
