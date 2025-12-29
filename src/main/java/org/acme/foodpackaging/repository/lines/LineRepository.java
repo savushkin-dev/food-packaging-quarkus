@@ -24,13 +24,12 @@ public class LineRepository  implements PanacheRepository<LineEntity> {
      * Загружает id и название линии
      */
     public ConcurrentMap<String, String> loadLines() {
-        List<LineEntity> lines = list("fDel = 0");
-
-        return lines.stream()
+        return find("fDel = 0 and snm is not null")
+                .stream()
                 .collect(Collectors.toConcurrentMap(
-                        e -> e.getKrc().trim(),
+                        e -> e.getLineId().trim(),
                         e -> e.getSnm().trim(),
-                        (existing, replacement) -> existing
+                        (existing, ignored) -> existing
                 ));
     }
 }

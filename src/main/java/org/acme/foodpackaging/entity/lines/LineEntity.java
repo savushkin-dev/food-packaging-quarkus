@@ -6,25 +6,42 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.UUID;
 
 @Entity
 @Table(name = "PLR_PLINES", schema = "dbo")
+@Getter
+@Setter
 public class LineEntity {
 
-    @Getter
-    @Setter
     @Id
-    @Column(name = "KRC")
-    private String krc;
+    @Column(name = "F_GUID", nullable = false)
+    private UUID id;
 
-    @Getter
-    @Setter
+    @Column(name = "KRC")
+    private String lineId;
+
     @Column(name = "SNM")
     private String snm;
+
+    @Column(name = "GRF")
+    private String type;
+
+    @Column(name = "PROD")
+    private Integer speed;
 
     @Column(name = "F_DEL")
     private Integer fDel;
 
-    public Integer getFDel() { return fDel; }
-    public void setFDel(Integer fDel) { this.fDel = fDel; }
+    @Override
+    public String toString() {
+        return "LineEntity{" +
+                "id=" + id +
+                ", krc='" + lineId + '\'' +
+                ", snm='" + snm + '\'' +
+                ", type='" + type + '\'' +
+                ", speed=" + speed +
+                ", fDel=" + fDel +
+                '}';
+    }
 }
