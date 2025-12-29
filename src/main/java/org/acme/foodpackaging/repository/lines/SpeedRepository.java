@@ -29,7 +29,7 @@ public class SpeedRepository implements PanacheRepository<LineEntity> {
         return createSpeedMap(loadSpeeds());
     }
 
-    static Map<String, Map<String, Integer>> createSpeedMap(
+    public static Map<String, Map<String, Integer>> createSpeedMap(
             Map<LineTypeKey, Integer> rawSpeeds) {
 
         Set<String> allTypes = rawSpeeds.keySet()
