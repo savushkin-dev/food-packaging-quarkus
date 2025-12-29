@@ -1,7 +1,6 @@
 package org.acme.foodpackaging.scheduleOperations.utils;
 
 import lombok.Getter;
-
 import java.util.Map;
 
 public class SpeedCacheUtils {
