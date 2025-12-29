@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
 import org.acme.foodpackaging.service.lines.LineService;
