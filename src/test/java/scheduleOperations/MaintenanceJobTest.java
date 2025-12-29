@@ -1,5 +1,6 @@
 package scheduleOperations;
 
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
@@ -105,6 +106,7 @@ class MaintenanceJobTest {
                 null, null, 1, true, null, null);
 
         job.setMaintenance(true);
+        job.setFId(100L);
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
@@ -117,7 +119,7 @@ class MaintenanceJobTest {
         assertTrue(result.getJobs().isEmpty());
         assertTrue(line.getJobs().isEmpty());
     }
-
+    
     @Test
     void updateDuration() {
         Job job = new Job("1", "MaintenanceJob 1", schedule.getProducts().getFirst(), Duration.ofMinutes(20),

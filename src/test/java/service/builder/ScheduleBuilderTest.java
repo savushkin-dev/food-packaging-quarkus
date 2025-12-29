@@ -4,9 +4,8 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.DbMaintenanceRow;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
@@ -59,15 +58,15 @@ class ScheduleBuilderTest {
                 )
         );
 
-        Map<Integer, DbMaintenanceRow> maintenanceRows = Map.of(
-                1, new DbMaintenanceRow(
+        Map<Long, DbMaintenanceRow> maintenanceRows = Map.of(
+                (long)1, new DbMaintenanceRow(
                         1,
                         "Line1",
                         new Timestamp(System.currentTimeMillis()),
                         new Timestamp(System.currentTimeMillis()),
                         2,
                         new BigDecimal("123"),
-                        "Vanilla"
+                        "Vanilla", false
                 )
         );
 

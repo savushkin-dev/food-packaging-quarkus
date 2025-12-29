@@ -38,7 +38,7 @@ WHERE
     SELECT
         v.F_ID, v.KRC,
         v.PDTN, v.PDTO,
-        v.PDUR, v.SNPZ, v.NOTE
+        v.PDUR, v.SNPZ, v.F_DEL, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
         v.SNPZ = 0

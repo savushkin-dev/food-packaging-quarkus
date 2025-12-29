@@ -24,7 +24,6 @@ public class Job {
 
     @PlanningId
     private String id;
-    private String f_Id;
     private String lineId;
     private String name;
 
