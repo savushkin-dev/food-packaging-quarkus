@@ -20,13 +20,13 @@ class LineRepositoryIT {
     @Test
     void loadLinesShouldReturnAllLinesFromDB() {
         LineEntity line1 = new LineEntity();
-        line1.setKrc("L1");
+        line1.setLineId("L1");
         line1.setSnm("Line 1");
         line1.setFDel(0);
         repository.persist(line1);
 
         LineEntity line2 = new LineEntity();
-        line2.setKrc("L2");
+        line2.setLineId("L2");
         line2.setSnm("Line 2");
         line2.setFDel(0);
         repository.persist(line2);
@@ -41,7 +41,7 @@ class LineRepositoryIT {
     @Test
     void loadLinesShouldSkipDeletedLines() {
         LineEntity deletedLine = new LineEntity();
-        deletedLine.setKrc("L3");
+        deletedLine.setLineId("L3");
         deletedLine.setSnm("Deleted Line");
         deletedLine.setFDel(1); // помечена как удаленная
         repository.persist(deletedLine);
