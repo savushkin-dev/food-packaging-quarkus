@@ -83,54 +83,73 @@ public class MoveJobsService {
         return schedule;
     }
     /**
-     * Перемещает подсписок из одного списка в другой и возвращает перемещённые задачи.
-     * Метод работает на копиях списков, затем устанавливает новые списки в объекты Line.
+     * Перемещает подпоследовательность задач между линиями или внутри одной линии.
+     *
+     * Поведение зависит от того, совпадают ли линии:
+     *
+     * 1) Перемещение внутри одной линии:
+     *    - Работа ведётся с одним списком задач
+     *    - Подсписок [fromIndex, fromIndex + count) удаляется
+     *    - Затем он вставляется в позицию insertIndex
+     *    - Индексы рассчитываются в одном и том же списке
+     *
+     * 2) Перемещение между разными линиями:
+     *    - Подсписок удаляется из списка исходной линии
+     *    - Затем вставляется в список целевой линии
+     *
+     * Метод работает на копиях списков, чтобы избежать побочных эффектов,
+     * и в конце устанавливает обновлённые списки обратно в объекты Line.
+     *
+     * @param fromLine линия, из которой перемещаются задачи
+     * @param fromIndex индекс первой задачи для перемещения
+     * @param count количество задач для перемещения
+     * @param toLine линия, в которую выполняется вставка
+     * @param insertIndex индекс позиции вставки в целевой линии
+     *
+     * @return список перемещённых задач;
+     *         пустой список, если входные параметры некорректны
      */
     private List<Job> moveSubList(Line fromLine, int fromIndex, int count,
                                   Line toLine, int insertIndex) {
 
         boolean sameLine = fromLine.getId().equals(toLine.getId());
 
-        List<Job> fromJobs = new ArrayList<>(Optional.ofNullable(fromLine.getJobs()).orElse(Collections.emptyList()));
-        List<Job> toJobs = sameLine
-                ? fromJobs
-                : new ArrayList<>(Optional.ofNullable(toLine.getJobs()).orElse(Collections.emptyList()));
+        int fromEnd = Math.min(fromIndex + Math.max(0, count),
+                fromLine.getJobs().size());
 
-
-        int fromEnd = Math.min(fromIndex + Math.max(0, count), fromJobs.size());
-        if (fromIndex < 0 || fromIndex >= fromJobs.size() || fromIndex >= fromEnd) {
+        if (fromIndex < 0 || fromIndex >= fromLine.getJobs().size() || fromIndex >= fromEnd) {
             return Collections.emptyList();
         }
+        // =======================
+        // SAME LINE
+        // =======================
+        if (sameLine) {
+            List<Job> jobs = new ArrayList<>(fromLine.getJobs());
+
+            List<Job> moved = new ArrayList<>(jobs.subList(fromIndex, fromEnd));
+            jobs.subList(fromIndex, fromEnd).clear();
+
+            insertIndex = Math.max(0, Math.min(insertIndex, jobs.size()));
+            jobs.addAll(insertIndex, moved);
+
+            fromLine.setJobs(jobs);
+            return moved;
+        }
+        // =======================
+        // ЛОГИКА ДЛЯ РАЗНЫХ ЛИНИЙ
+        // =======================
+        List<Job> fromJobs = new ArrayList<>(fromLine.getJobs());
+        List<Job> toJobs = new ArrayList<>(Optional.ofNullable(toLine.getJobs())
+                .orElse(Collections.emptyList()));
 
         List<Job> jobsToMove = new ArrayList<>(fromJobs.subList(fromIndex, fromEnd));
-
-        for (int i = 0; i < jobsToMove.size(); i++) {
-            fromJobs.remove(fromIndex);
-        }
-
-        if (sameLine && insertIndex > fromIndex) {
-            insertIndex -= jobsToMove.size();
-        }
+        fromJobs.subList(fromIndex, fromEnd).clear();
 
         insertIndex = Math.max(0, Math.min(insertIndex, toJobs.size()));
-
-        List<Job> newToJobs = new ArrayList<>(toJobs.size() + jobsToMove.size());
-        for (int i = 0; i < toJobs.size(); i++) {
-            if (i == insertIndex) {
-                newToJobs.addAll(jobsToMove);
-            }
-            newToJobs.add(toJobs.get(i));
-        }
-        if (insertIndex == toJobs.size()) {
-            newToJobs.addAll(jobsToMove);
-        }
+        toJobs.addAll(insertIndex, jobsToMove);
 
         fromLine.setJobs(fromJobs);
-        if (!sameLine) {
-            toLine.setJobs(newToJobs);
-        } else {
-            fromLine.setJobs(newToJobs);
-        }
+        toLine.setJobs(toJobs);
 
         return jobsToMove;
     }

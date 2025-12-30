@@ -20,7 +20,7 @@ import java.util.UUID;
                         @ColumnResult(name = "PDTN", type = Timestamp.class),
                         @ColumnResult(name = "PDTO", type = Timestamp.class),
                         @ColumnResult(name = "PDUR", type = Integer.class),
-                        @ColumnResult(name = "SNPZ", type = BigDecimal.class),
+                        @ColumnResult(name = "SNPZ", type = Long.class),
                         @ColumnResult(name = "UX", type = Integer.class),
                         @ColumnResult(name = "KRC", type = String.class),
                         @ColumnResult(name = "SNM", type = String.class),

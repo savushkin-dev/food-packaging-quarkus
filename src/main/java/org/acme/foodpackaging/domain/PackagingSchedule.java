@@ -16,7 +16,7 @@ import ai.timefold.solver.core.api.solver.SolverStatus;
 import lombok.Getter;
 import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.DbMaintenanceRow;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 
 @Setter
 @Getter
@@ -36,11 +36,11 @@ public class PackagingSchedule {
     @ValueRangeProvider
     private List<Job> jobs;
 
-    private Map<Integer, DbJobRow> dbJobRowMap;
+    private Map<Long, DbJobRow> dbJobRowMap;
 
-    private Map<Integer, DbMaintenanceRow> dbMaintenanceRowMap;
+    private Map<Long, DbMaintenanceRow> dbMaintenanceRowMap;
 
-    private  Map<Integer, Job> jobIdMap;
+    private  Map<Long, Job> jobIdMap;
 
     @PlanningScore
     private HardMediumSoftLongScore score;
@@ -53,8 +53,8 @@ public class PackagingSchedule {
         jobIdMap = new HashMap<>();
     }
 
-    public boolean isEmptySolution(){
-        return jobs.isEmpty();
+    public boolean isEmptySolution() {
+        return jobs == null || jobs.isEmpty();
     }
 
     public void setDateForEmptySolution(LocalDate startDate ) {
