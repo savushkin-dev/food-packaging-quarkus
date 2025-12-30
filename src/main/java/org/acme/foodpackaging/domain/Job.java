@@ -27,7 +27,7 @@ public class Job {
     private String lineId;
     private String name;
 
-    private int snpz;
+    private long snpz;
     private int np;
     private int quantity;
 
@@ -102,7 +102,7 @@ public class Job {
         this.pinned = pinned;
     }
 
-    public Job(String id, String lineId, int snpz, int np, String name, Product product, double mass, int quantity, Duration duration, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority,
+    public Job(String id, String lineId, long snpz, int np, String name, Product product, double mass, int quantity, Duration duration, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority,
                LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.lineId = lineId;

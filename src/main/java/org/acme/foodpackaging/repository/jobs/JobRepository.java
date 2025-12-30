@@ -34,7 +34,7 @@ public class JobRepository {
     @ConfigProperty(name = "ksk")
     String ksk;
 
-    public Map<Integer, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to){
+    public Map<Long, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to){
         return jobDBLoader.loadJobRowMapFromDb(
                 from.atStartOfDay(), to.atStartOfDay(), ksk
         );
@@ -53,7 +53,7 @@ public class JobRepository {
         for (DbJobRow r : solution.getDbJobRowMap().values()) {
 
             if(r.lineId() == null) continue;
-            Job job = createJobById(r.snpz().intValueExact(), false, solution);
+            Job job = createJobById(r.snpz(), false, solution);
 
             jobs.add(job);
         }
@@ -61,14 +61,14 @@ public class JobRepository {
         for (DbMaintenanceRow rm : solution.getDbMaintenanceRowMap().values()) {
 
             if(rm.getLineId() == null) continue;
-            Job job = createJobById((int) rm.getFId(), true, solution);
+            Job job = createJobById(rm.getFId(), true, solution);
 
             jobs.add(job);
         }
         solution.setJobs(jobs);
     }
 
-    public Job createJobById(int id, boolean serviceWork, PackagingSchedule solution) {
+    public Job createJobById(long id, boolean serviceWork, PackagingSchedule solution) {
 
         Job job = new Job();
 
@@ -77,7 +77,7 @@ public class JobRepository {
             DbMaintenanceRow row = solution.getDbMaintenanceRowMap().get(id);
 
             job = jobFactory.createJob(
-                    String.valueOf(row.getFId()), row.getLineId(), row.getSnpz().intValueExact(),
+                    String.valueOf(row.getFId()), row.getLineId(), row.getSnpz(),
                     -1, row.getShortName(), getMaintenanceProduct(), -1,
                     -1, safe(row.getDuration()), solution.getWorkCalendar().getMinStartDateTime(),
                     solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
@@ -104,13 +104,13 @@ public class JobRepository {
             }
 
             job = jobFactory.createJob(
-                    String.valueOf(row.snpz()), row.lineId(), row.snpz().intValueExact(),
+                    String.valueOf(row.snpz()), row.lineId(), row.snpz(),
                     row.np(), jobFactory.nameCleaner(row.shortName()), product,
                     row.mass(), row.quantity(), safe(row.duration()), solution.getWorkCalendar().getMinStartDateTime(),
                     solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
                     row.priority(), getStartProductionDateTime(row.startProductionDateTime())
             );
-            solution.getJobIdMap().put(row.snpz().intValueExact(), job);
+            solution.getJobIdMap().put(row.snpz(), job);
         }
         return job;
     }
@@ -120,7 +120,7 @@ public class JobRepository {
                 ? startProductionDateTime.toLocalDateTime()
                 : null;
     }
-    public List<DbJobRow> getDbJobRowList(Map<Integer, DbJobRow> rows) {
+    public List<DbJobRow> getDbJobRowList(Map<Long, DbJobRow> rows) {
         if (rows == null || rows.isEmpty()) {
             return List.of();
         }

@@ -37,7 +37,7 @@ public class OeePevEntity extends PanacheEntityBase {
     private Integer pdur;
 
     @Column(name = "SNPZ")
-    private Integer snpz;
+    private long snpz;
 
     @Column(name = "EVTYPE")
     private Integer evtype;

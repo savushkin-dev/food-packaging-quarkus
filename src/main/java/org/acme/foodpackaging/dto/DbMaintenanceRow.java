@@ -14,11 +14,11 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 public class DbMaintenanceRow {
    private long fId;
+   private short fDel;
    private String lineId;
    private Timestamp startProductionDateTime;
    private Timestamp endDateTime;
    private Integer duration;
-   private BigDecimal snpz;
+   private long snpz;
    private String shortName;
-   private boolean fDel;
 }

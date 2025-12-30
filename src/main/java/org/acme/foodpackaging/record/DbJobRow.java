@@ -1,6 +1,5 @@
 package org.acme.foodpackaging.record;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 public record DbJobRow(
@@ -12,7 +11,7 @@ public record DbJobRow(
         Timestamp startProductionDateTime, // PDTN
         Timestamp endDateTime,
         Integer duration,      // numeric(7,2)
-        BigDecimal snpz,       // numeric(12,0)
+        Long snpz,       // numeric(12,0)
         Integer priority,      // UX
         String lineId,        // krc
         String shortName      // SNM

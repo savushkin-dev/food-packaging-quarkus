@@ -21,7 +21,7 @@ public class JobDBLoader {
     EntityManager em;
 
     @SuppressWarnings("unchecked")
-    public Map<Integer, DbJobRow> loadJobRowMapFromDb(
+    public Map<Long, DbJobRow> loadJobRowMapFromDb(
             LocalDateTime from,
             LocalDateTime to,
             String ksk
@@ -37,7 +37,7 @@ public class JobDBLoader {
 
         return rows.stream()
                 .collect(Collectors.toMap(
-                        r -> r.snpz().intValueExact(),
+                        DbJobRow::snpz,
                         r -> r,
                         (existing, duplicate) -> {
                             throw new IllegalStateException(

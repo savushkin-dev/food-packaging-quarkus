@@ -112,7 +112,7 @@ public class MaintenanceJob {
         jobs.values().stream()
                 .filter(Objects::nonNull)
                 .filter(job -> job.getFId() == fId)
-                .forEach(job -> job.setFDel(true));
+                .forEach(job -> job.setFDel((short) 1));
     }
 
     public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequestDTO request) {
