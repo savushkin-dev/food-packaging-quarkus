@@ -3,7 +3,6 @@ package org.acme.foodpackaging.entity.jobs;
 import jakarta.persistence.*;
 import org.acme.foodpackaging.record.DbJobRow;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.UUID;
 
