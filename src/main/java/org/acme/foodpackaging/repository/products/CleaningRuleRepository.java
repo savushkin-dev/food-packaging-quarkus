@@ -2,10 +2,8 @@ package org.acme.foodpackaging.repository.products;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.CleaningRule;
 import org.acme.foodpackaging.entity.products.CleaningRuleEntity;
-import org.acme.foodpackaging.sql.SqlQueries;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
