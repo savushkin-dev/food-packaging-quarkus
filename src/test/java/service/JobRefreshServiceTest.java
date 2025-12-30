@@ -110,8 +110,8 @@ class JobRefreshServiceTest {
 
     @Test
     void rebuildJobIdMap() {
-        Job job1 = new Job(); job1.setSnpz(1);
-        Job job2 = new Job(); job2.setSnpz(2);
+        Job job1 = new Job(); job1.setSnpz(1L);
+        Job job2 = new Job(); job2.setSnpz(2L);
 
         PackagingSchedule solution = new PackagingSchedule();
         solution.setJobs(new ArrayList<>(List.of(job1, job2)));
@@ -123,8 +123,8 @@ class JobRefreshServiceTest {
         service.applySelection(Map.of(), solution);
 
         assertEquals(2, solution.getJobIdMap().size());
-        assertSame(job1, solution.getJobIdMap().get(1));
-        assertSame(job2, solution.getJobIdMap().get(2));
+        assertSame(job1, solution.getJobIdMap().get(1L));
+        assertSame(job2, solution.getJobIdMap().get(2L));
     }
 }
 

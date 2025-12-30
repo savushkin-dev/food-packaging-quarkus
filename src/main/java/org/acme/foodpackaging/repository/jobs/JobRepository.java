@@ -83,7 +83,7 @@ public class JobRepository {
                     solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
                     0, getStartProductionDateTime(row.getStartProductionDateTime())
             );
-
+            job.setFId(row.getFId());
             job.setMaintenance(true);
         }
         else {
