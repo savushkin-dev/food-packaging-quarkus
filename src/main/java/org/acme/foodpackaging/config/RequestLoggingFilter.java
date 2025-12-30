@@ -10,6 +10,7 @@ import org.acme.foodpackaging.service.log.LogService;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -31,9 +32,13 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         String login = requestContext.getHeaderString("X-Session-Id");
 
         InputStream entityStream = requestContext.getEntityStream();
-        String body = new BufferedReader(new InputStreamReader(entityStream, StandardCharsets.UTF_8))
-                .lines()
-                .collect(Collectors.joining("\n"));
+        String body;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(entityStream, StandardCharsets.UTF_8))) {
+            body = reader.lines()
+                    .collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read request body", e);
+        }
 
         requestContext.setEntityStream(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
 

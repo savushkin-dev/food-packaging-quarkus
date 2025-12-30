@@ -5,11 +5,13 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -21,6 +23,9 @@ public class OeePevEntity extends PanacheEntityBase {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "F_ID")
     private long fId;
+
+    @Column(name = "F_DEL")
+    private short fDel;
 
     @Column(name = "KRC", columnDefinition = "CHAR(12)")
     private String krc;
@@ -35,7 +40,7 @@ public class OeePevEntity extends PanacheEntityBase {
     private Integer pdur;
 
     @Column(name = "SNPZ")
-    private Integer snpz;
+    private long snpz;
 
     @Column(name = "EVTYPE")
     private Integer evtype;
@@ -45,6 +50,5 @@ public class OeePevEntity extends PanacheEntityBase {
 
     @Column(name = "NOTE")
     private String note;
-
 
 }

@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.solver.service;
+package service;
 
 import org.acme.foodpackaging.domain.CleaningRule;
 import org.acme.foodpackaging.domain.Product;
@@ -22,7 +22,9 @@ class CleaningCalculatorServiceTest {
                 new CleaningRule("1", "Кактус", "", 180)    // Кактус → ANY
         );
 
-        return new CleaningCalculatorService(rules);
+        CleaningCalculatorService cleaningCalculatorService = new CleaningCalculatorService();
+        cleaningCalculatorService.setRules(rules);
+        return cleaningCalculatorService;
     }
 
     private Product product(String type) {

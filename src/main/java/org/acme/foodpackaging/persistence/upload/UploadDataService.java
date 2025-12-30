@@ -15,6 +15,12 @@ public class UploadDataService {
 
     @ConfigProperty(name = "db.url")
     String dbUrl;
+
+    @ConfigProperty(name = "ksk")
+    String ksk;
+
+    @ConfigProperty(name = "krca")
+    String krca;
     /**
      * Отправляет задачи в работу (UPDATE_WORK + процедура)
      */
@@ -31,14 +37,14 @@ public class UploadDataService {
                     ps.setObject(2, job.getStartProductionDateTime());
                     ps.setObject(3, job.getEndDateTime());
                     ps.setLong(4, job.getDuration().toMinutes());
-                    ps.setInt(5, job.getSnpz());
+                    ps.setLong(5, job.getSnpz());
                     ps.addBatch();
                 }
                 ps.executeBatch();
 
                 try (PreparedStatement proc = conn.prepareStatement(REFRESH_FASP)) {
-                    proc.setString(1, "6000000");
-                    proc.setString(2, "0119030000");
+                    proc.setString(1, krca);
+                    proc.setString(2, ksk);
                     proc.execute();
                 } catch (SQLException e) {
                     e.fillInStackTrace();

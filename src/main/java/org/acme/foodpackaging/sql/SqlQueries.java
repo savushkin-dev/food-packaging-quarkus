@@ -1,8 +1,15 @@
 package org.acme.foodpackaging.sql;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@ApplicationScoped
 public class SqlQueries {
 
-    private SqlQueries() {
+    @ConfigProperty(name = "krc")
+    String krc;
+
+    public SqlQueries() {
 
     }
 
@@ -31,7 +38,7 @@ WHERE
     SELECT
         v.F_ID, v.KRC,
         v.PDTN, v.PDTO,
-        v.PDUR, v.SNPZ, v.NOTE
+        v.PDUR, v.SNPZ, v.F_DEL, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
         v.SNPZ = 0
@@ -142,12 +149,14 @@ WHERE
     WHERE p.F_DEL = 0
     """;
 
-    public static final String LOAD_CLEANING_RULES = """
-    SELECT [NPAR], [FROM_VALUE], [TO_VALUE], [DUR]
-      FROM [MES].[dbo].[PLR_CHANGE]
-       where (F_DEL=0) and (KRC='170610000000')
-       order by NPAR
-    """;
+    public String getLoadCleaningRules() { return """
+            SELECT [NPAR], [FROM_VALUE], [TO_VALUE], [DUR] FROM [MES].[dbo].[PLR_CHANGE] WHERE (F_DEL=0) AND (KRC='
+            """
+            + krc +
+            """
+                    ') ORDER BY NPAR """; }
+
+
 
     public static final String LOAD_LINES = """
             select krc from PLR_PLINES
