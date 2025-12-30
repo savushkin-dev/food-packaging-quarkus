@@ -21,16 +21,16 @@ public class JobRefreshService {
     @Inject
     ProductRepository productRepository;
 
-    public PackagingSchedule applySelection(Map<Integer, Boolean> selection, PackagingSchedule solution) {
-        for (Map.Entry<Integer, Boolean> entry : selection.entrySet()) {
-            Integer snpz = entry.getKey();
+    public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
+        for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
+            Long snpz = entry.getKey();
             boolean enabled = entry.getValue();
 
             if (enabled) {
                 if (!solution.getJobIdMap().containsKey(snpz)) {
                     DbJobRow row = solution.getDbJobRowMap().get(snpz);
                     if (row != null) {
-                        Job job = jobRepository.createJobById(row.snpz().intValueExact(), false, solution);
+                        Job job = jobRepository.createJobById(row.snpz(), false, solution);
 
                         solution.getJobs().add(job);
                         solution.getJobIdMap().put(snpz, job);}

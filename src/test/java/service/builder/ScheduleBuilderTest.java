@@ -4,9 +4,8 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.DbMaintenanceRow;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
@@ -48,26 +47,23 @@ class ScheduleBuilderTest {
     void buildSchedule() {
         LocalDate date = LocalDate.of(2025, 12, 24);
 
-        Map<Integer, DbJobRow> jobRows = Map.of(
-                1, new DbJobRow(
+        Map<Long, DbJobRow> jobRows = Map.of(
+                1L, new DbJobRow(
                         new Timestamp(System.currentTimeMillis()),
                         "KMC1", 10, 5, 2.0,
                         new Timestamp(System.currentTimeMillis()),
                         new Timestamp(System.currentTimeMillis()),
-                        5, new BigDecimal("123"),
-                        1, null, "Vanilla"
+                        5, 123L, 1, null, "Vanilla"
                 )
         );
 
-        Map<Integer, DbMaintenanceRow> maintenanceRows = Map.of(
-                1, new DbMaintenanceRow(
-                        1,
+        Map<Long, DbMaintenanceRow> maintenanceRows = Map.of(
+                1L, new DbMaintenanceRow(
+                        1,(short)1,
                         "Line1",
                         new Timestamp(System.currentTimeMillis()),
                         new Timestamp(System.currentTimeMillis()),
-                        2,
-                        new BigDecimal("123"),
-                        "Vanilla"
+                        2, 123L, "Vanilla"
                 )
         );
 

@@ -2,11 +2,14 @@ package org.acme.foodpackaging.scheduleOperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
@@ -88,12 +91,28 @@ public class MaintenanceJob {
 
         lineJobs.remove(index);
         schedule.getJobs().remove(jobToRemove);
+        markDeletedByFId(jobToRemove.getFId(), schedule.getDbMaintenanceRowMap());
 
         fixLineJobs(line);
         fixPinnedJobs(line);
 
         return schedule;
 
+    }
+
+    public void markDeletedByFId(
+            Long fId,
+            Map<Long, DbMaintenanceRow> jobs
+    ) {
+
+        if (fId == null || jobs == null || jobs.isEmpty()) {
+            return;
+        }
+
+        jobs.values().stream()
+                .filter(Objects::nonNull)
+                .filter(job -> job.getFId() == fId)
+                .forEach(job -> job.setFDel((short) 1));
     }
 
     public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequestDTO request) {

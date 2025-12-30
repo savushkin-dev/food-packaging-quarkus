@@ -4,7 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.DbMaintenanceRow;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -21,7 +21,7 @@ public class JobDBLoader {
     EntityManager em;
 
     @SuppressWarnings("unchecked")
-    public Map<Integer, DbJobRow> loadJobRowMapFromDb(
+    public Map<Long, DbJobRow> loadJobRowMapFromDb(
             LocalDateTime from,
             LocalDateTime to,
             String ksk
@@ -37,7 +37,7 @@ public class JobDBLoader {
 
         return rows.stream()
                 .collect(Collectors.toMap(
-                        r -> r.snpz().intValueExact(),
+                        DbJobRow::snpz,
                         r -> r,
                         (existing, duplicate) -> {
                             throw new IllegalStateException(
@@ -48,7 +48,7 @@ public class JobDBLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<Integer, DbMaintenanceRow> loadMaintenanceRowMapFromDb(
+    public Map<Long, DbMaintenanceRow> loadMaintenanceRowMapFromDb(
             LocalDateTime from,
             LocalDateTime to
     ) {
@@ -63,11 +63,11 @@ public class JobDBLoader {
 
         return rows.stream()
                 .collect(Collectors.toMap(
-                        DbMaintenanceRow::f_id,
+                        DbMaintenanceRow::getFId,
                         r -> r,
                         (existing, duplicate) -> {
                             throw new IllegalStateException(
-                                    "Duplicate F_ID: " + existing.f_id()
+                                    "Duplicate F_ID: " + existing.getFId()
                             );
                         }
                 ));
