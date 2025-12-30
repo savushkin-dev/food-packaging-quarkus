@@ -1,6 +1,5 @@
 package scheduleOperations;
 
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
