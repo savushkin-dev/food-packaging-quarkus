@@ -1,6 +1,5 @@
 package org.acme.foodpackaging.service.jobs;
 
-import io.vertx.core.json.impl.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
