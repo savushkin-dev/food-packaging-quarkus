@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @ApplicationScoped
 public class VzPMCRepository implements PanacheRepository<VzPMCEntity> {
 
-    public void updateBySnpz(Integer snpz,
+    public void updateBySnpz(long snpz,
                              LocalDateTime pdtn,
                              LocalDateTime pdto,
                              Integer pdur,
@@ -18,7 +18,7 @@ public class VzPMCRepository implements PanacheRepository<VzPMCEntity> {
                 pdtn, pdto, pdur, krc, snpz);
     }
 
-    public VzPMCEntity findBySnpz(int snpz) {
+    public VzPMCEntity findBySnpz(long snpz) {
         return find("snpz", snpz).firstResult();
     }
 
