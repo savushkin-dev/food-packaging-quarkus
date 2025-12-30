@@ -101,11 +101,11 @@ public class MaintenanceJob {
     }
 
     public void markDeletedByFId(
-            long fId,
+            Long fId,
             Map<Long, DbMaintenanceRow> jobs
     ) {
 
-        if (jobs == null || jobs.isEmpty()) {
+        if (fId == null || jobs == null || jobs.isEmpty()) {
             return;
         }
 
