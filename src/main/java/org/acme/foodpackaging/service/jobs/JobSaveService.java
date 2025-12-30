@@ -1,10 +1,12 @@
 package org.acme.foodpackaging.service.jobs;
 
+import io.vertx.core.json.impl.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.entity.jobs.OeePevEntity;
 import org.acme.foodpackaging.repository.OeePevRepository;
 import org.acme.foodpackaging.repository.VzPMCRepository;
@@ -23,6 +25,16 @@ public class JobSaveService {
 
     @Transactional
     public void saveJobsByType(PackagingSchedule schedule) {
+
+
+        for (Long key : schedule.getDbMaintenanceRowMap().keySet()) {
+            DbMaintenanceRow dbMaintenanceRow = schedule.getDbMaintenanceRowMap().get(key);
+            if(dbMaintenanceRow.getFDel() == 1){
+                OeePevEntity existing = oeePevRepository.findByFId(dbMaintenanceRow.getFId());
+                existing.setFDel((short) 1);
+                oeePevRepository.persist(existing);
+            }
+        }
 
         for (int i = 0; i < schedule.getJobs().size(); i++) {
 

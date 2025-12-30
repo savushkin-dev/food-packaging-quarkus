@@ -24,6 +24,9 @@ public class OeePevEntity extends PanacheEntityBase {
     @Column(name = "F_ID")
     private long fId;
 
+    @Column(name = "F_DEL")
+    private short fDel;
+
     @Column(name = "KRC", columnDefinition = "CHAR(12)")
     private String krc;
 
