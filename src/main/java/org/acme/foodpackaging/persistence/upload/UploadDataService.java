@@ -37,7 +37,7 @@ public class UploadDataService {
                     ps.setObject(2, job.getStartProductionDateTime());
                     ps.setObject(3, job.getEndDateTime());
                     ps.setLong(4, job.getDuration().toMinutes());
-                    ps.setInt(5, job.getSnpz());
+                    ps.setLong(5, job.getSnpz());
                     ps.addBatch();
                 }
                 ps.executeBatch();
