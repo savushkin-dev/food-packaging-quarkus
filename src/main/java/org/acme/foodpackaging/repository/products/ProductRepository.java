@@ -40,7 +40,7 @@ public Map<String, Product> loadProducts() {
             p.mass, p.filling, p.ns.shortName,
             p.ns.krkmc
         )
-        from ProductEntity p
+        from PlrMc p
         join p.ns n
         where p.deletedFlag = 0
     """, ProductRow.class).getResultList();
