@@ -4,10 +4,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
-import lombok.Setter;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.record.CleaningRule;
 import org.acme.foodpackaging.entity.lines.PlrLines;
+import org.acme.foodpackaging.record.CleaningRule;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
@@ -19,8 +18,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-@Getter
-@Setter
 @ApplicationScoped
 public class LoadDataService {
 
@@ -31,9 +28,13 @@ public class LoadDataService {
     @Inject
     CleaningRuleRepository cleaningRuleRepository;
 
+    @Getter
     private ConcurrentMap<String, String> lines;
+    @Getter
     private Map<String, Product> products;
+    @Getter
     private Map<String, Map<String, Integer>> lineSpeeds;
+    @Getter
     private List<CleaningRule> cleaningRules;
 
     @PostConstruct

@@ -77,7 +77,7 @@ public class Job {
     private LocalDateTime endDateTime;
 
     // Constructor for common construction pattern (15 parameters)
-    public Job(String id, String lineId, long snpz, int np, String name, Product product, double mass, int quantity, Duration duration, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
+    public Job(String id, String lineId, Long snpz, int np, String name, Product product, double mass, int quantity, Duration duration, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.lineId = lineId;
         this.snpz = snpz;
@@ -139,11 +139,6 @@ public class Job {
         if (line == null || product == null || product.getType() == null) return null;
         return SpeedCacheUtils.getSpeed(line.getId(), product.getType());
     }
-
-    public LocalDateTime getMaxEndDateTime() {
-        return maxEndTime;
-    }
-
     // ************************************************************************
     // Complex methods
     // ************************************************************************

@@ -2,7 +2,7 @@ package org.acme.foodpackaging.repository.lines;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.lines.LineEntity;
+import org.acme.foodpackaging.entity.lines.PlrLines;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
-public class SpeedRepository implements PanacheRepository<LineEntity> {
+public class SpeedRepository implements PanacheRepository<PlrLines> {
 
     public static Map<String, Map<String, Integer>> createSpeedMap(
             Map<LineTypeKey, Integer> rawSpeeds) {
