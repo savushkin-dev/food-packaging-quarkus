@@ -12,7 +12,7 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.Load;
+import org.acme.foodpackaging.dto.LoadRequest;
 import org.acme.foodpackaging.dto.MoveJobsRequest;
 import org.acme.foodpackaging.dto.PinRequest;
 import org.acme.foodpackaging.dto.*;
@@ -119,7 +119,7 @@ public class PackagingScheduleResource {
     @Path("init")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public List<DbJobRow> init(Load loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public List<DbJobRow> init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
             PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
             solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
