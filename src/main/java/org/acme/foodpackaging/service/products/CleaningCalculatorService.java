@@ -3,11 +3,13 @@ package org.acme.foodpackaging.service.products;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.Getter;
 import lombok.Setter;
-import org.acme.foodpackaging.record.CleaningRule;
+
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.record.CleaningRule;
 
 import java.time.Duration;
 import java.util.*;
+
 
 @Getter
 @Setter

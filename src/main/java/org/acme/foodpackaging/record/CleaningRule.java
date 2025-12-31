@@ -1,11 +1,7 @@
 package org.acme.foodpackaging.record;
 
-import lombok.Getter;
-import lombok.Setter;
 import java.util.Objects;
 
-@Getter
-@Setter
 public record CleaningRule(String parameter, String from, String to, int duration) {
     @Override
     public String parameter() {
@@ -22,4 +18,3 @@ public record CleaningRule(String parameter, String from, String to, int duratio
         return to == null ? "" : to;
     }
 }
-
