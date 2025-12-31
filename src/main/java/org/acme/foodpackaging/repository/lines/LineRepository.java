@@ -2,13 +2,13 @@ package org.acme.foodpackaging.repository.lines;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.lines.LineEntity;
+import org.acme.foodpackaging.entity.lines.PlrLines;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
-public class LineRepository  implements PanacheRepository<LineEntity> {
+public class LineRepository  implements PanacheRepository<PlrLines> {
     /**
      * Загружает id и название линии
      */

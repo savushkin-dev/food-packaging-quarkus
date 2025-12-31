@@ -1,6 +1,6 @@
 package service;
 
-import org.acme.foodpackaging.domain.CleaningRule;
+import org.acme.foodpackaging.record.CleaningRule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 import org.junit.jupiter.api.Test;

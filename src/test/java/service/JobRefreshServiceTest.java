@@ -43,7 +43,7 @@ class JobRefreshServiceTest {
         solution.setDbJobRowMap(Map.of(1L, row));
 
         Job job = new Job();
-        job.setSnpz(1);
+        job.setSnpz(1L);
 
         when(jobRepository.createJobById(1, false, solution))
                 .thenReturn(job);
@@ -65,7 +65,7 @@ class JobRefreshServiceTest {
     @Test
     void enabledJobsAlreadyPresent() {
         Job job = new Job();
-        job.setSnpz(1);
+        job.setSnpz(1L);
 
         PackagingSchedule solution = new PackagingSchedule();
         solution.setJobs(new ArrayList<>(List.of(job)));
@@ -87,7 +87,7 @@ class JobRefreshServiceTest {
         line.setFirstUnpinnedIndex(10);
 
         Job job = new Job();
-        job.setSnpz(1);
+        job.setSnpz(1L);
         job.setLine(line);
 
         line.getJobs().add(job);

@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "NS_MC", schema = "dbo")
-public class NS_McEntity extends PanacheEntityBase {
+public class NsMc extends PanacheEntityBase {
     @Id
     @Column(name = "F_GUID")
     public UUID id;
@@ -32,4 +32,17 @@ public class NS_McEntity extends PanacheEntityBase {
 
     @Column(name = "KRKMC")
     public String krkmc;
+
+    @Override
+    public String toString() {
+        return "NS_McEntity{" +
+                "id=" + id +
+                ", kmc='" + kmc + '\'' +
+                ", massa=" + massa +
+                ", ean13='" + ean13 + '\'' +
+                ", shortName='" + shortName + '\'' +
+                ", name='" + name + '\'' +
+                ", krkmc='" + krkmc + '\'' +
+                '}';
+    }
 }
