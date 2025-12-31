@@ -3,7 +3,6 @@ package org.acme.foodpackaging.service.lines;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.util.Comparator;
@@ -17,13 +16,11 @@ public class LineService {
 
     @Inject
     LoadDataService loadDataService;
-    @Inject
-    LineFactory lineFactory;
-
+   
     public List<Line> getLines() {
         return loadDataService.getLines().entrySet().stream()
                 .sorted(lineNameComparator())
-                .map(e -> lineFactory.createLine(e.getKey(), e.getValue()))
+                .map(e -> new Line(e.getKey(), e.getValue()))
                 .toList();
     }
 

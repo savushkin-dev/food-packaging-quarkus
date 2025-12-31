@@ -5,14 +5,15 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.factory.JobFactory;
 import org.acme.foodpackaging.persistence.db.JobDBLoader;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.nameCleaner;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,8 +25,6 @@ import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMainte
 @ApplicationScoped
 public class JobRepository {
 
-    @Inject
-    JobFactory jobFactory;
     @Inject
     LoadDataService loadDataService;
     @Inject
@@ -76,12 +75,13 @@ public class JobRepository {
 
             DbMaintenanceRow row = solution.getDbMaintenanceRowMap().get(id);
 
-            job = jobFactory.createJob(
+            job = new Job(
                     String.valueOf(row.getFId()), row.getLineId(), row.getSnpz(),
                     -1, row.getShortName(), getMaintenanceProduct(), -1,
-                    -1, safe(row.getDuration()), solution.getWorkCalendar().getMinStartDateTime(),
-                    solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
-                    0, getStartProductionDateTime(row.getStartProductionDateTime())
+                    -1, Duration.ofMinutes(safe(row.getDuration())),
+                    solution.getWorkCalendar().getMinStartDateTime(),
+                    null, null, 0,
+                    null, getStartProductionDateTime(row.getStartProductionDateTime())
             );
             job.setFId(row.getFId());
             job.setMaintenance(true);
@@ -103,12 +103,13 @@ public class JobRepository {
                 throw new IllegalStateException("Unknown product KMC=" + row.kmc());
             }
 
-            job = jobFactory.createJob(
+            job = new Job(
                     String.valueOf(row.snpz()), row.lineId(), row.snpz(),
-                    row.np(), jobFactory.nameCleaner(row.shortName()), product,
-                    row.mass(), row.quantity(), safe(row.duration()), solution.getWorkCalendar().getMinStartDateTime(),
-                    solution.getWorkCalendar().getIdealEndDateTime(), solution.getWorkCalendar().getMaxEndDateTime(),
-                    row.priority(), getStartProductionDateTime(row.startProductionDateTime())
+                    row.np(), nameCleaner(row.shortName()), product,
+                    row.mass(), row.quantity(), Duration.ofMinutes(safe(row.duration())),
+                    solution.getWorkCalendar().getMinStartDateTime(),
+                    null, null, row.priority(),
+                    null, getStartProductionDateTime(row.startProductionDateTime())
             );
             solution.getJobIdMap().put(row.snpz(), job);
         }
@@ -130,7 +131,6 @@ public class JobRepository {
     private int safe(Integer v) {
         return v != null ? v : 0;
     }
-
 }
 
 

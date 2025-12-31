@@ -13,7 +13,6 @@ import org.acme.foodpackaging.record.ProductRow;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 
 @ApplicationScoped

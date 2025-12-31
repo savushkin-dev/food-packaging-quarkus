@@ -30,7 +30,6 @@ import org.acme.foodpackaging.service.jobs.JobSaveService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.time.LocalDate;
 import java.util.*;
 
 import static io.smallrye.config._private.ConfigLogging.log;
@@ -120,8 +119,6 @@ public class PackagingScheduleResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public List<DbJobRow> init(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
-
-        LocalDate startDate = loadDTO.getStartDate();
 
             PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
             solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
@@ -431,5 +428,4 @@ public class PackagingScheduleResource {
     private String getProblemId(String sessionId) {
         return sessionId != null ? sessionId : "default";
     }
-
 }

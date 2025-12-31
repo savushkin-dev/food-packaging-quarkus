@@ -50,7 +50,7 @@ class FoodPackagingConstraintProviderTest {
     @Test
     @Disabled
     void maxEndDateTime() {
-        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false);
+        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false, null, null);
         Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), null, null, DAY_START_TIME.plusMinutes(200), 1, false,
                 DAY_START_TIME, DAY_START_TIME);
         Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(150), null, null, DAY_START_TIME.plusMinutes(100), 1, false,
@@ -70,7 +70,7 @@ class FoodPackagingConstraintProviderTest {
     @Test
     @Disabled
     void idealEndDateTime() {
-        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false);
+        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false, null, null);
         Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), null, DAY_START_TIME.plusMinutes(200), null, 1, false,
                 DAY_START_TIME, DAY_START_TIME);
         Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(150), null, DAY_START_TIME.plusMinutes(100), null, 1, false,
@@ -90,7 +90,7 @@ class FoodPackagingConstraintProviderTest {
     void minimizeMakespan() {
         Line line1 = new Line("1", "line1", null, DAY_START_TIME);
         Line line2 = new Line("2", "line2", null, DAY_START_TIME);
-        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false);
+        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false, null, null);
         Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(100), null, null, null, 1, false,
                 DAY_START_TIME, DAY_START_TIME);
         Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(200), null, null, null, 3, false,
@@ -107,7 +107,7 @@ class FoodPackagingConstraintProviderTest {
 
     @Test @Disabled("The constraint is currently commented out.")
     void minimizeCleaningDuration() {
-        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), DAY_START_TIME, null, null, 1, false);
+        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), DAY_START_TIME, null, null, 1, false, null, null);
         Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), DAY_START_TIME, null, null, 1, false,
                 DAY_START_TIME, DAY_START_TIME);
         Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(150), DAY_START_TIME, null, null, 1, false,

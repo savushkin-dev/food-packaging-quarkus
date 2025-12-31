@@ -1,17 +1,13 @@
 package org.acme.foodpackaging.service.products;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import lombok.Getter;
 import lombok.Setter;
-import org.acme.foodpackaging.domain.CleaningRule;
+import org.acme.foodpackaging.record.CleaningRule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.sql.SqlQueries;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.Duration;
 import java.util.*;
-
 
 @Getter
 @Setter
@@ -19,13 +15,6 @@ import java.util.*;
 public class CleaningCalculatorService {
 
     private List<CleaningRule> rules;
-
-    @Inject
-    @ConfigProperty(name = "db.url")
-    String dbUrl;
-
-    @Inject
-    SqlQueries sqlQueries;
     /**
      * Определяет длительность мойки при переходе от продукта *from* к продукту *to*.
      * Логика:
@@ -74,13 +63,13 @@ public class CleaningCalculatorService {
      */
     private Integer findDuration(String parameter, String from, String to) {
         return rules.stream()
-                .filter(r -> r.getParameter().equals(parameter))
-                .filter(r -> matches(r.getFrom(), from) && matches(r.getTo(), to))
+                .filter(r -> r.parameter().equals(parameter))
+                .filter(r -> matches(r.from(), from) && matches(r.to(), to))
                 .sorted((r1, r2) -> Integer.compare(
                         specificity(r2, from, to),
                         specificity(r1, from, to)
                 ))
-                .map(CleaningRule::getDuration)
+                .map(CleaningRule::duration)
                 .findFirst()
                 .orElse(null);
     }
@@ -95,8 +84,8 @@ public class CleaningCalculatorService {
      */
     private int specificity(CleaningRule rule, String from, String to) {
         int score = 0;
-        if (!rule.getFrom().isBlank() && rule.getFrom().equalsIgnoreCase(from)) score++;
-        if (!rule.getTo().isBlank() && rule.getTo().equalsIgnoreCase(to)) score++;
+        if (!rule.from().isBlank() && rule.from().equalsIgnoreCase(from)) score++;
+        if (!rule.to().isBlank() && rule.to().equalsIgnoreCase(to)) score++;
         return score;
     }
     /**

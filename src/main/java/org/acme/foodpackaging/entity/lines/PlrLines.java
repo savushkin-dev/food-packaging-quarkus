@@ -12,7 +12,7 @@ import java.util.UUID;
 @Table(name = "PLR_PLINES", schema = "dbo")
 @Getter
 @Setter
-public class LineEntity {
+public class PlrLines {
 
     @Id
     @Column(name = "F_GUID", nullable = false)
