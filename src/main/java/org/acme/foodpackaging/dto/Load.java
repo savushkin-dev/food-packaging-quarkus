@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 @Setter
 @Getter
-public class LoadDTO {
+public class Load {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;

@@ -12,13 +12,14 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.LoadDTO;
-import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
-import org.acme.foodpackaging.dto.PinRequestDTO;
+import org.acme.foodpackaging.dto.Load;
+import org.acme.foodpackaging.dto.MoveJobsRequest;
+import org.acme.foodpackaging.dto.PinRequest;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.JobSelection;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
@@ -118,7 +119,7 @@ public class PackagingScheduleResource {
     @Path("init")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public List<DbJobRow> init(LoadDTO loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public List<DbJobRow> init(Load loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
             PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
             solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
@@ -133,7 +134,7 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("/selection")
-    public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionDTO dto) {
+    public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelection dto) {
 
         PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
                 repository.readForSession(sessionId));
@@ -148,7 +149,7 @@ public class PackagingScheduleResource {
     @Path("lineStart")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdateDTO request) {
+    public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdate request) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -180,7 +181,7 @@ public class PackagingScheduleResource {
     @Path("lineMaxEnd")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdateDTO request) {
+    public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdate request) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -300,7 +301,7 @@ public class PackagingScheduleResource {
     @Path("moveJobs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response moveJobs(MoveJobsRequestDTO request, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response moveJobs(MoveJobsRequest request, @HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
         if (schedule == null) {
@@ -333,7 +334,7 @@ public class PackagingScheduleResource {
      */
     @POST
     @Path("maintenance")
-    public Response addMaintenance(MaintenanceRequestDTO request,
+    public Response addMaintenance(MaintenanceRequest request,
                                    @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
@@ -368,7 +369,7 @@ public class PackagingScheduleResource {
     @Path("pin")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response pin(PinRequestDTO pinRequest, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response pin(PinRequest pinRequest, @HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule solution = repository.readForSession(sessionId);
         if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
