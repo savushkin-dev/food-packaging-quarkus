@@ -1,6 +1,6 @@
 package scheduleOperations;
 
-import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
+import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.domain.*;
@@ -59,7 +59,7 @@ class MaintenanceJobTest {
 
     @Test
     void MaintenanceJobInEmptyLine() {
-        MaintenanceRequestDTO request = new MaintenanceRequestDTO();
+        MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
         request.setName("Maintenance 1");
         request.setDurationMinutes(30);
@@ -85,7 +85,7 @@ class MaintenanceJobTest {
         line.getJobs().add(existingJob);
         schedule.getJobs().add(existingJob);
 
-        MaintenanceRequestDTO request = new MaintenanceRequestDTO();
+        MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
         request.setName("Maintenance 2");
         request.setDurationMinutes(15);
@@ -109,7 +109,7 @@ class MaintenanceJobTest {
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
-        MaintenanceRequestDTO request = new MaintenanceRequestDTO();
+        MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
         request.setRemoveIndex(0);
 
@@ -129,7 +129,7 @@ class MaintenanceJobTest {
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
-        MaintenanceRequestDTO request = new MaintenanceRequestDTO();
+        MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
         // updateLineMode
         request.setUpdateIndex(0);

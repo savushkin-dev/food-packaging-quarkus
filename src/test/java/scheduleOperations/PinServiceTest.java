@@ -2,7 +2,7 @@ package scheduleOperations;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.dto.PinRequestDTO;
+import org.acme.foodpackaging.dto.PinRequest;
 import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,7 +108,7 @@ class PinServiceTest {
     // ------------------------------------------------------------------
     @Test
     void pinAllOneLine() {
-        PinRequestDTO request = new PinRequestDTO();
+        PinRequest request = new PinRequest();
         request.setPinAll(true);
 
         service.pinLine(line, request);
@@ -118,7 +118,7 @@ class PinServiceTest {
 
     @Test
     void pinOneLineWithCount() {
-        PinRequestDTO request = new PinRequestDTO();
+        PinRequest request = new PinRequest();
         request.setPinCount(1);
 
         service.pinLine(line, request);
@@ -128,7 +128,7 @@ class PinServiceTest {
 
     @Test
     void pinLineWithNoFlags() {
-        PinRequestDTO request = new PinRequestDTO();
+        PinRequest request = new PinRequest();
 
         service.pinLine(line, request);
 

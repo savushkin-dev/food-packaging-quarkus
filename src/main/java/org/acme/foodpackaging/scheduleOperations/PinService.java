@@ -2,7 +2,7 @@ package org.acme.foodpackaging.scheduleOperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.dto.PinRequestDTO;
+import org.acme.foodpackaging.dto.PinRequest;
 
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class PinService {
     /**
      * Закрепляет/открепляет все задания на конкретной линии в зависимости от флагов.
      */
-    public void pinLine(Line line, PinRequestDTO request) {
+    public void pinLine(Line line, PinRequest request) {
         if (Boolean.TRUE.equals(request.getPinAll())) {
             line.setFirstUnpinnedIndex(line.getJobs().size());
         } else if (request.getPinCount() != null) {

@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public class MoveJobsRequestDTO {
+public class MoveJobsRequest {
     private String fromLineId;
     private String toLineId;
     private int fromIndex;
