@@ -52,7 +52,7 @@ public class OeePev extends PanacheEntityBase {
     private LocalDateTime startProductionDateTime;
 
     @Column(name = "PDTO")
-    private LocalDateTime enDateTime;
+    private LocalDateTime endDateTime;
 
     @Column(name = "PDUR")
     private Integer duration;
@@ -76,7 +76,7 @@ public class OeePev extends PanacheEntityBase {
                 ", fDel=" + fDel +
                 ", lineId='" + lineId + '\'' +
                 ", startProductionDateTime=" + startProductionDateTime +
-                ", enDateTime=" + enDateTime +
+                ", endDateTime=" + endDateTime +
                 ", duration=" + duration +
                 ", snpz=" + snpz +
                 ", evtype=" + evtype +

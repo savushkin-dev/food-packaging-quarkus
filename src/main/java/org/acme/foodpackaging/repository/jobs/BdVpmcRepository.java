@@ -11,14 +11,14 @@ public class BdVpmcRepository implements PanacheRepository<BdVzpmc> {
 
     public void updateBySnpz(Long snpz,
                              LocalDateTime startProductionDateTime,
-                             LocalDateTime enDateTime,
+                             LocalDateTime endDateTime,
                              Integer duration,
                              String lineId) {
-        update("startProductionDateTime = ?1, enDateTime = ?2, duration = ?3, lineId = ?4 where snpz = ?5",
-                startProductionDateTime, enDateTime, duration, lineId, snpz);
+        update("startProductionDateTime = ?1, endDateTime = ?2, duration = ?3, lineId = ?4 where snpz = ?5",
+                startProductionDateTime, endDateTime, duration, lineId, snpz);
     }
 
-    public BdVzpmc findBySnpz(long snpz) {
+    public BdVzpmc findBySnpz(Long snpz) {
         return find("snpz", snpz).firstResult();
     }
 }

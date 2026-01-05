@@ -43,7 +43,7 @@ public class JobSaveService {
                 OeePev entityForInsert = OeePev.builder()
                         .lineId(job.getLine().getId())
                         .startProductionDateTime(job.getStartProductionDateTime())
-                        .enDateTime(job.getEndDateTime())
+                        .endDateTime(job.getEndDateTime())
                         .duration((int) Duration.between(
                                 job.getStartCleaningDateTime(),
                                 job.getEndDateTime()
@@ -59,7 +59,7 @@ public class JobSaveService {
                     if (existing != null) {
                         existing.setLineId(job.getLine().getId());
                         existing.setStartProductionDateTime(job.getStartProductionDateTime());
-                        existing.setEnDateTime(job.getEndDateTime());
+                        existing.setEndDateTime(job.getEndDateTime());
                         existing.setDuration((int) Duration.between(
                                 job.getStartProductionDateTime(),
                                 job.getEndDateTime()
@@ -85,7 +85,7 @@ public class JobSaveService {
                     if (existing != null) {
                         existing.setLineId(job.getLine().getId());
                         existing.setStartProductionDateTime(job.getStartCleaningDateTime());
-                        existing.setEnDateTime(job.getStartProductionDateTime());
+                        existing.setEndDateTime(job.getStartProductionDateTime());
                         existing.setDuration((int) Duration.between(
                                 job.getStartCleaningDateTime(),
                                 job.getStartProductionDateTime()
@@ -99,7 +99,7 @@ public class JobSaveService {
                         OeePev entityForInsert = OeePev.builder()
                                 .lineId(job.getLine().getId())
                                 .startProductionDateTime(job.getStartCleaningDateTime())
-                                .enDateTime(job.getStartProductionDateTime())
+                                .endDateTime(job.getStartProductionDateTime())
                                 .duration((int) Duration.between(
                                         job.getStartCleaningDateTime(),
                                         job.getStartProductionDateTime()
