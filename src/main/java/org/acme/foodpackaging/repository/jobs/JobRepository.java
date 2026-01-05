@@ -108,7 +108,7 @@ public class JobRepository {
                     row.np(), nameCleaner(row.shortName()), product,
                     row.mass(), row.quantity(), Duration.ofMinutes(safe(row.duration())),
                     solution.getWorkCalendar().getMinStartDateTime(),
-                    null, null, row.priority(),
+                    null, null, safe(row.priority()),
                     null, getStartProductionDateTime(row.startProductionDateTime())
             );
             solution.getJobIdMap().put(row.snpz(), job);
