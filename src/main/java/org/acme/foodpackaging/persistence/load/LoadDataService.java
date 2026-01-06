@@ -1,7 +1,8 @@
 package org.acme.foodpackaging.persistence.load;
 
-import jakarta.annotation.PostConstruct;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
@@ -37,8 +38,7 @@ public class LoadDataService {
     @Getter
     private List<CleaningRule> cleaningRules;
 
-    @PostConstruct
-    void init() {
+    void onStart(@Observes StartupEvent ev) {
         loadData();
     }
 
