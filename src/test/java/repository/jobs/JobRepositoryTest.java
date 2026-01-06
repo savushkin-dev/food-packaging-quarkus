@@ -1,0 +1,294 @@
+package repository.jobs;
+
+import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.domain.WorkCalendar;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.persistence.db.JobDBLoader;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@Tag("database")
+class JobRepositoryTest {
+
+    @InjectMocks
+    JobRepository jobRepository;
+
+    @Mock
+    LoadDataService loadDataService;
+    @Mock
+    JobDBLoader jobDBLoader;
+
+    private PackagingSchedule schedule;
+    private WorkCalendar workCalendar;
+
+    @BeforeEach
+    void setUp() {
+        workCalendar = new WorkCalendar(LocalDate.of(2025, 1, 15));
+        workCalendar.setMinStartDateTime(LocalDateTime.of(2025, 1, 15, 8, 0));
+        
+        schedule = new PackagingSchedule();
+        schedule.setWorkCalendar(workCalendar);
+        schedule.setDbJobRowMap(new HashMap<>());
+        schedule.setDbMaintenanceRowMap(new HashMap<>());
+        schedule.setJobIdMap(new HashMap<>());
+        schedule.setJobs(new ArrayList<>());
+    }
+
+    @Test
+    void getDbJobRowMap() {
+    
+        LocalDate from = LocalDate.of(2025, 1, 15);
+        LocalDate to = LocalDate.of(2025, 1, 20);
+        Map<Long, DbJobRow> expectedMap = Map.of(
+                123L, createDbJobRow("KMC1", 123L)
+        );
+
+        when(jobDBLoader.loadJobRowMapFromDb(any(), any(), any())).thenReturn(expectedMap);
+
+        Map<Long, DbJobRow> result = jobRepository.getDbJobRowMap(from, to);
+
+        assertEquals(expectedMap, result);
+        verify(jobDBLoader).loadJobRowMapFromDb(
+                from.atStartOfDay(),
+                to.atStartOfDay(),
+                any()
+        );
+    }
+
+    @Test
+    void getDbMaintenanceRowMap() {
+        
+        LocalDate from = LocalDate.of(2025, 1, 15);
+        LocalDate to = LocalDate.of(2025, 1, 20);
+        Map<Long, DbMaintenanceRow> expectedMap = Map.of(
+                1L, createDbMaintenanceRow(1L, "L1")
+        );
+
+        when(jobDBLoader.loadMaintenanceRowMapFromDb(any(), any())).thenReturn(expectedMap);
+
+        Map<Long, DbMaintenanceRow> result = jobRepository.getDbMaintenanceRowMap(from, to);
+
+        assertEquals(expectedMap, result);
+        verify(jobDBLoader).loadMaintenanceRowMapFromDb(
+                from.atStartOfDay(),
+                to.atStartOfDay()
+        );
+    }
+
+    @Test
+    void initSolutionJobList() {
+     
+        DbJobRow jobRow1 = createDbJobRow("KMC1", 123L);
+        jobRow1 = new DbJobRow(
+                jobRow1.dti(), jobRow1.kmc(), jobRow1.np(), jobRow1.quantity(),
+                jobRow1.mass(), jobRow1.startProductionDateTime(), jobRow1.endDateTime(),
+                jobRow1.duration(), jobRow1.snpz(), jobRow1.priority(), "L1", jobRow1.shortName()
+        );
+        
+        DbJobRow jobRow2 = createDbJobRow("KMC2", 124L);
+        jobRow2 = new DbJobRow(
+                jobRow2.dti(), jobRow2.kmc(), jobRow2.np(), jobRow2.quantity(),
+                jobRow2.mass(), jobRow2.startProductionDateTime(), jobRow2.endDateTime(),
+                jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName() // null lineId
+        );
+
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow(1L, "L1");
+
+        schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
+        schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
+
+        Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
+        Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2");
+        when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product1, "KMC2", product2));
+
+        // Act
+        jobRepository.initSolutionJobList(schedule);
+
+        // Assert
+        assertNotNull(schedule.getJobs());
+        assertEquals(2, schedule.getJobs().size()); // Only jobs with lineId should be included
+        assertTrue(schedule.getJobs().stream().anyMatch(j -> j.getSnpz() == 123L));
+        assertTrue(schedule.getJobs().stream().anyMatch(j -> j.isMaintenance()));
+    }
+
+    @Test
+    void createJobByIdForRegularJob() {
+       
+        DbJobRow jobRow = createDbJobRow("KMC1", 123L);
+        jobRow = new DbJobRow(
+                jobRow.dti(), jobRow.kmc(), jobRow.np(), jobRow.quantity(),
+                jobRow.mass(), jobRow.startProductionDateTime(), jobRow.endDateTime(),
+                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName()
+        );
+        schedule.setDbJobRowMap(Map.of(123L, jobRow));
+
+        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
+        when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product));
+
+        // Act
+        Job job = jobRepository.createJobById(123L, false, schedule);
+
+        // Assert
+        assertNotNull(job);
+        assertEquals("123", job.getId());
+        assertEquals(123L, job.getSnpz());
+        assertEquals("L1", job.getLineId());
+        assertEquals(product, job.getProduct());
+        assertFalse(job.isMaintenance());
+        assertTrue(schedule.getJobIdMap().containsKey(123L));
+    }
+
+    @Test
+    void createJobByIdForMaintenanceJob() {
+       
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow(1L, "L1");
+        schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
+
+        Job job = jobRepository.createJobById(1L, true, schedule);
+
+        assertNotNull(job);
+        assertEquals("1", job.getId());
+        assertEquals(1L, job.getFId());
+        assertEquals("L1", job.getLineId());
+        assertTrue(job.isMaintenance());
+        assertNotNull(job.getProduct());
+        assertEquals("Maintenance", job.getProduct().getName());
+    }
+
+    @Test
+    void createJobByIdThrowsWhenJobNotFound() {
+        
+        schedule.setDbJobRowMap(Map.of());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> jobRepository.createJobById(999L, false, schedule));
+        
+        assertTrue(exception.getMessage().contains("Unknown SNPZ=999"));
+    }
+
+    @Test
+    void createJobByIdThrowsWhenProductNotFound() {
+       
+        DbJobRow jobRow = createDbJobRow("UNKNOWN_KMC", 123L);
+        jobRow = new DbJobRow(
+                jobRow.dti(), jobRow.kmc(), jobRow.np(), jobRow.quantity(),
+                jobRow.mass(), jobRow.startProductionDateTime(), jobRow.endDateTime(),
+                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName()
+        );
+        schedule.setDbJobRowMap(Map.of(123L, jobRow));
+
+        when(loadDataService.getProducts()).thenReturn(Map.of());
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> jobRepository.createJobById(123L, false, schedule));
+        
+        assertTrue(exception.getMessage().contains("Unknown product KMC=UNKNOWN_KMC"));
+    }
+
+    @Test
+    void createJobByIdReturnsExistingJob() {
+    
+        Job existingJob = new Job();
+        existingJob.setId("123");
+        existingJob.setSnpz(123L);
+        schedule.getJobIdMap().put(123L, existingJob);
+
+        Job result = jobRepository.createJobById(123L, false, schedule);
+
+        assertSame(existingJob, result);
+        verify(loadDataService, never()).getProducts();
+    }
+
+    @Test
+    void getStartProductionDateTime() {
+       
+        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.of(2025, 1, 15, 10, 30));
+
+        LocalDateTime result = jobRepository.getStartProductionDateTime(timestamp);
+
+        assertEquals(LocalDateTime.of(2025, 1, 15, 10, 30), result);
+    }
+
+    @Test
+    void getStartProductionDateTimeWithNull() {
+       
+        LocalDateTime result = jobRepository.getStartProductionDateTime(null);
+
+        assertNull(result);
+    }
+
+    @Test
+    void getDbJobRowList() {
+        // Arrange
+        Map<Long, DbJobRow> jobRowMap = Map.of(
+                123L, createDbJobRow("KMC1", 123L),
+                124L, createDbJobRow("KMC2", 124L)
+        );
+
+        // Act
+        List<DbJobRow> result = jobRepository.getDbJobRowList(jobRowMap);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertTrue(result.stream().anyMatch(r -> r.snpz() == 123L));
+        assertTrue(result.stream().anyMatch(r -> r.snpz() == 124L));
+    }
+
+    @Test
+    void testGetDbJobRowListWithNull() {
+       
+        List<DbJobRow> result = jobRepository.getDbJobRowList(null);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetDbJobRowListWithEmptyMap() {
+        
+        List<DbJobRow> result = jobRepository.getDbJobRowList(Map.of());
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    private DbJobRow createDbJobRow(String kmc, Long snpz) {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        return new DbJobRow(
+                now, kmc, 10, 5, 2.0,
+                now, now, 5, snpz, 1, "L1", "Product"
+        );
+    }
+
+    private DbMaintenanceRow createDbMaintenanceRow(Long fId, String lineId) {
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        return new DbMaintenanceRow(
+                fId, (short) 0, lineId, now, now, 30, 123L, "Maintenance"
+        );
+    }
+}
+
