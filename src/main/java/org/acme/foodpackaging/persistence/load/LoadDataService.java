@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.persistence.load;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -39,6 +40,10 @@ public class LoadDataService {
     private List<CleaningRule> cleaningRules;
 
     void onStart(@Observes StartupEvent ev) {
+
+        if (LaunchMode.current() == LaunchMode.TEST) {
+            return;
+        }
         loadData();
     }
 
