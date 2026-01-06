@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public class PinRequestDTO {
+public class PinRequest {
     private String lineId;
     private Integer pinCount;
     private Boolean pinAll;

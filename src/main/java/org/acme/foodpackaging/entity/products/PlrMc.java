@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "PLR_MC", schema = "dbo")
-public class ProductEntity extends PanacheEntityBase {
+public class PlrMc extends PanacheEntityBase {
 
     @Id
     @Column(name = "F_GUID")
@@ -41,5 +41,20 @@ public class ProductEntity extends PanacheEntityBase {
         insertable = false,
         updatable = false
     )
-    public NS_McEntity ns;
+    public NsMc ns;
+
+    @Override
+    public String toString() {
+        return "ProductEntity{" +
+                "id=" + id +
+                ", kmc='" + kmc + '\'' +
+                ", ean13='" + ean13 + '\'' +
+                ", type='" + type + '\'' +
+                ", glaze='" + glaze + '\'' +
+                ", mass='" + mass + '\'' +
+                ", filling='" + filling + '\'' +
+                ", deletedFlag=" + deletedFlag +
+                ", ns=" + ns +
+                '}';
+    }
 }

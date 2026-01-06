@@ -105,4 +105,11 @@ public class ScheduleUtils {
             line.setFirstUnpinnedIndex(0);
         }
     }
+
+    public static String nameCleaner(String input) {
+        return input.replaceFirst(
+                "(?i)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
+                ""
+        ).trim();
+    }
 }

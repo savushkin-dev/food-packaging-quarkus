@@ -5,7 +5,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.entity.lines.LineEntity;
+import org.acme.foodpackaging.entity.lines.PlrLines;
+import org.acme.foodpackaging.record.CleaningRule;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
@@ -39,7 +40,7 @@ public class LoadDataService {
     @PostConstruct
     void init() {
         
-        List<LineEntity> allLineEntities = lineRepository.find("fDel = 0").list();
+        List<PlrLines> allLineEntities = lineRepository.find("fDel = 0").list();
        
         this.lines = allLineEntities.stream()
                 .filter(e -> e.getSnm() != null)
@@ -56,7 +57,7 @@ public class LoadDataService {
                                 e.getLineId().trim(),
                                 e.getType().trim()
                         ),
-                        LineEntity::getSpeed,
+                        PlrLines::getSpeed,
                         (existing, ignored) -> existing
                 ));
         

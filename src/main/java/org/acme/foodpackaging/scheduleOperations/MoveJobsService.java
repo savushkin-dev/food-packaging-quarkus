@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
+import org.acme.foodpackaging.dto.MoveJobsRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
@@ -25,7 +25,7 @@ public class MoveJobsService {
      * Выполняет перемещение подпоследовательности задач.
      * Бросает IllegalArgumentException при некорректных входных данных.
      */
-    public PackagingSchedule moveJobs(PackagingSchedule schedule, MoveJobsRequestDTO request) {
+    public PackagingSchedule moveJobs(PackagingSchedule schedule, MoveJobsRequest request) {
         Objects.requireNonNull(schedule, "schedule must not be null");
         Objects.requireNonNull(request, "request must not be null");
 
