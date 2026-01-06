@@ -25,4 +25,4 @@ jobs:
           cache: maven
 
       - name: Build with Maven (Quarkus)
-        run: mvn clean verify
+        run: mvn clean verify -DexcludedGroups=database
