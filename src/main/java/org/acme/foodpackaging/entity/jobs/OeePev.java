@@ -43,7 +43,7 @@ public class OeePev extends PanacheEntityBase {
     private Long fId;
 
     @Column(name = "F_DEL")
-    private Short fDel;
+    private short fDel;
 
     @Column(name = "KRC", columnDefinition = "CHAR(12)")
     private String lineId;
