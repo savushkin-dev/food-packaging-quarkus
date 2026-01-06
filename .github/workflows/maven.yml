@@ -25,4 +25,21 @@ jobs:
           cache: maven
 
       - name: Build with Maven (Quarkus)
-        run: mvn clean verify -DexcludedGroups=database
+        run: |
+          retry_count=0
+          max_retries=3
+          until mvn clean verify -DexcludedGroups=database --batch-mode; do
+            retry_count=$((retry_count+1))
+            if [ $retry_count -ge $max_retries ]; then
+              echo "Build failed after $max_retries attempts"
+              exit 1
+            fi
+            echo "Build failed, retrying in 10 seconds... (attempt $retry_count/$max_retries)"
+            sleep 10
+          done
+        env:
+          MAVEN_OPTS: >
+            -Dmaven.wagon.http.retryHandler.count=5
+            -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
+            -Dmaven.wagon.http.pool=false
+            -Dhttp.keepAlive=false
