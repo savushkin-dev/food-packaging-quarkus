@@ -6,9 +6,9 @@ import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.entity.jobs.OeePevEntity;
-import org.acme.foodpackaging.repository.OeePevRepository;
-import org.acme.foodpackaging.repository.VzPMCRepository;
+import org.acme.foodpackaging.entity.jobs.OeePev;
+import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
+import org.acme.foodpackaging.repository.jobs.OeePevRepository;
 
 import java.time.Duration;
 
@@ -16,7 +16,7 @@ import java.time.Duration;
 public class JobSaveService {
 
     @Inject
-    VzPMCRepository vzPMCRepository;
+    BdVpmcRepository bdVpmcRepository;
 
     @Inject
     OeePevRepository oeePevRepository;
@@ -29,7 +29,7 @@ public class JobSaveService {
         for (Long key : schedule.getDbMaintenanceRowMap().keySet()) {
             DbMaintenanceRow dbMaintenanceRow = schedule.getDbMaintenanceRowMap().get(key);
             if(dbMaintenanceRow.getFDel() == 1){
-                OeePevEntity existing = oeePevRepository.findByFId(dbMaintenanceRow.getFId());
+                OeePev existing = oeePevRepository.findByFId(dbMaintenanceRow.getFId());
                 existing.setFDel((short) 1);
                 oeePevRepository.persist(existing);
             }
@@ -40,11 +40,11 @@ public class JobSaveService {
             Job job = schedule.getJobs().get(i);
 
             if (job.isMaintenance()) {
-                OeePevEntity entityForInsert = OeePevEntity.builder()
-                        .krc(job.getLine().getId())
-                        .pdtn(job.getStartProductionDateTime())
-                        .pdto(job.getEndDateTime())
-                        .pdur((int) Duration.between(
+                OeePev entityForInsert = OeePev.builder()
+                        .lineId(job.getLine().getId())
+                        .startProductionDateTime(job.getStartProductionDateTime())
+                        .endDateTime(job.getEndDateTime())
+                        .duration((int) Duration.between(
                                 job.getStartCleaningDateTime(),
                                 job.getEndDateTime()
                         ).toMinutes())
@@ -55,12 +55,12 @@ public class JobSaveService {
                         .build();
 
                 if (!job.getId().startsWith("MAINTENANCE")) {
-                    OeePevEntity existing = oeePevRepository.findByFId(Long.parseLong(job.getId()));
+                    OeePev existing = oeePevRepository.findByFId(Long.parseLong(job.getId()));
                     if (existing != null) {
-                        existing.setKrc(job.getLine().getId());
-                        existing.setPdtn(job.getStartProductionDateTime());
-                        existing.setPdto(job.getEndDateTime());
-                        existing.setPdur((int) Duration.between(
+                        existing.setLineId(job.getLine().getId());
+                        existing.setStartProductionDateTime(job.getStartProductionDateTime());
+                        existing.setEndDateTime(job.getEndDateTime());
+                        existing.setDuration((int) Duration.between(
                                 job.getStartProductionDateTime(),
                                 job.getEndDateTime()
                         ).toMinutes());
@@ -81,12 +81,12 @@ public class JobSaveService {
 
                 if (!job.getStartCleaningDateTime().isEqual(job.getStartProductionDateTime())) {
 
-                    OeePevEntity existing = oeePevRepository.findBySnpz(job.getSnpz());
+                    OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
                     if (existing != null) {
-                        existing.setKrc(job.getLine().getId());
-                        existing.setPdtn(job.getStartCleaningDateTime());
-                        existing.setPdto(job.getStartProductionDateTime());
-                        existing.setPdur((int) Duration.between(
+                        existing.setLineId(job.getLine().getId());
+                        existing.setStartProductionDateTime(job.getStartCleaningDateTime());
+                        existing.setEndDateTime(job.getStartProductionDateTime());
+                        existing.setDuration((int) Duration.between(
                                 job.getStartCleaningDateTime(),
                                 job.getStartProductionDateTime()
                         ).toMinutes());
@@ -96,11 +96,11 @@ public class JobSaveService {
 
                         oeePevRepository.persist(existing);
                     } else {
-                        OeePevEntity entityForInsert = OeePevEntity.builder()
-                                .krc(job.getLine().getId())
-                                .pdtn(job.getStartCleaningDateTime())
-                                .pdto(job.getStartProductionDateTime())
-                                .pdur((int) Duration.between(
+                        OeePev entityForInsert = OeePev.builder()
+                                .lineId(job.getLine().getId())
+                                .startProductionDateTime(job.getStartCleaningDateTime())
+                                .endDateTime(job.getStartProductionDateTime())
+                                .duration((int) Duration.between(
                                         job.getStartCleaningDateTime(),
                                         job.getStartProductionDateTime()
                                 ).toMinutes())
@@ -114,7 +114,7 @@ public class JobSaveService {
                     }
                 }
 
-                vzPMCRepository.updateBySnpz(
+                bdVpmcRepository.updateBySnpz(
                         job.getSnpz(),
                         job.getStartProductionDateTime(),
                         job.getEndDateTime(),
@@ -128,8 +128,4 @@ public class JobSaveService {
             }
         }
     }
-
-
-
-
 }

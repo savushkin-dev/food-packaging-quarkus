@@ -1,7 +1,6 @@
 package service;
 
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.factory.LineFactory;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,24 +25,19 @@ class LineServiceTest {
 
     @Mock
     LoadDataService loadDataService;
-    @Mock
-    LineFactory lineFactory;
 
     @Test
     void getLines() {
         when(loadDataService.getLines())
                 .thenReturn(new ConcurrentHashMap<>(Map.of("L1", "Line 1")));
 
-        Line line = new Line("L1", "Line 1");
-        when(lineFactory.createLine("L1", "Line 1"))
-                .thenReturn(line);
-
         List<Line> result = lineService.getLines();
 
         assertEquals(1, result.size());
-        assertSame(line, result.getFirst());
+        assertEquals("L1", result.getFirst().getId());
+        assertEquals("Line 1", result.getFirst().getName());
 
-        verify(lineFactory).createLine("L1", "Line 1");
+        verify(loadDataService).getLines();
     }
 }
 

@@ -4,7 +4,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.MoveJobsRequestDTO;
+import org.acme.foodpackaging.dto.MoveJobsRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
@@ -76,7 +76,7 @@ class MoveJobsServiceTest {
         line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
         schedule.getJobs().addAll(line1.getJobs());
 
-        MoveJobsRequestDTO request = new MoveJobsRequestDTO();
+        MoveJobsRequest request = new MoveJobsRequest();
         request.setFromLineId("line1");
         request.setToLineId("line1");
         request.setFromIndex(0);
@@ -98,7 +98,7 @@ class MoveJobsServiceTest {
 
         line1.setJobs(new ArrayList<>(List.of(j1, j2)));
 
-        MoveJobsRequestDTO request = new MoveJobsRequestDTO();
+        MoveJobsRequest request = new MoveJobsRequest();
         request.setFromLineId("line1");
         request.setToLineId("line1");
         request.setFromIndex(0);
@@ -117,7 +117,7 @@ class MoveJobsServiceTest {
         line1.setJobs(new ArrayList<>(List.of(j1)));
         line2.setJobs(new ArrayList<>());
 
-        MoveJobsRequestDTO request = new MoveJobsRequestDTO();
+        MoveJobsRequest request = new MoveJobsRequest();
         request.setFromLineId("line1");
         request.setToLineId("line2");
         request.setFromIndex(0);
