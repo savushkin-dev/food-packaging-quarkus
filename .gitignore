@@ -26,4 +26,5 @@ venv*
 /.idea/
 target/
 src/main/resources/excelExport/
-src/main/resources/PlanFactExport/
+# Environment variables
+.env
