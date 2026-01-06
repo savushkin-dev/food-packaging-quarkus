@@ -40,7 +40,6 @@ public class LoadDataService {
     private List<CleaningRule> cleaningRules;
 
     void onStart(@Observes StartupEvent ev) {
-
         if (LaunchMode.current() == LaunchMode.TEST) {
             return;
         }
