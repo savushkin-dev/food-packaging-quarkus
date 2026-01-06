@@ -39,7 +39,14 @@ public class LoadDataService {
 
     @PostConstruct
     void init() {
-        
+        loadData();
+    }
+
+    public void refresh() {
+        loadData();
+    }
+
+    private void loadData() {
         List<PlrLines> allLineEntities = lineRepository.find("fDel = 0").list();
        
         this.lines = allLineEntities.stream()
