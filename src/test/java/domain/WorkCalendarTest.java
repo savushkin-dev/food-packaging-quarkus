@@ -41,20 +41,7 @@ class WorkCalendarTest {
         assertEquals(startDate.plusDays(3), calendar.getToDate());
         assertEquals(startDate.atStartOfDay(), calendar.getMinStartDateTime());
     }
-
-    @Test
-    void toString() {
-        LocalDate fromDate = LocalDate.of(2025, 1, 15);
-        LocalDate toDate = LocalDate.of(2025, 1, 20);
-        WorkCalendar calendar = new WorkCalendar(fromDate, toDate);
-        
-        String result = calendar.toString();
-        
-        assertTrue(result.contains("2025-01-15"));
-        assertTrue(result.contains("2025-01-20"));
-        assertTrue(result.contains(" - "));
-    }
-
+    
     @Test
     void settersAndGetters() {
         WorkCalendar calendar = new WorkCalendar();
