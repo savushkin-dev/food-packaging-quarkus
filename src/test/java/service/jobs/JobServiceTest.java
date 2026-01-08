@@ -69,7 +69,7 @@ class JobServiceTest {
                 jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName()
         );
 
-        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow(1L, "L1");
 
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
         schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
@@ -229,10 +229,10 @@ class JobServiceTest {
         );
     }
 
-    private DbMaintenanceRow createDbMaintenanceRow() {
+    private DbMaintenanceRow createDbMaintenanceRow(Long fId, String lineId) {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         return new DbMaintenanceRow(
-                1L, (short) 0, "L1", now, now, 30, 123L, "Maintenance"
+                fId, (short) 0, lineId, now, now, 30, 123L, "Maintenance"
         );
     }
 }
