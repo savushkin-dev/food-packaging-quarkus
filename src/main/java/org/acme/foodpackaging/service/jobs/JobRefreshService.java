@@ -7,7 +7,8 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.repository.products.ProductRepository;
+import org.acme.foodpackaging.service.jobs.JobService;
+import org.acme.foodpackaging.service.products.ProductService;
 
 import java.util.Map;
 
@@ -19,7 +20,9 @@ public class JobRefreshService {
     @Inject
     JobRepository jobRepository;
     @Inject
-    ProductRepository productRepository;
+    JobService jobService;
+    @Inject
+    ProductService productService;
 
     public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
         for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
@@ -30,7 +33,7 @@ public class JobRefreshService {
                 if (!solution.getJobIdMap().containsKey(snpz)) {
                     DbJobRow row = solution.getDbJobRowMap().get(snpz);
                     if (row != null) {
-                        Job job = jobRepository.createJobById(row.snpz(), false, solution);
+                        Job job = jobService.createJobById(row.snpz(), false, solution);
 
                         solution.getJobs().add(job);
                         solution.getJobIdMap().put(snpz, job);}
@@ -54,7 +57,7 @@ public class JobRefreshService {
                 }
             }
         rebuildId(solution);
-        solution.setProducts(productRepository.getProductList(solution));
+        solution.setProducts(productService.getProductList(solution));
         return solution;
         }
 
