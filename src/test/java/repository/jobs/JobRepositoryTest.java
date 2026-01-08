@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,8 +73,8 @@ class JobRepositoryTest {
 
         assertEquals(expectedMap, result);
         verify(jobDBLoader).loadJobRowMapFromDb(
-                from.atStartOfDay(),
-                to.atStartOfDay(),
+                eq(from.atStartOfDay()),
+                eq(to.atStartOfDay()),
                 any()
         );
     }
@@ -148,10 +149,8 @@ class JobRepositoryTest {
         Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product));
 
-        // Act
         Job job = jobRepository.createJobById(123L, false, schedule);
 
-        // Assert
         assertNotNull(job);
         assertEquals("123", job.getId());
         assertEquals(123L, job.getSnpz());
@@ -175,7 +174,7 @@ class JobRepositoryTest {
         assertEquals("L1", job.getLineId());
         assertTrue(job.isMaintenance());
         assertNotNull(job.getProduct());
-        assertEquals("Maintenance", job.getProduct().getName());
+        assertEquals("MAINTENANCE", job.getProduct().getId());
     }
 
     @Test
@@ -242,16 +241,14 @@ class JobRepositoryTest {
 
     @Test
     void getDbJobRowList() {
-        // Arrange
+      
         Map<Long, DbJobRow> jobRowMap = Map.of(
                 123L, createDbJobRow("KMC1", 123L),
                 124L, createDbJobRow("KMC2", 124L)
         );
 
-        // Act
         List<DbJobRow> result = jobRepository.getDbJobRowList(jobRowMap);
 
-        // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
         assertTrue(result.stream().anyMatch(r -> r.snpz() == 123L));

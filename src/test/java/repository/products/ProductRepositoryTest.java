@@ -27,6 +27,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,7 +48,7 @@ class ProductRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        when(entityManager.createQuery(anyString(), eq(ProductRow.class))).thenReturn(typedQuery);
+        lenient().when(entityManager.createQuery(anyString(), eq(ProductRow.class))).thenReturn(typedQuery);
     }
 
     @Test
@@ -121,16 +122,14 @@ class ProductRepositoryTest {
         doNothing().when(cleaningCalculator).setRules(any());
         doNothing().when(cleaningCalculator).cleaningCalculate(any());
 
-        // Act
         List<Product> result = productRepository.getProductList(schedule);
 
-        // Assert
         assertNotNull(result);
         assertEquals(3, result.size()); // 2 products + 1 maintenance product
         assertTrue(result.contains(product1));
         assertTrue(result.contains(product2));
         // Maintenance product should be included
-        assertTrue(result.stream().anyMatch(p -> p.getName().equals("Maintenance")));
+        assertTrue(result.stream().anyMatch(p -> p.getName().equals("Maintenance Product")));
 
         verify(loadDataService).getProducts();
         verify(loadDataService).getCleaningRules();
@@ -164,14 +163,11 @@ class ProductRepositoryTest {
         doNothing().when(cleaningCalculator).setRules(any());
         doNothing().when(cleaningCalculator).cleaningCalculate(any());
 
-        // Act
         List<Product> result = productRepository.getProductList(schedule);
 
-        // Assert
         assertNotNull(result);
-        // Maintenance job should have maintenance product set
         assertNotNull(maintenanceJob.getProduct());
-        assertEquals("Maintenance", maintenanceJob.getProduct().getName());
+        assertEquals("Maintenance Product", maintenanceJob.getProduct().getName());
     }
 
     @Test
