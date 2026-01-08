@@ -43,11 +43,10 @@ class JobRepositoryTest {
     JobDBLoader jobDBLoader;
 
     private PackagingSchedule schedule;
-    private WorkCalendar workCalendar;
 
     @BeforeEach
     void setUp() {
-        workCalendar = new WorkCalendar(LocalDate.of(2025, 1, 15));
+        WorkCalendar workCalendar = new WorkCalendar(LocalDate.of(2025, 1, 15));
         workCalendar.setMinStartDateTime(LocalDateTime.of(2025, 1, 15, 8, 0));
         
         schedule = new PackagingSchedule();
@@ -85,7 +84,7 @@ class JobRepositoryTest {
         LocalDate from = LocalDate.of(2025, 1, 15);
         LocalDate to = LocalDate.of(2025, 1, 20);
         Map<Long, DbMaintenanceRow> expectedMap = Map.of(
-                1L, createDbMaintenanceRow(1L, "L1")
+                1L, createDbMaintenanceRow()
         );
 
         when(jobDBLoader.loadMaintenanceRowMapFromDb(any(), any())).thenReturn(expectedMap);
@@ -113,10 +112,10 @@ class JobRepositoryTest {
         jobRow2 = new DbJobRow(
                 jobRow2.dti(), jobRow2.kmc(), jobRow2.np(), jobRow2.quantity(),
                 jobRow2.mass(), jobRow2.startProductionDateTime(), jobRow2.endDateTime(),
-                jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName() // null lineId
+                jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName()
         );
 
-        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow(1L, "L1");
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
 
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
         schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
@@ -125,14 +124,12 @@ class JobRepositoryTest {
         Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2");
         when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product1, "KMC2", product2));
 
-        // Act
         jobRepository.initSolutionJobList(schedule);
 
-        // Assert
         assertNotNull(schedule.getJobs());
         assertEquals(2, schedule.getJobs().size()); // Only jobs with lineId should be included
         assertTrue(schedule.getJobs().stream().anyMatch(j -> j.getSnpz() == 123L));
-        assertTrue(schedule.getJobs().stream().anyMatch(j -> j.isMaintenance()));
+        assertTrue(schedule.getJobs().stream().anyMatch(Job::isMaintenance));
     }
 
     @Test
@@ -163,7 +160,7 @@ class JobRepositoryTest {
     @Test
     void createJobByIdForMaintenanceJob() {
        
-        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow(1L, "L1");
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
         schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
 
         Job job = jobRepository.createJobById(1L, true, schedule);
@@ -281,10 +278,10 @@ class JobRepositoryTest {
         );
     }
 
-    private DbMaintenanceRow createDbMaintenanceRow(Long fId, String lineId) {
+    private DbMaintenanceRow createDbMaintenanceRow() {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         return new DbMaintenanceRow(
-                fId, (short) 0, lineId, now, now, 30, 123L, "Maintenance"
+                1L, (short) 0, "L1", now, now, 30, 123L, "Maintenance"
         );
     }
 }

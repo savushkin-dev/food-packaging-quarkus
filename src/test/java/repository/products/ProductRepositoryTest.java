@@ -61,7 +61,6 @@ class ProductRepositoryTest {
 
         Map<String, Product> result = productRepository.loadProducts();
 
-        
         assertNotNull(result);
         assertEquals(2, result.size());
         assertTrue(result.containsKey("KMC1"));
