@@ -39,7 +39,8 @@ public class PlrMc extends PanacheEntityBase {
         name = "KMC",
         referencedColumnName = "KMC",
         insertable = false,
-        updatable = false
+        updatable = false,
+        foreignKey = @jakarta.persistence.ForeignKey(value = jakarta.persistence.ConstraintMode.NO_CONSTRAINT)
     )
     public NsMc ns;
 
