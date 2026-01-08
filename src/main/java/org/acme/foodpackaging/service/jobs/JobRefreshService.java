@@ -7,7 +7,6 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.products.ProductService;
 
 import java.util.Map;
