@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Setter
 @Getter
-public class MaintenanceRequestDTO {
+public class MaintenanceRequest {
 
     private String lineId;
     private String name;

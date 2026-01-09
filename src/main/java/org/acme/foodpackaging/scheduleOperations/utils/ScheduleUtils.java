@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ScheduleUtils {
     /**
@@ -106,5 +104,12 @@ public class ScheduleUtils {
         for (Line line : lines) {
             line.setFirstUnpinnedIndex(0);
         }
+    }
+
+    public static String nameCleaner(String input) {
+        return input.replaceFirst(
+                "(?i)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
+                ""
+        ).trim();
     }
 }

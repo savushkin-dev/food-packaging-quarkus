@@ -3,7 +3,7 @@ package org.acme.foodpackaging.scheduleOperations;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.dto.MaintenanceRequestDTO;
+import org.acme.foodpackaging.dto.MaintenanceRequest;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -24,7 +24,7 @@ public class MaintenanceJob {
      * @return обновлённое расписание
      */
     public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule,
-                                               MaintenanceRequestDTO request) {
+                                               MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.getLineId());
 
@@ -76,7 +76,7 @@ public class MaintenanceJob {
     }
 
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
-                                                  MaintenanceRequestDTO request) {
+                                                  MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.getLineId());
 
@@ -115,7 +115,7 @@ public class MaintenanceJob {
                 .forEach(job -> job.setFDel((short) 1));
     }
 
-    public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequestDTO request) {
+    public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.getLineId());
 
