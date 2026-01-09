@@ -35,7 +35,6 @@ class ProductServiceTest {
 
     @Mock
     CleaningCalculatorService cleaningCalculator;
-    
     @Mock
     LoadDataService loadDataService;
 
