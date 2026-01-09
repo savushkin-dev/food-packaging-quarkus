@@ -4,7 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.repository.products.ProductRepository;
+import org.acme.foodpackaging.service.jobs.JobService;
+import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
 import org.acme.foodpackaging.service.lines.LineService;
 
@@ -17,11 +18,13 @@ public class ScheduleBuilder {
     @Inject
     JobRepository jobRepository;
     @Inject
+    JobService jobService;
+    @Inject
     LineService lineService;
     @Inject
     LineSchedulingService lineSchedulingService;
     @Inject
-    ProductRepository productRepository;
+    ProductService productService;
 
     public PackagingSchedule buildSchedule(LocalDate startDate) {
 
@@ -35,9 +38,9 @@ public class ScheduleBuilder {
                 schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
         );
 
-        jobRepository.initSolutionJobList(schedule);
+        jobService.initSolutionJobList(schedule);
         List<Line> lines = lineService.getLines();
-        List<Product> products = productRepository.getProductList(schedule);
+        List<Product> products = productService.getProductList(schedule);
         schedule.setLines(lines);
         schedule.setProducts(products);
         lineSchedulingService.initJobListOnLine(schedule);
@@ -47,7 +50,7 @@ public class ScheduleBuilder {
     }
 
     public PackagingSchedule updateProductList(PackagingSchedule schedule){
-        List<Product> updatedProductList = productRepository.getProductList(schedule);
+        List<Product> updatedProductList = productService.getProductList(schedule);
         schedule.setProducts(updatedProductList);
         return schedule;
     }
