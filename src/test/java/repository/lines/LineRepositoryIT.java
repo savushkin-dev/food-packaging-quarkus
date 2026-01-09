@@ -75,10 +75,8 @@ class LineRepositoryIT {
         deletedLine.setFDel(1); // Deleted, should be filtered
         entityManager.persist(deletedLine);
 
-        // Test
         ConcurrentMap<String, String> lines = lineRepository.loadLines();
 
-        // Assert
         assertNotNull(lines);
         assertEquals(2, lines.size(), "Should only load lines with non-null names and fDel=0");
         assertEquals("Line 1", lines.get("L1"));
