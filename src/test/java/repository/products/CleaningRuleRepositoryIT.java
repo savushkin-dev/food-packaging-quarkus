@@ -91,7 +91,7 @@ class CleaningRuleRepositoryIT {
         assertNotNull(rules);
         assertEquals(2, rules.size(), "Should only load rules with deletedFlag=0, matching lineId, and non-null duration");
 
-        CleaningRule loadedRule1 = rules.get(0);
+        CleaningRule loadedRule1 = rules.getFirst();
         assertNotNull(loadedRule1);
         assertEquals("1", loadedRule1.parameter());
         assertEquals("Type1", loadedRule1.from());

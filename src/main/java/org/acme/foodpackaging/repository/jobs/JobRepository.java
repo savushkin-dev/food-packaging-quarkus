@@ -2,7 +2,7 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.foodpackaging.persistence.db.JobDBLoader;
+import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
