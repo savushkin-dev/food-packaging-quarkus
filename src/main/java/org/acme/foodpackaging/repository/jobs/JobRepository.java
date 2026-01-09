@@ -2,134 +2,66 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.persistence.db.JobDBLoader;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.nameCleaner;
+import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import java.sql.Timestamp;
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
-
+/**
+ * Data access repository for jobs.
+ * Handles loading job and maintenance data from the database.
+ */
 @ApplicationScoped
 public class JobRepository {
 
-    @Inject
-    LoadDataService loadDataService;
     @Inject
     JobDBLoader jobDBLoader;
 
     @ConfigProperty(name = "ksk")
     String ksk;
 
-    public Map<Long, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to){
+    /**
+     * Загружает карту задач из базы данных за указанный период.
+     * 
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of job rows by SNPZ
+     */
+    public Map<Long, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to) {
         return jobDBLoader.loadJobRowMapFromDb(
                 from.atStartOfDay(), to.atStartOfDay(), ksk
         );
     }
 
-    public Map<Long, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to){
+    /**
+     * Загружает карту задач обслуживания из базы данных за указанный период.
+     * 
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of maintenance rows by FId
+     */
+    public Map<Long, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to) {
         return jobDBLoader.loadMaintenanceRowMapFromDb(
                 from.atStartOfDay(), to.atStartOfDay()
         );
     }
 
-    public void initSolutionJobList(PackagingSchedule solution) {
-
-          List<Job> jobs = new ArrayList<>();
-
-        for (DbJobRow r : solution.getDbJobRowMap().values()) {
-
-            if(r.lineId() == null) continue;
-            Job job = createJobById(r.snpz(), false, solution);
-
-            jobs.add(job);
-        }
-
-        for (DbMaintenanceRow rm : solution.getDbMaintenanceRowMap().values()) {
-
-            if(rm.getLineId() == null) continue;
-            Job job = createJobById(rm.getFId(), true, solution);
-
-            jobs.add(job);
-        }
-        solution.setJobs(jobs);
-    }
-
-    public Job createJobById(long id, boolean serviceWork, PackagingSchedule solution) {
-
-        Job job = new Job();
-
-        if(serviceWork){
-
-            DbMaintenanceRow row = solution.getDbMaintenanceRowMap().get(id);
-
-            job = new Job(
-                    String.valueOf(row.getFId()), row.getLineId(), row.getSnpz(),
-                    -1, row.getShortName(), getMaintenanceProduct(), -1,
-                    -1, Duration.ofMinutes(safe(row.getDuration())),
-                    solution.getWorkCalendar().getMinStartDateTime(),
-                    null, null, 0,
-                    null, getStartProductionDateTime(row.getStartProductionDateTime())
-            );
-            job.setFId(row.getFId());
-            job.setMaintenance(true);
-        }
-        else {
-
-            Job existing = solution.getJobIdMap().get(id);
-            if (existing != null) {
-                return existing;
-            }
-
-            DbJobRow row = solution.getDbJobRowMap().get(id);
-            if (row == null) {
-                throw new IllegalArgumentException("Unknown SNPZ=" + id);
-            }
-
-            Product product = loadDataService.getProducts().get(row.kmc());
-            if (product == null) {
-                throw new IllegalStateException("Unknown product KMC=" + row.kmc());
-            }
-
-            job = new Job(
-                    String.valueOf(row.snpz()), row.lineId(), row.snpz(),
-                    row.np(), nameCleaner(row.shortName()), product,
-                    row.mass(), row.quantity(), Duration.ofMinutes(safe(row.duration())),
-                    solution.getWorkCalendar().getMinStartDateTime(),
-                    null, null, safe(row.priority()),
-                    null, getStartProductionDateTime(row.startProductionDateTime())
-            );
-            solution.getJobIdMap().put(row.snpz(), job);
-        }
-        return job;
-    }
-
-    public LocalDateTime getStartProductionDateTime(Timestamp startProductionDateTime){
-        return startProductionDateTime != null
-                ? startProductionDateTime.toLocalDateTime()
-                : null;
-    }
+    /**
+     * Преобразует Map в List для удобства работы.
+     * 
+     * @param rows Map of job rows
+     * @return List of job rows
+     */
     public List<DbJobRow> getDbJobRowList(Map<Long, DbJobRow> rows) {
         if (rows == null || rows.isEmpty()) {
             return List.of();
         }
         return new ArrayList<>(rows.values());
-    }
-
-    private int safe(Integer v) {
-        return v != null ? v : 0;
     }
 }
 
