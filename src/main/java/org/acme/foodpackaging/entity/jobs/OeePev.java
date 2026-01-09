@@ -84,5 +84,4 @@ public class OeePev extends PanacheEntityBase {
                 ", note='" + note + '\'' +
                 '}';
     }
-
 }
