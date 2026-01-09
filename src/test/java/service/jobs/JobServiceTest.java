@@ -69,7 +69,7 @@ class JobServiceTest {
                 jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName()
         );
 
-        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow(1L, "L1");
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
 
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
         schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
@@ -112,7 +112,7 @@ class JobServiceTest {
 
     @Test
     void createJobByIdForMaintenanceJob() {
-        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow(1L, "L1");
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
         schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
 
         Job job = jobService.createJobById(1L, true, schedule);
@@ -218,7 +218,7 @@ class JobServiceTest {
         jobService.initSolutionJobList(schedule);
 
         assertEquals(1, schedule.getJobs().size(), "Should filter out jobs with null lineId");
-        assertEquals(123L, schedule.getJobs().get(0).getSnpz());
+        assertEquals(123L, schedule.getJobs().getFirst().getSnpz());
     }
 
     private DbJobRow createDbJobRow(String kmc, Long snpz) {
@@ -229,10 +229,10 @@ class JobServiceTest {
         );
     }
 
-    private DbMaintenanceRow createDbMaintenanceRow(Long fId, String lineId) {
+    private DbMaintenanceRow createDbMaintenanceRow() {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         return new DbMaintenanceRow(
-                fId, (short) 0, lineId, now, now, 30, 123L, "Maintenance"
+                1L, (short) 0, "L1", now, now, 30, 123L, "Maintenance"
         );
     }
 }
