@@ -111,7 +111,7 @@ public class MaintenanceJob {
 
         jobs.values().stream()
                 .filter(Objects::nonNull)
-                .filter(job -> job.getFId() == fId)
+                .filter(job -> Objects.equals(job.getFId(), fId))
                 .forEach(job -> job.setFDel((short) 1));
     }
 

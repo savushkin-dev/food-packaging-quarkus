@@ -58,9 +58,16 @@ WHERE
         v.KRC,
         v.PDTN
 """;
+
+    public static final String LOAD_FACT_DB = """
+    select dtv, kmc, np, krc, dt
+                            from MS_LOG
+                            where (DTV > ?) and (DTV <= ?) and (EVENT=1)
+                            order by dtv, kmc, np
+""";
 public static final String UPDATE_WORK = """
-    update [MES].[dbo].[BD_VZPMC] 
-    set KRC=?, PDTN=?, PDTO=?, PDUR=? 
+    update [MES].[dbo].[BD_VZPMC]
+    set KRC=?, PDTN=?, PDTO=?, PDUR=?
     where SNPZ=?;
     """;
 
