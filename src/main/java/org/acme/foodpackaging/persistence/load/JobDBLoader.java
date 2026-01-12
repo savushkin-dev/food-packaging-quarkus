@@ -5,11 +5,14 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.FactProductionRow;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
@@ -21,7 +24,7 @@ public class JobDBLoader {
     EntityManager em;
 
     @SuppressWarnings("unchecked")
-    public Map<Long, DbJobRow> loadJobRowMapFromDb(
+    public Map<Long, DbJobRow> loadJobRowMap(
             LocalDateTime from,
             LocalDateTime to,
             String ksk
@@ -48,7 +51,7 @@ public class JobDBLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<Long, DbMaintenanceRow> loadMaintenanceRowMapFromDb(
+    public Map<Long, DbMaintenanceRow> loadMaintenanceRowMap(
             LocalDateTime from,
             LocalDateTime to
     ) {
@@ -68,6 +71,30 @@ public class JobDBLoader {
                         (existing, duplicate) -> {
                             throw new IllegalStateException(
                                     "Duplicate F_ID: " + existing.getFId()
+                            );
+                        }
+                ));
+    }
+
+    public Map<Pair<String, Integer>, FactProductionRow> loadFactProductionRowMap(
+            LocalDateTime dtv
+    ) {
+
+        List<FactProductionRow> rows = em
+                .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
+                .setParameter(1, Timestamp.valueOf(dtv))
+                .setParameter(2, Timestamp.valueOf(dtv))
+                .getResultList();
+
+        return rows.stream()
+                .collect(Collectors.toMap(
+                        r -> Pair.of(r.kmc(), r.np()),
+                        Function.identity(),
+                        (existing, duplicate) -> {
+                            throw new IllegalStateException(
+                                    "Duplicate key: "
+                                            + existing.kmc() + ", "
+                                            + existing.np()
                             );
                         }
                 ));
