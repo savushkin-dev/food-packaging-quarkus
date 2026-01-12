@@ -25,6 +25,8 @@ venv*
 #Directories
 /.idea/
 target/
-src/main/resources/excelExport/
+
 # Environment variables
 .env
+logs/
+

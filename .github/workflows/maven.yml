@@ -3,11 +3,11 @@ name: Java CI with Maven (Quarkus)
 on:
   push:
     branches:
-      - main
+      - prod_scheduler
       - develop_rc
   pull_request:
     branches:
-      - main
+      - prod_scheduler
       - develop_rc
 
 jobs:
