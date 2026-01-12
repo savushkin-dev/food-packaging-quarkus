@@ -8,6 +8,7 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -123,7 +124,7 @@ public class JobService {
      */
     public void initFactProductionData(
             PackagingSchedule solution,
-            Map<Pair<String, Integer>, FactProductionRow> factMap
+            Map<FactKey, FactProductionRow> factMap
     ) {
 
         for (Job job : solution.getJobs()) {
@@ -150,8 +151,6 @@ public class JobService {
             );
         }
     }
-
-    public record FactKey(String kmc, Integer np) {}
 
     /**
      * Преобразует Timestamp в LocalDateTime.
