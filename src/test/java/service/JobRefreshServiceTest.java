@@ -5,15 +5,15 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.repository.products.ProductRepository;
+import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
+import org.acme.foodpackaging.service.jobs.JobService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +31,9 @@ class JobRefreshServiceTest {
     @Mock
     JobRepository jobRepository;
     @Mock
-    ProductRepository productRepository;
+    JobService jobService;
+    @Mock
+    ProductService productService;
 
     @Test
     void enabledJobNotPresent() {
@@ -44,11 +46,11 @@ class JobRefreshServiceTest {
         solution.setDbJobRowMap(Map.of(1L, row));
 
         Job job = new Job();
-        job.setSnpz(1);
+        job.setSnpz(1L);
 
-        when(jobRepository.createJobById(1, false, solution))
+        when(jobService.createJobById(1L, false, solution))
                 .thenReturn(job);
-        when(productRepository.getProductList(solution))
+        when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
         Map<Long, Boolean> selection = Map.of(1L, true);
@@ -59,26 +61,26 @@ class JobRefreshServiceTest {
         assertSame(job, solution.getJobs().getFirst());
         assertEquals(job, solution.getJobIdMap().get(1L));
 
-        verify(jobRepository).createJobById(1, false, solution);
-        verify(productRepository).getProductList(solution);
+        verify(jobService).createJobById(1L, false, solution);
+        verify(productService).getProductList(solution);
     }
 
     @Test
     void enabledJobsAlreadyPresent() {
         Job job = new Job();
-        job.setSnpz(1);
+        job.setSnpz(1L);
 
         PackagingSchedule solution = new PackagingSchedule();
         solution.setJobs(new ArrayList<>(List.of(job)));
         solution.setJobIdMap(new HashMap<>(Map.of(1L, job)));
 
-        when(productRepository.getProductList(solution))
+        when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
         service.applySelection(Map.of(1L, true), solution);
 
         assertEquals(1, solution.getJobs().size());
-        verify(jobRepository, never()).createJobById(anyInt(), anyBoolean(), any());
+        verify(jobService, never()).createJobById(anyLong(), anyBoolean(), any());
     }
 
     @Test
@@ -88,7 +90,7 @@ class JobRefreshServiceTest {
         line.setFirstUnpinnedIndex(10);
 
         Job job = new Job();
-        job.setSnpz(1);
+        job.setSnpz(1L);
         job.setLine(line);
 
         line.getJobs().add(job);
@@ -97,7 +99,7 @@ class JobRefreshServiceTest {
         solution.setJobs(new ArrayList<>(List.of(job)));
         solution.setJobIdMap(new HashMap<>(Map.of(1L, job)));
 
-        when(productRepository.getProductList(solution))
+        when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
         service.applySelection(Map.of(1L, false), solution);
@@ -117,7 +119,7 @@ class JobRefreshServiceTest {
         solution.setJobs(new ArrayList<>(List.of(job1, job2)));
         solution.setJobIdMap(new HashMap<>());
 
-        when(productRepository.getProductList(solution))
+        when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
         service.applySelection(Map.of(), solution);

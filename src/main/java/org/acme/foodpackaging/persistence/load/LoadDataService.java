@@ -1,11 +1,14 @@
 package org.acme.foodpackaging.persistence.load;
 
-import jakarta.annotation.PostConstruct;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.entity.lines.LineEntity;
+import org.acme.foodpackaging.entity.lines.PlrLines;
+import org.acme.foodpackaging.record.CleaningRule;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
@@ -36,10 +39,19 @@ public class LoadDataService {
     @Getter
     private List<CleaningRule> cleaningRules;
 
-    @PostConstruct
-    void init() {
-        
-        List<LineEntity> allLineEntities = lineRepository.find("fDel = 0").list();
+    void onStart(@Observes StartupEvent ev) {
+        if (LaunchMode.current() == LaunchMode.TEST) {
+            return;
+        }
+        loadData();
+    }
+
+    public void refresh() {
+        loadData();
+    }
+
+    private void loadData() {
+        List<PlrLines> allLineEntities = lineRepository.find("fDel = 0").list();
        
         this.lines = allLineEntities.stream()
                 .filter(e -> e.getSnm() != null)
@@ -56,7 +68,7 @@ public class LoadDataService {
                                 e.getLineId().trim(),
                                 e.getType().trim()
                         ),
-                        LineEntity::getSpeed,
+                        PlrLines::getSpeed,
                         (existing, ignored) -> existing
                 ));
         

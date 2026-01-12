@@ -10,19 +10,19 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "PLR_CHANGE", schema = "dbo")
-public class CleaningRuleEntity extends PanacheEntityBase {
+public class PlrChange extends PanacheEntityBase {
     @Id
     @Column(name = "F_GUID", nullable = false)
     public UUID id;
 
     @Column(name = "NPAR")
-    public String npar;
+    public String parameter;
 
     @Column(name = "FROM_VALUE")
-    public String fromValue;
+    public String from;
 
     @Column(name = "TO_VALUE")
-    public String toValue;
+    public String to;
 
     @Column(name = "DUR")
     public Integer duration;
@@ -31,5 +31,18 @@ public class CleaningRuleEntity extends PanacheEntityBase {
     public Integer deletedFlag;
 
     @Column(name = "KRC")
-    public String krc;
+    public String lineId;
+
+    @Override
+    public String toString() {
+        return "CleaningRuleEntity{" +
+                "id=" + id +
+                ", parameter='" + parameter + '\'' +
+                ", fromValue='" + from + '\'' +
+                ", toValue='" + to + '\'' +
+                ", duration=" + duration +
+                ", deletedFlag=" + deletedFlag +
+                ", lineId='" + lineId + '\'' +
+                '}';
+    }
 }

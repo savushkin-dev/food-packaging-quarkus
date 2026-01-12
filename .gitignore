@@ -25,4 +25,8 @@ venv*
 #Directories
 /.idea/
 target/
+
+# Environment variables
+.env
 logs/
+

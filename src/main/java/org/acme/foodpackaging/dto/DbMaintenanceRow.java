@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 @Getter
@@ -13,12 +12,12 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DbMaintenanceRow {
-   private long fId;
-   private short fDel;
+   private Long fId;
+   private Short fDel;
    private String lineId;
    private Timestamp startProductionDateTime;
    private Timestamp endDateTime;
    private Integer duration;
-   private long snpz;
+   private Long snpz;
    private String shortName;
 }
