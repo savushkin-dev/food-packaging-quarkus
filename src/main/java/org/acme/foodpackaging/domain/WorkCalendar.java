@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 @Getter
 public class WorkCalendar {
 
-    private LocalDate fromDate; // Inclusive
-    private LocalDate toDate; // Exclusive
+    private LocalDate fromDate;
+    private LocalDate toDate;
     private LocalDateTime minStartDateTime;
     private LocalDateTime idealEndDateTime;
     private LocalDateTime maxEndDateTime;

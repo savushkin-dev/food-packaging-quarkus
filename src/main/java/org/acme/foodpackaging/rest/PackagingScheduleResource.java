@@ -94,6 +94,24 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("refreshData")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response refreshData() {
+        try {
+            loadDataService.refresh();
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Data refreshed successfully from database"
+            )).build();
+        } catch (Exception e) {
+            log.error("Failed to refresh data", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Failed to refresh data: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
     @Path("work")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
