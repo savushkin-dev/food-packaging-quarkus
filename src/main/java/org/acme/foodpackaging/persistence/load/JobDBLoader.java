@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -75,10 +76,7 @@ public class JobDBLoader {
                         }
                 ));
     }
-
-    public Map<Pair<String, Integer>, FactProductionRow> loadFactProductionRowMap(
-            LocalDateTime dtv
-    ) {
+    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime dtv) {
 
         List<FactProductionRow> rows = em
                 .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
@@ -88,7 +86,7 @@ public class JobDBLoader {
 
         return rows.stream()
                 .collect(Collectors.toMap(
-                        r -> Pair.of(r.kmc(), r.np()),
+                        r -> new FactKey(r.kmc(), r.np()), // ← ключ FactKey
                         Function.identity(),
                         (existing, duplicate) -> {
                             throw new IllegalStateException(
