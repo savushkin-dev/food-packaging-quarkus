@@ -40,13 +40,14 @@ public class ScheduleBuilder {
                 schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
         );
 
-        removeJobsWithoutLine(schedule.getJobs());
+        jobService.initSolutionJobList(schedule);
         List<Line> lines = lineService.getLines();
         List<Product> products = productService.getProductList(schedule);
         schedule.setLines(lines);
         schedule.setProducts(products);
         lineSchedulingService.initJobListOnLine(schedule);
         schedule.setDateForEmptySolution(startDate);
+        removeJobsWithoutLine(schedule.getJobs());
         
         return schedule;
     }
