@@ -112,4 +112,16 @@ public class ScheduleUtils {
                 ""
         ).trim();
     }
+
+    /**
+     * Удаляет задачи, у которых line равен null, из списка задач.
+     * 
+     * @param jobs Список задач для фильтрации
+     */
+    public static void removeJobsWithoutLine(List<Job> jobs) {
+        if (jobs == null || jobs.isEmpty()) {
+            return;
+        }
+        jobs.removeIf(job -> job.getLine() == null);
+    }
 }
