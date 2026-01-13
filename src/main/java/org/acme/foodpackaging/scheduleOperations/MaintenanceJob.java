@@ -81,17 +81,30 @@ public class MaintenanceJob {
         Line line = findLineById(schedule, request.getLineId());
 
         List<Job> lineJobs = line.getJobs();
+        if (lineJobs == null || lineJobs.isEmpty()) {
+            throw new IllegalArgumentException("Line has no jobs to remove");
+        }
+
         int index = request.getRemoveIndex();
 
         if (index < 0 || index >= lineJobs.size()) {
-            throw new IllegalArgumentException("Invalid insertIndex: " + index);
+            throw new IllegalArgumentException("Invalid removeIndex: " + index + ". Line has " + lineJobs.size() + " jobs.");
         }
 
         Job jobToRemove = lineJobs.get(index);
+        if (jobToRemove == null) {
+            throw new IllegalStateException("Job at index " + index + " is null");
+        }
 
         lineJobs.remove(index);
-        schedule.getJobs().remove(jobToRemove);
-        markDeletedByFId(jobToRemove.getFId(), schedule.getDbMaintenanceRowMap());
+        
+        if (schedule.getJobs() != null) {
+            schedule.getJobs().remove(jobToRemove);
+        }
+        
+        if (schedule.getDbMaintenanceRowMap() != null) {
+            markDeletedByFId(jobToRemove.getFId(), schedule.getDbMaintenanceRowMap());
+        }
 
         fixLineJobs(line);
         fixPinnedJobs(line);

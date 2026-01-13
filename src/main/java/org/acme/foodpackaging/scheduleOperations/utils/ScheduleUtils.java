@@ -14,9 +14,18 @@ public class ScheduleUtils {
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
     public static void fixLineJobs(Line line) {
+        if (line == null) {
+            return;
+        }
         List<Job> jobs = line.getJobs();
+        if (jobs == null || jobs.isEmpty()) {
+            return;
+        }
         for (int i = 0; i < jobs.size(); i++) {
             Job current = jobs.get(i);
+            if (current == null) {
+                continue;
+            }
             current.setLine(line);
             current.setPreviousJob(i > 0 ? jobs.get(i - 1) : null);
             current.setNextJob(i < jobs.size() - 1 ? jobs.get(i + 1) : null);
@@ -27,12 +36,22 @@ public class ScheduleUtils {
      * Закрпеляет все что стоит до ремонтной работы, включая саму ремонтную работу
      */
     public static void fixPinnedJobs(Line line) {
+        if (line == null) {
+            return;
+        }
         List<Job> jobs = line.getJobs();
+        if (jobs == null || jobs.isEmpty()) {
+            line.setFirstUnpinnedIndex(0);
+            return;
+        }
 
         int lastPinnedIndex = -1;
 
         for (int i = 0; i < jobs.size(); i++) {
             Job job = jobs.get(i);
+            if (job == null) {
+                continue;
+            }
 
             // Старые задачи всегда pinned
             if (job.getLineId() != null) {

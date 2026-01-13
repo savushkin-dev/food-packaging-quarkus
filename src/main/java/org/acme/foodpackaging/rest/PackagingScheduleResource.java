@@ -362,6 +362,7 @@ public class PackagingScheduleResource {
                     .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
+        try {
             if(request.isUpdateLineMode()){
                 updated = maintenanceJob.updateDuration(schedule, request);
             }
@@ -371,14 +372,30 @@ public class PackagingScheduleResource {
             else{
                 updated = maintenanceJob.addMaintenanceJob(schedule, request);
             }
-        solutionManager.update(updated, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, updated);
+            solutionManager.update(updated, SolutionUpdatePolicy.UPDATE_ALL);
+            repository.writeForSession(sessionId, updated);
 
-        return Response.ok(Map.of(
-                "status", "success",
-                "message", "Maintenance job added",
-                "lineId", request.getLineId()
-        )).build();
+            return Response.ok(Map.of(
+                    "status", "success",
+                    "message", "Maintenance job added",
+                    "lineId", request.getLineId()
+            )).build();
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid argument in maintenance operation", e);
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
+        } catch (IllegalStateException e) {
+            log.error("Illegal state in maintenance operation", e);
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error in maintenance operation", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Failed to process maintenance job: " + e.getMessage()))
+                    .build();
+        }
     }
     /**
      * Закрепеляет/открепляет задачи на линииях
