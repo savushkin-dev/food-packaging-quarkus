@@ -41,7 +41,7 @@ WHERE
         v.PDUR, v.SNPZ, v.F_DEL, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
-        v.SNPZ = 0
+        v.SNPZ = 0  OR v.SNPZ IS NULL
         AND v.F_DEL = 0
         AND (
             (
@@ -59,8 +59,8 @@ WHERE
         v.PDTN
 """;
 public static final String UPDATE_WORK = """
-    update [MES].[dbo].[BD_VZPMC] 
-    set KRC=?, PDTN=?, PDTO=?, PDUR=? 
+    update [MES].[dbo].[BD_VZPMC]
+    set KRC=?, PDTN=?, PDTO=?, PDUR=?
     where SNPZ=?;
     """;
 
