@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
-
 /**
  * Business logic service for product list management.
  * Handles building product lists for schedules, including maintenance products
@@ -55,13 +53,12 @@ public class ProductService {
                 .collect(Collectors.toCollection(ArrayList::new));
 
         // --- Maintenance product ---
-        Product maintenanceProduct = getMaintenanceProduct();
-        productList.add(maintenanceProduct);
+        productList.add(solution.getMaintenanceProduct());
 
         if (!solution.getJobs().isEmpty()) {
             solution.getJobs().stream()
                     .filter(Job::isMaintenance)
-                    .forEach(j -> j.setProduct(maintenanceProduct));
+                    .forEach(j -> j.setProduct(solution.getMaintenanceProduct()));
         }
 
         // --- Cleaning rules ---

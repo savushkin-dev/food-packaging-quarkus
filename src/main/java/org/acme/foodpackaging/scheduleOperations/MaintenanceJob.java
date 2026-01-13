@@ -30,17 +30,10 @@ public class MaintenanceJob {
 
         List<Job> lineJobs = line.getJobs();
 
-        Product maintenanceProduct = schedule.getProducts().stream()
-                .filter(p -> "MAINTENANCE".equalsIgnoreCase(p.getId()))
-                .findFirst()
-                .orElseThrow(() ->
-                        new IllegalStateException("Maintenance product with id='MAINTENANCE' not found")
-                );
-
         Job maintenanceJob = new Job(
                 "MAINTENANCE-" + UUID.randomUUID(),
                 request.getName(),
-                maintenanceProduct,
+                schedule.getMaintenanceProduct(),
                 Duration.ofMinutes(request.getDurationMinutes()),
                 schedule.getWorkCalendar().getMinStartDateTime(),
                 null, null, 0, true, null, null
@@ -71,7 +64,7 @@ public class MaintenanceJob {
         return schedule;
     }
 
-    public static Product getMaintenanceProduct() {
+    public static Product createMaintenanceProduct() {
        return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "");
     }
 
