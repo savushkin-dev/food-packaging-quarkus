@@ -41,7 +41,7 @@ WHERE
         v.PDUR, v.SNPZ, v.F_DEL, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
-        v.SNPZ = 0  OR v.SNPZ IS NULL
+        (v.SNPZ = 0  OR v.SNPZ IS NULL)
         AND v.F_DEL = 0
         AND (
             (
