@@ -60,10 +60,15 @@ WHERE
 """;
 
     public static final String LOAD_FACT_DB = """
-    select dtv, kmc, np, krc, dt
-                            from MS_LOG
-                            where (DTV > ?) and (DTV <= ?) and (EVENT=1)
-                            order by dtv, kmc, np
+    SELECT
+        v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
+    FROM [MES].[dbo].[MS_LOG] v
+    WHERE
+        v.DTV > ?1
+        AND v.DTV <= ?2
+        AND v.EVENT = 1
+    ORDER BY
+        v.DTV, v.KMC, v.NP
 """;
 public static final String UPDATE_WORK = """
     update [MES].[dbo].[BD_VZPMC]
