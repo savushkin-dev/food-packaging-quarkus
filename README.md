@@ -2,8 +2,6 @@
 
 Schedule food packaging orders to manufacturing lines, to minimize downtime and fulfill all orders in time.
 
-![Food packaging screenshot](./food-packaging-screenshot.png)
-
 - [Run the application](#run-the-application)
 - [Configuration](#configuration)
 - [REST API](#rest-api)
@@ -25,14 +23,14 @@ sdk install maven
 Clone the repo and navigate to this directory:
 
 ```shell
-git clone git@github.com:NogameNo-life/food-packaging-quarkus.git
+git clone https://github.com/savushkin-dev/food-packaging-quarkus.git
 cd food-packaging-quarkus
 ```
 
 Start the application with Maven:
 
 ```shell
-mvn quarkus:dev
+mvn quarkus:dev -Dquarkus.profile=local
 ```
 
 Visit `http://localhost:8080` in your browser.
@@ -53,8 +51,8 @@ This app connects to **MS SQL Server**. Quarkus devservices are disabled, so you
 ### Profiles
 
 - **local**: `-Dquarkus.profile=local` (default port 8080)
-- **dev**: `-Dquarkus.profile=dev` (default port 8083)
-- **prod/brzprod/baranprod**: default port 8081 (see properties)
+- **dev**: `-Dquarkus.profile=dev`
+- **prod/brzprod/baranprod**: `-Dquarkus.profile=prod/bzprod/baranprod`
 
 ### Required environment variables
 
