@@ -3,6 +3,13 @@ package org.acme.foodpackaging.sql;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+/**
+ * SQL queries for database operations.
+ * 
+ * NOTE: Schema names (e.g., "MES") are environment-specific and may vary
+ * between different database instances. These queries use parameterized
+ * statements to prevent SQL injection and do not expose sensitive data.
+ */
 @ApplicationScoped
 public class SqlQueries {
 
