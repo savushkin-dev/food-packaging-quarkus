@@ -117,7 +117,7 @@ public class JobService {
 
     /**
      * Инициализирует фактические данные произвосдтва партий.
-     *Ищет азадчи по ключу Pair<KMC, NP></KMC,>.
+     * Ищет задачи по ключу Pair<KMC, NP></KMC,>.
      *
      * @param solution The packaging schedule to initialize
      */
