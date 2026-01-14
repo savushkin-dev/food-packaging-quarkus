@@ -18,6 +18,8 @@ import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 
+import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.createMaintenanceProduct;
+
 @Setter
 @Getter
 @PlanningSolution
@@ -36,8 +38,8 @@ public class PackagingSchedule {
     @ValueRangeProvider
     private List<Job> jobs;
 
+    private Product maintenanceProduct;
     private Map<Long, DbJobRow> dbJobRowMap;
-
     private Map<Long, DbMaintenanceRow> dbMaintenanceRowMap;
 
     private  Map<Long, Job> jobIdMap;
@@ -50,6 +52,7 @@ public class PackagingSchedule {
 
     // No-arg constructor required for Timefold
     public PackagingSchedule() {
+        maintenanceProduct = createMaintenanceProduct();
         jobIdMap = new HashMap<>();
     }
 

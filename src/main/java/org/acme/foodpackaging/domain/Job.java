@@ -163,7 +163,22 @@ public class Job {
             startProduction = line.getStartDateTime();
         } else {
             startCleaning = previous.getEndDateTime();
-            startProduction = startCleaning == null ? null : startCleaning.plus(getProduct().getCleanupDuration(previous.getProduct()));
+            if (startCleaning != null && getProduct() != null && previous.getProduct() != null) {
+                try {
+                    Duration cleanupDuration = getProduct().getCleanupDuration(previous.getProduct());
+                    startProduction = startCleaning.plus(cleanupDuration);
+                } catch (IllegalArgumentException e) {
+                    // If cleanup duration is missing, using zero duration as fallback
+                    // This can happen if cleaning durations were not properly initialized
+                    // For maintenance jobs, cleanup duration should be zero anyway
+                    startProduction = startCleaning;
+                } catch (NullPointerException e) {
+                    // If cleaningDurations map is null, using zero duration as fallback
+                    startProduction = startCleaning;
+                }
+            } else {
+                startProduction = startCleaning;
+            }
         }
         setStartCleaningDateTime(startCleaning);
         setStartProductionDateTime(startProduction);

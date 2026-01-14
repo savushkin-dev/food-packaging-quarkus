@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.nameCleaner;
 
 /**
@@ -78,7 +77,7 @@ public class JobService {
 
             job = new Job(
                     String.valueOf(row.getFId()), row.getLineId(), row.getSnpz(),
-                    -1, row.getShortName(), getMaintenanceProduct(), -1,
+                    -1, row.getShortName(), solution.getMaintenanceProduct(), -1,
                     -1, Duration.ofMinutes(safe(row.getDuration())),
                     solution.getWorkCalendar().getMinStartDateTime(),
                     null, null, 0,

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.getMaintenanceProduct;
+import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SortByNpServiceTest {
@@ -114,7 +114,7 @@ class SortByNpServiceTest {
 
         Job maintenance = new Job();
         maintenance.setName("MAINTENANCE");
-        maintenance.setProduct(getMaintenanceProduct());
+        maintenance.setProduct(createMaintenanceProduct());
         maintenance.setMaintenance(true);
         maintenance.setLineId("L1");
 
