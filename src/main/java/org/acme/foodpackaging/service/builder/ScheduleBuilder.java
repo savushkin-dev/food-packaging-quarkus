@@ -12,6 +12,8 @@ import org.acme.foodpackaging.service.lines.LineService;
 import java.time.LocalDate;
 import java.util.*;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.removeJobsWithoutLine;
+
 @ApplicationScoped
 public class ScheduleBuilder {
 
@@ -46,7 +48,8 @@ public class ScheduleBuilder {
         schedule.setProducts(products);
         lineSchedulingService.initJobListOnLine(schedule);
         schedule.setDateForEmptySolution(startDate);
-
+        removeJobsWithoutLine(schedule.getJobs());
+        
         return schedule;
     }
 

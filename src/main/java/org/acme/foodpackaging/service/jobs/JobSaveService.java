@@ -11,6 +11,8 @@ import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @ApplicationScoped
 public class JobSaveService {
@@ -25,7 +27,6 @@ public class JobSaveService {
     @Transactional
     public void saveJobsByType(PackagingSchedule schedule) {
 
-
         for (Long key : schedule.getDbMaintenanceRowMap().keySet()) {
             DbMaintenanceRow dbMaintenanceRow = schedule.getDbMaintenanceRowMap().get(key);
             if(dbMaintenanceRow.getFDel() == 1){
@@ -34,6 +35,8 @@ public class JobSaveService {
                 oeePevRepository.persist(existing);
             }
         }
+
+        List<Job> updatedJobs = new ArrayList<>(schedule.getJobs());
 
         for (int i = 0; i < schedule.getJobs().size(); i++) {
 
@@ -51,11 +54,11 @@ public class JobSaveService {
                         .evtype(null)
                         .reason(null)
                         .note(job.getName())
-                        .snpz(job.getSnpz())
+                        .snpz(0L)
                         .build();
 
                 if (!job.getId().startsWith("MAINTENANCE")) {
-                    OeePev existing = oeePevRepository.findByFId(Long.parseLong(job.getId()));
+                    OeePev existing = oeePevRepository.findByFId(job.getFId());
                     if (existing != null) {
                         existing.setLineId(job.getLine().getId());
                         existing.setStartProductionDateTime(job.getStartProductionDateTime());
@@ -67,7 +70,7 @@ public class JobSaveService {
                         existing.setEvtype(null);
                         existing.setReason(null);
                         existing.setNote(job.getName());
-                        existing.setSnpz(job.getSnpz());
+                        existing.setSnpz(0L);
 
                         oeePevRepository.persist(existing);
                     } else {
@@ -75,6 +78,12 @@ public class JobSaveService {
                     }
                 } else {
                     oeePevRepository.persist(entityForInsert);
+
+                    //При сохранении сервисной операции получаем назначенный fId и присваиваем в план сессии
+                    long fId = entityForInsert.getFId();
+                    job.setId(String.valueOf(fId));
+                    job.setFId(fId);
+                    updatedJobs.set(i, job);
                 }
 
             } else {
@@ -127,5 +136,6 @@ public class JobSaveService {
 
             }
         }
+        schedule.setJobs(updatedJobs);
     }
 }
