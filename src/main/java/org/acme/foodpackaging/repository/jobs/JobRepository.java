@@ -57,12 +57,12 @@ public class JobRepository {
     /**
      * Загружает карту фактического производства.
      *
-     * @param from Start date (inclusive)
+     * @param startDate Start date (inclusive)
      * @return Map of maintenance rows by FId
      */
-    public Map<FactKey, FactProductionRow> getFactProductionRowMap(LocalDate from) {
+    public Map<FactKey, FactProductionRow> getFactProductionRowMap(LocalDate startDate) {
         return jobDBLoader.loadFactProductionRowMap(
-                from.atStartOfDay()
+                startDate.atStartOfDay().minusDays(1), startDate.atStartOfDay().plusDays(1)
         );
     }
     /**

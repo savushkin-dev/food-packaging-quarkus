@@ -76,12 +76,12 @@ public class JobDBLoader {
                         }
                 ));
     }
-    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime dtv) {
+    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
 
         List<FactProductionRow> rows = em
                 .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
-                .setParameter(1, Timestamp.valueOf(dtv))
-                .setParameter(2, Timestamp.valueOf(dtv))
+                .setParameter(1, Timestamp.valueOf(from))
+                .setParameter(2, Timestamp.valueOf(to))
                 .getResultList();
 
         return rows.stream()
