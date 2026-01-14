@@ -41,7 +41,7 @@ public class MsLog extends PanacheEntityBase {
     public String kmc;
 
     @Column(name = "DTV")
-    private LocalDateTime startProductionDateTimeFact;
+    private LocalDateTime startDateTimeFact;
 
     @Column(name = "NP")
     public Integer np;
@@ -60,7 +60,7 @@ public class MsLog extends PanacheEntityBase {
         return "MsLog{" +
                 "id=" + id +
                 ", kmc='" + kmc + '\'' +
-                ", startProductionDateTimeFact=" + startProductionDateTimeFact +
+                ", startDateTimeFact=" + startDateTimeFact +
                 ", np=" + np +
                 ", eventType=" + eventType +
                 ", startProductionDateTime=" + startProductionDateTime +
