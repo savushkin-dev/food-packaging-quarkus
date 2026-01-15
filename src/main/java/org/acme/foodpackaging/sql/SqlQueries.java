@@ -3,6 +3,13 @@ package org.acme.foodpackaging.sql;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+/**
+ * SQL queries for database operations.
+ * 
+ * NOTE: Schema names (e.g., "MES") are environment-specific and may vary
+ * between different database instances. These queries use parameterized
+ * statements to prevent SQL injection and do not expose sensitive data.
+ */
 @ApplicationScoped
 public class SqlQueries {
 
@@ -57,6 +64,18 @@ WHERE
     ORDER BY
         v.KRC,
         v.PDTN
+""";
+
+    public static final String LOAD_FACT_DB = """
+    SELECT
+        v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
+    FROM [MES].[dbo].[MS_LOG] v
+    WHERE
+        v.DTV > ?1
+        AND v.DTV <= ?2
+        AND v.EVENT = 1
+    ORDER BY
+        v.DTV, v.KMC, v.NP
 """;
 public static final String UPDATE_WORK = """
     update [MES].[dbo].[BD_VZPMC]

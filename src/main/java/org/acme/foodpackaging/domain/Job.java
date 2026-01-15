@@ -27,6 +27,7 @@ public class Job {
     private String id;
     private Long fId;
     private String lineId;
+    private String lineIdFact;
     private String name;
 
     private Long snpz;
@@ -39,6 +40,7 @@ public class Job {
     private Duration duration;
     private boolean maintenance;
 
+    private LocalDateTime startProductionDateTimeFact;
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;

@@ -7,7 +7,10 @@ import org.acme.foodpackaging.domain.WorkCalendar;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.FactKey;
+import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.service.jobs.JobService;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -234,5 +238,52 @@ class JobServiceTest {
         return new DbMaintenanceRow(
                 1L, (short) 0, "L1", now, now, 30, 123L, "Maintenance"
         );
+    }
+
+    @Test
+    void initJobFromFactProductionRow() {
+        Job job = new Job();
+        job.setProduct(new Product("KMC1", "VANILLA"));
+        job.setNp(10);
+
+        FactProductionRow fact = new FactProductionRow(
+                "KMC1",
+                Timestamp.valueOf(
+                        LocalDateTime.of(2025, 1, 1, 8, 0)),
+                10,
+                1,
+                Timestamp.valueOf(
+                        LocalDateTime.of(2025, 1, 1, 8, 0)),
+                "LINE_1"
+        );
+
+        Map<FactKey, FactProductionRow> factMap = Map.of(
+                new FactKey("KMC1", 10), fact
+        );
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        jobService.initFactProductionData(solution, factMap);
+
+        assertEquals("LINE_1", job.getLineIdFact());
+        assertEquals(
+                LocalDateTime.of(2025, 1, 1, 8, 0),
+                job.getStartProductionDateTimeFact()
+        );
+    }
+    @Test
+    void IgnoreJobWhenFactNotFound() {
+        Job job = new Job();
+        job.setProduct(new Product("KMC1", "VANILLA"));
+        job.setNp(99);
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        jobService.initFactProductionData(solution, Map.of());
+
+        assertNull(job.getLineIdFact());
+        assertNull(job.getStartProductionDateTimeFact());
     }
 }

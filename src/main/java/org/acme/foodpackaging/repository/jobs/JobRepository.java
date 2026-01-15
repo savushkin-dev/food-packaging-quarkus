@@ -5,6 +5,9 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.FactKey;
+import org.acme.foodpackaging.record.FactProductionRow;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -33,7 +36,7 @@ public class JobRepository {
      * @return Map of job rows by SNPZ
      */
     public Map<Long, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to) {
-        return jobDBLoader.loadJobRowMapFromDb(
+        return jobDBLoader.loadJobRowMap(
                 from.atStartOfDay(), to.atStartOfDay(), ksk
         );
     }
@@ -46,11 +49,22 @@ public class JobRepository {
      * @return Map of maintenance rows by FId
      */
     public Map<Long, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to) {
-        return jobDBLoader.loadMaintenanceRowMapFromDb(
+        return jobDBLoader.loadMaintenanceRowMap(
                 from.atStartOfDay(), to.atStartOfDay()
         );
     }
 
+    /**
+     * Загружает карту фактического производства.
+     *
+     * @param startDate Start date (inclusive)
+     * @return Map of maintenance rows by FId
+     */
+    public Map<FactKey, FactProductionRow> getFactProductionRowMap(LocalDate startDate) {
+        return jobDBLoader.loadFactProductionRowMap(
+                startDate.atStartOfDay().minusDays(1), startDate.atStartOfDay().plusDays(1)
+        );
+    }
     /**
      * Преобразует Map в List для удобства работы.
      * 

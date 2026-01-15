@@ -8,12 +8,16 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.FactKey;
+import org.acme.foodpackaging.record.FactProductionRow;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.nameCleaner;
 
@@ -109,6 +113,42 @@ public class JobService {
         }
         
         return job;
+    }
+
+    /**
+     * Инициализирует фактические данные произвосдтва партий.
+     * Ищет задачи по ключу Pair<KMC, NP></KMC,>.
+     *
+     * @param solution The packaging schedule to initialize
+     */
+    public void initFactProductionData(
+            PackagingSchedule solution,
+            Map<FactKey, FactProductionRow> factMap
+    ) {
+
+        for (Job job : solution.getJobs()) {
+
+            if (job.getProduct() == null) {
+                continue;
+            }
+
+            FactKey key = new FactKey(
+                    job.getProduct().getId(),
+                    job.getNp()
+            );
+
+            FactProductionRow factRow = factMap.get(key);
+
+            if (factRow == null) {
+                // факт не найден
+                continue;
+            }
+
+            job.setLineIdFact(factRow.lineIdFact());
+            job.setStartProductionDateTimeFact(
+                    factRow.startProductionDateTimeFact().toLocalDateTime()
+            );
+        }
     }
 
     /**

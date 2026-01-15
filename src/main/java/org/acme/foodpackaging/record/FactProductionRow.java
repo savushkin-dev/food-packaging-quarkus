@@ -1,0 +1,13 @@
+package org.acme.foodpackaging.record;
+
+import java.sql.Timestamp;
+
+public record FactProductionRow(
+        String kmc,
+        Timestamp dtv,
+        Integer np,
+        Integer eventType,
+        Timestamp startProductionDateTimeFact,
+        String lineIdFact
+) {}
+
