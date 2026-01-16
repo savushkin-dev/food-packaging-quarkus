@@ -3,10 +3,12 @@ package org.acme.foodpackaging.scheduleOperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.record.DbJobRow;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ScheduleUtils {
@@ -123,5 +125,18 @@ public class ScheduleUtils {
             return;
         }
         jobs.removeIf(job -> job.getLine() == null);
+    }
+
+     /**
+     * Преобразует Map в List для удобства работы.
+     * 
+     * @param rows Map of job rows
+     * @return List of job rows
+     */
+     public static List<DbJobRow> getDbJobRowList(Map<Long, DbJobRow> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+        return new ArrayList<>(rows.values());
     }
 }
