@@ -57,14 +57,10 @@ class JobRepositoryIT {
     @Transactional
     void setUp() {
         // Create MES schema (dbo is created in application.properties INIT parameter)
-        try {
             entityManager.createNativeQuery("CREATE SCHEMA IF NOT EXISTS MES").executeUpdate();
-        } catch (Exception e) {
-           
-        }
         // Create the MS_LOG table in MES schema
         // The native query uses [MES].[dbo].[MS_LOG], but H2 doesn't support nested schemas
-        try {
+       
             entityManager.createNativeQuery("""
                 CREATE TABLE IF NOT EXISTS MES.MS_LOG (
                     F_GUID UUID NOT NULL PRIMARY KEY,
@@ -76,15 +72,11 @@ class JobRepositoryIT {
                     KRC CHAR(12)
                 )
                 """).executeUpdate();
-        } catch (Exception e) {
-        
-        }
+       
         // Clear existing data
-        try {
+       
             entityManager.createNativeQuery("DELETE FROM MES.MS_LOG").executeUpdate();
-        } catch (Exception e) {
-            // Ignore if table doesn't exist yet
-        }
+        
         testDate = LocalDate.of(2026, 1, 15);
     }
 
