@@ -83,9 +83,10 @@ class JobRepositoryIT {
     @Test
     @Transactional
     void loadsDataWithCorrectDateRange() {
-        //Create test data within the date range (testDate - 1 day to testDate + 1 day)
-        LocalDateTime withinRange1 = testDate.atStartOfDay().minusHours(12); // Within range
-        LocalDateTime withinRange2 = testDate.atStartOfDay().plusHours(12); // Within range
+        // The method uses startDate.atStartOfDay().minusDays(2) to startDate.atStartOfDay().plusDays(3)
+        // So the range is testDate - 2 days to testDate + 3 days
+        LocalDateTime withinRange1 = testDate.atStartOfDay().minusDays(1); // Within range
+        LocalDateTime withinRange2 = testDate.atStartOfDay().plusDays(2); // Within range
         
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
@@ -95,9 +96,9 @@ class JobRepositoryIT {
         // Insert into MES.dbo.MS_LOG (the table the query reads from)
         insertMsLog(id1, "KMC1", withinRange1, 1, 1, withinRange1, "L1");
         insertMsLog(id2, "KMC1", withinRange2, 2, 1, withinRange2, "L1");
-        // Data outside range should not be included
-        insertMsLog(id3, "KMC2", testDate.atStartOfDay().minusDays(2), 1, 1, 
-                   testDate.atStartOfDay().minusDays(2), "L2");
+        // Data outside range should not be included (before startDate - 2 days)
+        insertMsLog(id3, "KMC2", testDate.atStartOfDay().minusDays(3), 1, 1, 
+                   testDate.atStartOfDay().minusDays(3), "L2");
         // Data with EVENT != 1 should not be included
         insertMsLog(id4, "KMC3", withinRange1, 1, 0, withinRange1, "L3");
 
@@ -158,28 +159,75 @@ class JobRepositoryIT {
     @Test
     @Transactional
     void verifysDateRangeCalculation() {
-       
+        // The method uses startDate.atStartOfDay().minusDays(2) to startDate.atStartOfDay().plusDays(3)
         LocalDate specificDate = LocalDate.of(2024, 6, 20);
         LocalDateTime withinRange = specificDate.atStartOfDay();
-        LocalDateTime outsideRange = specificDate.atStartOfDay().minusDays(2);
+        LocalDateTime withinRangePlus3 = specificDate.atStartOfDay().plusDays(3);
+        LocalDateTime outsideRangeBefore = specificDate.atStartOfDay().minusDays(3); // Outside range (before -2 days)
+        LocalDateTime outsideRangeAfter = specificDate.atStartOfDay().plusDays(4); // Outside range (after +3 days)
         
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
+        UUID id3 = UUID.randomUUID();
+        UUID id4 = UUID.randomUUID();
         
+        // Within range: startDate - 2 days to startDate + 3 days
         insertMsLog(id1, "KMC1", withinRange, 1, 1, withinRange, "L1");
-        insertMsLog(id2, "KMC2", outsideRange, 1, 1, outsideRange, "L2");
+        insertMsLog(id2, "KMC2", withinRangePlus3, 1, 1, withinRangePlus3, "L2");
+        // Outside range (before -2 days)
+        insertMsLog(id3, "KMC3", outsideRangeBefore, 1, 1, outsideRangeBefore, "L3");
+        // Outside range (after +3 days)
+        insertMsLog(id4, "KMC4", outsideRangeAfter, 1, 1, outsideRangeAfter, "L4");
 
         entityManager.flush();
         entityManager.clear();
 
         Map<FactKey, FactProductionRow> result = jobRepository.getFactProductionRowMap(specificDate);
 
-        // Should only include data within range (specificDate - 1 day to specificDate + 1 day)
+        // Should only include data within range (specificDate - 2 days to specificDate + 3 days)
         assertNotNull(result);
-        assertEquals(1, result.size(), "Should only load data within the calculated date range");
+        assertEquals(2, result.size(), "Should only load data within the calculated date range (startDate - 2 days to startDate + 3 days)");
         
-        FactKey key = new FactKey("KMC1", 1);
-        assertTrue(result.containsKey(key));
-        assertFalse(result.containsKey(new FactKey("KMC2", 1)));
+        FactKey key1 = new FactKey("KMC1", 1);
+        FactKey key2 = new FactKey("KMC2", 1);
+        assertTrue(result.containsKey(key1), "Should include data at startDate");
+        assertTrue(result.containsKey(key2), "Should include data at startDate + 3 days");
+        assertFalse(result.containsKey(new FactKey("KMC3", 1)), "Should exclude data before startDate - 2 days");
+        assertFalse(result.containsKey(new FactKey("KMC4", 1)), "Should exclude data after startDate + 3 days");
+    }
+
+    @Test
+    @Transactional
+    void verifiesDateRangeBoundaries() {
+        // Test the exact boundaries: startDate - 2 days (excluded, uses >) and startDate + 3 days (included, uses <=)
+        // SQL query: DTV > ?1 AND DTV <= ?2
+        LocalDate specificDate = LocalDate.of(2024, 6, 20);
+        LocalDateTime boundaryStart = specificDate.atStartOfDay().minusDays(2).plusSeconds(1); // Just after -2 days (included)
+        LocalDateTime boundaryEnd = specificDate.atStartOfDay().plusDays(3); // Exactly at +3 days (included, <=)
+        LocalDateTime exactlyAtStart = specificDate.atStartOfDay().minusDays(2); // Exactly at -2 days (excluded, >)
+        LocalDateTime justAfterEnd = specificDate.atStartOfDay().plusDays(3).plusSeconds(1); // Just after +3 days (excluded)
+        
+        UUID id1 = UUID.randomUUID();
+        UUID id2 = UUID.randomUUID();
+        UUID id3 = UUID.randomUUID();
+        UUID id4 = UUID.randomUUID();
+        
+        insertMsLog(id1, "KMC1", boundaryStart, 1, 1, boundaryStart, "L1");
+        insertMsLog(id2, "KMC2", boundaryEnd, 1, 1, boundaryEnd, "L2");
+        insertMsLog(id3, "KMC3", exactlyAtStart, 1, 1, exactlyAtStart, "L3");
+        insertMsLog(id4, "KMC4", justAfterEnd, 1, 1, justAfterEnd, "L4");
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Map<FactKey, FactProductionRow> result = jobRepository.getFactProductionRowMap(specificDate);
+
+        assertNotNull(result);
+        assertEquals(2, result.size(), "Should include data at boundaries (startDate - 2 days and startDate + 3 days)");
+        
+        assertTrue(result.containsKey(new FactKey("KMC1", 1)), "Should include data just after startDate - 2 days");
+        assertTrue(result.containsKey(new FactKey("KMC2", 1)), "Should include data at startDate + 3 days (inclusive)");
+        assertFalse(result.containsKey(new FactKey("KMC3", 1)), "Should exclude data exactly at startDate - 2 days (exclusive, uses >)");
+        assertFalse(result.containsKey(new FactKey("KMC4", 1)), "Should exclude data just after startDate + 3 days");
     }
 }
