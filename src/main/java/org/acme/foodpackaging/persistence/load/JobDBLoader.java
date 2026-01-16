@@ -7,8 +7,6 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -76,9 +74,10 @@ public class JobDBLoader {
                         }
                 ));
     }
+    @SuppressWarnings("unchecked")
     public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
 
-        List<FactProductionRow> rows = em
+        List<FactProductionRow> rows = (List<FactProductionRow>) em
                 .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
@@ -86,15 +85,9 @@ public class JobDBLoader {
 
         return rows.stream()
                 .collect(Collectors.toMap(
-                        r -> new FactKey(r.kmc(), r.np()), // ← ключ FactKey
+                        r -> new FactKey(r.kmc(), r.np()),
                         Function.identity(),
-                        (existing, duplicate) -> {
-                            throw new IllegalStateException(
-                                    "Duplicate key: "
-                                            + existing.kmc() + ", "
-                                            + existing.np()
-                            );
-                        }
+                        (existing, duplicate) -> existing // Keep first occurrence, skip duplicates
                 ));
     }
 }
