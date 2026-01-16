@@ -77,7 +77,7 @@ public class JobDBLoader {
     @SuppressWarnings("unchecked")
     public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
 
-        List<FactProductionRow> rows = (List<FactProductionRow>) em
+        List<FactProductionRow> rows = em
                 .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
