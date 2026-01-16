@@ -59,7 +59,7 @@ public class JobRepository {
      */
     public Map<FactKey, FactProductionRow> getFactProductionRowMap(LocalDate startDate) {
         return jobDBLoader.loadFactProductionRowMap(
-                startDate.atStartOfDay().minusDays(1), startDate.atStartOfDay().plusDays(1)
+                startDate.atStartOfDay().minusDays(2), startDate.atStartOfDay().plusDays(3)
         );
     }
 }
