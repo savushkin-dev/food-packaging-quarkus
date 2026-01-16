@@ -1,13 +1,11 @@
 package scheduleOperations.utils;
 
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -171,28 +169,28 @@ class ScheduleUtilsTest {
     @Test
     void keepAllJobsWhenAllHaveLines() {
         
-        Job job1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
-        Job job2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
+        Job jobWithLine1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
+        Job jobWithLine2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
         
-        job1.setLine(line);
-        job2.setLine(line);
+        jobWithLine1.setLine(line);
+        jobWithLine2.setLine(line);
         
-        List<Job> jobs = new ArrayList<>(Arrays.asList(job1, job2));
+        List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithLine1, jobWithLine2));
         
         ScheduleUtils.removeJobsWithoutLine(jobs);
         
         assertEquals(2, jobs.size());
-        assertTrue(jobs.contains(job1));
-        assertTrue(jobs.contains(job2));
+        assertTrue(jobs.contains(jobWithLine1));
+        assertTrue(jobs.contains(jobWithLine2));
     }
 
     @Test
     void removeAllJobsWhenAllHaveNullLine() {
       
-        Job job1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
-        Job job2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
+        Job jobWithNullLine1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
+        Job jobWithNullLine2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
         
-        List<Job> jobs = new ArrayList<>(Arrays.asList(job1, job2));
+        List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithNullLine1, jobWithNullLine2));
         
         ScheduleUtils.removeJobsWithoutLine(jobs);
         
