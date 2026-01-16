@@ -147,7 +147,7 @@ public class PackagingScheduleResource {
                 throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
             }
 
-            return jobRepository.getDbJobRowList(schedule.getDbJobRowMap());
+            return getDbJobRowList(schedule.getDbJobRowMap());
     }
 
     @POST
