@@ -157,7 +157,7 @@ class JobRepositoryIT {
 
     @Test
     @Transactional
-    void getFactProductionRowMap_VerifiesDateRangeCalculation() {
+    void verifysDateRangeCalculation() {
        
         LocalDate specificDate = LocalDate.of(2024, 6, 20);
         LocalDateTime withinRange = specificDate.atStartOfDay();
