@@ -131,7 +131,7 @@ class JobRepositoryTest {
 
         assertNotNull(result);
         assertEquals(expectedResult, result);
-        verify(jobDBLoader).loadJobRowMap(eq(fromDateTime), eq(toDateTime), eq("test"));
+        verify(jobDBLoader).loadJobRowMap(fromDateTime, toDateTime, "test");
     }
 
     @Test
@@ -146,7 +146,7 @@ class JobRepositoryTest {
 
         jobRepository.getDbJobRowMap(from, to);
 
-        verify(jobDBLoader).loadJobRowMap(eq(expectedFrom), eq(expectedTo), eq("test"));
+        verify(jobDBLoader).loadJobRowMap(expectedFrom, expectedTo, "test");
     }
 
     @Test
