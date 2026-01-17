@@ -34,7 +34,7 @@ import static org.mockito.Mockito.*;
  * JobRepository is a thin wrapper that delegates to JobDBLoader.
  */
 @ExtendWith(MockitoExtension.class)
-class JobRepositoryIT {
+class JobRepositoryTest {
 
     @Mock
     JobDBLoader jobDBLoader;
@@ -195,4 +195,22 @@ class JobRepositoryIT {
 
         verify(jobDBLoader).loadMaintenanceRowMap(expectedFrom, expectedTo);
     }
+
+@Test
+void getFactProductionRowMap_shouldCoverLoadCall() {
+    LocalDate from = LocalDate.of(2024, 6, 20);
+    LocalDate to = LocalDate.of(2024, 6, 25);
+
+    Map<FactKey, FactProductionRow> returned = new HashMap<>();
+    returned.put(new FactKey("X", 1), mock(FactProductionRow.class));
+
+    when(jobDBLoader.loadFactProductionRowMap(any(), any())).thenReturn(returned);
+
+    Map<FactKey, FactProductionRow> result = jobRepository.getFactProductionRowMap(from, to);
+
+    assertEquals(1, result.size());
+    assertTrue(result.containsKey(new FactKey("X", 1)));
+
+    verify(jobDBLoader).loadFactProductionRowMap(from.atStartOfDay(), to.atStartOfDay());
+}
 }
