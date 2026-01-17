@@ -245,14 +245,14 @@
           </execution>
         </executions>
       </plugin>
-      <!-- Maven Surefire Plugin for unit tests -->
+      <!-- Maven Surefire Plugin for unit and integration tests -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${version.surefire.plugin}</version>
         <configuration>
-          <!-- Exclude database tests by default (can be overridden with -DexcludedGroups=) -->
-          <excludedGroups>database</excludedGroups>
+          <!-- Include @Tag("database") tests so JobRepository, ProductRepository, etc. get coverage in SonarQube.
+               To exclude them (e.g. faster local runs): -DexcludedGroups=database -->
         </configuration>
       </plugin>
     </plugins>
