@@ -1,9 +1,10 @@
 name: CodeQL (Java)
+
 on:
   push:
-    branches: [ "develop_rc"]
+    branches: [ "develop_rc" ]
   pull_request:
-    branches: [ "develop_rc"]
+    branches: [ "develop_rc" ]
   schedule:
     - cron: '33 1 * * 4'
 
@@ -17,14 +18,14 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
+          cache: maven
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -34,7 +35,7 @@ jobs:
 
       - name: Build project (Quarkus)
         run: |
-          ./mvnw -B clean compile -DskipTests
+          mvn clean compile -DskipTests --batch-mode
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
