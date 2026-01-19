@@ -31,14 +31,15 @@ public class MaintenanceJob {
         List<Job> lineJobs = line.getJobs();
 
         Job maintenanceJob = new Job(
-                "MAINTENANCE-" + UUID.randomUUID(),
-                request.getName(),
-                schedule.getMaintenanceProduct(),
-                Duration.ofMinutes(request.getDurationMinutes()),
-                schedule.getWorkCalendar().getMinStartDateTime(),
-                null, null, 0, true, null, null
+                "MAINTENANCE-" + UUID.randomUUID(), 
+                request.getLineId(), request.getMaintenanceTypeId(), 
+                0L, -1, 
+                request.getName(), request.getMaintenanceNote(), 
+                schedule.getMaintenanceProduct(), 
+                -1.0, -1, Duration.ofMinutes(request.getDurationMinutes()), 
+                0, null
         );
-
+        
         maintenanceJob.setMaintenance(true);
         maintenanceJob.setLine(line);
 

@@ -51,7 +51,7 @@ public class JobSaveService {
                                 job.getStartCleaningDateTime(),
                                 job.getEndDateTime()
                         ).toMinutes())
-                        .evtype(null)
+                        .maintenanceTypeId(null)
                         .reason(null)
                         .note(job.getName())
                         .snpz(0L)
@@ -67,7 +67,7 @@ public class JobSaveService {
                                 job.getStartProductionDateTime(),
                                 job.getEndDateTime()
                         ).toMinutes());
-                        existing.setEvtype(null);
+                        existing.setMaintenanceTypeId(null);
                         existing.setReason(null);
                         existing.setNote(job.getName());
                         existing.setSnpz(0L);
@@ -99,7 +99,7 @@ public class JobSaveService {
                                 job.getStartCleaningDateTime(),
                                 job.getStartProductionDateTime()
                         ).toMinutes());
-                        existing.setEvtype(null);
+                        existing.setMaintenanceTypeId(null);
                         existing.setReason(null);
                         existing.setNote("Мойка, переналадка");
 
@@ -113,7 +113,7 @@ public class JobSaveService {
                                         job.getStartCleaningDateTime(),
                                         job.getStartProductionDateTime()
                                 ).toMinutes())
-                                .evtype(null)
+                                .maintenanceTypeId(null)
                                 .reason(null)
                                 .note("Мойка, переналадка")
                                 .snpz(job.getSnpz())

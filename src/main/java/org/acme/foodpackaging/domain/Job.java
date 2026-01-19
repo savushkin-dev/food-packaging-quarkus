@@ -29,6 +29,7 @@ public class Job {
     private String lineId;
     private String lineIdFact;
     private String name;
+    private String maintenanceNote;
 
     private Long snpz;
     private int np;
@@ -39,6 +40,7 @@ public class Job {
     private Product product;
     private Duration duration;
     private boolean maintenance;
+    private Integer maintenanceTypeId;
 
     private LocalDateTime startProductionDateTimeFact;
     private LocalDateTime minStartTime;
@@ -79,21 +81,19 @@ public class Job {
     private LocalDateTime endDateTime;
 
     // Constructor for common construction pattern (15 parameters)
-    public Job(String id, String lineId, Long snpz, int np, String name, Product product, double mass, int quantity, Duration duration, LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime, int priority, LocalDateTime startCleaningDateTime, LocalDateTime startProductionDateTime) {
+    public Job(String id, String lineId, Integer maintenanceTypeId, Long snpz, int np, String name, String maintenanceNote, Product product, double mass, int quantity, Duration duration, int priority, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.lineId = lineId;
         this.snpz = snpz;
         this.np = np;
         this.name = name;
+        this.maintenanceNote = maintenanceNote;
         this.product = product;
         this.mass = mass;
         this.quantity = quantity;
         this.duration = duration;
-        this.minStartTime = minStartTime;
-        this.idealEndTime = idealEndTime;
-        this.maxEndTime = maxEndTime;
+        this.maintenanceTypeId = maintenanceTypeId;
         this.priority = priority == 0 ? 1 : priority * 10;
-        this.startCleaningDateTime = startCleaningDateTime;
         this.startProductionDateTime = startProductionDateTime;
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
     }

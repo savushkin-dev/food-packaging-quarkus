@@ -15,6 +15,8 @@ public class DbMaintenanceRow {
    private Long fId;
    private Short fDel;
    private String lineId;
+   private String maintenanceNote;
+   private Integer maintenanceTypeId;
    private Timestamp startProductionDateTime;
    private Timestamp endDateTime;
    private Integer duration;

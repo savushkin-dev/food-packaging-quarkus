@@ -75,12 +75,10 @@ public class JobService {
             }
 
             job = new Job(
-                    String.valueOf(row.getFId()), row.getLineId(), row.getSnpz(),
-                    -1, row.getShortName(), solution.getMaintenanceProduct(), -1,
-                    -1, Duration.ofMinutes(safe(row.getDuration())),
-                    solution.getWorkCalendar().getMinStartDateTime(),
-                    null, null, 0,
-                    null, getStartProductionDateTime(row.getStartProductionDateTime())
+                    String.valueOf(row.getFId()), row.getLineId(), row.getMaintenanceTypeId(), row.getSnpz(),
+                    -1, row.getShortName(), row.getMaintenanceNote(), solution.getMaintenanceProduct(), -1,
+                    -1, Duration.ofMinutes(safe(row.getDuration())), 0,
+                    getStartProductionDateTime(row.getStartProductionDateTime())
             );
             job.setFId(row.getFId());
             job.setMaintenance(true);
@@ -101,12 +99,10 @@ public class JobService {
             }
 
             job = new Job(
-                    String.valueOf(row.snpz()), row.lineId(), row.snpz(),
-                    row.np(), nameCleaner(row.shortName()), product,
+                    String.valueOf(row.snpz()), row.lineId(), null, row.snpz(),
+                    row.np(), nameCleaner(row.shortName()), null, product,
                     row.mass(), row.quantity(), Duration.ofMinutes(safe(row.duration())),
-                    solution.getWorkCalendar().getMinStartDateTime(),
-                    null, null, safe(row.priority()),
-                    null, getStartProductionDateTime(row.startProductionDateTime())
+                    safe(row.priority()), getStartProductionDateTime(row.startProductionDateTime())
             );
             solution.getJobIdMap().put(row.snpz(), job);
         }

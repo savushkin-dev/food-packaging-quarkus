@@ -13,6 +13,7 @@ import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
+import org.acme.foodpackaging.repository.jobs.PlrPevRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
 import java.util.List;
@@ -29,15 +30,20 @@ public class LoadDataService {
     ProductRepository productRepository;
     @Inject
     CleaningRuleRepository cleaningRuleRepository;
+    @Inject
+    PlrPevRepository plrPevRepository;
 
     @Getter
     private ConcurrentMap<String, String> lines;
+    @Getter
+    private ConcurrentMap<Integer, String> maintenanceTypesRowMap;
     @Getter
     private Map<String, Product> products;
     @Getter
     private Map<String, Map<String, Integer>> lineSpeeds;
     @Getter
     private List<CleaningRule> cleaningRules;
+   
 
     void onStart(@Observes StartupEvent ev) {
         if (LaunchMode.current() == LaunchMode.TEST) {
@@ -71,12 +77,13 @@ public class LoadDataService {
                         PlrLines::getSpeed,
                         (existing, ignored) -> existing
                 ));
-        
+ 
         this.lineSpeeds = SpeedRepository.createSpeedMap(rawSpeeds);
         SpeedCacheUtils.init(this.lineSpeeds);
         
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
+        this.maintenanceTypesRowMap = plrPevRepository.loadMaintenanceTypesRowMap();
     }
 }
 
