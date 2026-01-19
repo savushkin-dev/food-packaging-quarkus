@@ -235,7 +235,7 @@ class JobServiceTest {
     private DbMaintenanceRow createDbMaintenanceRow() {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         return new DbMaintenanceRow(
-                1L, (short) 0, "L1", now, now, 30, 123L, "Maintenance"
+                1L, (short) 0, "L1", "Maintenance Note", 1, now, now, 30, 123L, "Maintenance"
         );
     }
 

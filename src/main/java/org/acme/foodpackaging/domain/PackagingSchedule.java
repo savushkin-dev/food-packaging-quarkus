@@ -41,8 +41,7 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, DbJobRow> dbJobRowMap;
     private Map<Long, DbMaintenanceRow> dbMaintenanceRowMap;
-
-    private  Map<Long, Job> jobIdMap;
+    private Map<Long, Job> jobIdMap;
 
     @PlanningScore
     private HardMediumSoftLongScore score;

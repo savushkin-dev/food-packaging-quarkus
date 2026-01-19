@@ -7,6 +7,7 @@ import org.acme.foodpackaging.record.CleaningRule;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
+import org.acme.foodpackaging.repository.jobs.PlrPevRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +39,8 @@ class LoadDataServiceTest {
     ProductRepository productRepository;
     @Mock
     CleaningRuleRepository cleaningRuleRepository;
+    @Mock
+    PlrPevRepository plrPevRepository;
 
     @BeforeEach
     void setUp() {
@@ -64,6 +68,7 @@ class LoadDataServiceTest {
         when(query.list()).thenReturn(lineEntities);
         when(productRepository.loadProducts()).thenReturn(products);
         when(cleaningRuleRepository.loadRules()).thenReturn(cleaningRules);
+        when(plrPevRepository.loadMaintenanceTypesRowMap()).thenReturn(new ConcurrentHashMap<>());
 
         loadDataService.refresh();
 
@@ -99,6 +104,7 @@ class LoadDataServiceTest {
         when(query.list()).thenReturn(lineEntities);
         when(productRepository.loadProducts()).thenReturn(new HashMap<>());
         when(cleaningRuleRepository.loadRules()).thenReturn(List.of());
+        when(plrPevRepository.loadMaintenanceTypesRowMap()).thenReturn(new ConcurrentHashMap<>());
 
         loadDataService.refresh();
 
@@ -118,6 +124,7 @@ class LoadDataServiceTest {
         when(query.list()).thenReturn(List.of());
         when(productRepository.loadProducts()).thenReturn(new HashMap<>());
         when(cleaningRuleRepository.loadRules()).thenReturn(List.of());
+        when(plrPevRepository.loadMaintenanceTypesRowMap()).thenReturn(new ConcurrentHashMap<>());
 
         loadDataService.refresh();
 
