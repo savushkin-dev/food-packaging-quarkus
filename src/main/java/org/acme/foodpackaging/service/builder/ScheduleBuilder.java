@@ -41,7 +41,10 @@ public class ScheduleBuilder {
         );
 
         jobService.initSolutionJobList(schedule);
-        jobService.initFactProductionData(schedule, jobRepository.getFactProductionRowMap(startDate));
+        jobService.initFactProductionData(schedule, jobRepository.getFactProductionRowMap(
+            schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
+        );
+        
         List<Line> lines = lineService.getLines();
         List<Product> products = productService.getProductList(schedule);
         schedule.setLines(lines);
