@@ -182,11 +182,6 @@ function refreshSchedule() {
                `End: <span class="text-danger">${endCleaning.format(dateTimeFormat)}</span>`
            ));
 
-        if (beforeReady) {
-          byLineJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
-          byJobJobElement.append($(`<p class="badge badge-danger mb-0"/>`).text(`Before ready (too early)`));
-        }
-
         byLineItemDataSet.add({
           id : job.id + "_cleaning", group: job.line.id,
           content:byLineCleaningElement.html(),
@@ -201,7 +196,7 @@ function refreshSchedule() {
         byJobItemDataSet.add({
           id : job.id + "_cleaning", group: job.id,
           content: "Cleaning",
-          start: job.startCleaningDateTime, end: job.startProductionDateTime,
+          start: job.startCleaningDateTime, end: job.startProductiafteronDateTime,
           style: "background-color: #FCAF3E99"
         });
         byJobItemDataSet.add({
