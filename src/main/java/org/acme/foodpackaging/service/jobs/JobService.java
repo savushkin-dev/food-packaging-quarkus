@@ -74,10 +74,14 @@ public class JobService {
                 throw new IllegalArgumentException("Unknown maintenance job FId=" + id);
             }
 
+            var maintenanceTypes = loadDataService != null ? loadDataService.getMaintenanceTypes() : null;
+            String maintenanceTypeName = maintenanceTypes != null
+                    ? maintenanceTypes.getOrDefault(safe(row.getMaintenanceTypeId()), "Обслуживание")
+                    : "Обслуживание";
+
             job = new Job(
                     String.valueOf(row.getFId()), row.getLineId(), row.getMaintenanceTypeId(), row.getSnpz(),
-                    -1, loadDataService.getMaintenanceTypes().getOrDefault(safe(row.getMaintenanceTypeId()),
-                    "Обслуживание"), row.getMaintenanceNote(), solution.getMaintenanceProduct(), -1,
+                    -1, maintenanceTypeName, row.getMaintenanceNote(), solution.getMaintenanceProduct(), -1,
                     -1, Duration.ofMinutes(safe(row.getDuration())), 0,
                     getStartProductionDateTime(row.getStartProductionDateTime())
             );
