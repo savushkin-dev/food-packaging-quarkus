@@ -55,6 +55,7 @@ public class MaintenanceJob {
         
         maintenanceJob.setMaintenance(true);
         maintenanceJob.setLine(line);
+        maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
         if (request.isEmptyLineMode()) {
             line.setStartDateTime(request.getStartProductionDateTime());
