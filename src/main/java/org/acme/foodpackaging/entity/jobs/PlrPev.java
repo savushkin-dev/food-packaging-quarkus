@@ -21,12 +21,16 @@ public class PlrPev extends PanacheEntityBase {
     @Column(name = "SNM")
     public String maintenanceTypeName;
 
+    @Column(name = "F_DEL")
+    public Integer fDel;
+
     @Override
     public String toString() {
         return "PlrPev{" +
                 "id=" + id +
                 ", maintenanceTypeId=" + maintenanceTypeId +
                 ", maintenanceTypeName=" + maintenanceTypeName +
+                ", fDel=" + fDel +
                 '}';
     }
 }
