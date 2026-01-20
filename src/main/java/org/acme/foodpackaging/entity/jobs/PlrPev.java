@@ -3,7 +3,13 @@ package org.acme.foodpackaging.entity.jobs;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import java.util.UUID;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Entity
+@Getter
+@Setter
+@Table(name = "PLR_PEV", schema = "dbo")
 public class PlrPev extends PanacheEntityBase {
     @Id
     @Column(name = "F_GUID", nullable = false)
