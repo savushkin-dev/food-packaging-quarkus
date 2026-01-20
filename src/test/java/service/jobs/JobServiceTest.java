@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -235,7 +236,7 @@ class JobServiceTest {
     private DbMaintenanceRow createDbMaintenanceRow() {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         return new DbMaintenanceRow(
-                1L, (short) 0, "L1", "Maintenance Note", 1, now, now, 30, 123L, "Maintenance"
+               1L, (short) 0, "L1", now, now, 30, 123L, 1, "Maintenance Note"
         );
     }
 

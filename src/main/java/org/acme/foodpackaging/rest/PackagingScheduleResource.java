@@ -93,6 +93,16 @@ public class PackagingScheduleResource {
         return loadDataService.getLines();
     }
 
+    @GET
+    @Path("serviceTypes")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<Integer, String> getMaintenanceTypes() {
+        if (loadDataService == null) {
+            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+        }
+        return loadDataService.getMaintenanceTypes();
+    }
+
     @POST
     @Path("refreshData")
     @Produces(MediaType.APPLICATION_JSON)

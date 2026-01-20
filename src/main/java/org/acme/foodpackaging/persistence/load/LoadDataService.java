@@ -36,7 +36,7 @@ public class LoadDataService {
     @Getter
     private ConcurrentMap<String, String> lines;
     @Getter
-    private ConcurrentMap<Integer, String> maintenanceTypesRowMap;
+    private ConcurrentMap<Integer, String> maintenanceTypes;
     @Getter
     private Map<String, Product> products;
     @Getter
@@ -83,7 +83,7 @@ public class LoadDataService {
         
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
-        this.maintenanceTypesRowMap = plrPevRepository.loadMaintenanceTypesRowMap();
+        this.maintenanceTypes = plrPevRepository.loadMaintenanceTypesRowMap();
     }
 }
 

@@ -76,7 +76,8 @@ public class JobService {
 
             job = new Job(
                     String.valueOf(row.getFId()), row.getLineId(), row.getMaintenanceTypeId(), row.getSnpz(),
-                    -1, row.getShortName(), row.getMaintenanceNote(), solution.getMaintenanceProduct(), -1,
+                    -1, loadDataService.getMaintenanceTypes().getOrDefault(safe(row.getMaintenanceTypeId()),
+                    "Обслуживание"), row.getMaintenanceNote(), solution.getMaintenanceProduct(), -1,
                     -1, Duration.ofMinutes(safe(row.getDuration())), 0,
                     getStartProductionDateTime(row.getStartProductionDateTime())
             );

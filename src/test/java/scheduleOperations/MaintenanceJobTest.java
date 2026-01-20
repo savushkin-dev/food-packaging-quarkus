@@ -61,7 +61,7 @@ class MaintenanceJobTest {
     void MaintenanceJobInEmptyLine() {
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
-        request.setName("Maintenance 1");
+        request.setMaintenanceNote("Maintenance 1");
         request.setDurationMinutes(30);
         // emptyLineMode
         request.setStartProductionDateTime(LocalDateTime.now());
@@ -71,7 +71,7 @@ class MaintenanceJobTest {
         assertEquals(1, result.getJobs().size());
         Job job = result.getJobs().getFirst();
         assertTrue(job.isMaintenance());
-        assertEquals("Maintenance 1", job.getName());
+        assertEquals("Maintenance 1", job.getMaintenanceNote());
         assertEquals(30, job.getDuration().toMinutes());
         assertEquals(line, job.getLine());
     }
@@ -87,14 +87,14 @@ class MaintenanceJobTest {
 
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
-        request.setName("Maintenance 2");
+        request.setMaintenanceNote("Maintenance 2");
         request.setDurationMinutes(15);
         request.setInsertIndex(0);
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
         assertEquals(2, result.getJobs().size());
-        assertEquals("Maintenance 2", line.getJobs().getFirst().getName());
+        assertEquals("Maintenance 2", line.getJobs().getFirst().getMaintenanceNote());
         assertEquals("Job 1", line.getJobs().get(1).getName());
     }
 
