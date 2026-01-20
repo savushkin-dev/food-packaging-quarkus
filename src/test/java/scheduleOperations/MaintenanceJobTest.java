@@ -87,6 +87,7 @@ class MaintenanceJobTest {
 
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
+        request.setMaintenanceTypeId(1);
         request.setMaintenanceNote("Maintenance 2");
         request.setDurationMinutes(15);
         request.setInsertIndex(0);
@@ -94,6 +95,7 @@ class MaintenanceJobTest {
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
         assertEquals(2, result.getJobs().size());
+        assertEquals(1,line.getJobs().getFirst().getMaintenanceTypeId());
         assertEquals("Maintenance 2", line.getJobs().getFirst().getMaintenanceNote());
         assertEquals("Job 1", line.getJobs().get(1).getName());
     }
