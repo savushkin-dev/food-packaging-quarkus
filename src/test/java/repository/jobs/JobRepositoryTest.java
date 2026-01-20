@@ -162,13 +162,12 @@ class JobRepositoryTest {
                 1L,                    // fId
                 (short) 0,             // fDel
                 "L1",                  // lineId
-                "Maintenance 1",       // maintenanceNote
-                1,                 // maintenanceTypeId
                 Timestamp.valueOf(startTime),  // startProductionDateTime
                 Timestamp.valueOf(endTime),     // endDateTime
                 120,                   // duration
                 0L,                    // snpz
-                "Maintenance 1"  // shortName
+                1,                 // maintenanceTypeId
+                "Maintenance 1"       // maintenanceNote
         );
         expectedResult.put(1L, row);
         

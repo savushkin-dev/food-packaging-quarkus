@@ -15,11 +15,10 @@ public class DbMaintenanceRow {
    private Long fId;
    private Short fDel;
    private String lineId;
-   private String maintenanceNote;
-   private Integer maintenanceTypeId;
    private Timestamp startProductionDateTime;
    private Timestamp endDateTime;
    private Integer duration;
    private Long snpz;
-   private String shortName;
+   private Integer maintenanceTypeId;
+   private String maintenanceNote;
 }

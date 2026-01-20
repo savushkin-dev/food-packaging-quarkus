@@ -1,9 +1,11 @@
 package org.acme.foodpackaging.scheduleOperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -23,18 +25,22 @@ public class MaintenanceJob {
      * @param request  параметры запроса
      * @return обновлённое расписание
      */
+
+    @Inject
+    LoadDataService loadDataService;
+
     public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule,
                                                MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.getLineId());
-
+        int typeKey = request.getMaintenanceTypeId() != null ? request.getMaintenanceTypeId(): 1;
         List<Job> lineJobs = line.getJobs();
 
         Job maintenanceJob = new Job(
                 "MAINTENANCE-" + UUID.randomUUID(), 
                 request.getLineId(), request.getMaintenanceTypeId(), 
                 0L, -1, 
-                request.getName(), request.getMaintenanceNote(), 
+                loadDataService.getMaintenanceTypes().get(typeKey), request.getMaintenanceNote(),
                 schedule.getMaintenanceProduct(), 
                 -1.0, -1, Duration.ofMinutes(request.getDurationMinutes()), 
                 0, null

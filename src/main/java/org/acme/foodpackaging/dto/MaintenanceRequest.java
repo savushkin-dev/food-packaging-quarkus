@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 public class MaintenanceRequest {
 
     private String lineId;
-    private String name;
     private String maintenanceNote;
     private Integer maintenanceTypeId;
     private Integer durationMinutes;
