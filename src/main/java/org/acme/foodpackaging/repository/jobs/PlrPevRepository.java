@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 public class PlrPevRepository implements PanacheRepository<PlrPev>  {
 
     public ConcurrentMap<Integer, String> loadMaintenanceTypesRowMap() {
-        return find("fDel = 0 and maintenanceTypeId is not null and maintenanceTypeName is not null").stream()
+        return find("fDel = 0").stream()
                 .collect(Collectors.toConcurrentMap(
                         plrPev -> plrPev.maintenanceTypeId,
                         plrPev -> plrPev.maintenanceTypeName,
