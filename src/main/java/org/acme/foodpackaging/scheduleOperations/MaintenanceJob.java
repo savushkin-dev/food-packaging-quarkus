@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
 import java.util.UUID;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
@@ -36,11 +37,17 @@ public class MaintenanceJob {
         int typeKey = request.getMaintenanceTypeId() != null ? request.getMaintenanceTypeId(): 1;
         List<Job> lineJobs = line.getJobs();
 
+        ConcurrentMap<Integer, String> maintenanceTypes =
+                loadDataService != null ? loadDataService.getMaintenanceTypes() : null;
+        String maintenanceTypeName = maintenanceTypes != null
+                ? maintenanceTypes.getOrDefault(typeKey, "Обслуживание")
+                : "Обслуживание";
+
         Job maintenanceJob = new Job(
                 "MAINTENANCE-" + UUID.randomUUID(), 
                 request.getLineId(), request.getMaintenanceTypeId(), 
                 0L, -1, 
-                loadDataService.getMaintenanceTypes().get(typeKey), request.getMaintenanceNote(),
+                maintenanceTypeName, request.getMaintenanceNote(),
                 schedule.getMaintenanceProduct(), 
                 -1.0, -1, Duration.ofMinutes(request.getDurationMinutes()), 
                 0, null
