@@ -111,7 +111,7 @@ public class JobService {
             );
             solution.getJobIdMap().put(row.snpz(), job);
         }
-        
+        job.setMinStartTime(solution.getWorkCalendar().getMinStartDateTime());
         return job;
     }
 
