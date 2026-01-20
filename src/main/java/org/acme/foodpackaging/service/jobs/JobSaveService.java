@@ -47,13 +47,11 @@ public class JobSaveService {
                         .lineId(job.getLine().getId())
                         .startProductionDateTime(job.getStartProductionDateTime())
                         .endDateTime(job.getEndDateTime())
-                        .duration((int) Duration.between(
-                                job.getStartCleaningDateTime(),
-                                job.getEndDateTime()
-                        ).toMinutes())
-                        .maintenanceTypeId(null)
+                        .duration((int)job.getDuration().toMinutes()
+                        )
+                        .maintenanceTypeId(job.getMaintenanceTypeId())
                         .reason(null)
-                        .note(job.getName())
+                        .note(job.getMaintenanceNote())
                         .snpz(0L)
                         .build();
 
