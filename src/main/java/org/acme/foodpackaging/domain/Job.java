@@ -88,33 +88,30 @@ public class Job {
     public record ProductionJobParams(
             String id,
             String lineId,
+            String name,
             Long snpz,
             int np,
-            String name,
-            Product product,
-            double mass,
             int quantity,
-            Duration duration,
             int priority,
-            LocalDateTime startProductionDateTime,
-            Integer maintenanceTypeId,
-            String maintenanceNote
+            double mass,
+            Product product,
+            Duration duration,
+            LocalDateTime startProductionDateTime
     ) {}
 
     /**
      * Parameters for creating a maintenance job with time constraints.
      */
-    public record MaintenanceJobTimeParams(
+    public record MaintenanceJobParams(
             String id,
+            String lineId,
             String name,
+            String note,
+            Integer typeId,
             Product product,
             Duration duration,
-            LocalDateTime minStartTime,
-            LocalDateTime idealEndTime,
-            LocalDateTime maxEndTime,
             int priority,
             boolean pinned,
-            LocalDateTime startCleaningDateTime,
             LocalDateTime startProductionDateTime
     ) {}
 
@@ -129,16 +126,14 @@ public class Job {
     Job(ProductionJobParams params) {
         this.id = params.id();
         this.lineId = params.lineId();
+        this.name = params.name();
         this.snpz = params.snpz();
         this.np = params.np();
-        this.name = params.name();
-        this.maintenanceNote = params.maintenanceNote();
-        this.product = params.product();
-        this.mass = params.mass();
         this.quantity = params.quantity();
-        this.duration = params.duration();
-        this.maintenanceTypeId = params.maintenanceTypeId();
         this.priority = params.priority() == 0 ? 1 : params.priority() * 10;
+        this.mass = params.mass();
+        this.product = params.product();
+        this.duration = params.duration();
         this.startProductionDateTime = params.startProductionDateTime();
         this.endDateTime = params.startProductionDateTime() == null ? null 
                 : params.startProductionDateTime().plus(params.duration());
@@ -148,20 +143,20 @@ public class Job {
      * Constructor for maintenance jobs with time constraints.
      * Package-private - use factory methods for public API.
      */
-    Job(MaintenanceJobTimeParams params) {
+    Job(MaintenanceJobParams params) {
         this.id = params.id();
+        this.lineId = params.lineId();
         this.name = params.name();
+        this.maintenanceNote = params.note();
+        this.maintenanceTypeId = params.typeId();
         this.product = params.product();
         this.duration = params.duration();
-        this.minStartTime = params.minStartTime();
-        this.idealEndTime = params.idealEndTime();
-        this.maxEndTime = params.maxEndTime();
         this.priority = params.priority() == 0 ? 1 : params.priority() * 10;
         this.pinned = params.pinned();
-        this.startCleaningDateTime = params.startCleaningDateTime();
         this.startProductionDateTime = params.startProductionDateTime();
         this.endDateTime = params.startProductionDateTime() == null ? null 
                 : params.startProductionDateTime().plus(params.duration());
+
     }
 
     /**
@@ -187,17 +182,15 @@ public class Job {
         return new Job(new ProductionJobParams(
                 String.valueOf(row.snpz()),
                 row.lineId(),
+                jobName,
                 row.snpz(),
                 row.np() != null ? row.np() : 0,
-                jobName,
-                product,
-                row.mass(),
                 row.quantity() != null ? row.quantity() : 0,
-                row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
                 row.priority() != null ? row.priority() : 0,
-                startProductionDateTime,
-                null,
-                null
+                row.mass(),
+                product,
+                row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
+                startProductionDateTime
         ));
     }
 
@@ -205,26 +198,22 @@ public class Job {
      * Creates a maintenance job from a database row.
      * 
      * @param row The maintenance database row
-     * @param maintenanceTypeName The name of the maintenance type
+     * @param maintenanceName The name of the maintenance type
      * @param maintenanceProduct The maintenance product
      * @param startProductionDateTime The start production date/time (can be null)
      * @return A new maintenance Job instance
      */
-    public static Job fromDbMaintenanceRow(org.acme.foodpackaging.dto.DbMaintenanceRow row, String maintenanceTypeName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
-        Job job = new Job(new ProductionJobParams(
+    public static Job fromDbMaintenanceRow(org.acme.foodpackaging.dto.DbMaintenanceRow row, String lineId, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
+        Job job = new Job(new MaintenanceJobParams(
                 String.valueOf(row.getFId()),
-                row.getLineId(),
-                row.getSnpz(),
-                -1,
-                maintenanceTypeName,
-                maintenanceProduct,
-                -1.0,
-                -1,
-                row.getDuration() != null ? Duration.ofMinutes(row.getDuration()) : Duration.ZERO,
-                0,
-                startProductionDateTime,
+                lineId,
+                maintenanceName,
+                row.getMaintenanceNote(),
                 row.getMaintenanceTypeId(),
-                row.getMaintenanceNote()
+                maintenanceProduct,
+                row.getDuration() != null ? Duration.ofMinutes(row.getDuration()) : Duration.ZERO,
+                0, true, startProductionDateTime
+
         ));
         job.setFId(row.getFId());
         job.setMaintenance(true);
@@ -235,29 +224,22 @@ public class Job {
      * Creates a maintenance job from a maintenance request.
      * 
      * @param id The unique job ID
-     * @param lineId The line ID
      * @param maintenanceTypeId The maintenance type ID
-     * @param maintenanceTypeName The name of the maintenance type
+     * @param maintenanceName The name of the maintenance type
      * @param maintenanceNote Optional maintenance note
      * @param maintenanceProduct The maintenance product
      * @param durationMinutes The duration in minutes
      * @return A new maintenance Job instance
      */
-    public static Job createMaintenanceJob(String id, String lineId, Integer maintenanceTypeId, String maintenanceTypeName, String maintenanceNote, Product maintenanceProduct, int durationMinutes) {
-        Job job = new Job(new ProductionJobParams(
-                id,
-                lineId,
-                0L,
-                -1,
-                maintenanceTypeName,
-                maintenanceProduct,
-                -1.0,
-                -1,
-                Duration.ofMinutes(durationMinutes),
-                0,
-                null,
+    public static Job createMaintenanceJob(String id, String lineId, Integer maintenanceTypeId, String maintenanceName, String maintenanceNote, Product maintenanceProduct, int durationMinutes) {
+        Job job = new Job(new MaintenanceJobParams(
+                id, lineId,
+                maintenanceName,
+                maintenanceNote,
                 maintenanceTypeId,
-                maintenanceNote
+                maintenanceProduct,
+                Duration.ofMinutes(durationMinutes),
+                0, true, null
         ));
         job.setMaintenance(true);
         return job;

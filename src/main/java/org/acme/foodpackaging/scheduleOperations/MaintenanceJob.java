@@ -45,8 +45,7 @@ public class MaintenanceJob {
                 : "Обслуживание";
 
         Job maintenanceJob = Job.createMaintenanceJob(
-                "MAINTENANCE-" + UUID.randomUUID(),
-                request.getLineId(),
+                "MAINTENANCE-" + UUID.randomUUID(), null,
                 request.getMaintenanceTypeId(),
                 maintenanceTypeName,
                 request.getMaintenanceNote(),
