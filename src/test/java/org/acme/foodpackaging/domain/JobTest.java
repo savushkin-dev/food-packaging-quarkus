@@ -1,7 +1,4 @@
-package domain;
-
-import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.domain.Product;
+package org.acme.foodpackaging.domain;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
