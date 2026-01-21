@@ -25,7 +25,7 @@ class MaintenanceJobTest {
 
     @BeforeEach
     void setup() {
-        maintenanceJob = new MaintenanceJob(null); // LoadDataService can be null for tests
+        maintenanceJob = new MaintenanceJob(null);
 
         // Line, schedule
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
@@ -146,7 +146,7 @@ class MaintenanceJobTest {
     }
 
     @Test
-    void markDeletedByFId_marksMatchingRowsAsDeleted() {
+    void marksMatchingRowsAsDeleted() {
         Map<Long, DbMaintenanceRow> jobs = new HashMap<>();
 
         DbMaintenanceRow match = new DbMaintenanceRow(
@@ -164,7 +164,7 @@ class MaintenanceJobTest {
 
         jobs.put(100L, match);
         jobs.put(200L, other);
-        jobs.put(300L, null); // cover Objects::nonNull filter
+        jobs.put(300L, null);
 
         maintenanceJob.markDeletedByFId(100L, jobs);
 
