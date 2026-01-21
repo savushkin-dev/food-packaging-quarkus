@@ -24,8 +24,12 @@ public class MaintenanceJob {
      *
      */
 
+    private final LoadDataService loadDataService;
+
     @Inject
-    LoadDataService loadDataService;
+    public MaintenanceJob(LoadDataService loadDataService) {
+        this.loadDataService = loadDataService;
+    }
 
     public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule,
                                                MaintenanceRequest request) {
@@ -40,17 +44,15 @@ public class MaintenanceJob {
                 ? maintenanceTypes.getOrDefault(typeKey, "Обслуживание")
                 : "Обслуживание";
 
-        Job maintenanceJob = new Job(
-                "MAINTENANCE-" + UUID.randomUUID(), 
-                request.getLineId(), request.getMaintenanceTypeId(), 
-                0L, -1, 
-                maintenanceTypeName, request.getMaintenanceNote(),
-                schedule.getMaintenanceProduct(), 
-                -1.0, -1, Duration.ofMinutes(request.getDurationMinutes()), 
-                0, null
+        Job maintenanceJob = Job.createMaintenanceJob(
+                "MAINTENANCE-" + UUID.randomUUID(),
+                request.getLineId(),
+                request.getMaintenanceTypeId(),
+                maintenanceTypeName,
+                request.getMaintenanceNote(),
+                schedule.getMaintenanceProduct(),
+                request.getDurationMinutes()
         );
-        
-        maintenanceJob.setMaintenance(true);
         maintenanceJob.setLine(line);
         maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 

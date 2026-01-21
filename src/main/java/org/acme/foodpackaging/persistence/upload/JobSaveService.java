@@ -18,15 +18,20 @@ import java.util.List;
 @ApplicationScoped
 public class JobSaveService {
 
+    
     private static final String MAINTENANCE_PREFIX = "MAINTENANCE";
     private static final String CLEANING_NOTE = "Мойка, переналадка";
     private static final short DELETED_FLAG = 1;
 
-    @Inject
-    BdVpmcRepository bdVpmcRepository;
+    private final BdVpmcRepository bdVpmcRepository;
+    private final OeePevRepository oeePevRepository;
 
     @Inject
-    OeePevRepository oeePevRepository;
+    public JobSaveService(BdVpmcRepository bdVpmcRepository,
+                          OeePevRepository oeePevRepository) {
+        this.bdVpmcRepository = bdVpmcRepository;
+        this.oeePevRepository = oeePevRepository;
+    }
 
     @Transactional
     public void saveJobsByType(PackagingSchedule schedule) {

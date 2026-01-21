@@ -11,14 +11,13 @@ import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.nameCleaner;
+import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 
 /**
  * Business logic service for job management.
@@ -79,14 +78,12 @@ public class JobService {
                     ? maintenanceTypes.getOrDefault(safe(row.getMaintenanceTypeId()), "Обслуживание")
                     : "Обслуживание";
 
-            job = new Job(
-                    String.valueOf(row.getFId()), row.getLineId(), row.getMaintenanceTypeId(), row.getSnpz(),
-                    -1, maintenanceTypeName, row.getMaintenanceNote(), solution.getMaintenanceProduct(), -1,
-                    -1, Duration.ofMinutes(safe(row.getDuration())), 0,
+            job = Job.fromDbMaintenanceRow(
+                    row,
+                    maintenanceTypeName,
+                    solution.getMaintenanceProduct(),
                     getStartProductionDateTime(row.getStartProductionDateTime())
             );
-            job.setFId(row.getFId());
-            job.setMaintenance(true);
         } else {
             Job existing = solution.getJobIdMap().get(id);
             if (existing != null) {
@@ -103,12 +100,7 @@ public class JobService {
                 throw new IllegalStateException("Unknown product KMC=" + row.kmc());
             }
 
-            job = new Job(
-                    String.valueOf(row.snpz()), row.lineId(), null, row.snpz(),
-                    row.np(), nameCleaner(row.shortName()), null, product,
-                    row.mass(), row.quantity(), Duration.ofMinutes(safe(row.duration())),
-                    safe(row.priority()), getStartProductionDateTime(row.startProductionDateTime())
-            );
+            job = Job.fromDbJobRow(row, product, getStartProductionDateTime(row.startProductionDateTime()), ScheduleUtils::nameCleaner);
             solution.getJobIdMap().put(row.snpz(), job);
         }
         job.setMinStartTime(solution.getWorkCalendar().getMinStartDateTime());
