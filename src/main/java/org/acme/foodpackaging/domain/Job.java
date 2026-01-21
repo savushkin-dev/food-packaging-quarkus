@@ -252,8 +252,7 @@ public class Job {
      * @deprecated Use factory methods like {@link #createMaintenanceJob(String, String, Integer, String, String, Product, int)} instead.
      * This method is kept for test compatibility.
      */
-
-@Deprecated(since = "26.01.2", forRemoval = false)
+    
     @SuppressWarnings("java:S107")
     public Job(String id, String name, Product product, Duration duration, 
                LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime,

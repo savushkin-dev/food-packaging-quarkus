@@ -17,7 +17,6 @@ class JobTest {
 
     @Test
     void setMaintenanceFields() {
-        LocalDateTime startCleaningDateTime = LocalDateTime.of(2025, 1, 15, 8, 30);
         LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
         LocalDateTime endDateTime = startProductionDateTime.plusMinutes(60);
         
