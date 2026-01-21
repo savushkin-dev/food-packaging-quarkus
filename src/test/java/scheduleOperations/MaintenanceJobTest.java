@@ -22,7 +22,7 @@ class MaintenanceJobTest {
 
     @BeforeEach
     void setup() {
-        maintenanceJob = new MaintenanceJob();
+        maintenanceJob = new MaintenanceJob(null); // LoadDataService can be null for tests
 
         // Line, schedule
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
