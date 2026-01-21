@@ -231,6 +231,8 @@
                 <exclude>**/repository/**</exclude>
                 <exclude>**/record/**</exclude>
                 <exclude>**/rest/**</exclude>
+                <exclude>**/sql/**</exclude>
+                <exclude>**/dto/**</exclude>
               </excludes>
             </configuration>
           </execution>
