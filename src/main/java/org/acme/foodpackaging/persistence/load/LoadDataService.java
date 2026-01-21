@@ -24,14 +24,10 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class LoadDataService {
 
-    @Inject
-    LineRepository lineRepository;
-    @Inject
-    ProductRepository productRepository;
-    @Inject
-    CleaningRuleRepository cleaningRuleRepository;
-    @Inject
-    PlrPevRepository plrPevRepository;
+    private final LineRepository lineRepository;
+    private final ProductRepository productRepository;
+    private final CleaningRuleRepository cleaningRuleRepository;
+    private final PlrPevRepository plrPevRepository;
 
     @Getter
     private ConcurrentMap<String, String> lines;
@@ -43,7 +39,19 @@ public class LoadDataService {
     private Map<String, Map<String, Integer>> lineSpeeds;
     @Getter
     private List<CleaningRule> cleaningRules;
-   
+
+    @Inject
+    public LoadDataService(
+            LineRepository lineRepository,
+            ProductRepository productRepository,
+            CleaningRuleRepository cleaningRuleRepository,
+            PlrPevRepository plrPevRepository
+    ) {
+        this.lineRepository = lineRepository;
+        this.productRepository = productRepository;
+        this.cleaningRuleRepository = cleaningRuleRepository;
+        this.plrPevRepository = plrPevRepository;
+    }
 
     void onStart(@Observes StartupEvent ev) {
         if (LaunchMode.current() == LaunchMode.TEST) {
@@ -58,7 +66,7 @@ public class LoadDataService {
 
     private void loadData() {
         List<PlrLines> allLineEntities = lineRepository.find("fDel = 0").list();
-       
+
         this.lines = allLineEntities.stream()
                 .filter(e -> e.getSnm() != null)
                 .collect(Collectors.toConcurrentMap(
@@ -66,7 +74,7 @@ public class LoadDataService {
                         e -> e.getSnm().trim(),
                         (existing, ignored) -> existing
                 ));
-        
+
         Map<SpeedRepository.LineTypeKey, Integer> rawSpeeds = allLineEntities.stream()
                 .filter(e -> e.getSpeed() != null)
                 .collect(Collectors.toMap(
@@ -77,10 +85,10 @@ public class LoadDataService {
                         PlrLines::getSpeed,
                         (existing, ignored) -> existing
                 ));
- 
+
         this.lineSpeeds = SpeedRepository.createSpeedMap(rawSpeeds);
         SpeedCacheUtils.init(this.lineSpeeds);
-        
+
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
         this.maintenanceTypes = plrPevRepository.loadMaintenanceTypesRowMap();

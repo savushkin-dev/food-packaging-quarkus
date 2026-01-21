@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
 @Getter
@@ -47,9 +48,6 @@ public class Job {
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
 
-    /**
-     * Higher priority is a higher number.
-     */
     private int priority;
 
     @PlanningPin
@@ -175,7 +173,12 @@ public class Job {
      * @param nameCleaner Optional function to clean the job name (can be null to use raw name)
      * @return A new Job instance
      */
-    public static Job fromDbJobRow(org.acme.foodpackaging.record.DbJobRow row, Product product, LocalDateTime startProductionDateTime, java.util.function.Function<String, String> nameCleaner) {
+    public static Job fromDbJobRow(
+        DbJobRow row,
+        Product product,
+        LocalDateTime startProductionDateTime,
+        java.util.function.UnaryOperator<String> nameCleaner
+) {
         String jobName = row.shortName() != null ? row.shortName().trim() : "";
         if (nameCleaner != null) {
             jobName = nameCleaner.apply(jobName);
@@ -267,7 +270,10 @@ public class Job {
      * @deprecated Use factory methods like {@link #createMaintenanceJob(String, String, Integer, String, String, Product, int)} instead.
      * This method is kept for test compatibility.
      */
-    @Deprecated
+/**
+ * @deprecated Use {@link Job.Builder} instead.
+ */
+@Deprecated(since = "26.01.2", forRemoval = false)
     @SuppressWarnings("java:S107")
     public Job(String id, String name, Product product, Duration duration, 
                LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime,
