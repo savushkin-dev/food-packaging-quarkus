@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.domain;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import ai.timefold.solver.core.api.domain.solution.ProblemFactProperty;
 import ai.timefold.solver.core.api.domain.valuerange.ValueRangeProvider;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 import ai.timefold.solver.core.api.solver.SolverStatus;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
@@ -41,6 +43,7 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, DbJobRow> dbJobRowMap;
     private Map<Long, DbMaintenanceRow> dbMaintenanceRowMap;
+    @Getter(AccessLevel.NONE)
     private Map<Long, Job> jobIdMap;
 
     @PlanningScore
@@ -68,6 +71,10 @@ public class PackagingSchedule {
     // ************************************************************************
     // Getters and setters
     // ************************************************************************
+
+    public Map<Long, Job> getJobIdMap() {
+        return jobIdMap == null ? null : Collections.unmodifiableMap(jobIdMap);
+    }
 
     @Override
     public String toString() {
