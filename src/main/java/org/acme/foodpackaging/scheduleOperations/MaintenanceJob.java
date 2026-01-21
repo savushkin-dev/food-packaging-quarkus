@@ -22,9 +22,6 @@ public class MaintenanceJob {
     /**
      * Добавляет Maintenance Job на линию
      *
-     * @param schedule расписание
-     * @param request  параметры запроса
-     * @return обновлённое расписание
      */
 
     @Inject
