@@ -223,6 +223,16 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <!-- Exclude entity and persistence packages from coverage -->
+              <excludes>
+                <exclude>**/entity/**</exclude>
+                <exclude>**/persistence/**</exclude>
+                <exclude>**/repository/**</exclude>
+                <exclude>**/record/**</exclude>
+                <exclude>**/rest/**</exclude>
+              </excludes>
+            </configuration>
           </execution>
         </executions>
       </plugin>
