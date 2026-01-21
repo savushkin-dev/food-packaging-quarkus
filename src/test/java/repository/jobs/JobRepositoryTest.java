@@ -64,12 +64,12 @@ class JobRepositoryTest {
         FactKey key = new FactKey("KMC1", 1);
         LocalDateTime now = LocalDateTime.now();
         FactProductionRow row = new FactProductionRow(
-                "KMC1",                  // kmc
-                Timestamp.valueOf(now),      // dtv
-                1,                       // np
-                1,                // eventType
-                Timestamp.valueOf(now),     // startProductionDateTimeFact
-                "L1"            // lineIdFact
+                "KMC1",                          // kmc
+                Timestamp.valueOf(now),               // dtv
+                1,                                    // np
+                1,                                    // eventType
+                Timestamp.valueOf(now),               // startProductionDateTimeFact
+                "L1"                                  // lineIdFact
         );
         expectedResult.put(key, row);
         
@@ -105,21 +105,21 @@ class JobRepositoryTest {
         LocalDate to = testDate.plusDays(3);
         LocalDateTime fromDateTime = from.atStartOfDay();
         LocalDateTime toDateTime = to.atStartOfDay();
-        
+
         Map<Long, DbJobRow> expectedResult = new HashMap<>();
         DbJobRow row = new DbJobRow(
                 Timestamp.valueOf(LocalDateTime.now()),  // dti
-                "KMC1",                 // kmc
-                1,                       // np
-                10,                      // quantity
-                100.0,                   // mass
-                null,                    // startProductionDateTime
-                null,                    // endDateTime
-                60,                      // duration
-                1L,                      // snpz
-                1,                       // priority
-                "L1",                    // lineId
-                "Product 1"              // shortName
+                "KMC1",                                  // kmc
+                1,                                       // np
+                10,                                      // quantity
+                100.0,                                   // mass
+                null,                                    // startProductionDateTime
+                null,                                    // endDateTime
+                60,                                      // duration
+                1L,                                      // snpz
+                1,                                       // priority
+                "L1",                                    // lineId
+                "Product 1"                              // shortName
         );
         expectedResult.put(1L, row);
         
