@@ -1,5 +1,7 @@
-package org.acme.foodpackaging.domain;
+package domain;
 
+import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.Product;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -10,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class JobTest {
 
     @Test
-    void constructorWithMaintenanceJobTimeParams_setsAllFields() {
+    void setAllFields() {
         LocalDateTime minStartTime = LocalDateTime.of(2025, 1, 15, 8, 0);
         LocalDateTime idealEndTime = LocalDateTime.of(2025, 1, 15, 10, 0);
         LocalDateTime maxEndTime = LocalDateTime.of(2025, 1, 15, 12, 0);
@@ -54,7 +56,7 @@ class JobTest {
     }
 
     @Test
-    void constructorWithMaintenanceJobTimeParams_zeroPriorityBecomesOne() {
+    void zeroPriorityBecomesOne() {
         Product product = new Product("PROD1", "Product 1");
         LocalDateTime startTime = LocalDateTime.of(2025, 1, 15, 9, 0);
         
@@ -79,7 +81,7 @@ class JobTest {
     }
 
     @Test
-    void constructorWithMaintenanceJobTimeParams_nullStartProductionDateTime() {
+    void nullStartProductionDateTime() {
         Product product = new Product("PROD1", "Product 1");
         
         Job.MaintenanceJobTimeParams params = new Job.MaintenanceJobTimeParams(
