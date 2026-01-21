@@ -1,6 +1,7 @@
 package scheduleOperations;
 
 import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.domain.*;
@@ -10,10 +11,12 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.sql.Timestamp;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SuppressWarnings("deprecation")
 class MaintenanceJobTest {
 
     private MaintenanceJob maintenanceJob;
@@ -140,5 +143,32 @@ class MaintenanceJobTest {
         PackagingSchedule result = maintenanceJob.updateDuration(schedule, request);
 
         assertEquals(45, result.getJobs().getFirst().getDuration().toMinutes());
+    }
+
+    @Test
+    void markDeletedByFId_marksMatchingRowsAsDeleted() {
+        Map<Long, DbMaintenanceRow> jobs = new HashMap<>();
+
+        DbMaintenanceRow match = new DbMaintenanceRow(
+                100L, (short) 0, "L1",
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)),
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 9, 0)),
+                60, 123L, 1, "note"
+        );
+        DbMaintenanceRow other = new DbMaintenanceRow(
+                200L, (short) 0, "L1",
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 10, 0)),
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 11, 0)),
+                60, 124L, 1, "note2"
+        );
+
+        jobs.put(100L, match);
+        jobs.put(200L, other);
+        jobs.put(300L, null); // cover Objects::nonNull filter
+
+        maintenanceJob.markDeletedByFId(100L, jobs);
+
+        assertEquals((short) 1, match.getFDel());
+        assertEquals((short) 0, other.getFDel());
     }
 }
