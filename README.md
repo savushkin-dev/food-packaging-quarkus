@@ -6,8 +6,6 @@ Schedule food packaging orders to manufacturing lines, to minimize downtime and 
 - [Configuration](#configuration)
 - [REST API](#rest-api)
 - [Run the packaged application](#run-the-packaged-application)
-- [Run the application in a container](#run-the-application-in-a-container)
-- [Run it native](#run-it-native)
 
 ## Prerequisites
 
@@ -51,28 +49,22 @@ This app connects to **MS SQL Server**. Quarkus devservices are disabled, so you
 ### Profiles
 
 - **local**: `-Dquarkus.profile=local` (default port 8080)
-- **dev**: `-Dquarkus.profile=dev`
-- **prod/brzprod/baranprod**: `-Dquarkus.profile=prod/bzprod/baranprod`
+- **prod**: `-Dquarkus.profile=prod`
 
 ### Required environment variables
 
-At minimum you need:
+At minimum you need .env file with:
 
 - **DB_USERNAME**: DB login
 - **DB_PASSWORD**: DB password
-- **DB_URL_LOCAL / DB_URL_DEV / DB_URL_PROD / ...**: used by code that reads `db.url`
-- **DB_JDBC_URL_LOCAL / DB_JDBC_URL_DEV / DB_JDBC_URL_PROD / ...**: JDBC URL for Quarkus datasource
-- **CORS_ORIGIN_DEV / CORS_ORIGIN_PROD / ...**: allowed origin(s) for browser clients (profile-specific)
+- **DB_URL**: JDBC URL for Quarkus datasource
+- **CORS_ORIGIN / CORS_ORIGIN_PROD / ...**: allowed origin(s) for browser clients (profile-specific)
+- **HTTP_PORT**: DB login
 
 Example (local profile):
 
 ```shell
-export DB_USERNAME="..."
-export DB_PASSWORD="..."
-export DB_URL_LOCAL="..."
-export DB_JDBC_URL_LOCAL="jdbc:sqlserver://HOST:1433;databaseName=DB;encrypt=true;trustServerCertificate=true"
-
-mvn quarkus:dev -Dquarkus.profile=local
+mvn quarkus:dev -Dquarkus.profile=your_profile
 ```
 
 ## REST API
@@ -94,13 +86,21 @@ Most endpoints use the request header **`X-Session-Id`** to isolate schedules pe
 - **POST `/schedule/pin`**: pin/unpin jobs (request: `PinRequest`)
 - **POST `/schedule/save`**: persist the current plan to DB
 
+Example (init):
+
+```shell
+curl -X POST "http://localhost:8080/schedule/init" ^
+  -H "Content-Type: application/json" ^
+  -H "X-Session-Id: default" ^
+  -d "{\"startDate\":\"2026-01-19\"}"
+```
 Example (maintenance add):
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/maintenance" \
-  -H "Content-Type: application/json" \
-  -H "X-Session-Id: demo" \
-  -d '{"lineId":"170610000000","name":"Maintenance","insertIndex":0,"durationMinutes":30}'
+curl -X POST "http://localhost:8080/schedule/maintenance" ^
+  -H "Content-Type: application/json" ^
+  -H "X-Session-Id: default" ^
+  -d "{\"lineId\":\"170610020000\",\"insertIndex\":0,\"durationMinutes\":30,\"maintenanceTypeId\": 2, \"maintenanceNote\":\"Note\"}"
 ```
 
 ## Run the packaged application
@@ -110,51 +110,21 @@ When you're done iterating in `quarkus:dev` mode, package the application to run
 Compile it with Maven:
 
 ```shell
-mvn package
+mvn clean package
 ```
 
 Run it:
 
 ```shell
+$env:DB_URL = "your_mssql_url"
+$env:DB_USERNAME = "your_username"
+$env:DB_PASSWORD = "your_password"
+$env:HTTP_PORT = "your_port"
+
 java -jar ./target/quarkus-app/quarkus-run.jar
 ```
 
 To run it on port 8081 instead, add `-Dquarkus.http.port=8081`.
-
-Visit `http://localhost:8080` in your browser and click on the **Solve** button.
-
-## Run the application in a container
-
-Build a container image:
-
-```shell
-mvn package -Dcontainer
-```
-
-Run a container:
-
-```shell
-docker run -p 8080:8080 --rm $USER/food-packaging:1.0-SNAPSHOT
-```
-
-## Run it native
-
-To increase startup performance for serverless deployments, build the application as a native executable:
-
-- Install GraalVM and install the `native-image` tool:  
-  https://quarkus.io/guides/building-native-image#configuring-graalvm
-
-Compile it natively (this takes a few minutes):
-
-```shell
-mvn package -Dnative -DskipTests
-```
-
-Run the native executable:
-
-```shell
-./target/*-runner
-```
 
 Visit `http://localhost:8080` in your browser and click on the **Solve** button.
 
