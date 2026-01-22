@@ -79,7 +79,7 @@ public class JobService {
                     : "Обслуживание";
 
             job = Job.fromDbMaintenanceRow(
-                    row, row.getLineId(),
+                    row,
                     maintenanceTypeName,
                     solution.getMaintenanceProduct(),
                     getStartProductionDateTime(row.getStartProductionDateTime())

@@ -26,10 +26,10 @@ class JobTest {
         DbMaintenanceRow row = new DbMaintenanceRow(
                 1L, (short)0, "1600", Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime), 60,2212L, 4, "Note"
                 );
-        Job job = Job.fromDbMaintenanceRow(row,"123354","Maintenance Name", product, startProductionDateTime);
+        Job job = Job.fromDbMaintenanceRow(row,"Maintenance Name", product, startProductionDateTime);
         
         assertEquals("1", job.getId());
-        assertEquals("123354", job.getLineId());
+        assertEquals("1600", job.getLineId());
         assertEquals("Maintenance Name", job.getName());
         assertEquals(product, job.getProduct());
         // getDuration() returns the duration field only for maintenance jobs

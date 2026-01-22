@@ -62,8 +62,7 @@ class MoveJobsServiceTest {
         return new Job(
                 id, name, product,
                 Duration.ofMinutes(10),
-                null, null, null,
-                1, false, null, null
+                1, false, null
         );
     }
 

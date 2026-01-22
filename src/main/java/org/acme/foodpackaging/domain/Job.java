@@ -16,6 +16,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.MaintenanceJobParams;
+import org.acme.foodpackaging.record.ProductionJobParams;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
 @Getter
@@ -78,52 +80,11 @@ public class Job {
     @CascadingUpdateShadowVariable(targetMethodName = "updateStartCleaningDateTime")
     private LocalDateTime endDateTime;
 
-    // ************************************************************************
-    // Parameter objects for simplified constructors
-    // ************************************************************************
-
-    /**
-     * Parameters for creating a regular production job.
-     */
-    public record ProductionJobParams(
-            String id,
-            String lineId,
-            String name,
-            Long snpz,
-            int np,
-            int quantity,
-            int priority,
-            double mass,
-            Product product,
-            Duration duration,
-            LocalDateTime startProductionDateTime
-    ) {}
-
-    /**
-     * Parameters for creating a maintenance job with time constraints.
-     */
-    public record MaintenanceJobParams(
-            String id,
-            String lineId,
-            String name,
-            String note,
-            Integer typeId,
-            Product product,
-            Duration duration,
-            int priority,
-            boolean pinned,
-            LocalDateTime startProductionDateTime
-    ) {}
-
-    // ************************************************************************
-    // Simplified constructors using parameter objects
-    // ************************************************************************
-
     /**
      * Constructor for regular production jobs.
      * Package-private - use factory methods for public API.
      */
-    Job(ProductionJobParams params) {
+    private Job(ProductionJobParams params) {
         this.id = params.id();
         this.lineId = params.lineId();
         this.name = params.name();
@@ -143,7 +104,7 @@ public class Job {
      * Constructor for maintenance jobs with time constraints.
      * Package-private - use factory methods for public API.
      */
-    Job(MaintenanceJobParams params) {
+   private Job(MaintenanceJobParams params) {
         this.id = params.id();
         this.lineId = params.lineId();
         this.name = params.name();
@@ -203,10 +164,10 @@ public class Job {
      * @param startProductionDateTime The start production date/time (can be null)
      * @return A new maintenance Job instance
      */
-    public static Job fromDbMaintenanceRow(org.acme.foodpackaging.dto.DbMaintenanceRow row, String lineId, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
+    public static Job fromDbMaintenanceRow(org.acme.foodpackaging.dto.DbMaintenanceRow row, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
         Job job = new Job(new MaintenanceJobParams(
                 String.valueOf(row.getFId()),
-                lineId,
+                row.getLineId(),
                 maintenanceName,
                 row.getMaintenanceNote(),
                 row.getMaintenanceTypeId(),
@@ -248,26 +209,17 @@ public class Job {
     /**
      * Creates a job with time constraints (used for maintenance jobs with scheduling constraints).
      * Public for backward compatibility with tests - prefer other factory methods for production code.
-     * 
-     * @deprecated Use factory methods like {@link #createMaintenanceJob(String, String, Integer, String, String, Product, int)} instead.
      * This method is kept for test compatibility.
      */
-    
-    @SuppressWarnings("java:S107")
-    public Job(String id, String name, Product product, Duration duration, 
-               LocalDateTime minStartTime, LocalDateTime idealEndTime, LocalDateTime maxEndTime,
-               int priority, boolean pinned, LocalDateTime startCleaningDateTime, 
-               LocalDateTime startProductionDateTime) {
+
+    public Job(String id, String name, Product product, Duration duration,
+               int priority, boolean pinned, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
         this.product = product;
         this.duration = duration;
-        this.minStartTime = minStartTime;
-        this.idealEndTime = idealEndTime;
-        this.maxEndTime = maxEndTime;
         this.priority = priority == 0 ? 1 : priority * 10;
         this.pinned = pinned;
-        this.startCleaningDateTime = startCleaningDateTime;
         this.startProductionDateTime = startProductionDateTime;
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
     }

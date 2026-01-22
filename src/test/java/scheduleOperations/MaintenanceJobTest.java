@@ -14,9 +14,9 @@ import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.*;
 
+import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SuppressWarnings("deprecation")
 class MaintenanceJobTest {
 
     private MaintenanceJob maintenanceJob;
@@ -61,7 +61,7 @@ class MaintenanceJobTest {
     }
 
     @Test
-    void MaintenanceJobInEmptyLine() {
+    void maintenanceJobInEmptyLine() {
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
         request.setMaintenanceNote("Maintenance 1");
@@ -81,16 +81,22 @@ class MaintenanceJobTest {
 
     @Test
     void addMaintenanceJob() {
-        Job existingJob = new Job("1", "Job 1", schedule.getProducts().get(1), Duration.ofMinutes(20),
-                schedule.getWorkCalendar().getMinStartDateTime(), null, null,
-                1, false, null, null);
+        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
+        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(60);
+
+        Product product = schedule.getProducts().getFirst();
+        DbMaintenanceRow row = new DbMaintenanceRow(
+                1L, (short)0, "line1", Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime), 15,2212L, 4, "Maintenance 2"
+        );
+
+        Job existingJob = Job.fromDbMaintenanceRow(row,"Maintenance Name", product, startProductionDateTime);
 
         line.getJobs().add(existingJob);
         schedule.getJobs().add(existingJob);
 
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
-        request.setMaintenanceTypeId(1);
+        request.setMaintenanceTypeId(4);
         request.setMaintenanceNote("Maintenance 2");
         request.setDurationMinutes(15);
         request.setInsertIndex(0);
@@ -98,17 +104,20 @@ class MaintenanceJobTest {
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
         assertEquals(2, result.getJobs().size());
-        assertEquals(1,line.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals(4,line.getJobs().getFirst().getMaintenanceTypeId());
         assertEquals("Maintenance 2", line.getJobs().getFirst().getMaintenanceNote());
-        assertEquals("Job 1", line.getJobs().get(1).getName());
+        assertEquals("Maintenance Name", line.getJobs().get(1).getName());
     }
 
     @Test
     void removeMaintenanceJobByIndex() {
-        Job job = new Job("1", "MaintenanceJob 1", schedule.getProducts().getFirst(), Duration.ofMinutes(20),
-                schedule.getWorkCalendar().getMinStartDateTime(),
-                null, null, 1, true, null, null);
+        Product product = schedule.getProducts().getFirst();
+        DbMaintenanceRow row = new DbMaintenanceRow(
+                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
+        );
 
+        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
         job.setMaintenance(true);
         job.setFId(100L);
         line.getJobs().add(job);
@@ -126,9 +135,13 @@ class MaintenanceJobTest {
     
     @Test
     void updateDuration() {
-        Job job = new Job("1", "MaintenanceJob 1", schedule.getProducts().getFirst(), Duration.ofMinutes(20),
-                schedule.getWorkCalendar().getMinStartDateTime(), null, null,
-                1, true, null, null);
+        Product product = schedule.getProducts().getFirst();
+        DbMaintenanceRow row = new DbMaintenanceRow(
+                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
+        );
+
+        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
         job.setMaintenance(true);
         line.getJobs().add(job);
