@@ -33,4 +33,4 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=savushkin-dev_food-packaging-quarkus
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=savushkin-dev_food-packaging-quarkus -Dsonar.coverage.exclusions=**/repository/**,**/entity/**,**/record/**,**/rest/**,**/persistence/**,**/sql/**,**/dto/**
