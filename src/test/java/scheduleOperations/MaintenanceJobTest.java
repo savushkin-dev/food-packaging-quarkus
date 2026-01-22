@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MaintenanceJobTest {

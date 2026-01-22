@@ -27,7 +27,7 @@ class ScheduleUtilsTest {
         // Создание продуктов
         Product maintenanceProduct = new Product("MAINTENANCE", "Maintenance Product");
         Product normalProduct = new Product("NORMAL", "Normal Product");
-        product =  new Product("1", "Vanilla");;
+        product =  new Product("1", "Vanilla");
 
         // Инициализация карт cleaningDurations
         Map<Product, Duration> cleaningForMaintenance = new HashMap<>();
