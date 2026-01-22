@@ -1,11 +1,13 @@
 package scheduleOperations.utils;
 
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -143,5 +145,127 @@ class ScheduleUtilsTest {
         ScheduleUtils.unPinnAllLines(List.of(line));
 
         assertEquals(0, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
+    void removesJobsWithNullLine() {
+       
+        Job jobWithLine = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
+        Job jobWithoutLine = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
+        Job anotherJobWithLine = new Job("3", "Job 3", null, null, null, null, null, 1, false, null, null);
+        
+        jobWithLine.setLine(line);
+      
+        anotherJobWithLine.setLine(line);
+        
+        List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithLine, jobWithoutLine, anotherJobWithLine));
+        
+        ScheduleUtils.removeJobsWithoutLine(jobs);
+        
+        assertEquals(2, jobs.size());
+        assertTrue(jobs.contains(jobWithLine));
+        assertTrue(jobs.contains(anotherJobWithLine));
+        assertFalse(jobs.contains(jobWithoutLine));
+    }
+
+    @Test
+    void keepAllJobsWhenAllHaveLines() {
+        
+        Job jobWithLine1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
+        Job jobWithLine2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
+        
+        jobWithLine1.setLine(line);
+        jobWithLine2.setLine(line);
+        
+        List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithLine1, jobWithLine2));
+        
+        ScheduleUtils.removeJobsWithoutLine(jobs);
+        
+        assertEquals(2, jobs.size());
+        assertTrue(jobs.contains(jobWithLine1));
+        assertTrue(jobs.contains(jobWithLine2));
+    }
+
+    @Test
+    void removeAllJobsWhenAllHaveNullLine() {
+      
+        Job jobWithNullLine1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
+        Job jobWithNullLine2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
+        
+        List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithNullLine1, jobWithNullLine2));
+        
+        ScheduleUtils.removeJobsWithoutLine(jobs);
+        
+        assertTrue(jobs.isEmpty());
+    }
+
+    @Test
+    void handlesNullList() {
+       
+        assertDoesNotThrow(() -> ScheduleUtils.removeJobsWithoutLine(null));
+    }
+
+    @Test
+    void handlesEmptyList() {
+    
+        List<Job> jobs = new ArrayList<>();
+        
+        ScheduleUtils.removeJobsWithoutLine(jobs);
+        
+        assertTrue(jobs.isEmpty());
+    }
+
+    @Test
+    void convertsMapToList() {
+        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
+        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1");
+        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2");
+        DbJobRow row3 = new DbJobRow(timestamp, "KMC3", 3, 30, 300.0, timestamp, timestamp, 180, 3L, 3, "L3", "Product 3");
+        
+        Map<Long, DbJobRow> rows = new HashMap<>();
+        rows.put(1L, row1);
+        rows.put(2L, row2);
+        rows.put(3L, row3);
+
+        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);
+        
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertTrue(result.contains(row1));
+        assertTrue(result.contains(row2));
+        assertTrue(result.contains(row3));
+    }
+
+    @Test
+    void returnEmptyListForNullMap() {
+        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(null);
+        
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void returnEmptyListForEmptyMap() {
+        Map<Long, DbJobRow> emptyMap = new HashMap<>();
+        
+        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(emptyMap);
+        
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void returnListWithAllValues() {
+        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
+        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1");
+        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2");
+        
+        Map<Long, DbJobRow> rows = Map.of(1L, row1, 2L, row2);
+        
+        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);
+        
+        assertEquals(2, result.size());
+        // Verify all values from map are in the list
+        assertEquals(2, result.stream().filter(r -> r.equals(row1) || r.equals(row2)).count());
     }
 }

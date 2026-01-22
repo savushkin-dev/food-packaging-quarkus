@@ -2,10 +2,9 @@ name: Build & Test with Coverage
 
 on:
   push:
-    branches: [ prod_scheduler, develop_rc ]
+    branches: [ develop_rc ]
   pull_request:
-    branches: [ prod_scheduler, develop_rc ]
-
+    branches: [ develop_rc ]
 jobs:
   build:
     runs-on: ubuntu-latest

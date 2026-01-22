@@ -7,12 +7,9 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
-import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -57,25 +54,14 @@ public class JobRepository {
     /**
      * Загружает карту фактического производства.
      *
-     * @param startDate Start date (inclusive)
-     * @return Map of maintenance rows by FId
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of fact production rows by FactKey
      */
-    public Map<FactKey, FactProductionRow> getFactProductionRowMap(LocalDate startDate) {
+    public Map<FactKey, FactProductionRow> getFactProductionRowMap(LocalDate from, LocalDate to) {
         return jobDBLoader.loadFactProductionRowMap(
-                startDate.atStartOfDay().minusDays(1), startDate.atStartOfDay().plusDays(1)
+                from.atStartOfDay(), to.atStartOfDay()
         );
-    }
-    /**
-     * Преобразует Map в List для удобства работы.
-     * 
-     * @param rows Map of job rows
-     * @return List of job rows
-     */
-    public List<DbJobRow> getDbJobRowList(Map<Long, DbJobRow> rows) {
-        if (rows == null || rows.isEmpty()) {
-            return List.of();
-        }
-        return new ArrayList<>(rows.values());
     }
 }
 
