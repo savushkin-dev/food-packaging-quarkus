@@ -233,6 +233,7 @@
                 <exclude>**/rest/**</exclude>
                 <exclude>**/sql/**</exclude>
                 <exclude>**/dto/**</exclude>
+                <exclude>**/exception/**</exclude>
               </excludes>
             </configuration>
           </execution>
