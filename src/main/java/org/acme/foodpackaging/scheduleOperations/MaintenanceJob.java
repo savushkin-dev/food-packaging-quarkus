@@ -141,4 +141,34 @@ public class MaintenanceJob {
 
         return schedule;
     }
+
+    public PackagingSchedule updateMaintenanceType(PackagingSchedule schedule, MaintenanceRequest request) {
+
+        Line line = findLineById(schedule, request.getLineId());
+
+        List<Job> jobs = line.getJobs();
+
+        int index = request.getUpdateIndex();
+        if (index < 0 || index >= jobs.size()) {
+            throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        }
+
+        Job job = jobs.get(index);
+        job.setMaintenanceTypeId(request.getMaintenanceTypeId());
+        job.setName(loadDataService.getMaintenanceTypes().get(job.getMaintenanceTypeId()));
+
+        if(request.getDurationMinutes()!=null){
+            job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+        }
+
+        if(request.getMaintenanceNote()!=null)
+        {
+            job.setMaintenanceNote(request.getMaintenanceNote());
+        }
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+
+        return schedule;
+    }
 }

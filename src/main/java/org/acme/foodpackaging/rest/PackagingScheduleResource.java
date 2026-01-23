@@ -373,7 +373,12 @@ public class PackagingScheduleResource {
                     .build();
         }
             if(request.isUpdateLineMode()){
-                updated = maintenanceJob.updateDuration(schedule, request);
+                if(request.getMaintenanceTypeId()!=null) {
+                    updated = maintenanceJob.updateMaintenanceType(schedule, request);
+                }
+                else{
+                    updated = maintenanceJob.updateDuration(schedule,request);
+                }
             }
             else if(request.isRemoveLineMode()){
                 updated = maintenanceJob.removeMaintenanceJob(schedule, request);

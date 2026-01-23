@@ -77,11 +77,13 @@ class FoodPackagingConstraintProviderTest {
     @Test
     @Disabled
     void idealEndDateTime() {
-        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false, null, null);
-        Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), null, DAY_START_TIME.plusMinutes(200), null, 1, false,
-                DAY_START_TIME, DAY_START_TIME);
-        Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(150), null, DAY_START_TIME.plusMinutes(100), null, 1, false,
-                DAY_START_TIME, DAY_START_TIME);
+        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), 1, false, null);
+        Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), 1, false, DAY_START_TIME);
+        job2.setIdealEndTime(DAY_START_TIME.plusMinutes(200));
+        job2.setStartCleaningDateTime(DAY_START_TIME);
+        Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(150), 1, false, DAY_START_TIME);
+        job3.setIdealEndTime(DAY_START_TIME.plusMinutes(100));
+        job3.setStartCleaningDateTime(DAY_START_TIME);
         Line line = new Line("1", "line1", "operator A", DAY_START_TIME);
         addJobs(line, job1, job2, job3);
 
@@ -98,13 +100,14 @@ class FoodPackagingConstraintProviderTest {
     void minimizeMakespan() {
         Line line1 = new Line("1", "line1", null, DAY_START_TIME);
         Line line2 = new Line("2", "line2", null, DAY_START_TIME);
-        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), null, null, null, 1, false, null, null);
-        Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(100), null, null, null, 1, false,
-                DAY_START_TIME, DAY_START_TIME);
-        Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(200), null, null, null, 3, false,
-                DAY_START_TIME, DAY_START_TIME);
-        Job job4 = new Job("4", "job4", PRODUCT_A_SMALL, Duration.ofMinutes(1000), null, null, null, 3, false,
-                DAY_START_TIME.plusMinutes(200), DAY_START_TIME.plusMinutes(250));
+        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), 1, false, null);
+        Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(100), 1, false, DAY_START_TIME);
+        job2.setStartCleaningDateTime(DAY_START_TIME);
+        Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(200), 3, false, DAY_START_TIME);
+        job3.setStartCleaningDateTime(DAY_START_TIME);
+        Job job4 = new Job("4", "job4", PRODUCT_A_SMALL, Duration.ofMinutes(1000), 3, false, DAY_START_TIME.plusMinutes(250));
+
+        job4.setStartProductionDateTime(DAY_START_TIME.plusMinutes(250));
         addJobs(line1, job2);
         addJobs(line2, job3, job4);
 
@@ -113,14 +116,13 @@ class FoodPackagingConstraintProviderTest {
                 .penalizesBy(100L * 100L + 1250L * 1250L);
     }
 
-    @Test
-    @Disabled("The constraint is currently commented out.")
+    @Test @Disabled("The constraint is currently commented out.")
     void minimizeCleaningDuration() {
-        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), DAY_START_TIME, null, null, 1, false, null, null);
-        Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), DAY_START_TIME, null, null, 1, false,
-                DAY_START_TIME, DAY_START_TIME);
-        Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(150), DAY_START_TIME, null, null, 1, false,
-                DAY_START_TIME.plusMinutes(30), DAY_START_TIME.plusMinutes(40));
+        Job job1 = new Job("1", "job1", PRODUCT_A_SMALL, Duration.ofMinutes(6000), 1, false, null);
+        job1.setMinStartTime(DAY_START_TIME);
+        Job job2 = new Job("2", "job2", PRODUCT_A_SMALL, Duration.ofMinutes(200), 1, false, DAY_START_TIME);
+        job2.setMinStartTime(DAY_START_TIME);
+        job2.setStartCleaningDateTime(DAY_START_TIME);
 
         Job job3 = new Job("3", "job3", PRODUCT_A_SMALL, Duration.ofMinutes(150), 1, false,DAY_START_TIME.plusMinutes(40));
         job3.setMinStartTime(DAY_START_TIME);
