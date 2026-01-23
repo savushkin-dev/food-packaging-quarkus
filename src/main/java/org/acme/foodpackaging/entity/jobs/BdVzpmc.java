@@ -58,7 +58,7 @@ public class BdVzpmc extends PanacheEntityBase {
     public Integer priority;
 
     @Column(name = "SNPZ")
-    public Integer snpz;
+    public Long snpz;
 
     @Column(name = "MASSA")
     public Double mass;
