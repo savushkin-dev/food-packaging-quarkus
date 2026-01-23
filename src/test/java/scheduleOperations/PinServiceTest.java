@@ -39,9 +39,7 @@ class PinServiceTest {
                 id,
                 "Job " + id,
                 null, null,
-                null, null, null,
-                0, false,
-                null, null
+                0, false, null
         );
     }
     // ------------------------------------------------------------------

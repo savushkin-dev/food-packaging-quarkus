@@ -20,12 +20,14 @@ class ScheduleUtilsTest {
     private Line line;
     private Job job1, job2, job3;
     private PackagingSchedule schedule;
+    private Product product;
 
     @BeforeEach
     void setup() {
         // Создание продуктов
         Product maintenanceProduct = new Product("MAINTENANCE", "Maintenance Product");
         Product normalProduct = new Product("NORMAL", "Normal Product");
+        product =  new Product("1", "Vanilla");
 
         // Инициализация карт cleaningDurations
         Map<Product, Duration> cleaningForMaintenance = new HashMap<>();
@@ -50,9 +52,9 @@ class ScheduleUtilsTest {
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
 
         // Создание задач
-        job1 = new Job("1", "Job 1", normalProduct, null, null, null, null, 1, false, null, null);
-        job2 = new Job("2", "Job 2", normalProduct, null, null, null, null, 1, false, null, null);
-        job3 = new Job("3", "Job 3", maintenanceProduct, null, null, null, null, 1, false, null, null);
+        job1 = new Job("1", "Job 1", normalProduct, null, 1, false, null);
+        job2 = new Job("2", "Job 2", normalProduct,  null, 1, false, null);
+        job3 = new Job("3", "Job 3", maintenanceProduct, null, 1, false, null);
 
         line.setJobs(new ArrayList<>(Arrays.asList(job1, job2, job3)));
 
@@ -149,10 +151,9 @@ class ScheduleUtilsTest {
 
     @Test
     void removesJobsWithNullLine() {
-       
-        Job jobWithLine = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
-        Job jobWithoutLine = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
-        Job anotherJobWithLine = new Job("3", "Job 3", null, null, null, null, null, 1, false, null, null);
+        Job jobWithLine = new Job("1", "Job 1", product, null, 1, false, null);
+        Job jobWithoutLine = new Job("2", "Job 2", product, null, 1, false, null);
+        Job anotherJobWithLine = new Job("3", "Job 3", product, null, 1, false, null);
         
         jobWithLine.setLine(line);
       
@@ -170,9 +171,8 @@ class ScheduleUtilsTest {
 
     @Test
     void keepAllJobsWhenAllHaveLines() {
-        
-        Job jobWithLine1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
-        Job jobWithLine2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
+        Job jobWithLine1 = new Job("1", "Job 1", product, null, 1, false, null);
+        Job jobWithLine2 = new Job("2", "Job 2", product, null, 1, false, null);
         
         jobWithLine1.setLine(line);
         jobWithLine2.setLine(line);
@@ -189,8 +189,8 @@ class ScheduleUtilsTest {
     @Test
     void removeAllJobsWhenAllHaveNullLine() {
       
-        Job jobWithNullLine1 = new Job("1", "Job 1", null, null, null, null, null, 1, false, null, null);
-        Job jobWithNullLine2 = new Job("2", "Job 2", null, null, null, null, null, 1, false, null, null);
+        Job jobWithNullLine1 = new Job("1", "Job 1", product, null, 1, false, null);
+        Job jobWithNullLine2 = new Job("2", "Job 2", product, null, 1, false, null);
         
         List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithNullLine1, jobWithNullLine2));
         

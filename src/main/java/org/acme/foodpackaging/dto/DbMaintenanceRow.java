@@ -19,5 +19,6 @@ public class DbMaintenanceRow {
    private Timestamp endDateTime;
    private Integer duration;
    private Long snpz;
-   private String shortName;
+   private Integer maintenanceTypeId;
+   private String maintenanceNote;
 }

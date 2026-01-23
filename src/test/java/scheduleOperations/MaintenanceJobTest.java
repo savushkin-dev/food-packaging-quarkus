@@ -1,28 +1,40 @@
 package scheduleOperations;
 
 import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class MaintenanceJobTest {
 
+    @Mock
+    LoadDataService loadDataService;
     private MaintenanceJob maintenanceJob;
     private PackagingSchedule schedule;
     private Line line;
 
     @BeforeEach
     void setup() {
-        maintenanceJob = new MaintenanceJob();
+        maintenanceJob = new MaintenanceJob(loadDataService);
 
         // Line, schedule
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
@@ -58,12 +70,12 @@ class MaintenanceJobTest {
     }
 
     @Test
-    void MaintenanceJobInEmptyLine() {
+    void maintenanceJobInEmptyLineTest() {
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
-        request.setName("Maintenance 1");
+        request.setMaintenanceNote("Maintenance 1");
         request.setDurationMinutes(30);
-        // emptyLineMode
+
         request.setStartProductionDateTime(LocalDateTime.now());
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
@@ -71,39 +83,50 @@ class MaintenanceJobTest {
         assertEquals(1, result.getJobs().size());
         Job job = result.getJobs().getFirst();
         assertTrue(job.isMaintenance());
-        assertEquals("Maintenance 1", job.getName());
+        assertEquals("Maintenance 1", job.getMaintenanceNote());
         assertEquals(30, job.getDuration().toMinutes());
         assertEquals(line, job.getLine());
     }
 
     @Test
-    void addMaintenanceJob() {
-        Job existingJob = new Job("1", "Job 1", schedule.getProducts().get(1), Duration.ofMinutes(20),
-                schedule.getWorkCalendar().getMinStartDateTime(), null, null,
-                1, false, null, null);
+    void addMaintenanceJobTest() {
+        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
+        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(60);
+
+        Product product = schedule.getProducts().getFirst();
+        DbMaintenanceRow row = new DbMaintenanceRow(
+                1L, (short)0, "line1", Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime), 15,2212L, 4, "Maintenance 2"
+        );
+
+        Job existingJob = Job.fromDbMaintenanceRow(row,"Maintenance Name", product, startProductionDateTime);
 
         line.getJobs().add(existingJob);
         schedule.getJobs().add(existingJob);
 
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
-        request.setName("Maintenance 2");
+        request.setMaintenanceTypeId(4);
+        request.setMaintenanceNote("Maintenance 2");
         request.setDurationMinutes(15);
         request.setInsertIndex(0);
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
         assertEquals(2, result.getJobs().size());
-        assertEquals("Maintenance 2", line.getJobs().getFirst().getName());
-        assertEquals("Job 1", line.getJobs().get(1).getName());
+        assertEquals(4,line.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("Maintenance 2", line.getJobs().getFirst().getMaintenanceNote());
+        assertEquals("Maintenance Name", line.getJobs().get(1).getName());
     }
 
     @Test
-    void removeMaintenanceJobByIndex() {
-        Job job = new Job("1", "MaintenanceJob 1", schedule.getProducts().getFirst(), Duration.ofMinutes(20),
-                schedule.getWorkCalendar().getMinStartDateTime(),
-                null, null, 1, true, null, null);
+    void removeMaintenanceJobByIndexTest() {
+        Product product = schedule.getProducts().getFirst();
+        DbMaintenanceRow row = new DbMaintenanceRow(
+                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
+        );
 
+        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
         job.setMaintenance(true);
         job.setFId(100L);
         line.getJobs().add(job);
@@ -120,10 +143,14 @@ class MaintenanceJobTest {
     }
     
     @Test
-    void updateDuration() {
-        Job job = new Job("1", "MaintenanceJob 1", schedule.getProducts().getFirst(), Duration.ofMinutes(20),
-                schedule.getWorkCalendar().getMinStartDateTime(), null, null,
-                1, true, null, null);
+    void updateDurationTest() {
+        Product product = schedule.getProducts().getFirst();
+        DbMaintenanceRow row = new DbMaintenanceRow(
+                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
+        );
+
+        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
         job.setMaintenance(true);
         line.getJobs().add(job);
@@ -131,12 +158,75 @@ class MaintenanceJobTest {
 
         MaintenanceRequest request = new MaintenanceRequest();
         request.setLineId("line1");
-        // updateLineMode
+
         request.setUpdateIndex(0);
         request.setDurationMinutes(45);
 
         PackagingSchedule result = maintenanceJob.updateDuration(schedule, request);
 
         assertEquals(45, result.getJobs().getFirst().getDuration().toMinutes());
+    }
+
+    @Test
+    void updateMaintenanceTypeTest() {
+        Product product = schedule.getProducts().getFirst();
+        DbMaintenanceRow row = new DbMaintenanceRow(
+                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
+        );
+
+        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+
+        job.setMaintenance(true);
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        MaintenanceRequest request = new MaintenanceRequest();
+        request.setLineId("line1");
+
+        request.setUpdateIndex(0);
+        request.setMaintenanceTypeId(2);
+        request.setMaintenanceNote("Updated note");
+        request.setDurationMinutes(45);
+
+        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
+        maintenanceTypes.put(1, "Обслуживание");
+        maintenanceTypes.put(2, "Мойка");
+
+        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
+
+        PackagingSchedule result = maintenanceJob.updateMaintenanceType(schedule, request);
+
+        assertEquals(45, result.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals(2, result.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("Updated note", result.getJobs().getFirst().getMaintenanceNote());
+        assertEquals("Мойка", result.getJobs().getFirst().getName());
+    }
+
+    @Test
+    void marksMatchingRowsAsDeletedTest() {
+        Map<Long, DbMaintenanceRow> jobs = new HashMap<>();
+
+        DbMaintenanceRow match = new DbMaintenanceRow(
+                100L, (short) 0, "L1",
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)),
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 9, 0)),
+                60, 123L, 1, "note"
+        );
+        DbMaintenanceRow other = new DbMaintenanceRow(
+                200L, (short) 0, "L1",
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 10, 0)),
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 11, 0)),
+                60, 124L, 1, "note2"
+        );
+
+        jobs.put(100L, match);
+        jobs.put(200L, other);
+        jobs.put(300L, null);
+
+        maintenanceJob.markDeletedByFId(100L, jobs);
+
+        assertEquals((short) 1, match.getFDel());
+        assertEquals((short) 0, other.getFDel());
     }
 }
