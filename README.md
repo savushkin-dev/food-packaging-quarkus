@@ -86,6 +86,8 @@ Most endpoints use the request header **`X-Session-Id`** to isolate schedules pe
 - **POST `/schedule/pin`**: pin/unpin jobs (request: `PinRequest`)
 - **POST `/schedule/save`**: persist the current plan to DB
 
+For complete, copy-pasteable examples of all endpoints, see [docs/EndpointsExamples.md](docs/EndpointsExamples.md).
+
 Example (init):
 
 ```shell
