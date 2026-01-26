@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
                         @ColumnResult(name = "PDTO", type = Timestamp.class),
                         @ColumnResult(name = "PDUR", type = Integer.class),
                         @ColumnResult(name = "SNPZ", type = Long.class),
+                        @ColumnResult(name = "EVTYPE", type = Integer.class),
                         @ColumnResult(name = "NOTE", type = String.class),
                 }
         )
@@ -61,7 +62,7 @@ public class OeePev extends PanacheEntityBase {
     private Long snpz;
 
     @Column(name = "EVTYPE")
-    private Integer evtype;
+    private Integer maintenanceTypeId;
 
     @Column(name = "REASON")
     private Integer reason;
@@ -79,7 +80,7 @@ public class OeePev extends PanacheEntityBase {
                 ", endDateTime=" + endDateTime +
                 ", duration=" + duration +
                 ", snpz=" + snpz +
-                ", evtype=" + evtype +
+                ", maintenanceTypeId=" + maintenanceTypeId +
                 ", reason=" + reason +
                 ", note='" + note + '\'' +
                 '}';

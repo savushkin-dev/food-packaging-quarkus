@@ -11,15 +11,15 @@ import java.time.LocalDateTime;
 public class MaintenanceRequest {
 
     private String lineId;
-    private String name;
+    private String maintenanceNote;
+    private Integer maintenanceTypeId;
+    private Integer durationMinutes;
     private Integer insertIndex;
     private Integer updateIndex;
     private Integer removeIndex;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
     private LocalDateTime startProductionDateTime;
-
-    private int durationMinutes;
 
     public boolean isEmptyLineMode() {
         return startProductionDateTime != null;

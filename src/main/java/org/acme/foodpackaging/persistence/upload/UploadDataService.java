@@ -26,6 +26,15 @@ public class UploadDataService {
      */
     public void sendToWork(List<Job> jobs) {
 
+        List<Job> jobsToProcess = jobs.stream()
+                .filter(job -> job.getSnpz() != null)
+                .toList();
+
+        if (jobsToProcess.isEmpty()) {
+            log.info("No jobs with non-null snpz to process");
+            return;
+        }
+
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(dbUrl);

@@ -61,11 +61,11 @@ class ScheduleBuilderTest {
 
         Map<Long, DbMaintenanceRow> maintenanceRows = Map.of(
                 1L, new DbMaintenanceRow(
-                        1L,(short)1,
+                        1L, (short) 1,
                         "Line1",
                         new Timestamp(System.currentTimeMillis()),
                         new Timestamp(System.currentTimeMillis()),
-                        2, 123L, "Vanilla"
+                        2, 123L, 1, "Maintenance Note"
                 )
         );
 

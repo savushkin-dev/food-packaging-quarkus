@@ -17,6 +17,7 @@ import org.acme.foodpackaging.dto.MoveJobsRequest;
 import org.acme.foodpackaging.dto.PinRequest;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.persistence.upload.JobSaveService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.JobSelection;
@@ -27,7 +28,6 @@ import org.acme.foodpackaging.scheduleOperations.PinService;
 import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.service.jobs.JobSaveService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -91,6 +91,16 @@ public class PackagingScheduleResource {
             throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
         }
         return loadDataService.getLines();
+    }
+
+    @GET
+    @Path("serviceTypes")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<Integer, String> getMaintenanceTypes() {
+        if (loadDataService == null) {
+            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+        }
+        return loadDataService.getMaintenanceTypes();
     }
 
     @POST
@@ -363,7 +373,12 @@ public class PackagingScheduleResource {
                     .build();
         }
             if(request.isUpdateLineMode()){
-                updated = maintenanceJob.updateDuration(schedule, request);
+                if(request.getMaintenanceTypeId()!=null) {
+                    updated = maintenanceJob.updateMaintenanceType(schedule, request);
+                }
+                else{
+                    updated = maintenanceJob.updateDuration(schedule,request);
+                }
             }
             else if(request.isRemoveLineMode()){
                 updated = maintenanceJob.removeMaintenanceJob(schedule, request);

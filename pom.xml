@@ -173,11 +173,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jdbc-h2</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>ai.timefold.solver</groupId>
       <artifactId>timefold-solver-test</artifactId>
       <scope>test</scope>
@@ -223,6 +218,18 @@
             <goals>
               <goal>report</goal>
             </goals>
+            <configuration>
+              <!-- Exclude entity and persistence packages from coverage -->
+              <excludes>
+                <exclude>**/entity/**</exclude>
+                <exclude>**/persistence/**</exclude>
+                <exclude>**/repository/**</exclude>
+                <exclude>**/record/**</exclude>
+                <exclude>**/rest/**</exclude>
+                <exclude>**/sql/**</exclude>
+                <exclude>**/dto/**</exclude>
+              </excludes>
+            </configuration>
           </execution>
         </executions>
       </plugin>
