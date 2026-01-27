@@ -120,7 +120,7 @@ public class JobDBLoader {
 
     @SuppressWarnings("unchecked")
     private CameraValue fetchCameraValue(String idBatch) {
-        List<CameraFactRow> rows = (List<CameraFactRow>) em
+        List<CameraFactRow> rows = em
                 .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
                 .setParameter(1, idBatch)
                 .getResultList();
