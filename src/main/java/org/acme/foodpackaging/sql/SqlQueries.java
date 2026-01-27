@@ -80,13 +80,16 @@ WHERE
 
 
 public static final String LOAD_CAMERA_FACT = """
-   SELECT 
-       IDBATCH,
-       MIN(DTS) AS DTSTART,
-       MAX(DTS) AS DTEND
-   FROM [prommark].[dbo].[PM_LOG] WITH(NOLOCK)
-   WHERE IDBATCH = ? AND KD = 71
-   GROUP BY IDBATCH
+    SELECT
+        v.IDBATCH,
+        MIN(v.DTS) AS DTSTART,
+        MAX(v.DTS) AS DTEND
+    FROM [prommark].[dbo].[PM_LOG] v WITH (NOLOCK)
+    WHERE v.KD = 71
+      AND v.IDBATCH IS NOT NULL
+      AND v.DTS >= ?1
+      AND v.DTS <  ?2
+    GROUP BY v.IDBATCH
 """;
 
 public static final String UPDATE_WORK = """

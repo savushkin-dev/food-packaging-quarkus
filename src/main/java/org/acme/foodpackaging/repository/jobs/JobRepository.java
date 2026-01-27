@@ -2,7 +2,6 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
@@ -12,7 +11,6 @@ import org.acme.foodpackaging.record.CameraValue;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,12 +68,13 @@ public class JobRepository {
      /**
      * Загружает карту фактического производства по камере.
      *
-     * @param jobs list with idBatch (inclusive)
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
      * @return Map of camera start, camera end production rows by idBatch
      */
-     public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) {
+     public Map<String, CameraValue> getCameraFactRowMap(LocalDate from, LocalDate to) {
         return jobDBLoader.loadCameraRowMap(
-                jobs
+                from.atStartOfDay(), to.atStartOfDay()
         );
     }
 }

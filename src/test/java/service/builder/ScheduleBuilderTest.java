@@ -86,7 +86,7 @@ class ScheduleBuilderTest {
         when(jobRepository.getDbJobRowMap(any(), any())).thenReturn(jobRows);
         when(jobRepository.getDbMaintenanceRowMap(any(), any())).thenReturn(maintenanceRows);
         when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
-        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+        when(jobRepository.getCameraFactRowMap(any(), any())).thenReturn(cameraMap);
         when(lineService.getLines()).thenReturn(lines);
         doNothing().when(lineSchedulingService).initJobListOnLine(any());
         when(productService.getProductList(any())).thenReturn(products);
@@ -103,7 +103,7 @@ class ScheduleBuilderTest {
         verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobService).initSolutionJobList(schedule);
         verify(jobService).initFactProductionData(eq(schedule), any());
-        verify(jobRepository).getCameraFactRowMap(any());
+        verify(jobRepository).getCameraFactRowMap(any(), any());
         verify(jobService).initCameraFactData(schedule, cameraMap);
         verify(lineService).getLines();
         verify(lineSchedulingService).initJobListOnLine(schedule);

@@ -45,7 +45,8 @@ public class ScheduleBuilder {
             schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
         );
 
-        jobService.initCameraFactData(schedule, jobRepository.getCameraFactRowMap(schedule.getJobs()));
+        jobService.initCameraFactData(schedule, jobRepository.getCameraFactRowMap(
+            schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate()));
         
         List<Line> lines = lineService.getLines();
         List<Product> products = productService.getProductList(schedule);
