@@ -10,6 +10,7 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
+import org.acme.foodpackaging.record.CameraValue;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
@@ -141,6 +142,30 @@ public class JobService {
             job.setStartProductionDateTimeFact(
                     factRow.startProductionDateTimeFact().toLocalDateTime()
             );
+        }
+    }
+
+    /**
+     * Инициализирует фактические данные по камере (начало/конец) по ID партии.
+     *
+     * @param solution The packaging schedule to initialize
+     * @param cameraMap Map keyed by idBatch with camera start/end values
+     */
+    public void initCameraFactData(
+            PackagingSchedule solution,
+            Map<String, CameraValue> cameraMap
+    ) {
+        for (Job job : solution.getJobs()) {
+            String idBatch = job.getIdBatch();
+            if (idBatch == null) {
+                continue;
+            }
+            CameraValue camera = cameraMap.get(idBatch);
+            if (camera == null) {
+                continue;
+            }
+            job.setCameraStart(camera.cameraStart());
+            job.setCameraEnd(camera.cameraEnd());
         }
     }
 

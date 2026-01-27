@@ -77,6 +77,18 @@ WHERE
     ORDER BY
         v.DTV, v.KMC, v.NP
 """;
+
+
+public static final String LOAD_CAMERA_FACT = """
+   SELECT 
+       IDBATCH,
+       MIN(DTS) AS DTSTART,
+       MAX(DTS) AS DTEND
+   FROM [prommark].[dbo].[PM_LOG] WITH(NOLOCK)
+   WHERE IDBATCH = ? AND KD = 71
+   GROUP BY IDBATCH
+""";
+
 public static final String UPDATE_WORK = """
     update [MES].[dbo].[BD_VZPMC]
     set KRC=?, PDTN=?, PDTO=?, PDUR=?

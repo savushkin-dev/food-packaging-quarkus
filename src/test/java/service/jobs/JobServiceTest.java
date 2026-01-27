@@ -10,6 +10,7 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.service.jobs.JobService;
+import org.acme.foodpackaging.record.CameraValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -285,5 +286,42 @@ class JobServiceTest {
 
         assertNull(job.getLineIdFact());
         assertNull(job.getStartProductionDateTimeFact());
+    }
+
+    @Test
+    void initCameraFactData_setsStartAndEnd() {
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        LocalDateTime start = LocalDateTime.of(2025, 1, 1, 9, 0);
+        LocalDateTime end = LocalDateTime.of(2025, 1, 1, 10, 0);
+        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(start, end));
+
+        jobService.initCameraFactData(solution, cameraMap);
+
+        assertEquals(start, job.getCameraStart());
+        assertEquals(end, job.getCameraEnd());
+    }
+
+    @Test
+    void initCameraFactData_ignoresWhenMissing() {
+        Job jobWithNullBatch = new Job();
+        jobWithNullBatch.setIdBatch(null);
+
+        Job jobWithoutEntry = new Job();
+        jobWithoutEntry.setIdBatch("BATCH-2");
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(jobWithNullBatch, jobWithoutEntry));
+
+        jobService.initCameraFactData(solution, Map.of());
+
+        assertNull(jobWithNullBatch.getCameraStart());
+        assertNull(jobWithNullBatch.getCameraEnd());
+        assertNull(jobWithoutEntry.getCameraStart());
+        assertNull(jobWithoutEntry.getCameraEnd());
     }
 }
