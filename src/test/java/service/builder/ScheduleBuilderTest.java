@@ -104,7 +104,7 @@ class ScheduleBuilderTest {
         verify(jobService).initSolutionJobList(schedule);
         verify(jobService).initFactProductionData(eq(schedule), any());
         verify(jobRepository).getCameraFactRowMap(any());
-        verify(jobService).initCameraFactData(eq(schedule), eq(cameraMap));
+        verify(jobService).initCameraFactData(schedule, cameraMap);
         verify(lineService).getLines();
         verify(lineSchedulingService).initJobListOnLine(schedule);
         verify(productService).getProductList(schedule);
