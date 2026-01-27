@@ -136,6 +136,7 @@ public class JobService {
                 continue;
             }
 
+            job.setIdBatch(factRow.idBatch());
             job.setLineIdFact(factRow.lineIdFact());
             job.setStartProductionDateTimeFact(
                     factRow.startProductionDateTimeFact().toLocalDateTime()

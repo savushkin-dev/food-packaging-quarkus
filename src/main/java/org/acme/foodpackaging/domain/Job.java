@@ -29,6 +29,7 @@ public class Job {
     @PlanningId
     private String id;
     private Long fId;
+    private String idBatch;
     private String lineId;
     private String lineIdFact;
     private String name;

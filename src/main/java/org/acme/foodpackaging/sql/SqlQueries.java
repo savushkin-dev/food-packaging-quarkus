@@ -68,7 +68,7 @@ WHERE
 
     public static final String LOAD_FACT_DB = """
     SELECT
-        v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
+       v.IDBATCH, v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
     FROM [MES].[dbo].[MS_LOG] v
     WHERE
         v.DTV > ?1

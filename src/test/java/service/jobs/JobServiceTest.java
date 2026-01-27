@@ -246,7 +246,7 @@ class JobServiceTest {
         job.setNp(10);
 
         FactProductionRow fact = new FactProductionRow(
-                "KMC1",
+                "IdBatch", "KMC1",
                 Timestamp.valueOf(
                         LocalDateTime.of(2025, 1, 1, 8, 0)),
                 10,
@@ -265,6 +265,7 @@ class JobServiceTest {
 
         jobService.initFactProductionData(solution, factMap);
 
+        assertEquals("IdBatch", job.getIdBatch());
         assertEquals("LINE_1", job.getLineIdFact());
         assertEquals(
                 LocalDateTime.of(2025, 1, 1, 8, 0),
