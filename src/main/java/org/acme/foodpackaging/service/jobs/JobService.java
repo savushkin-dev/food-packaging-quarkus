@@ -157,15 +157,11 @@ public class JobService {
     ) {
         for (Job job : solution.getJobs()) {
             String idBatch = job.getIdBatch();
-            if (idBatch == null) {
-                continue;
+            CameraValue camera = (idBatch != null) ? cameraMap.get(idBatch) : null;
+            if (camera != null) {
+                job.setCameraStart(camera.cameraStart());
+                job.setCameraEnd(camera.cameraEnd());
             }
-            CameraValue camera = cameraMap.get(idBatch);
-            if (camera == null) {
-                continue;
-            }
-            job.setCameraStart(camera.cameraStart());
-            job.setCameraEnd(camera.cameraEnd());
         }
     }
 

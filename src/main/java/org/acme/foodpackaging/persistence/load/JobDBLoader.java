@@ -14,6 +14,8 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -95,7 +97,6 @@ public class JobDBLoader {
                 ));
     }
 
-    @SuppressWarnings("unchecked")
     public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
         java.util.Map<String, CameraValue> result = new java.util.HashMap<>();
 
@@ -103,27 +104,35 @@ public class JobDBLoader {
             return result;
         }
 
-        for (Job job : jobs) {
-            String idBatch = job.getIdBatch();
-            if (idBatch != null && !result.containsKey(idBatch)) {
-                List<CameraFactRow> rows = em
-                        .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
-                        .setParameter(1, idBatch)
-                        .getResultList();
+        Set<String> idBatches = jobs.stream()
+                .map(Job::getIdBatch)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-                if (!rows.isEmpty()) {
-                    CameraFactRow row = rows.getFirst();
-                    result.put(
-                            row.idBatch(),
-                            new CameraValue(
-                                    row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
-                                    row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
-                            )
-                    );
-                }
+        for (String idBatch : idBatches) {
+            CameraValue value = fetchCameraValue(idBatch);
+            if (value != null) {
+                result.put(idBatch, value);
             }
         }
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private CameraValue fetchCameraValue(String idBatch) {
+        List<CameraFactRow> rows = (List<CameraFactRow>) em
+                .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
+                .setParameter(1, idBatch)
+                .getResultList();
+
+        if (rows.isEmpty()) {
+            return null;
+        }
+        CameraFactRow row = rows.getFirst();
+        return new CameraValue(
+                row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
+                row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
+        );
     }
 }
 
