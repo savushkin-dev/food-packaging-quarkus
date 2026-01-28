@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.rest;
+package org.acme.foodpackaging.exception.rest;
 
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;

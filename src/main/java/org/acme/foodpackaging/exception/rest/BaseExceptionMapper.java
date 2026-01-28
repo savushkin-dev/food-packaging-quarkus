@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.rest;
+package org.acme.foodpackaging.exception.rest;
 
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -8,6 +8,8 @@ import jakarta.ws.rs.core.Context;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.acme.foodpackaging.rest.ApiFields;
 
 /**
  * Base mapper with shared error body construction to reduce duplication.
@@ -21,12 +23,12 @@ abstract class BaseExceptionMapper<T extends Throwable> implements ExceptionMapp
         Throwable root = rootCause(e);
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("error", buildOperationErrorLabel());
-        body.put("exception", e.getClass().getName());
-        body.put("rootCause", root.getClass().getName());
-        body.put("message", root.getMessage() == null ? "" : root.getMessage());
+        body.put(ApiFields.ERROR, buildOperationErrorLabel());
+        body.put(ApiFields.EXCEPTION, e.getClass().getName());
+        body.put(ApiFields.ROOT_CAUSE, root.getClass().getName());
+        body.put(ApiFields.MESSAGE, root.getMessage() == null ? "" : root.getMessage());
         if (uriInfo != null) {
-            body.put("path", uriInfo.getPath());
+            body.put(ApiFields.PATH, uriInfo.getPath());
         }
 
         return Response.status(status)

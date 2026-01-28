@@ -118,8 +118,8 @@ public class PackagingScheduleResource {
     public Response refreshData() {
         loadDataService.refresh();
         return Response.ok(Map.of(
-                "status", "success",
-                "message", "Data refreshed successfully from database"
+                ApiFields.STATUS, "success",
+                ApiFields.MESSAGE, "Data refreshed successfully from database"
         )).build();
     }
 
@@ -132,12 +132,12 @@ public class PackagingScheduleResource {
         PackagingSchedule schedule = repository.readForSession(sessionId);
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, "No schedule loaded"))
                     .build();
         }
 
         uploadDataService.sendToWork(schedule.getJobs());
-        return Response.ok(Map.of("message", "The task has been sent to work")).build();
+        return Response.ok(Map.of(ApiFields.MESSAGE, "The task has been sent to work")).build();
     }
 
     @POST
@@ -180,7 +180,7 @@ public class PackagingScheduleResource {
 
         if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, "No schedule loaded"))
                     .build();
         }
         Line line = findLineById(solution, request.getLineId());
@@ -190,15 +190,15 @@ public class PackagingScheduleResource {
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
             repository.writeForSession(sessionId, solution);
             return Response.ok(Map.of(
-                    "status", "success",
-                    "sessionId", sessionId,
-                    "message", "Line start time updated"
+                    ApiFields.STATUS, "success",
+                    ApiFields.SESSION_ID, sessionId,
+                    ApiFields.MESSAGE, "Line start time updated"
             )).build();
         }
         return Response.ok(Map.of(
-                "status", "success",
-                "sessionId", sessionId,
-                "message", "Line has jobs. Start time is not updated"
+                ApiFields.STATUS, "success",
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Line has jobs. Start time is not updated"
         )).build();
     }
 
@@ -212,7 +212,7 @@ public class PackagingScheduleResource {
 
         if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, "No schedule loaded"))
                     .build();
         }
 
@@ -223,9 +223,9 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
-                "status", "success",
-                "sessionId", sessionId,
-                "message", "Line end time updated"
+                ApiFields.STATUS, "success",
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Line end time updated"
         )).build();
     }
 
@@ -238,7 +238,7 @@ public class PackagingScheduleResource {
 
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, "No schedule loaded"))
                     .build();
         }
 
@@ -269,7 +269,7 @@ public class PackagingScheduleResource {
     public Response solve(@HeaderParam("X-Session-Id") String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Session ID is required"))
+                    .entity(Map.of(ApiFields.ERROR, "Session ID is required"))
                     .build();
         }
 
@@ -282,9 +282,9 @@ public class PackagingScheduleResource {
                 .run();
 
         return Response.ok(Map.of(
-                "status", "started",
-                "sessionId", sessionId,
-                "message", "Solving started"
+                ApiFields.STATUS, "started",
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Solving started"
         )).build();
     }
 
@@ -294,7 +294,7 @@ public class PackagingScheduleResource {
     public Response stopSolving(@HeaderParam("X-Session-Id") String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Session ID is required"))
+                    .entity(Map.of(ApiFields.ERROR, "Session ID is required"))
                     .build();
         }
 
@@ -305,9 +305,9 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, finalSchedule);
 
         return Response.ok(Map.of(
-                "status", "stopped",
-                "sessionId", sessionId,
-                "message", "Solving stopped"
+                ApiFields.STATUS, "stopped",
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Solving stopped"
         )).build();
     }
     /**
@@ -322,7 +322,7 @@ public class PackagingScheduleResource {
 
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, "No schedule loaded"))
                     .build();
         }
 
@@ -331,7 +331,7 @@ public class PackagingScheduleResource {
         solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, result);
 
-        return Response.ok(Map.of("status", "success", "message", "Jobs moved successfully")).build();
+        return Response.ok(Map.of(ApiFields.STATUS, "success", ApiFields.MESSAGE, "Jobs moved successfully")).build();
     }
     /**
      * Операции для сервисной работы на линии
@@ -345,7 +345,7 @@ public class PackagingScheduleResource {
         PackagingSchedule updated;
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, "No schedule loaded"))
                     .build();
         }
             if(request.isUpdateLineMode()){
@@ -366,9 +366,9 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, updated);
 
         return Response.ok(Map.of(
-                "status", "success",
-                "message", "Maintenance job added",
-                "lineId", request.getLineId()
+                ApiFields.STATUS, "success",
+                ApiFields.MESSAGE, "Maintenance job added",
+                ApiFields.LINE_ID, request.getLineId()
         )).build();
     }
     /**
@@ -393,8 +393,8 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
-                "status", "success",
-                "message", "Line " + line.getId() + " updated successfully."
+                ApiFields.STATUS, "success",
+                ApiFields.MESSAGE, "Line " + line.getId() + " updated successfully."
         )).build();
     }
 
@@ -408,12 +408,12 @@ public class PackagingScheduleResource {
         PackagingSchedule bestSolution = repository.readForSession(sessionId);
         if (bestSolution == null) {
             return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "No solution for session"))
+                    .entity(Map.of(ApiFields.ERROR, "No solution for session"))
                     .build();
         }
 
         jobSaveService.saveJobsByType(bestSolution);
-        return Response.ok(Map.of("message", "Saved successfully")).build();
+        return Response.ok(Map.of(ApiFields.MESSAGE, "Saved successfully")).build();
 
     }
 

@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.rest;
+package org.acme.foodpackaging.exception.rest;
 
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
