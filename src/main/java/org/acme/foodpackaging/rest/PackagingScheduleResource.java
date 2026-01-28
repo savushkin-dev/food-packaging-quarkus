@@ -19,7 +19,7 @@ import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.upload.JobSaveService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.FrontendDataWrapper;
 import org.acme.foodpackaging.record.JobSelection;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
@@ -81,6 +81,21 @@ public class PackagingScheduleResource {
         }
         schedule.setSolverStatus(solverStatus);
         return schedule;
+    }
+
+    @GET
+    @Path("frontData")
+    @Produces(MediaType.APPLICATION_JSON)
+    public FrontendDataWrapper getFrontendData(@HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) {
+            throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
+        }
+        return new FrontendDataWrapper(
+                schedule.getJobs(),
+                schedule.getDbJobRowMap(),
+                schedule.getWorkCalendar()
+        );
     }
 
     @GET
@@ -147,7 +162,7 @@ public class PackagingScheduleResource {
     @Path("init")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public List<DbJobRow> init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
             PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
             solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
@@ -157,7 +172,7 @@ public class PackagingScheduleResource {
                 throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
             }
 
-            return getDbJobRowList(schedule.getDbJobRowMap());
+            return Response.ok(getDbJobRowList(schedule.getDbJobRowMap())).build();
     }
 
     @POST
