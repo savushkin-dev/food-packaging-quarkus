@@ -9,9 +9,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Provider
-public class GlobalExceptionHandler implements ExceptionMapper<IllegalStateException> {
+public class IllegalArgumentExceptionMapper implements ExceptionMapper<IllegalArgumentException> {
+
     @Override
-    public Response toResponse(IllegalStateException e) {
+    public Response toResponse(IllegalArgumentException e) {
         Throwable root = e;
         while (root.getCause() != null && root.getCause() != root) {
             root = root.getCause();
@@ -29,3 +30,4 @@ public class GlobalExceptionHandler implements ExceptionMapper<IllegalStateExcep
                 .build();
     }
 }
+

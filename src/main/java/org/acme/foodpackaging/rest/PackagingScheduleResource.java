@@ -21,7 +21,6 @@ import org.acme.foodpackaging.persistence.upload.JobSaveService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.JobSelection;
-import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
@@ -29,46 +28,56 @@ import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.*;
 
-import static io.smallrye.config._private.ConfigLogging.log;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 
 @Path("schedule")
 @ApplicationScoped
 public class PackagingScheduleResource {
 
-    @Inject
-    PackagingScheduleRepository repository;
-    @Inject
-    SolverManager<PackagingSchedule, String> solverManager;
-    @Inject
-    SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-    @Inject
-    MaintenanceJob maintenanceJob;
-    @Inject
-    MoveJobsService moveJobsService;
-    @Inject
-    SortByNpService sortByNpService;
-    @Inject
-    PinService pinService;
-    @Inject
-    ScheduleBuilder scheduleBuilder;
-    @Inject
-    LoadDataService loadDataService;
-    @Inject
-    UploadDataService uploadDataService;
-    @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobRefreshService jobRefreshService;
-    @Inject
-    JobSaveService jobSaveService;
+    private final PackagingScheduleRepository repository;
+    private final SolverManager<PackagingSchedule, String> solverManager;
+    private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
+    private final MaintenanceJob maintenanceJob;
+    private final MoveJobsService moveJobsService;
+    private final SortByNpService sortByNpService;
+    private final PinService pinService;
+    private final ScheduleBuilder scheduleBuilder;
+    private final LoadDataService loadDataService;
+    private final UploadDataService uploadDataService;
+    private final JobRefreshService jobRefreshService;
+    private final JobSaveService jobSaveService;
 
-    @ConfigProperty(name = "db.url")
-    String dbUrl;
+    @Inject
+    public PackagingScheduleResource(
+            PackagingScheduleRepository repository,
+            SolverManager<PackagingSchedule, String> solverManager,
+            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager,
+            MaintenanceJob maintenanceJob,
+            MoveJobsService moveJobsService,
+            SortByNpService sortByNpService,
+            PinService pinService,
+            ScheduleBuilder scheduleBuilder,
+            LoadDataService loadDataService,
+            UploadDataService uploadDataService,
+            JobRefreshService jobRefreshService,
+            JobSaveService jobSaveService
+    ) {
+        this.repository = repository;
+        this.solverManager = solverManager;
+        this.solutionManager = solutionManager;
+        this.maintenanceJob = maintenanceJob;
+        this.moveJobsService = moveJobsService;
+        this.sortByNpService = sortByNpService;
+        this.pinService = pinService;
+        this.scheduleBuilder = scheduleBuilder;
+        this.loadDataService = loadDataService;
+        this.uploadDataService = uploadDataService;
+        this.jobRefreshService = jobRefreshService;
+        this.jobSaveService = jobSaveService;
+    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -107,18 +116,11 @@ public class PackagingScheduleResource {
     @Path("refreshData")
     @Produces(MediaType.APPLICATION_JSON)
     public Response refreshData() {
-        try {
-            loadDataService.refresh();
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Data refreshed successfully from database"
-            )).build();
-        } catch (Exception e) {
-            log.error("Failed to refresh data", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Failed to refresh data: " + e.getMessage()))
-                    .build();
-        }
+        loadDataService.refresh();
+        return Response.ok(Map.of(
+                "status", "success",
+                "message", "Data refreshed successfully from database"
+        )).build();
     }
 
     @POST
@@ -127,20 +129,15 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response work(@HeaderParam("X-Session-Id") String sessionId) {
 
-        try {
-            PackagingSchedule schedule = repository.readForSession(sessionId);
-            if (schedule == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "No schedule loaded"))
-                        .build();
-            }
-            uploadDataService.sendToWork(schedule.getJobs());
-            return Response.ok(Map.of("message", "The task has been sent to work")).build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed send task to work: " + e.getMessage()))
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "No schedule loaded"))
                     .build();
         }
+
+        uploadDataService.sendToWork(schedule.getJobs());
+        return Response.ok(Map.of("message", "The task has been sent to work")).build();
     }
 
     @POST
@@ -276,28 +273,19 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        try {
-            String problemId = getProblemId(sessionId);
+        String problemId = getProblemId(sessionId);
 
-            solverManager.solveBuilder()
-                    .withProblemId(problemId)
-                    .withProblemFinder(id -> repository.readForSession(sessionId))
-                    .withBestSolutionConsumer(schedule -> {
-                        repository.writeForSession(sessionId, schedule);
-                    })
-                    .run();
+        solverManager.solveBuilder()
+                .withProblemId(problemId)
+                .withProblemFinder(id -> repository.readForSession(sessionId))
+                .withBestSolutionConsumer(schedule -> repository.writeForSession(sessionId, schedule))
+                .run();
 
-            return Response.ok(Map.of(
-                    "status", "started",
-                    "sessionId", sessionId,
-                    "message", "Solving started"
-            )).build();
-
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Failed to start solving: " + e.getMessage()))
-                    .build();
-        }
+        return Response.ok(Map.of(
+                "status", "started",
+                "sessionId", sessionId,
+                "message", "Solving started"
+        )).build();
     }
 
     @POST
@@ -338,24 +326,12 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        try {
-            PackagingSchedule result = moveJobsService.moveJobs(schedule, request);
+        PackagingSchedule result = moveJobsService.moveJobs(schedule, request);
 
-            solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
-            repository.writeForSession(sessionId, result);
+        solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, result);
 
-            return Response.ok(Map.of("status", "success", "message", "Jobs moved successfully")).build();
-
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
-        } catch (Exception e) {
-            log.error("Failed to move jobs", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Internal error"))
-                    .build();
-        }
+        return Response.ok(Map.of("status", "success", "message", "Jobs moved successfully")).build();
     }
     /**
      * Операции для сервисной работы на линии
@@ -429,23 +405,17 @@ public class PackagingScheduleResource {
     @Path("save")
     public Response save(@HeaderParam("X-Session-Id") String sessionId) {
 
-        try {
-            PackagingSchedule bestSolution = repository.readForSession(sessionId);
-            if (bestSolution == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "No solution for session"))
-                        .build();
-            }
-            jobSaveService.saveJobsByType(bestSolution);
-            return Response.ok(Map.of("message", "Saved successfully")).build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Saving error: " + e.getMessage()))
+        PackagingSchedule bestSolution = repository.readForSession(sessionId);
+        if (bestSolution == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No solution for session"))
                     .build();
         }
 
-    }
+        jobSaveService.saveJobsByType(bestSolution);
+        return Response.ok(Map.of("message", "Saved successfully")).build();
 
+    }
 
     @PUT
     @Consumes({MediaType.APPLICATION_JSON})
