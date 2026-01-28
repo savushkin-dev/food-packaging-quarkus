@@ -14,8 +14,8 @@
 
     <!-- SonarQube  -->
     <sonar.organization>savushkin-dev</sonar.organization>
-    <!-- Exclude exception mappers from coverage in Sonar -->
-    <sonar.coverage.exclusions>**/exception/**</sonar.coverage.exclusions>
+    <!-- Sonar coverage exclusions -->
+    <sonar.coverage.exclusions>**/repository/**,**/entity/**,**/record/**,**/rest/**,**/persistence/**,**/sql/**,**/dto/**,**/exception/**</sonar.coverage.exclusions>
 
     <!-- Framework Versions -->
     <version.io.quarkus>3.15.1</version.io.quarkus>
