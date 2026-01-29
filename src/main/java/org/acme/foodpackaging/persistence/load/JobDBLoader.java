@@ -97,7 +97,7 @@ public class JobDBLoader {
     public Map<String, CameraValue> loadCameraRowMap(LocalDateTime from, LocalDateTime to) {
        
         @SuppressWarnings("unchecked")
-        List<CameraFactRow> rows = (List<CameraFactRow>) em
+        List<CameraFactRow> rows = em
                 .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
