@@ -63,7 +63,7 @@ public class JobRefreshService {
     private void rebuildId(PackagingSchedule solution) {
         solution.getJobIdMap().clear();
         for (Job j : solution.getJobs()) {
-            if(j.getSnpz()==null || j.getSnpz()==0) continue;
+            if(j.isMaintenance()) continue;
            solution.getJobIdMap().put(j.getSnpz(), j);
         }
     }
