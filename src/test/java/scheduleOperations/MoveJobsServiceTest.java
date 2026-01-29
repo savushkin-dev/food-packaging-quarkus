@@ -91,7 +91,7 @@ class MoveJobsServiceTest {
     }
 
     @Test
-    void movingInsideRange() {
+    void movingInsideRange_swapsTwoElements() {
         Job j1 = job("1", "J1", productA);
         Job j2 = job("2", "J2", productA);
 
@@ -101,12 +101,12 @@ class MoveJobsServiceTest {
         request.setFromLineId("line1");
         request.setToLineId("line1");
         request.setFromIndex(0);
-        request.setCount(2);
+        request.setCount(1);
         request.setInsertIndex(1);
 
         service.moveJobs(schedule, request);
 
-        assertEquals(List.of(j1, j2), line1.getJobs());
+        assertEquals(List.of(j2, j1), line1.getJobs());
     }
 
     @Test
