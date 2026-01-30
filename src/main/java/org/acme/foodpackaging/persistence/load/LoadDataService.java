@@ -14,6 +14,7 @@ import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.repository.jobs.PlrPevRepository;
+import org.acme.foodpackaging.repository.lines.PlrLcRepository;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class LoadDataService {
     private final ProductRepository productRepository;
     private final CleaningRuleRepository cleaningRuleRepository;
     private final PlrPevRepository plrPevRepository;
+    private final PlrLcRepository plrLcRepository;
 
     @Getter
     private ConcurrentMap<String, String> lines;
@@ -39,18 +41,22 @@ public class LoadDataService {
     private Map<String, Map<String, Integer>> lineSpeeds;
     @Getter
     private List<CleaningRule> cleaningRules;
+    @Getter
+    private Map<String, Integer> linesCleaning;
 
     @Inject
     public LoadDataService(
             LineRepository lineRepository,
             ProductRepository productRepository,
             CleaningRuleRepository cleaningRuleRepository,
-            PlrPevRepository plrPevRepository
+            PlrPevRepository plrPevRepository,
+            PlrLcRepository plrLcRepository
     ) {
         this.lineRepository = lineRepository;
         this.productRepository = productRepository;
         this.cleaningRuleRepository = cleaningRuleRepository;
         this.plrPevRepository = plrPevRepository;
+        this.plrLcRepository = plrLcRepository;
     }
 
     void onStart(@Observes StartupEvent ev) {
@@ -87,6 +93,7 @@ public class LoadDataService {
                 ));
 
         this.lineSpeeds = SpeedRepository.createSpeedMap(rawSpeeds);
+        this.linesCleaning = plrLcRepository.loadLinesCleaning();
         SpeedCacheUtils.init(this.lineSpeeds);
 
         this.products = productRepository.loadProducts();
