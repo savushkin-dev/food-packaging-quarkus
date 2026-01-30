@@ -190,28 +190,37 @@ public class JobService {
     ) {
         for (Job job : solution.getJobs()) {
             String idBatch = job.getIdBatch();
-            if (idBatch == null) continue;
-
-            CameraEventRow startEv = cameraStartEvents.get(idBatch);
-            CameraEventRow endEv = cameraEndEvents.get(idBatch);
-
-            if (startEv != null && startEv.eventTime() != null) {
-                job.setCameraStart(startEv.eventTime().toLocalDateTime());
+            if (idBatch == null) {
+                continue;
             }
-            if (endEv != null && endEv.eventTime() != null) {
-                job.setCameraEnd(endEv.eventTime().toLocalDateTime());
-            }
-
-            if ((job.getCameraStart() == null || job.getCameraEnd() == null)) {
-                CameraValue fallback = jobRepository.getCameraValueByBatch(idBatch);
-                if (fallback != null) {
-                    if (job.getCameraStart() == null) job.setCameraStart(fallback.cameraStart());
-                    if (job.getCameraEnd() == null) job.setCameraEnd(fallback.cameraEnd());
-                }
+            applyCameraEventTimes(job, cameraStartEvents.get(idBatch), cameraEndEvents.get(idBatch));
+            if (job.getCameraStart() == null || job.getCameraEnd() == null) {
+                applyFallbackFromPmLog(job, idBatch);
             }
         }
     }
 
+    private void applyCameraEventTimes(Job job, CameraEventRow startEv, CameraEventRow endEv) {
+        if (startEv != null && startEv.eventTime() != null) {
+            job.setCameraStart(startEv.eventTime().toLocalDateTime());
+        }
+        if (endEv != null && endEv.eventTime() != null) {
+            job.setCameraEnd(endEv.eventTime().toLocalDateTime());
+        }
+    }
+
+    private void applyFallbackFromPmLog(Job job, String idBatch) {
+        CameraValue fallback = jobRepository.getCameraValueByBatch(idBatch);
+        if (fallback == null) {
+            return;
+        }
+        if (job.getCameraStart() == null) {
+            job.setCameraStart(fallback.cameraStart());
+        }
+        if (job.getCameraEnd() == null) {
+            job.setCameraEnd(fallback.cameraEnd());
+        }
+    }
     /**
      * Load-all algorithm: initialize facts and camera using a single MS_LOG payload,
      * then fallback to PM_LOG for missing camera values, and persist missing events.
