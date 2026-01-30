@@ -216,44 +216,54 @@ public class JobService {
      * Load-all algorithm: initialize facts and camera using a single MS_LOG payload,
      * then fallback to PM_LOG for missing camera values, and persist missing events.
      */
-    public void initFromMsLogEvents(
-            PackagingSchedule schedule,
-            java.util.List<FactProductionRow> events
-    ) {
-        // Split into facts (event=1) and camera events (2,3)
-        Map<FactKey, FactProductionRow> factMap = new java.util.HashMap<>();
-        Map<String, CameraEventRow> startEvents = new java.util.HashMap<>();
-        Map<String, CameraEventRow> endEvents = new java.util.HashMap<>();
+    public void initFromMsLogEvents(PackagingSchedule schedule, java.util.List<FactProductionRow> events) {
+        Map<FactKey, FactProductionRow> factMap = buildFactMap(events);
+        Map<String, CameraEventRow> startEvents = buildStartEvents(events);
+        Map<String, CameraEventRow> endEvents = buildEndEvents(events);
+        initFactProductionData(schedule, factMap);
+        initCameraFromEvents(schedule, startEvents, endEvents);
+        persistMissingCameraEvents(schedule, startEvents, endEvents);
+    }
 
+    private Map<FactKey, FactProductionRow> buildFactMap(java.util.List<FactProductionRow> events) {
+        Map<FactKey, FactProductionRow> factMap = new java.util.HashMap<>();
         for (FactProductionRow ev : events) {
-            Integer evType = ev.eventType();
-            if (evType == null) continue;
-            if (evType == 1) {
+            if (ev.eventType() != null && ev.eventType() == 1) {
                 FactKey key = new FactKey(ev.kmc(), ev.np());
-                // keep first occurrence
-                factMap.putIfAbsent(key, ev);
-            } else if (evType == 2) {
-                // keep earliest start
+                factMap.putIfAbsent(key, ev); // keep first
+            }
+        }
+        return factMap;
+    }
+
+    private Map<String, CameraEventRow> buildStartEvents(java.util.List<FactProductionRow> events) {
+        Map<String, CameraEventRow> startEvents = new java.util.HashMap<>();
+        for (FactProductionRow ev : events) {
+            if (ev.eventType() != null && ev.eventType() == 2) {
+                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 2, ev.dtv());
                 startEvents.merge(
                         ev.idBatch(),
-                        new CameraEventRow(ev.idBatch(), 2, ev.dtv()),
+                        candidate,
                         (oldV, newV) -> oldV.eventTime().before(newV.eventTime()) ? oldV : newV
                 );
-            } else if (evType == 3) {
-                // keep latest end
+            }
+        }
+        return startEvents;
+    }
+
+    private Map<String, CameraEventRow> buildEndEvents(java.util.List<FactProductionRow> events) {
+        Map<String, CameraEventRow> endEvents = new java.util.HashMap<>();
+        for (FactProductionRow ev : events) {
+            if (ev.eventType() != null && ev.eventType() == 3) {
+                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 3, ev.dtv());
                 endEvents.merge(
                         ev.idBatch(),
-                        new CameraEventRow(ev.idBatch(), 3, ev.dtv()),
+                        candidate,
                         (oldV, newV) -> oldV.eventTime().after(newV.eventTime()) ? oldV : newV
                 );
             }
         }
-
-        // Initialize schedule data
-        initFactProductionData(schedule, factMap);
-        initCameraFromEvents(schedule, startEvents, endEvents);
-        // Persist missing camera events for future loads
-        persistMissingCameraEvents(schedule, startEvents, endEvents);
+        return endEvents;
     }
 
     /**

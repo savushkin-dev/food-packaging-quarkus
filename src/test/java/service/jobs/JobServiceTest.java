@@ -296,7 +296,6 @@ class JobServiceTest {
 
     @Test
     void initCameraFromEvents_setsStartAndEndFromEvents() {
-        PackagingSchedule schedule = new PackagingSchedule();
         Job job = new Job();
         job.setIdBatch("B1");
         schedule.setJobs(List.of(job));
@@ -319,7 +318,6 @@ class JobServiceTest {
 
     @Test
     void initCameraFromEvents() {
-        PackagingSchedule schedule = new PackagingSchedule();
         Job job = new Job();
         job.setIdBatch("B2");
         schedule.setJobs(List.of(job));
@@ -338,7 +336,6 @@ class JobServiceTest {
 
     @Test
     void persistMissingCameraEvents() {
-        PackagingSchedule schedule = new PackagingSchedule();
         Job j1 = new Job();
         j1.setIdBatch("B1");
         j1.setCameraEnd(LocalDateTime.of(2025, 1, 1, 10, 0));
@@ -416,7 +413,6 @@ class JobServiceTest {
     @Test
     void initFromMsLogEvents_initializesFactsAndCamera_andPersistsMissing() {
         // Prepare schedule with two jobs: B1 (has events), B2 (will fallback and persist)
-        PackagingSchedule schedule = new PackagingSchedule();
         Job job1 = new Job();
         job1.setProduct(new Product("KMC1", "Vanilla"));
         job1.setNp(10);

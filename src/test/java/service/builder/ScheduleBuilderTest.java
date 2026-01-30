@@ -99,7 +99,7 @@ class ScheduleBuilderTest {
         verify(jobRepository).getDbJobRowMap(any(), any());
         verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobService).initSolutionJobList(schedule);
-        verify(jobService).initFromMsLogEvents(eq(schedule), eq(msLogEvents));
+        verify(jobService).initFromMsLogEvents(schedule, msLogEvents);
         verify(jobRepository).getMsLogEvents(any(), any());
         verify(lineService).getLines();
         verify(lineSchedulingService).initJobListOnLine(schedule);

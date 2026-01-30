@@ -2,6 +2,7 @@ package org.acme.foodpackaging.persistence.upload;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.exception.rest.service.DataUploadException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.sql.*;
@@ -100,7 +101,7 @@ public class UploadDataService {
             }
         } catch (SQLException e) {
             log.error("Failed to write camera event", e);
-            throw new RuntimeException("Failed to write camera event", e);
+            throw new DataUploadException("Failed to write camera event", e);
         }
     }
 
@@ -113,34 +114,40 @@ public class UploadDataService {
                                        Map<String, java.time.LocalDateTime> endEvents) {
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
-                if (startEvents != null) {
-                    for (var entry : startEvents.entrySet()) {
-                        if (entry.getValue() == null) continue;
-                        ps.setString(1, entry.getKey());
-                        ps.setInt(2, 2);
-                        ps.setTimestamp(3, Timestamp.valueOf(entry.getValue()));
-                        ps.addBatch();
-                    }
-                }
-                if (endEvents != null) {
-                    for (var entry : endEvents.entrySet()) {
-                        if (entry.getValue() == null) continue;
-                        ps.setString(1, entry.getKey());
-                        ps.setInt(2, 3);
-                        ps.setTimestamp(3, Timestamp.valueOf(entry.getValue()));
-                        ps.addBatch();
-                    }
-                }
-                ps.executeBatch();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            }
+            writeCameraEventsBatchInternal(conn, startEvents, endEvents);
+            conn.commit();
         } catch (SQLException e) {
             log.error("Failed to batch write camera events", e);
-            throw new RuntimeException("Failed to batch write camera events", e);
+            throw new DataUploadException("Failed to batch write camera events", e);
+        }
+    }
+
+    /**
+     * Extracted internal writer for batch events to reduce nesting.
+     */
+    private void writeCameraEventsBatchInternal(Connection conn,
+                                                Map<String, java.time.LocalDateTime> startEvents,
+                                                Map<String, java.time.LocalDateTime> endEvents) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
+            if (startEvents != null && !startEvents.isEmpty()) {
+                ps.setInt(2, 2); // invariant for start loop
+                for (var entry : startEvents.entrySet()) {
+                    if (entry.getValue() == null) continue;
+                    ps.setString(1, entry.getKey());
+                    ps.setTimestamp(3, Timestamp.valueOf(entry.getValue()));
+                    ps.addBatch();
+                }
+            }
+            if (endEvents != null && !endEvents.isEmpty()) {
+                ps.setInt(2, 3); // invariant for end loop
+                for (var entry : endEvents.entrySet()) {
+                    if (entry.getValue() == null) continue;
+                    ps.setString(1, entry.getKey());
+                    ps.setTimestamp(3, Timestamp.valueOf(entry.getValue()));
+                    ps.addBatch();
+                }
+            }
+            ps.executeBatch();
         }
     }
 }
