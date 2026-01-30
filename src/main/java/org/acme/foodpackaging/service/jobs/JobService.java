@@ -20,6 +20,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.Objects;
 
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 
@@ -40,9 +42,9 @@ public class JobService {
             JobRepository jobRepository,
             UploadDataService uploadDataService
     ) {
-        this.loadDataService = loadDataService;
-        this.jobRepository = jobRepository;
-        this.uploadDataService = uploadDataService;
+        this.loadDataService = Objects.requireNonNull(loadDataService, "loadDataService must not be null");
+        this.jobRepository = Objects.requireNonNull(jobRepository, "jobRepository must not be null");
+        this.uploadDataService = Objects.requireNonNull(uploadDataService, "uploadDataService must not be null");
     }
 
     /**
@@ -89,10 +91,10 @@ public class JobService {
                 throw new IllegalArgumentException("Unknown maintenance job FId=" + id);
             }
 
-            var maintenanceTypes = loadDataService != null ? loadDataService.getMaintenanceTypes() : null;
-            String maintenanceTypeName = maintenanceTypes != null
-                    ? maintenanceTypes.getOrDefault(safe(row.getMaintenanceTypeId()), "Обслуживание")
-                    : "Обслуживание";
+            Map<Integer, String> maintenanceTypes =
+                    Objects.requireNonNullElse(loadDataService.getMaintenanceTypes(), Collections.emptyMap());
+            String maintenanceTypeName =
+                    maintenanceTypes.getOrDefault(safe(row.getMaintenanceTypeId()), "Обслуживание");
 
             job = Job.fromDbMaintenanceRow(
                     row,
