@@ -62,9 +62,6 @@ public class MoveJobsService {
         }
 
         int insertIndex = request.getInsertIndex();
-        if (sameLine && insertIndex >= fromIndex && insertIndex <= fromEnd) {
-            return schedule;
-        }
 
         List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, insertIndex);
 
