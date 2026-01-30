@@ -55,18 +55,21 @@ public class MaintenanceJob {
         maintenanceJob.setLine(line);
         maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
+        int insertedIndex;
         if (request.isEmptyLineMode()) {
             line.setStartDateTime(request.getStartProductionDateTime());
             LocalDateTime startTime = request.getStartProductionDateTime();
             maintenanceJob.setStartCleaningDateTime(startTime);
             maintenanceJob.setStartProductionDateTime(startTime);
             lineJobs.add(maintenanceJob);
+            insertedIndex = lineJobs.size() - 1;
         } else {
             int insertIndex = request.getInsertIndex();
             if (insertIndex < 0 || insertIndex > lineJobs.size()) {
                 throw new IllegalArgumentException("Invalid insertIndex: " + insertIndex);
             }
             lineJobs.add(insertIndex, maintenanceJob);
+            insertedIndex = insertIndex;
         }
 
         fixLineJobs(line);
@@ -74,7 +77,43 @@ public class MaintenanceJob {
 
         schedule.getJobs().add(maintenanceJob);
 
+        maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
+
         return schedule;
+    }
+
+    private void maybeAddExtraMaintenance(PackagingSchedule schedule,
+                                          Line line,
+                                          List<Job> lineJobs,
+                                          Job primaryJob,
+                                          MaintenanceRequest request,
+                                          int insertedIndex) {
+        Integer reqMinutes = request.getDurationMinutes();
+        if (reqMinutes == null || reqMinutes < 6 * 60) return;
+        if (loadDataService == null || loadDataService.getLinesCleaning() == null) return;
+        Integer extraMinutes = loadDataService.getLinesCleaning().get(request.getLineId());
+        if (extraMinutes == null || extraMinutes <= 0) return;
+
+        Job extraJob = Job.createMaintenanceJob(
+                "MAINTENANCE-" + UUID.randomUUID(),
+                null,
+                2,
+                "Мойка",
+                "Auto extra maintenance",
+                schedule.getMaintenanceProduct(),
+                extraMinutes
+        );
+        extraJob.setLine(line);
+        extraJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        if (request.isEmptyLineMode()) {
+            extraJob.setStartCleaningDateTime(primaryJob.getStartCleaningDateTime());
+            extraJob.setStartProductionDateTime(primaryJob.getStartProductionDateTime());
+        }
+        int idx = Math.min(insertedIndex + 1, lineJobs.size());
+        lineJobs.add(idx, extraJob);
+        schedule.getJobs().add(extraJob);
+        fixLineJobs(line);
+        fixPinnedJobs(line);
     }
 
     public static Product createMaintenanceProduct() {

@@ -204,6 +204,64 @@ class MaintenanceJobTest {
     }
 
     @Test
+    void addMaintenanceAddsExtraWhenDurationAtLeastSixHours() {
+        ConcurrentMap<String, Integer> lc = new ConcurrentHashMap<>();
+        lc.put("line1", 40);
+        when(loadDataService.getLinesCleaning()).thenReturn(lc);
+
+        // Seed one job to make line non-empty
+        MaintenanceRequest seed = new MaintenanceRequest();
+        seed.setLineId("line1");
+        seed.setDurationMinutes(20);
+        seed.setInsertIndex(0);
+        maintenanceJob.addMaintenanceJob(schedule, seed);
+
+        // Long maintenance triggers extra
+        MaintenanceRequest req = new MaintenanceRequest();
+        req.setLineId("line1");
+        req.setDurationMinutes(360);
+        req.setInsertIndex(1); // insert after seed
+
+        PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
+
+        // Expect two jobs at indices 1 (original) and 2 (extra)
+        assertEquals(3, result.getJobs().size());
+        Job inserted = line.getJobs().get(1);
+        Job extra = line.getJobs().get(2);
+        assertTrue(inserted.isMaintenance());
+        assertTrue(extra.isMaintenance());
+        assertEquals(40, extra.getDuration().toMinutes());
+        assertEquals(2, extra.getMaintenanceTypeId()); 
+        assertEquals("Мойка", extra.getName());
+    }
+
+    @Test
+    void addMaintenanceAddsExtraWhenDurationAtLeastSixHours_EmptyLineReusesStart() {
+        ConcurrentMap<String, Integer> lc = new ConcurrentHashMap<>();
+        lc.put("line1", 30);
+        when(loadDataService.getLinesCleaning()).thenReturn(lc);
+
+        LocalDateTime start = LocalDateTime.now();
+        MaintenanceRequest req = new MaintenanceRequest();
+        req.setLineId("line1");
+        req.setDurationMinutes(400);
+        req.setStartProductionDateTime(start); // empty-line mode
+
+        PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
+
+        assertEquals(2, result.getJobs().size());
+        Job first = line.getJobs().get(0);
+        Job extra = line.getJobs().get(1);
+        assertEquals(start, first.getStartProductionDateTime());
+        assertNotNull(extra.getStartProductionDateTime(), "Extra job should have a start time");
+        assertFalse(extra.getStartProductionDateTime().isBefore(first.getStartProductionDateTime()),
+                "Extra job should not start before the first maintenance");
+        assertEquals(30, extra.getDuration().toMinutes());
+        assertEquals(2, extra.getMaintenanceTypeId());
+        assertEquals("Мойка", extra.getName());
+    }
+    
+    @Test
     void marksMatchingRowsAsDeletedTest() {
         Map<Long, DbMaintenanceRow> jobs = new HashMap<>();
 
