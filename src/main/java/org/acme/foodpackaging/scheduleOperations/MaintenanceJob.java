@@ -82,12 +82,10 @@ public class MaintenanceJob {
         if (reqMinutes != null && reqMinutes >= 6 * 60 && loadDataService != null && loadDataService.getLinesCleaning() != null) {
             Integer extraMinutes = loadDataService.getLinesCleaning().get(request.getLineId());
             if (extraMinutes != null && extraMinutes > 0) {
-                ConcurrentMap<Integer, String> mt = loadDataService.getMaintenanceTypes();
-                String extraName = mt != null ? mt.getOrDefault(typeKey, "Обслуживание") : "Обслуживание";
                 Job extraJob = Job.createMaintenanceJob(
                         "MAINTENANCE-" + UUID.randomUUID(),
                         null,
-                        request.getMaintenanceTypeId() != null ? request.getMaintenanceTypeId() : 1,
+                        2,
                         "Мойка",
                         "Auto extra maintenance",
                         schedule.getMaintenanceProduct(),
