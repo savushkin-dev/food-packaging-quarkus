@@ -103,7 +103,8 @@ public class PackagingScheduleResource {
         return new FrontendDataWrapper(
                 schedule.getJobs(),
                 schedule.getLines(),
-                schedule.getScore()
+                schedule.getScore(),
+                schedule.getSolverStatus()
         );
     }
 
