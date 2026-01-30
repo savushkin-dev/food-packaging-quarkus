@@ -318,7 +318,7 @@ class JobServiceTest {
     }
 
     @Test
-    void initCameraFromEvents_fallsBackToPmLogWhenMissing() {
+    void initCameraFromEvents() {
         PackagingSchedule schedule = new PackagingSchedule();
         Job job = new Job();
         job.setIdBatch("B2");
@@ -337,7 +337,7 @@ class JobServiceTest {
     }
 
     @Test
-    void persistMissingCameraEvents_batchesAndWrites() {
+    void persistMissingCameraEvents() {
         PackagingSchedule schedule = new PackagingSchedule();
         Job j1 = new Job();
         j1.setIdBatch("B1");
@@ -411,5 +411,83 @@ class JobServiceTest {
         assertNull(jobWithNullBatch.getCameraEnd());
         assertNull(jobWithoutEntry.getCameraStart());
         assertNull(jobWithoutEntry.getCameraEnd());
+    }
+
+    @Test
+    void initFromMsLogEvents_initializesFactsAndCamera_andPersistsMissing() {
+        // Prepare schedule with two jobs: B1 (has events), B2 (will fallback and persist)
+        PackagingSchedule schedule = new PackagingSchedule();
+        Job job1 = new Job();
+        job1.setProduct(new Product("KMC1", "Vanilla"));
+        job1.setNp(10);
+
+        Job job2 = new Job();
+        job2.setProduct(new Product("KMC2", "Chocolate"));
+        job2.setNp(20);
+
+        schedule.setJobs(List.of(job1, job2));
+
+        // MS_LOG events:
+        // - Fact for job1 and job2 (event 1)
+        // - Two start events for B1 (pick earliest)
+        // - One end event for B1 (pick latest)
+        LocalDateTime dtStart1 = LocalDateTime.of(2025, 1, 5, 8, 0);
+        LocalDateTime dtStart1Later = LocalDateTime.of(2025, 1, 5, 8, 5);
+        LocalDateTime dtEnd1 = LocalDateTime.of(2025, 1, 5, 10, 0);
+
+        LocalDateTime fact1 = LocalDateTime.of(2025, 1, 5, 7, 55);
+        LocalDateTime fact2 = LocalDateTime.of(2025, 1, 6, 9, 0);
+
+        var events = List.of(
+                // facts
+                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(fact1), 10, 1, Timestamp.valueOf(fact1), "LINE_1"),
+                new FactProductionRow("B2", "KMC2", Timestamp.valueOf(fact2), 20, 1, Timestamp.valueOf(fact2), "LINE_2"),
+                // camera start (two for B1 -> earliest kept)
+                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtStart1Later), 10, 2, null, "LINE_1"),
+                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtStart1), 10, 2, null, "LINE_1"),
+                // camera end (latest kept but only one provided)
+                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtEnd1), 10, 3, null, "LINE_1")
+        );
+
+        // Fallback for B2: when missing camera events, use PM_LOG values and persist
+        LocalDateTime fallbackStartB2 = LocalDateTime.of(2025, 1, 6, 9, 5);
+        LocalDateTime fallbackEndB2 = LocalDateTime.of(2025, 1, 6, 11, 30);
+        when(jobRepository.getCameraValueByBatch("B2"))
+                .thenReturn(new org.acme.foodpackaging.record.CameraValue(fallbackStartB2, fallbackEndB2));
+
+        // Execute
+        jobService.initFromMsLogEvents(schedule, events);
+
+        // Validate job1 facts populated
+        assertEquals("B1", job1.getIdBatch());
+        assertEquals("LINE_1", job1.getLineIdFact());
+        assertEquals(fact1, job1.getStartProductionDateTimeFact());
+        // Camera from events (earliest start, end present)
+        assertEquals(dtStart1, job1.getCameraStart());
+        assertEquals(dtEnd1, job1.getCameraEnd());
+
+        // Validate job2 facts populated
+        assertEquals("B2", job2.getIdBatch());
+        assertEquals("LINE_2", job2.getLineIdFact());
+        assertEquals(fact2, job2.getStartProductionDateTimeFact());
+        // Camera from fallback
+        assertEquals(fallbackStartB2, job2.getCameraStart());
+        assertEquals(fallbackEndB2, job2.getCameraEnd());
+
+        // Persist called with B2 entries (start/end), not for B1 (has events)
+        @SuppressWarnings("unchecked")
+        var startCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        var endCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+
+        verify(uploadDataService).writeCameraEventsBatch(startCaptor.capture(), endCaptor.capture());
+
+        Map<String, LocalDateTime> writtenStart = startCaptor.getValue();
+        Map<String, LocalDateTime> writtenEnd = endCaptor.getValue();
+
+        assertEquals(1, writtenStart.size());
+        assertEquals(fallbackStartB2, writtenStart.get("B2"));
+        assertEquals(1, writtenEnd.size());
+        assertEquals(fallbackEndB2, writtenEnd.get("B2"));
     }
 }
