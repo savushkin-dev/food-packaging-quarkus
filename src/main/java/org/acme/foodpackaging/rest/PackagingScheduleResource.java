@@ -21,7 +21,6 @@ import org.acme.foodpackaging.persistence.upload.JobSaveService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.JobSelection;
-import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleOperations.PinService;
@@ -29,46 +28,56 @@ import org.acme.foodpackaging.scheduleOperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.*;
 
-import static io.smallrye.config._private.ConfigLogging.log;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 
 @Path("schedule")
 @ApplicationScoped
 public class PackagingScheduleResource {
 
-    @Inject
-    PackagingScheduleRepository repository;
-    @Inject
-    SolverManager<PackagingSchedule, String> solverManager;
-    @Inject
-    SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-    @Inject
-    MaintenanceJob maintenanceJob;
-    @Inject
-    MoveJobsService moveJobsService;
-    @Inject
-    SortByNpService sortByNpService;
-    @Inject
-    PinService pinService;
-    @Inject
-    ScheduleBuilder scheduleBuilder;
-    @Inject
-    LoadDataService loadDataService;
-    @Inject
-    UploadDataService uploadDataService;
-    @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobRefreshService jobRefreshService;
-    @Inject
-    JobSaveService jobSaveService;
+    private final PackagingScheduleRepository repository;
+    private final SolverManager<PackagingSchedule, String> solverManager;
+    private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
+    private final MaintenanceJob maintenanceJob;
+    private final MoveJobsService moveJobsService;
+    private final SortByNpService sortByNpService;
+    private final PinService pinService;
+    private final ScheduleBuilder scheduleBuilder;
+    private final LoadDataService loadDataService;
+    private final UploadDataService uploadDataService;
+    private final JobRefreshService jobRefreshService;
+    private final JobSaveService jobSaveService;
 
-    @ConfigProperty(name = "db.url")
-    String dbUrl;
+    @Inject
+    public PackagingScheduleResource(
+            PackagingScheduleRepository repository,
+            SolverManager<PackagingSchedule, String> solverManager,
+            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager,
+            MaintenanceJob maintenanceJob,
+            MoveJobsService moveJobsService,
+            SortByNpService sortByNpService,
+            PinService pinService,
+            ScheduleBuilder scheduleBuilder,
+            LoadDataService loadDataService,
+            UploadDataService uploadDataService,
+            JobRefreshService jobRefreshService,
+            JobSaveService jobSaveService
+    ) {
+        this.repository = repository;
+        this.solverManager = solverManager;
+        this.solutionManager = solutionManager;
+        this.maintenanceJob = maintenanceJob;
+        this.moveJobsService = moveJobsService;
+        this.sortByNpService = sortByNpService;
+        this.pinService = pinService;
+        this.scheduleBuilder = scheduleBuilder;
+        this.loadDataService = loadDataService;
+        this.uploadDataService = uploadDataService;
+        this.jobRefreshService = jobRefreshService;
+        this.jobSaveService = jobSaveService;
+    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -77,7 +86,7 @@ public class PackagingScheduleResource {
         SolverStatus solverStatus = solverManager.getSolverStatus(getProblemId(sessionId));
         PackagingSchedule schedule = repository.readForSession(sessionId);
         if (schedule == null) {
-            throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
+            throw new WebApplicationException(ApiFields.NO_SCHEDULE_LOADED, Response.Status.NOT_FOUND);
         }
         schedule.setSolverStatus(solverStatus);
         return schedule;
@@ -88,7 +97,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Map<String, String> getLines() {
         if (loadDataService == null) {
-            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+            throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
         }
         return loadDataService.getLines();
     }
@@ -98,7 +107,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Map<Integer, String> getMaintenanceTypes() {
         if (loadDataService == null) {
-            throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+            throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
         }
         return loadDataService.getMaintenanceTypes();
     }
@@ -107,18 +116,11 @@ public class PackagingScheduleResource {
     @Path("refreshData")
     @Produces(MediaType.APPLICATION_JSON)
     public Response refreshData() {
-        try {
-            loadDataService.refresh();
-            return Response.ok(Map.of(
-                    "status", "success",
-                    "message", "Data refreshed successfully from database"
-            )).build();
-        } catch (Exception e) {
-            log.error("Failed to refresh data", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Failed to refresh data: " + e.getMessage()))
-                    .build();
-        }
+        loadDataService.refresh();
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, "Data refreshed successfully from database"
+        )).build();
     }
 
     @POST
@@ -127,20 +129,15 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response work(@HeaderParam("X-Session-Id") String sessionId) {
 
-        try {
-            PackagingSchedule schedule = repository.readForSession(sessionId);
-            if (schedule == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Map.of("error", "No schedule loaded"))
-                        .build();
-            }
-            uploadDataService.sendToWork(schedule.getJobs());
-            return Response.ok(Map.of("message", "The task has been sent to work")).build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Failed send task to work: " + e.getMessage()))
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
+
+        uploadDataService.sendToWork(schedule.getJobs());
+        return Response.ok(Map.of(ApiFields.MESSAGE, "The task has been sent to work")).build();
     }
 
     @POST
@@ -154,7 +151,7 @@ public class PackagingScheduleResource {
             repository.writeForSession(sessionId, schedule);
 
             if (loadDataService == null) {
-                throw new WebApplicationException("No data loaded", Response.Status.NOT_FOUND);
+                throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
             }
 
             return getDbJobRowList(schedule.getDbJobRowMap());
@@ -183,7 +180,7 @@ public class PackagingScheduleResource {
 
         if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
         Line line = findLineById(solution, request.getLineId());
@@ -193,15 +190,15 @@ public class PackagingScheduleResource {
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
             repository.writeForSession(sessionId, solution);
             return Response.ok(Map.of(
-                    "status", "success",
-                    "sessionId", sessionId,
-                    "message", "Line start time updated"
+                    ApiFields.STATUS, ApiFields.SUCCESS,
+                    ApiFields.SESSION_ID, sessionId,
+                    ApiFields.MESSAGE, "Line start time updated"
             )).build();
         }
         return Response.ok(Map.of(
-                "status", "success",
-                "sessionId", sessionId,
-                "message", "Line has jobs. Start time is not updated"
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Line has jobs. Start time is not updated"
         )).build();
     }
 
@@ -215,7 +212,7 @@ public class PackagingScheduleResource {
 
         if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
 
@@ -226,9 +223,9 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
-                "status", "success",
-                "sessionId", sessionId,
-                "message", "Line end time updated"
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Line end time updated"
         )).build();
     }
 
@@ -241,7 +238,7 @@ public class PackagingScheduleResource {
 
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
 
@@ -272,32 +269,23 @@ public class PackagingScheduleResource {
     public Response solve(@HeaderParam("X-Session-Id") String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Session ID is required"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.SESSION_ID_REQUIRED))
                     .build();
         }
 
-        try {
-            String problemId = getProblemId(sessionId);
+        String problemId = getProblemId(sessionId);
 
-            solverManager.solveBuilder()
-                    .withProblemId(problemId)
-                    .withProblemFinder(id -> repository.readForSession(sessionId))
-                    .withBestSolutionConsumer(schedule -> {
-                        repository.writeForSession(sessionId, schedule);
-                    })
-                    .run();
+        solverManager.solveBuilder()
+                .withProblemId(problemId)
+                .withProblemFinder(id -> repository.readForSession(sessionId))
+                .withBestSolutionConsumer(schedule -> repository.writeForSession(sessionId, schedule))
+                .run();
 
-            return Response.ok(Map.of(
-                    "status", "started",
-                    "sessionId", sessionId,
-                    "message", "Solving started"
-            )).build();
-
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Failed to start solving: " + e.getMessage()))
-                    .build();
-        }
+        return Response.ok(Map.of(
+                ApiFields.STATUS, "started",
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Solving started"
+        )).build();
     }
 
     @POST
@@ -306,7 +294,7 @@ public class PackagingScheduleResource {
     public Response stopSolving(@HeaderParam("X-Session-Id") String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "Session ID is required"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.SESSION_ID_REQUIRED))
                     .build();
         }
 
@@ -317,9 +305,9 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, finalSchedule);
 
         return Response.ok(Map.of(
-                "status", "stopped",
-                "sessionId", sessionId,
-                "message", "Solving stopped"
+                ApiFields.STATUS, "stopped",
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Solving stopped"
         )).build();
     }
     /**
@@ -334,28 +322,16 @@ public class PackagingScheduleResource {
 
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
 
-        try {
-            PackagingSchedule result = moveJobsService.moveJobs(schedule, request);
+        PackagingSchedule result = moveJobsService.moveJobs(schedule, request);
 
-            solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
-            repository.writeForSession(sessionId, result);
+        solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, result);
 
-            return Response.ok(Map.of("status", "success", "message", "Jobs moved successfully")).build();
-
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
-        } catch (Exception e) {
-            log.error("Failed to move jobs", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Internal error"))
-                    .build();
-        }
+        return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully")).build();
     }
     /**
      * Операции для сервисной работы на линии
@@ -369,7 +345,7 @@ public class PackagingScheduleResource {
         PackagingSchedule updated;
         if (schedule == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
             if(request.isUpdateLineMode()){
@@ -390,9 +366,9 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, updated);
 
         return Response.ok(Map.of(
-                "status", "success",
-                "message", "Maintenance job added",
-                "lineId", request.getLineId()
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, "Maintenance job added",
+                ApiFields.LINE_ID, request.getLineId()
         )).build();
     }
     /**
@@ -406,7 +382,7 @@ public class PackagingScheduleResource {
         PackagingSchedule solution = repository.readForSession(sessionId);
         if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "No schedule loaded"))
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
 
@@ -417,8 +393,8 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
-                "status", "success",
-                "message", "Line " + line.getId() + " updated successfully."
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, "Line " + line.getId() + " updated successfully."
         )).build();
     }
 
@@ -429,23 +405,17 @@ public class PackagingScheduleResource {
     @Path("save")
     public Response save(@HeaderParam("X-Session-Id") String sessionId) {
 
-        try {
-            PackagingSchedule bestSolution = repository.readForSession(sessionId);
-            if (bestSolution == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "No solution for session"))
-                        .build();
-            }
-            jobSaveService.saveJobsByType(bestSolution);
-            return Response.ok(Map.of("message", "Saved successfully")).build();
-        } catch (Exception e) {
-            return Response.serverError()
-                    .entity(Map.of("error", "Saving error: " + e.getMessage()))
+        PackagingSchedule bestSolution = repository.readForSession(sessionId);
+        if (bestSolution == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
 
-    }
+        jobSaveService.saveJobsByType(bestSolution);
+        return Response.ok(Map.of(ApiFields.MESSAGE, "Saved successfully")).build();
 
+    }
 
     @PUT
     @Consumes({MediaType.APPLICATION_JSON})
