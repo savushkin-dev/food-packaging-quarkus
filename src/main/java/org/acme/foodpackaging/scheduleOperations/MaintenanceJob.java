@@ -55,24 +55,58 @@ public class MaintenanceJob {
         maintenanceJob.setLine(line);
         maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
+        int insertedIndex;
         if (request.isEmptyLineMode()) {
             line.setStartDateTime(request.getStartProductionDateTime());
             LocalDateTime startTime = request.getStartProductionDateTime();
             maintenanceJob.setStartCleaningDateTime(startTime);
             maintenanceJob.setStartProductionDateTime(startTime);
             lineJobs.add(maintenanceJob);
+            insertedIndex = lineJobs.size() - 1;
         } else {
             int insertIndex = request.getInsertIndex();
             if (insertIndex < 0 || insertIndex > lineJobs.size()) {
                 throw new IllegalArgumentException("Invalid insertIndex: " + insertIndex);
             }
             lineJobs.add(insertIndex, maintenanceJob);
+            insertedIndex = insertIndex;
         }
 
         fixLineJobs(line);
         fixPinnedJobs(line);
 
         schedule.getJobs().add(maintenanceJob);
+
+        // Extra maintenance if requested duration >= 6h (360 minutes)
+        Integer reqMinutes = request.getDurationMinutes();
+        if (reqMinutes != null && reqMinutes >= 6 * 60 && loadDataService != null && loadDataService.getLinesCleaning() != null) {
+            Integer extraMinutes = loadDataService.getLinesCleaning().get(request.getLineId());
+            if (extraMinutes != null && extraMinutes > 0) {
+                ConcurrentMap<Integer, String> mt = loadDataService.getMaintenanceTypes();
+                String extraName = mt != null ? mt.getOrDefault(typeKey, "Обслуживание") : "Обслуживание";
+                Job extraJob = Job.createMaintenanceJob(
+                        "MAINTENANCE-" + UUID.randomUUID(),
+                        null,
+                        request.getMaintenanceTypeId() != null ? request.getMaintenanceTypeId() : 1,
+                        "Мойка",
+                        "Auto extra maintenance",
+                        schedule.getMaintenanceProduct(),
+                        extraMinutes
+                );
+                extraJob.setLine(line);
+                extraJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+                if (request.isEmptyLineMode()) {
+                    extraJob.setStartCleaningDateTime(maintenanceJob.getStartCleaningDateTime());
+                    extraJob.setStartProductionDateTime(maintenanceJob.getStartProductionDateTime());
+                }
+                int idx = Math.min(insertedIndex + 1, lineJobs.size());
+                lineJobs.add(idx, extraJob);
+                schedule.getJobs().add(extraJob);
+                // re-fix after insertion to maintain sequence consistency
+                fixLineJobs(line);
+                fixPinnedJobs(line);
+            }
+        }
 
         return schedule;
     }
