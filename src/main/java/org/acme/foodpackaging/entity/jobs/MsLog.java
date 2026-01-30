@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.acme.foodpackaging.record.FactProductionRow;
+import org.acme.foodpackaging.record.CameraEventRow;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -28,6 +29,17 @@ import java.util.UUID;
                         @ColumnResult(name = "EVENT", type = Integer.class),
                         @ColumnResult(name = "DT", type = Timestamp.class),
                         @ColumnResult(name = "KRC", type = String.class)
+                }
+        )
+)
+@SqlResultSetMapping(
+        name = "CameraEventRowMapping",
+        classes = @ConstructorResult(
+                targetClass = CameraEventRow.class,
+                columns = {
+                        @ColumnResult(name = "IDBATCH", type = String.class),
+                        @ColumnResult(name = "EVENT", type = Integer.class),
+                        @ColumnResult(name = "EV_TIME", type = Timestamp.class)
                 }
         )
 )

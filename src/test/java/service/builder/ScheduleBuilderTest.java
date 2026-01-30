@@ -11,7 +11,6 @@ import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
 import org.acme.foodpackaging.service.lines.LineService;
-import org.acme.foodpackaging.record.CameraValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -51,9 +50,8 @@ class ScheduleBuilderTest {
     void buildSchedule() {
         LocalDate date = LocalDate.of(2025, 12, 24);
 
-        Map<String, CameraValue> cameraMap = Map.of(
-                "BATCH1", new CameraValue(null, null)
-        );
+        // MS_LOG events (combined load) - empty for this test
+        java.util.List<org.acme.foodpackaging.record.FactProductionRow> msLogEvents = java.util.List.of();
 
         Map<Long, DbJobRow> jobRows = Map.of(
                 1L, new DbJobRow(
@@ -85,8 +83,7 @@ class ScheduleBuilderTest {
 
         when(jobRepository.getDbJobRowMap(any(), any())).thenReturn(jobRows);
         when(jobRepository.getDbMaintenanceRowMap(any(), any())).thenReturn(maintenanceRows);
-        when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
-        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+        when(jobRepository.getMsLogEvents(any(), any())).thenReturn(msLogEvents);
         when(lineService.getLines()).thenReturn(lines);
         doNothing().when(lineSchedulingService).initJobListOnLine(any());
         when(productService.getProductList(any())).thenReturn(products);
@@ -102,9 +99,8 @@ class ScheduleBuilderTest {
         verify(jobRepository).getDbJobRowMap(any(), any());
         verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobService).initSolutionJobList(schedule);
-        verify(jobService).initFactProductionData(eq(schedule), any());
-        verify(jobRepository).getCameraFactRowMap(any());
-        verify(jobService).initCameraFactData(schedule, cameraMap);
+        verify(jobService).initFromMsLogEvents(eq(schedule), eq(msLogEvents));
+        verify(jobRepository).getMsLogEvents(any(), any());
         verify(lineService).getLines();
         verify(lineSchedulingService).initJobListOnLine(schedule);
         verify(productService).getProductList(schedule);

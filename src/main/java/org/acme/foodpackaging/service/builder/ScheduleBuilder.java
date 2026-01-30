@@ -17,16 +17,26 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.remo
 @ApplicationScoped
 public class ScheduleBuilder {
 
+    private final JobRepository jobRepository;
+    private final JobService jobService;
+    private final LineService lineService;
+    private final LineSchedulingService lineSchedulingService;
+    private final ProductService productService;
+
     @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobService jobService;
-    @Inject
-    LineService lineService;
-    @Inject
-    LineSchedulingService lineSchedulingService;
-    @Inject
-    ProductService productService;
+    public ScheduleBuilder(
+            JobRepository jobRepository,
+            JobService jobService,
+            LineService lineService,
+            LineSchedulingService lineSchedulingService,
+            ProductService productService
+    ) {
+        this.jobRepository = jobRepository;
+        this.jobService = jobService;
+        this.lineService = lineService;
+        this.lineSchedulingService = lineSchedulingService;
+        this.productService = productService;
+    }
 
     public PackagingSchedule buildSchedule(LocalDate startDate) {
 
@@ -41,11 +51,10 @@ public class ScheduleBuilder {
         );
 
         jobService.initSolutionJobList(schedule);
-        jobService.initFactProductionData(schedule, jobRepository.getFactProductionRowMap(
-            schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
-        );
-
-        jobService.initCameraFactData(schedule, jobRepository.getCameraFactRowMap(schedule.getJobs()));
+        // Load all events together and initialize facts + camera with fallback & persistence
+        var msLogEvents = jobRepository.getMsLogEvents(
+                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate());
+        jobService.initFromMsLogEvents(schedule, msLogEvents);
         
         List<Line> lines = lineService.getLines();
         List<Product> products = productService.getProductList(schedule);

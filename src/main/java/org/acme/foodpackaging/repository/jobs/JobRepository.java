@@ -9,6 +9,7 @@ import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.record.CameraEventRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -67,6 +68,10 @@ public class JobRepository {
         );
     }
 
+    public java.util.List<FactProductionRow> getMsLogEvents(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadMsLogEvents(from.atStartOfDay(), to.atStartOfDay());
+    }
+
      /**
      * Загружает карту фактического производства по камере.
      *
@@ -77,6 +82,18 @@ public class JobRepository {
         return jobDBLoader.loadCameraRowMap(
                 jobs
         );
+    }
+
+    public Map<String, CameraEventRow> getCameraEventRowMap(LocalDate from, LocalDate to, int eventType) {
+        return jobDBLoader.loadCameraEventRowMap(from.atStartOfDay(), to.atStartOfDay(), eventType);
+    }
+
+    public CameraValue getCameraValueByBatch(String idBatch) {
+        return jobDBLoader.getCameraValueByBatch(idBatch);
+    }
+
+    public void writeCameraEvent(String idBatch, int eventType, java.time.LocalDateTime eventTime) {
+        jobDBLoader.writeCameraEvent(idBatch, eventType, eventTime);
     }
 }
 

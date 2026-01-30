@@ -68,16 +68,28 @@ WHERE
 
     public static final String LOAD_FACT_DB = """
     SELECT
-       v.IDBATCH, v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
+        v.IDBATCH, v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
     FROM [MES].[dbo].[MS_LOG] v
     WHERE
         v.DTV > ?1
         AND v.DTV <= ?2
-        AND v.EVENT = 1
+        AND v.EVENT <= 3
     ORDER BY
-        v.DTV, v.KMC, v.NP
+        v.EVENT, v.DTV, v.KMC, v.NP
 """;
 
+    public static final String LOAD_CAMERA_EVENT_DB = """
+    SELECT
+        v.IDBATCH,
+        v.EVENT,
+        v.DTV AS EV_TIME
+    FROM [MES].[dbo].[MS_LOG] v
+    WHERE
+        v.DTV > ?1
+        AND v.DTV <= ?2
+        AND v.EVENT = ?3
+    ORDER BY v.DTV
+""";
 
 public static final String LOAD_CAMERA_FACT = """
    SELECT 
@@ -100,4 +112,9 @@ public static final String REFRESH_FASP = "DECLARE @pdt1 datetime = GETDATE()-2,
 "        @pkrca char(20) = ?, " +
 "        @pksk  char(10) = ? " +
 "EXEC mes_refreshfasp @pdt1, @pdt2, @pkrca, 1, 14, @pksk ";
+
+public static final String INSERT_CAMERA_EVENT = """
+    INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, EVENT, DTV)
+    VALUES (?, ?, ?)
+""";
 }

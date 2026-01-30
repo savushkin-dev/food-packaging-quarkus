@@ -6,11 +6,13 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.domain.WorkCalendar;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.service.jobs.JobService;
-import org.acme.foodpackaging.record.CameraValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +43,10 @@ class JobServiceTest {
 
     @Mock
     LoadDataService loadDataService;
+    @Mock
+    JobRepository jobRepository;
+    @Mock
+    UploadDataService uploadDataService;
 
     private PackagingSchedule schedule;
 
@@ -289,6 +295,88 @@ class JobServiceTest {
     }
 
     @Test
+    void initCameraFromEvents_setsStartAndEndFromEvents() {
+        PackagingSchedule schedule = new PackagingSchedule();
+        Job job = new Job();
+        job.setIdBatch("B1");
+        schedule.setJobs(List.of(job));
+
+        LocalDateTime start = LocalDateTime.of(2025, 1, 1, 9, 0);
+        LocalDateTime end = LocalDateTime.of(2025, 1, 1, 10, 0);
+
+        Map<String, CameraEventRow> startEvents = Map.of(
+                "B1", new CameraEventRow("B1", 2, Timestamp.valueOf(start))
+        );
+        Map<String, CameraEventRow> endEvents = Map.of(
+                "B1", new CameraEventRow("B1", 3, Timestamp.valueOf(end))
+        );
+
+        jobService.initCameraFromEvents(schedule, startEvents, endEvents);
+
+        assertEquals(start, job.getCameraStart());
+        assertEquals(end, job.getCameraEnd());
+    }
+
+    @Test
+    void initCameraFromEvents_fallsBackToPmLogWhenMissing() {
+        PackagingSchedule schedule = new PackagingSchedule();
+        Job job = new Job();
+        job.setIdBatch("B2");
+        schedule.setJobs(List.of(job));
+
+        LocalDateTime fallbackStart = LocalDateTime.of(2025, 1, 2, 9, 0);
+        LocalDateTime fallbackEnd = LocalDateTime.of(2025, 1, 2, 10, 0);
+
+        when(jobRepository.getCameraValueByBatch("B2"))
+                .thenReturn(new org.acme.foodpackaging.record.CameraValue(fallbackStart, fallbackEnd));
+
+        jobService.initCameraFromEvents(schedule, Map.of(), Map.of());
+
+        assertEquals(fallbackStart, job.getCameraStart());
+        assertEquals(fallbackEnd, job.getCameraEnd());
+    }
+
+    @Test
+    void persistMissingCameraEvents_batchesAndWrites() {
+        PackagingSchedule schedule = new PackagingSchedule();
+        Job j1 = new Job();
+        j1.setIdBatch("B1");
+        j1.setCameraEnd(LocalDateTime.of(2025, 1, 1, 10, 0));
+
+        Job j2 = new Job();
+        j2.setIdBatch("B2");
+        j2.setCameraStart(LocalDateTime.of(2025, 1, 1, 9, 30));
+        schedule.setJobs(List.of(j1, j2));
+
+        // Only B1 has a start event; no end events present.
+        Map<String, CameraEventRow> startEvents = Map.of(
+                "B1", new CameraEventRow("B1", 2, Timestamp.valueOf(LocalDateTime.of(2025,1,1,9,0)))
+        );
+        Map<String, CameraEventRow> endEvents = Map.of();
+
+        jobService.persistMissingCameraEvents(schedule, startEvents, endEvents);
+
+        // Capture batch maps
+        @SuppressWarnings("unchecked")
+        var startCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        var endCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+
+        verify(uploadDataService).writeCameraEventsBatch(startCaptor.capture(), endCaptor.capture());
+
+        Map<String, LocalDateTime> writtenStart = startCaptor.getValue();
+        Map<String, LocalDateTime> writtenEnd = endCaptor.getValue();
+
+        // Expect start for B2 (since not in startEvents but has cameraStart)
+        assertEquals(1, writtenStart.size());
+        assertEquals(LocalDateTime.of(2025, 1, 1, 9, 30), writtenStart.get("B2"));
+
+        // Expect end for B1 (since not in endEvents but has cameraEnd)
+        assertEquals(1, writtenEnd.size());
+        assertEquals(LocalDateTime.of(2025, 1, 1, 10, 0), writtenEnd.get("B1"));
+    }
+
+    @Test
     void initCameraFactData_setsStartAndEnd() {
         Job job = new Job();
         job.setIdBatch("BATCH-1");
@@ -298,7 +386,7 @@ class JobServiceTest {
 
         LocalDateTime start = LocalDateTime.of(2025, 1, 1, 9, 0);
         LocalDateTime end = LocalDateTime.of(2025, 1, 1, 10, 0);
-        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(start, end));
+        Map<String, org.acme.foodpackaging.record.CameraValue> cameraMap = Map.of("BATCH-1", new org.acme.foodpackaging.record.CameraValue(start, end));
 
         jobService.initCameraFactData(solution, cameraMap);
 

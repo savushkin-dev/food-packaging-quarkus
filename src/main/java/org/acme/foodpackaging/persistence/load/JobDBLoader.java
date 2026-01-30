@@ -9,6 +9,7 @@ import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
+import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.record.CameraValue;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -97,6 +98,15 @@ public class JobDBLoader {
                 ));
     }
 
+    @SuppressWarnings("unchecked")
+    public List<FactProductionRow> loadMsLogEvents(LocalDateTime from, LocalDateTime to) {
+        return (List<FactProductionRow>) em
+                .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
+                .setParameter(1, Timestamp.valueOf(from))
+                .setParameter(2, Timestamp.valueOf(to))
+                .getResultList();
+    }
+
     public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
         java.util.Map<String, CameraValue> result = new java.util.HashMap<>();
 
@@ -133,6 +143,34 @@ public class JobDBLoader {
                 row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
                 row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
         );
+    }
+
+    public void writeCameraEvent(String idBatch, int eventType, LocalDateTime eventTime) {
+        em.createNativeQuery(INSERT_CAMERA_EVENT)
+                .setParameter(1, idBatch)
+                .setParameter(2, eventType)
+                .setParameter(3, Timestamp.valueOf(eventTime))
+                .executeUpdate();
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, CameraEventRow> loadCameraEventRowMap(LocalDateTime from, LocalDateTime to, int eventType) {
+        List<CameraEventRow> rows = (List<CameraEventRow>) em
+                .createNativeQuery(LOAD_CAMERA_EVENT_DB, "CameraEventRowMapping")
+                .setParameter(1, Timestamp.valueOf(from))
+                .setParameter(2, Timestamp.valueOf(to))
+                .setParameter(3, eventType)
+                .getResultList();
+
+        return rows.stream().collect(Collectors.toMap(
+                CameraEventRow::idBatch,
+                r -> r,
+                (existing, duplicate) -> existing
+        ));
+    }
+
+    public CameraValue getCameraValueByBatch(String idBatch) {
+        return fetchCameraValue(idBatch);
     }
 }
 
