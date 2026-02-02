@@ -3,21 +3,15 @@ package org.acme.foodpackaging.persistence.load;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
-import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.record.CameraValue;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
@@ -107,7 +101,7 @@ public class JobDBLoader {
         );
     }
 
-    public CameraValue getCameraValueByBatch(String idBatch) {
+    public CameraValue getCameraValueByIdBatch(String idBatch) {
         return fetchCameraValue(idBatch);
     }
 

@@ -78,21 +78,6 @@ WHERE
         v.EVENT, v.DTV, v.KMC, v.NP
 """;
 
-    public static final String LOAD_CAMERA_EVENT_DB = """
-    SELECT
-        v.IDBATCH,
-        v.DTV,
-        v.EVENT,
-        v.DT AS EV_TIME,
-        v.KRC
-    FROM [MES].[dbo].[MS_LOG] v
-    WHERE
-        v.DTV > ?1
-        AND v.DTV <= ?2
-        AND v.EVENT = ?3
-    ORDER BY v.DTV
-""";
-
 public static final String LOAD_CAMERA_FACT = """
    SELECT
        IDBATCH,
@@ -126,10 +111,4 @@ public static final String UPDATE_MS_LOG_EVENT3_DT = """
      WHERE IDBATCH = ? AND EVENT = 3
 """;
 
-public static final String LOAD_CAMERA_MIN_BY_IDBATCH = """
-   SELECT
-       MIN(DTS) AS DTEND
-   FROM [prommark].[dbo].[PM_LOG] WITH(NOLOCK)
-   WHERE IDBATCH = ? AND KD = 71
-""";
 }

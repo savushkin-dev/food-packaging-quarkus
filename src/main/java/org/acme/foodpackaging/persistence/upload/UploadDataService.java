@@ -7,8 +7,8 @@ import org.acme.foodpackaging.exception.rest.service.DataUploadException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.sql.*;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.time.LocalDateTime;
 
 import static io.smallrye.config._private.ConfigLogging.log;
 import static org.acme.foodpackaging.sql.SqlQueries.*;
@@ -139,30 +139,13 @@ public class UploadDataService {
             if (startEvents != null && !startEvents.isEmpty()) {
                 for (var entry : startEvents.entrySet()) {
                     if (entry.getValue() == null) continue;
-                    PmLogInsertRow insertRow = entry.getValue();
-                    // (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
-                    ps.setString(1, insertRow.getIdBatch());
-                    ps.setString(2, insertRow.getProductId());
-                    ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
-                    if (insertRow.getNp() == null) ps.setNull(4, Types.INTEGER); else ps.setInt(4, insertRow.getNp());
-                    ps.setInt(5, insertRow.getEventType());
-                    ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
-                    ps.setString(7, insertRow.getLineId());
-                    ps.addBatch();
+                    addPmLogInsertRow(ps, entry.getValue());
                 }
             }
             if (endEvents != null && !endEvents.isEmpty()) {
                 for (var entry : endEvents.entrySet()) {
                     if (entry.getValue() == null) continue;
-                    PmLogInsertRow insertRow = entry.getValue();
-                    ps.setString(1, insertRow.getIdBatch());
-                    ps.setString(2, insertRow.getProductId());
-                    ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
-                    if (insertRow.getNp() == null) ps.setNull(4, Types.INTEGER); else ps.setInt(4, insertRow.getNp());
-                    ps.setInt(5, insertRow.getEventType());
-                    ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
-                    ps.setString(7, insertRow.getLineId());
-                    ps.addBatch();
+                    addPmLogInsertRow(ps, entry.getValue());
                 }
             }
             ps.executeBatch();
@@ -170,10 +153,52 @@ public class UploadDataService {
     }
 
     /**
+     * Batch update DT for EVENT=3 for many batches in a single transaction.
+     */
+    public int updateEvent3ForBatches(Map<String, java.time.LocalDateTime> endByBatch) {
+        if (endByBatch == null || endByBatch.isEmpty()) return 0;
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            conn.setAutoCommit(false);
+            int updated = 0;
+            try (PreparedStatement ps = conn.prepareStatement(UPDATE_MS_LOG_EVENT3_DT)) {
+                for (var e : endByBatch.entrySet()) {
+                    if (e.getKey() == null || e.getValue() == null) continue;
+                    ps.setTimestamp(1, Timestamp.valueOf(e.getValue()));
+                    ps.setString(2, e.getKey());
+                    ps.addBatch();
+                }
+                int[] counts = ps.executeBatch();
+                for (int c : counts) if (c > 0) updated += c;
+            }
+            conn.commit();
+            return updated;
+        } catch (SQLException e) {
+            log.error("Failed to batch update EVENT=3 DT", e);
+            throw new DataUploadException("Failed to batch update EVENT=3 DT", e);
+        }
+    }
+
+    private static void addPmLogInsertRow(PreparedStatement ps, PmLogInsertRow insertRow) throws SQLException {
+        // (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+        ps.setString(1, insertRow.getIdBatch());
+        ps.setString(2, insertRow.getProductId());
+        ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
+        if (insertRow.getNp() == null) {
+            ps.setNull(4, Types.INTEGER);
+        } else {
+            ps.setInt(4, insertRow.getNp());
+        }
+        ps.setInt(5, insertRow.getEventType());
+        ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
+        ps.setString(7, insertRow.getLineId());
+        ps.addBatch();
+    }
+
+    /**
      * Update DT for EVENT=3 in MS_LOG for a specific batch.
      * Returns the number of updated rows (0 or 1).
      */
-    public int updateEvent3ForBatch(String idBatch, java.time.LocalDateTime endTime) {
+    public int updateEvent3ForBatch(String idBatch, LocalDateTime endTime) {
         if (idBatch == null || endTime == null) return 0;
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             try (PreparedStatement ps = conn.prepareStatement(UPDATE_MS_LOG_EVENT3_DT)) {

@@ -15,6 +15,7 @@ import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import static org.acme.foodpackaging.sql.SqlQueries.LOAD_CAMERA_FACT;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
@@ -210,17 +211,13 @@ public class JobService {
         }
     }
 
-    private void applyFallbackFromPmLog(Job job, String idBatch) {
+    public void applyFallbackFromPmLog(Job job, String idBatch) {
         CameraValue fallback = jobRepository.getCameraValueByIdBatch(idBatch);
         if (fallback == null) {
             return;
         }
-        if (job.getCameraStart() == null) {
             job.setCameraStart(fallback.cameraStart());
-        }
-        if (job.getCameraEnd() == null) {
             job.setCameraEnd(fallback.cameraEnd());
-        }
     }
     /**
      * Load-all algorithm: initialize facts and camera using a single MS_LOG payload,
@@ -248,7 +245,7 @@ public class JobService {
     }
 
     private Map<String, CameraEventRow> buildStartEvents(List<FactProductionRow> events) {
-        Map<String, CameraEventRow> startEvents = new java.util.HashMap<>();
+        Map<String, CameraEventRow> startEvents = new HashMap<>();
         for (FactProductionRow ev : events) {
             if (ev.eventType() != null && ev.eventType() == 2) {
                 CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 2, ev.eventTime());

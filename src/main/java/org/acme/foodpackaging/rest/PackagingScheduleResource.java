@@ -139,7 +139,7 @@ public class PackagingScheduleResource {
         )).build();
     }
 
-   /* @POST
+    @POST
     @Path("refreshDtEnd")
     @Produces(MediaType.APPLICATION_JSON)
     public Response refreshCameraEnd(@HeaderParam("X-Session-Id") String sessionId) {
@@ -154,8 +154,7 @@ public class PackagingScheduleResource {
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.MESSAGE, ApiFields.REFRESH_OK
         )).build();
-    }*/
-
+    }
 
     @POST
     @Path("work")

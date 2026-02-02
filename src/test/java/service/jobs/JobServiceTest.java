@@ -444,10 +444,10 @@ class JobServiceTest {
                 new FactProductionRow("B1", "KMC1", Timestamp.valueOf(fact1), 10, 1, Timestamp.valueOf(fact1), "LINE_1"),
                 new FactProductionRow("B2", "KMC2", Timestamp.valueOf(fact2), 20, 1, Timestamp.valueOf(fact2), "LINE_2"),
                 // camera start (two for B1 -> earliest kept)
-                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtStart1Later), 10, 2, null, "LINE_1"),
-                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtStart1), 10, 2, null, "LINE_1"),
+                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtStart1Later), 10, 2, Timestamp.valueOf(LocalDateTime.of(2025, 1, 5, 8, 5)), "LINE_1"),
+                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtStart1), 10, 2, Timestamp.valueOf(LocalDateTime.of(2025, 1, 5, 8, 0)), "LINE_1"),
                 // camera end (latest kept but only one provided)
-                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtEnd1), 10, 3, null, "LINE_1")
+                new FactProductionRow("B1", "KMC1", Timestamp.valueOf(dtEnd1), 10, 3, Timestamp.valueOf(dtEnd1), "LINE_1")
         );
 
         // Fallback for B2: when missing camera events, use PM_LOG values and persist

@@ -2,20 +2,18 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.record.CameraEventRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Data access repository for jobs.
@@ -60,9 +58,8 @@ public class JobRepository {
         return jobDBLoader.loadMsLogEvents(from.atStartOfDay(), to.atStartOfDay());
     }
 
-
     public CameraValue getCameraValueByIdBatch(String idBatch) {
-        return jobDBLoader.getCameraValueByBatch(idBatch);
+        return jobDBLoader.getCameraValueByIdBatch(idBatch);
     }
 
 }

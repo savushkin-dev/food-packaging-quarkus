@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
@@ -78,24 +79,20 @@ public class JobRefreshService {
         }
     }
 
-   /*
+   
     /**
      * Refresh cameraEnd from PM_LOG for each job and update corresponding MS_LOG EVENT=3 DT.
      * Only updates when PM_LOG's DTEND differs from the current job.cameraEnd.
      */
 
-    /*
     public void refreshCameraEnd(PackagingSchedule schedule) {
         for (Job job : schedule.getJobs()) {
             String idBatch = job.getIdBatch();
             if (idBatch == null) continue;
             
-            LocalDateTime minFromPmLog = jobRepository.getDtMinByIdBatch(idBatch);
-            if (minFromPmLog == null) continue;
-            if (!minFromPmLog.equals(job.getCameraEnd())) {
-                job.setCameraEnd(minFromPmLog);
-                uploadDataService.updateEvent3ForBatch(idBatch, minFromPmLog);
-            }
+            jobService.applyFallbackFromPmLog(job, idBatch);
+            uploadDataService.updateEvent3ForBatch(idBatch, job.getCameraEnd());
+
         }
-    }*/
+    }
 }
