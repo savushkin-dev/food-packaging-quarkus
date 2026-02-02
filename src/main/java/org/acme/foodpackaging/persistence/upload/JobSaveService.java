@@ -122,9 +122,9 @@ public class JobSaveService {
         existing.setStartProductionDateTime(job.getStartProductionDateTime());
         existing.setEndDateTime(job.getEndDateTime());
         existing.setDuration(calculateDurationMinutes(job.getStartProductionDateTime(), job.getEndDateTime()));
-        existing.setMaintenanceTypeId(null);
+        existing.setMaintenanceTypeId(job.getMaintenanceTypeId());
         existing.setReason(null);
-        existing.setNote(job.getName());
+        existing.setNote(job.getMaintenanceNote());
         existing.setSnpz(0L);
     }
 
