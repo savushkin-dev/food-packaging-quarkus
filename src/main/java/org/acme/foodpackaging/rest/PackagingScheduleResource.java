@@ -100,6 +100,7 @@ public class PackagingScheduleResource {
         if (schedule == null) {
             throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
         }
+        schedule.setSolverStatus(solverManager.getSolverStatus(getProblemId(sessionId)));
         return new FrontendDataWrapper(
                 schedule.getJobs(),
                 schedule.getLines(),
