@@ -2,6 +2,7 @@ package org.acme.foodpackaging.persistence.upload;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.dto.PmLogInsertRow;
 import org.acme.foodpackaging.exception.rest.service.DataUploadException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -91,12 +92,17 @@ public class UploadDataService {
     /**
      * Writes a single camera event (2 = start, 3 = end) into MS_LOG.
      */
-    public void writeCameraEvent(String idBatch, int eventType, java.time.LocalDateTime eventTime) {
+    public void writeCameraEvent(PmLogInsertRow insertRow) {
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             try (PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
-                ps.setString(1, idBatch);
-                ps.setInt(2, eventType);
-                ps.setTimestamp(3, Timestamp.valueOf(eventTime));
+                // (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+                ps.setString(1, insertRow.getIdBatch());
+                ps.setString(2, insertRow.getProductId());
+                ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
+                if (insertRow.getNp() == null) ps.setNull(4, Types.INTEGER); else ps.setInt(4, insertRow.getNp());
+                ps.setInt(5, insertRow.getEventType());
+                ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
+                ps.setString(7, insertRow.getLineId());
                 ps.executeUpdate();
             }
         } catch (SQLException e) {
@@ -110,11 +116,11 @@ public class UploadDataService {
      * startEvents: idBatch -> start time (eventType=2)
      * endEvents:   idBatch -> end time   (eventType=3)
      */
-    public void writeCameraEventsBatch(Map<String, java.time.LocalDateTime> startEvents,
-                                       Map<String, java.time.LocalDateTime> endEvents) {
+    public void writeCameraEventsBatchRows(Map<String, PmLogInsertRow> startEvents, Map<String, PmLogInsertRow> endEvents) {
+
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             conn.setAutoCommit(false);
-            writeCameraEventsBatchInternal(conn, startEvents, endEvents);
+            writeCameraEventsBatchRowsInternal(conn, startEvents, endEvents);
             conn.commit();
         } catch (SQLException e) {
             log.error("Failed to batch write camera events", e);
@@ -125,25 +131,37 @@ public class UploadDataService {
     /**
      * Extracted internal writer for batch events to reduce nesting.
      */
-    private void writeCameraEventsBatchInternal(Connection conn,
-                                                Map<String, java.time.LocalDateTime> startEvents,
-                                                Map<String, java.time.LocalDateTime> endEvents) throws SQLException {
+    private void writeCameraEventsBatchRowsInternal(Connection conn,
+                                                    Map<String, PmLogInsertRow> startEvents,
+                                                    Map<String, PmLogInsertRow> endEvents
+                                                   ) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
             if (startEvents != null && !startEvents.isEmpty()) {
-                ps.setInt(2, 2); // invariant for start loop
                 for (var entry : startEvents.entrySet()) {
                     if (entry.getValue() == null) continue;
-                    ps.setString(1, entry.getKey());
-                    ps.setTimestamp(3, Timestamp.valueOf(entry.getValue()));
+                    PmLogInsertRow insertRow = entry.getValue();
+                    // (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+                    ps.setString(1, insertRow.getIdBatch());
+                    ps.setString(2, insertRow.getProductId());
+                    ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
+                    if (insertRow.getNp() == null) ps.setNull(4, Types.INTEGER); else ps.setInt(4, insertRow.getNp());
+                    ps.setInt(5, insertRow.getEventType());
+                    ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
+                    ps.setString(7, insertRow.getLineId());
                     ps.addBatch();
                 }
             }
             if (endEvents != null && !endEvents.isEmpty()) {
-                ps.setInt(2, 3); // invariant for end loop
                 for (var entry : endEvents.entrySet()) {
                     if (entry.getValue() == null) continue;
-                    ps.setString(1, entry.getKey());
-                    ps.setTimestamp(3, Timestamp.valueOf(entry.getValue()));
+                    PmLogInsertRow insertRow = entry.getValue();
+                    ps.setString(1, insertRow.getIdBatch());
+                    ps.setString(2, insertRow.getProductId());
+                    ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
+                    if (insertRow.getNp() == null) ps.setNull(4, Types.INTEGER); else ps.setInt(4, insertRow.getNp());
+                    ps.setInt(5, insertRow.getEventType());
+                    ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
+                    ps.setString(7, insertRow.getLineId());
                     ps.addBatch();
                 }
             }

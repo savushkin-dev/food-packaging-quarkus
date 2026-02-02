@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.PmLogInsertRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
@@ -17,11 +18,7 @@ import org.acme.foodpackaging.persistence.upload.UploadDataService;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Collections;
-import java.util.Objects;
+import java.util.*;
 
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 
@@ -155,7 +152,9 @@ public class JobService {
             }
 
             job.setIdBatch(factRow.idBatch());
+            job.setEventType(factRow.eventType());
             job.setLineIdFact(factRow.lineIdFact());
+            job.setDtv(factRow.dtv().toLocalDateTime());
             job.setStartProductionDateTimeFact(
                     factRow.startProductionDateTimeFact().toLocalDateTime()
             );
@@ -227,7 +226,7 @@ public class JobService {
      * Load-all algorithm: initialize facts and camera using a single MS_LOG payload,
      * then fallback to PM_LOG for missing camera values, and persist missing events.
      */
-    public void initFromMsLogEvents(PackagingSchedule schedule, java.util.List<FactProductionRow> events) {
+    public void initFromMsLogEvents(PackagingSchedule schedule, List<FactProductionRow> events) {
         Map<FactKey, FactProductionRow> factMap = buildFactMap(events);
         Map<String, CameraEventRow> startEvents = buildStartEvents(events);
         Map<String, CameraEventRow> endEvents = buildEndEvents(events);
@@ -236,18 +235,18 @@ public class JobService {
         persistMissingCameraEvents(schedule, startEvents, endEvents);
     }
 
-    private Map<FactKey, FactProductionRow> buildFactMap(java.util.List<FactProductionRow> events) {
-        Map<FactKey, FactProductionRow> factMap = new java.util.HashMap<>();
+    private Map<FactKey, FactProductionRow> buildFactMap(List<FactProductionRow> events) {
+        Map<FactKey, FactProductionRow> factMap = new HashMap<>();
         for (FactProductionRow ev : events) {
             if (ev.eventType() != null && ev.eventType() == 1) {
                 FactKey key = new FactKey(ev.kmc(), ev.np());
-                factMap.putIfAbsent(key, ev); // keep first
+                factMap.putIfAbsent(key, ev);
             }
         }
         return factMap;
     }
 
-    private Map<String, CameraEventRow> buildStartEvents(java.util.List<FactProductionRow> events) {
+    private Map<String, CameraEventRow> buildStartEvents(List<FactProductionRow> events) {
         Map<String, CameraEventRow> startEvents = new java.util.HashMap<>();
         for (FactProductionRow ev : events) {
             if (ev.eventType() != null && ev.eventType() == 2) {
@@ -262,8 +261,8 @@ public class JobService {
         return startEvents;
     }
 
-    private Map<String, CameraEventRow> buildEndEvents(java.util.List<FactProductionRow> events) {
-        Map<String, CameraEventRow> endEvents = new java.util.HashMap<>();
+    private Map<String, CameraEventRow> buildEndEvents(List<FactProductionRow> events) {
+        Map<String, CameraEventRow> endEvents = new HashMap<>();
         for (FactProductionRow ev : events) {
             if (ev.eventType() != null && ev.eventType() == 3) {
                 CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 3, ev.dtv());
@@ -286,21 +285,30 @@ public class JobService {
             Map<String, CameraEventRow> startEvents,
             Map<String, CameraEventRow> endEvents
     ) {
-        Map<String, LocalDateTime> toInsertStart = new java.util.HashMap<>();
-        Map<String, LocalDateTime> toInsertEnd = new java.util.HashMap<>();
-
+        Map<String, PmLogInsertRow> toInsertStart = new HashMap<>();
+        Map<String, PmLogInsertRow> toInsertEnd = new HashMap<>();
+       
         for (Job job : schedule.getJobs()) {
             String idBatch = job.getIdBatch();
             if (idBatch == null) continue;
+            String productId = (job.getProduct() != null) ? job.getProduct().getId() : null;
+            Integer np = job.getNp();
+            LocalDateTime dtv = job.getDtv();
+            String lineId = job.getLineIdFact();
+
             if (!startEvents.containsKey(idBatch) && job.getCameraStart() != null) {
-                toInsertStart.put(idBatch, job.getCameraStart());
+                toInsertStart.put(idBatch, new PmLogInsertRow(
+                        idBatch, productId, dtv, np, 2, job.getCameraStart(), lineId
+                ));
             }
             if (!endEvents.containsKey(idBatch) && job.getCameraEnd() != null) {
-                toInsertEnd.put(idBatch, job.getCameraEnd());
+                toInsertEnd.put(idBatch, new PmLogInsertRow(
+                        idBatch, productId, dtv, np, 3, job.getCameraEnd(), lineId
+                ));
             }
         }
         if (!toInsertStart.isEmpty() || !toInsertEnd.isEmpty()) {
-            uploadDataService.writeCameraEventsBatch(toInsertStart, toInsertEnd);
+            uploadDataService.writeCameraEventsBatchRows(toInsertStart, toInsertEnd);
         }
     }
 

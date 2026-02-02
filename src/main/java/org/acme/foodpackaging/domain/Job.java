@@ -45,7 +45,9 @@ public class Job {
     private Duration duration;
     private boolean maintenance;
     private Integer maintenanceTypeId;
+    private Integer eventType;
 
+    private LocalDateTime dtv;
     private LocalDateTime cameraStart;
     private LocalDateTime cameraEnd;
     private LocalDateTime startProductionDateTimeFact;

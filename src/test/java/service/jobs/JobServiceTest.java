@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.domain.WorkCalendar;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.dto.PmLogInsertRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.CameraEventRow;
@@ -353,24 +354,28 @@ class JobServiceTest {
 
         jobService.persistMissingCameraEvents(schedule, startEvents, endEvents);
 
-        // Capture batch maps
+        // Capture batch rows
         @SuppressWarnings("unchecked")
-        var startCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+        var startCaptor = (org.mockito.ArgumentCaptor<Map<String, PmLogInsertRow>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
         @SuppressWarnings("unchecked")
-        var endCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+        var endCaptor = (org.mockito.ArgumentCaptor<Map<String, PmLogInsertRow>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
 
-        verify(uploadDataService).writeCameraEventsBatch(startCaptor.capture(), endCaptor.capture());
+        verify(uploadDataService).writeCameraEventsBatchRows(startCaptor.capture(), endCaptor.capture());
 
-        Map<String, LocalDateTime> writtenStart = startCaptor.getValue();
-        Map<String, LocalDateTime> writtenEnd = endCaptor.getValue();
+        Map<String, PmLogInsertRow> writtenStart = startCaptor.getValue();
+        Map<String, PmLogInsertRow> writtenEnd = endCaptor.getValue();
 
         // Expect start for B2 (since not in startEvents but has cameraStart)
         assertEquals(1, writtenStart.size());
-        assertEquals(LocalDateTime.of(2025, 1, 1, 9, 30), writtenStart.get("B2"));
+        assertNotNull(writtenStart.get("B2"));
+        assertEquals(LocalDateTime.of(2025, 1, 1, 9, 30), writtenStart.get("B2").getEventTime());
+        assertEquals(2, writtenStart.get("B2").getEventType());
 
         // Expect end for B1 (since not in endEvents but has cameraEnd)
         assertEquals(1, writtenEnd.size());
-        assertEquals(LocalDateTime.of(2025, 1, 1, 10, 0), writtenEnd.get("B1"));
+        assertNotNull(writtenEnd.get("B1"));
+        assertEquals(LocalDateTime.of(2025, 1, 1, 10, 0), writtenEnd.get("B1").getEventTime());
+        assertEquals(3, writtenEnd.get("B1").getEventType());
     }
 
     @Test
@@ -472,18 +477,23 @@ class JobServiceTest {
 
         // Persist called with B2 entries (start/end), not for B1 (has events)
         @SuppressWarnings("unchecked")
-        var startCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+        var startCaptor = (org.mockito.ArgumentCaptor<Map<String, PmLogInsertRow>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
         @SuppressWarnings("unchecked")
-        var endCaptor = (org.mockito.ArgumentCaptor<Map<String, LocalDateTime>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
+        var endCaptor = (org.mockito.ArgumentCaptor<Map<String, PmLogInsertRow>>) (org.mockito.ArgumentCaptor<?>) org.mockito.ArgumentCaptor.forClass(Map.class);
 
-        verify(uploadDataService).writeCameraEventsBatch(startCaptor.capture(), endCaptor.capture());
+        verify(uploadDataService).writeCameraEventsBatchRows(startCaptor.capture(), endCaptor.capture());
 
-        Map<String, LocalDateTime> writtenStart = startCaptor.getValue();
-        Map<String, LocalDateTime> writtenEnd = endCaptor.getValue();
+        Map<String, PmLogInsertRow> writtenStart = startCaptor.getValue();
+        Map<String, PmLogInsertRow> writtenEnd = endCaptor.getValue();
 
         assertEquals(1, writtenStart.size());
-        assertEquals(fallbackStartB2, writtenStart.get("B2"));
+        assertNotNull(writtenStart.get("B2"));
+        assertEquals(fallbackStartB2, writtenStart.get("B2").getEventTime());
+        assertEquals(2, writtenStart.get("B2").getEventType());
+
         assertEquals(1, writtenEnd.size());
-        assertEquals(fallbackEndB2, writtenEnd.get("B2"));
+        assertNotNull(writtenEnd.get("B2"));
+        assertEquals(fallbackEndB2, writtenEnd.get("B2").getEventTime());
+        assertEquals(3, writtenEnd.get("B2").getEventType());
     }
 }
