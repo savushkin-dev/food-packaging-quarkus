@@ -6,11 +6,9 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import java.time.LocalDateTime;
 
 import java.util.Map;
 
@@ -19,8 +17,6 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixL
 @ApplicationScoped
 public class JobRefreshService {
 
-    
-    private final JobRepository jobRepository;
     private final JobService jobService;
     private final ProductService productService;
     private final UploadDataService uploadDataService;
@@ -28,7 +24,6 @@ public class JobRefreshService {
     @Inject
     public JobRefreshService(JobRepository jobRepository, JobService jobService, 
         ProductService productService, UploadDataService uploadDataService) {
-        this.jobRepository = jobRepository;
         this.jobService = jobService;
         this.productService = productService;
         this.uploadDataService = uploadDataService;
