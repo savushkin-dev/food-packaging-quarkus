@@ -95,14 +95,7 @@ public class UploadDataService {
     public void writeCameraEvent(PmLogInsertRow insertRow) {
         try (Connection conn = DriverManager.getConnection(dbUrl)) {
             try (PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
-                // (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
-                ps.setString(1, insertRow.getIdBatch());
-                ps.setString(2, insertRow.getProductId());
-                ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
-                if (insertRow.getNp() == null) ps.setNull(4, Types.INTEGER); else ps.setInt(4, insertRow.getNp());
-                ps.setInt(5, insertRow.getEventType());
-                ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
-                ps.setString(7, insertRow.getLineId());
+                setPmLogInsertRowParameters(ps, insertRow);
                 ps.executeUpdate();
             }
         } catch (SQLException e) {
@@ -178,8 +171,11 @@ public class UploadDataService {
         }
     }
 
-    private static void addPmLogInsertRow(PreparedStatement ps, PmLogInsertRow insertRow) throws SQLException {
-        // (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+    /**
+     * Sets PreparedStatement parameters for PmLogInsertRow.
+     * Parameters: (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+     */
+    private static void setPmLogInsertRowParameters(PreparedStatement ps, PmLogInsertRow insertRow) throws SQLException {
         ps.setString(1, insertRow.getIdBatch());
         ps.setString(2, insertRow.getProductId());
         ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
@@ -191,6 +187,10 @@ public class UploadDataService {
         ps.setInt(5, insertRow.getEventType());
         ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
         ps.setString(7, insertRow.getLineId());
+    }
+
+    private static void addPmLogInsertRow(PreparedStatement ps, PmLogInsertRow insertRow) throws SQLException {
+        setPmLogInsertRowParameters(ps, insertRow);
         ps.addBatch();
     }
 
