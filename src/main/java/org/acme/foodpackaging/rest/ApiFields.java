@@ -16,5 +16,7 @@ public final class ApiFields {
     public static final String NO_SCHEDULE_LOADED = "No schedule loaded";
     public static final String NO_DATA_LOADED = "No data loaded";
     public static final String SESSION_ID_REQUIRED = "Session ID is required";
+    public static final String REFRESH_OK = "Data refreshed successfully from database";
+    public static final String WORK_SENT = "The task has been sent to work";
 }
 

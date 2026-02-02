@@ -135,9 +135,27 @@ public class PackagingScheduleResource {
         loadDataService.refresh();
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "Data refreshed successfully from database"
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK
         )).build();
     }
+
+   /* @POST
+    @Path("refreshDtEnd")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response refreshCameraEnd(@HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+        jobRefreshService.refreshCameraEnd(schedule);
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK
+        )).build();
+    }*/
+
 
     @POST
     @Path("work")
@@ -153,7 +171,7 @@ public class PackagingScheduleResource {
         }
 
         uploadDataService.sendToWork(schedule.getJobs());
-        return Response.ok(Map.of(ApiFields.MESSAGE, "The task has been sent to work")).build();
+        return Response.ok(Map.of(ApiFields.MESSAGE, ApiFields.WORK_SENT)).build();
     }
 
     @POST

@@ -156,7 +156,7 @@ public class JobService {
             job.setLineIdFact(factRow.lineIdFact());
             job.setDtv(factRow.dtv().toLocalDateTime());
             job.setStartProductionDateTimeFact(
-                    factRow.startProductionDateTimeFact().toLocalDateTime()
+                    factRow.eventTime().toLocalDateTime()
             );
         }
     }
@@ -211,7 +211,7 @@ public class JobService {
     }
 
     private void applyFallbackFromPmLog(Job job, String idBatch) {
-        CameraValue fallback = jobRepository.getCameraValueByBatch(idBatch);
+        CameraValue fallback = jobRepository.getCameraValueByIdBatch(idBatch);
         if (fallback == null) {
             return;
         }
@@ -230,6 +230,7 @@ public class JobService {
         Map<FactKey, FactProductionRow> factMap = buildFactMap(events);
         Map<String, CameraEventRow> startEvents = buildStartEvents(events);
         Map<String, CameraEventRow> endEvents = buildEndEvents(events);
+
         initFactProductionData(schedule, factMap);
         initCameraFromEvents(schedule, startEvents, endEvents);
         persistMissingCameraEvents(schedule, startEvents, endEvents);
@@ -250,7 +251,7 @@ public class JobService {
         Map<String, CameraEventRow> startEvents = new java.util.HashMap<>();
         for (FactProductionRow ev : events) {
             if (ev.eventType() != null && ev.eventType() == 2) {
-                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 2, ev.dtv());
+                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 2, ev.eventTime());
                 startEvents.merge(
                         ev.idBatch(),
                         candidate,
@@ -265,7 +266,7 @@ public class JobService {
         Map<String, CameraEventRow> endEvents = new HashMap<>();
         for (FactProductionRow ev : events) {
             if (ev.eventType() != null && ev.eventType() == 3) {
-                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 3, ev.dtv());
+                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 3, ev.eventTime());
                 endEvents.merge(
                         ev.idBatch(),
                         candidate,

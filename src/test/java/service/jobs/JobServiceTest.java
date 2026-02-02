@@ -326,7 +326,7 @@ class JobServiceTest {
         LocalDateTime fallbackStart = LocalDateTime.of(2025, 1, 2, 9, 0);
         LocalDateTime fallbackEnd = LocalDateTime.of(2025, 1, 2, 10, 0);
 
-        when(jobRepository.getCameraValueByBatch("B2"))
+        when(jobRepository.getCameraValueByIdBatch("B2"))
                 .thenReturn(new org.acme.foodpackaging.record.CameraValue(fallbackStart, fallbackEnd));
 
         jobService.initCameraFromEvents(schedule, Map.of(), Map.of());
@@ -453,7 +453,7 @@ class JobServiceTest {
         // Fallback for B2: when missing camera events, use PM_LOG values and persist
         LocalDateTime fallbackStartB2 = LocalDateTime.of(2025, 1, 6, 9, 5);
         LocalDateTime fallbackEndB2 = LocalDateTime.of(2025, 1, 6, 11, 30);
-        when(jobRepository.getCameraValueByBatch("B2"))
+        when(jobRepository.getCameraValueByIdBatch("B2"))
                 .thenReturn(new org.acme.foodpackaging.record.CameraValue(fallbackStartB2, fallbackEndB2));
 
         // Execute

@@ -8,6 +8,8 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import java.time.LocalDateTime;
 
 import java.util.Map;
 
@@ -16,12 +18,20 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixL
 @ApplicationScoped
 public class JobRefreshService {
 
+    
+    private final JobRepository jobRepository;
+    private final JobService jobService;
+    private final ProductService productService;
+    private final UploadDataService uploadDataService;
+
     @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobService jobService;
-    @Inject
-    ProductService productService;
+    public JobRefreshService(JobRepository jobRepository, JobService jobService, 
+        ProductService productService, UploadDataService uploadDataService) {
+        this.jobRepository = jobRepository;
+        this.jobService = jobService;
+        this.productService = productService;
+        this.uploadDataService = uploadDataService;
+    }
 
     public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
         for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
@@ -67,4 +77,25 @@ public class JobRefreshService {
            solution.getJobIdMap().put(j.getSnpz(), j);
         }
     }
+
+   /*
+    /**
+     * Refresh cameraEnd from PM_LOG for each job and update corresponding MS_LOG EVENT=3 DT.
+     * Only updates when PM_LOG's DTEND differs from the current job.cameraEnd.
+     */
+
+    /*
+    public void refreshCameraEnd(PackagingSchedule schedule) {
+        for (Job job : schedule.getJobs()) {
+            String idBatch = job.getIdBatch();
+            if (idBatch == null) continue;
+            
+            LocalDateTime minFromPmLog = jobRepository.getDtMinByIdBatch(idBatch);
+            if (minFromPmLog == null) continue;
+            if (!minFromPmLog.equals(job.getCameraEnd())) {
+                job.setCameraEnd(minFromPmLog);
+                uploadDataService.updateEvent3ForBatch(idBatch, minFromPmLog);
+            }
+        }
+    }*/
 }

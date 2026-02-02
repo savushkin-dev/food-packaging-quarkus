@@ -168,5 +168,23 @@ public class UploadDataService {
             ps.executeBatch();
         }
     }
+
+    /**
+     * Update DT for EVENT=3 in MS_LOG for a specific batch.
+     * Returns the number of updated rows (0 or 1).
+     */
+    public int updateEvent3ForBatch(String idBatch, java.time.LocalDateTime endTime) {
+        if (idBatch == null || endTime == null) return 0;
+        try (Connection conn = DriverManager.getConnection(dbUrl)) {
+            try (PreparedStatement ps = conn.prepareStatement(UPDATE_MS_LOG_EVENT3_DT)) {
+                ps.setTimestamp(1, Timestamp.valueOf(endTime));
+                ps.setString(2, idBatch);
+                return ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            log.error("Failed to update EVENT=3 DT for " + idBatch, e);
+            throw new DataUploadException("Failed to update EVENT=3 DT", e);
+        }
+    }
 }
 

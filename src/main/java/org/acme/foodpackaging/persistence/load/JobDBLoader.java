@@ -82,50 +82,12 @@ public class JobDBLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
-
-        List<FactProductionRow> rows = em
-                .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
-                .setParameter(1, Timestamp.valueOf(from))
-                .setParameter(2, Timestamp.valueOf(to))
-                .getResultList();
-
-        return rows.stream()
-                .collect(Collectors.toMap(
-                        r -> new FactKey(r.kmc(), r.np()),
-                        Function.identity(),
-                        (existing, duplicate) -> existing // Keep first occurrence, skip duplicates
-                ));
-    }
-
-    @SuppressWarnings("unchecked")
     public List<FactProductionRow> loadMsLogEvents(LocalDateTime from, LocalDateTime to) {
         return em
                 .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .getResultList();
-    }
-
-    public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
-        java.util.Map<String, CameraValue> result = new java.util.HashMap<>();
-
-        if (jobs == null || jobs.isEmpty()) {
-            return result;
-        }
-
-        Set<String> idBatches = jobs.stream()
-                .map(Job::getIdBatch)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        for (String idBatch : idBatches) {
-            CameraValue value = fetchCameraValue(idBatch);
-            if (value != null) {
-                result.put(idBatch, value);
-            }
-        }
-        return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -145,32 +107,9 @@ public class JobDBLoader {
         );
     }
 
-    public void writeCameraEvent(String idBatch, int eventType, LocalDateTime eventTime) {
-        em.createNativeQuery(INSERT_CAMERA_EVENT)
-                .setParameter(1, idBatch)
-                .setParameter(2, eventType)
-                .setParameter(3, Timestamp.valueOf(eventTime))
-                .executeUpdate();
-    }
-
-    @SuppressWarnings("unchecked")
-    public Map<String, CameraEventRow> loadCameraEventRowMap(LocalDateTime from, LocalDateTime to, int eventType) {
-        List<CameraEventRow> rows = em
-                .createNativeQuery(LOAD_CAMERA_EVENT_DB, "CameraEventRowMapping")
-                .setParameter(1, Timestamp.valueOf(from))
-                .setParameter(2, Timestamp.valueOf(to))
-                .setParameter(3, eventType)
-                .getResultList();
-
-        return rows.stream().collect(Collectors.toMap(
-                CameraEventRow::idBatch,
-                r -> r,
-                (existing, duplicate) -> existing
-        ));
-    }
-
     public CameraValue getCameraValueByBatch(String idBatch) {
         return fetchCameraValue(idBatch);
     }
+
 }
 

@@ -13,6 +13,7 @@ import org.acme.foodpackaging.record.CameraEventRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class JobRepository {
 
     /**
      * Загружает карту задач из базы данных за указанный период.
-     * 
+     *
      * @param from Start date (inclusive)
      * @param to End date (inclusive)
      * @return Map of job rows by SNPZ
@@ -44,7 +45,7 @@ public class JobRepository {
 
     /**
      * Загружает карту задач обслуживания из базы данных за указанный период.
-     * 
+     *
      * @param from Start date (inclusive)
      * @param to End date (inclusive)
      * @return Map of maintenance rows by FId
@@ -55,46 +56,15 @@ public class JobRepository {
         );
     }
 
-    /**
-     * Загружает карту фактического производства.
-     *
-     * @param from Start date (inclusive)
-     * @param to End date (inclusive)
-     * @return Map of fact production rows by FactKey
-     */
-    public Map<FactKey, FactProductionRow> getFactProductionRowMap(LocalDate from, LocalDate to) {
-        return jobDBLoader.loadFactProductionRowMap(
-                from.atStartOfDay(), to.atStartOfDay()
-        );
-    }
-
-    public java.util.List<FactProductionRow> getMsLogEvents(LocalDate from, LocalDate to) {
+    public List<FactProductionRow> getMsLogEvents(LocalDate from, LocalDate to) {
         return jobDBLoader.loadMsLogEvents(from.atStartOfDay(), to.atStartOfDay());
     }
 
-     /**
-     * Загружает карту фактического производства по камере.
-     *
-     * @param jobs list with idBatch (inclusive)
-     * @return Map of camera start, camera end production rows by idBatch
-     */
-     public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) {
-        return jobDBLoader.loadCameraRowMap(
-                jobs
-        );
-    }
 
-    public Map<String, CameraEventRow> getCameraEventRowMap(LocalDate from, LocalDate to, int eventType) {
-        return jobDBLoader.loadCameraEventRowMap(from.atStartOfDay(), to.atStartOfDay(), eventType);
-    }
-
-    public CameraValue getCameraValueByBatch(String idBatch) {
+    public CameraValue getCameraValueByIdBatch(String idBatch) {
         return jobDBLoader.getCameraValueByBatch(idBatch);
     }
 
-    public void writeCameraEvent(String idBatch, int eventType, java.time.LocalDateTime eventTime) {
-        jobDBLoader.writeCameraEvent(idBatch, eventType, eventTime);
-    }
 }
 
 

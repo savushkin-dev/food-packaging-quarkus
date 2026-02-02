@@ -119,4 +119,17 @@ public static final String INSERT_CAMERA_EVENT = """
     INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
     VALUES (?, ?, ?, ?, ?, ?, ?)
 """;
+
+public static final String UPDATE_MS_LOG_EVENT3_DT = """
+    UPDATE [MES].[dbo].[MS_LOG]
+       SET DT = ?
+     WHERE IDBATCH = ? AND EVENT = 3
+""";
+
+public static final String LOAD_CAMERA_MIN_BY_IDBATCH = """
+   SELECT
+       MIN(DTS) AS DTEND
+   FROM [prommark].[dbo].[PM_LOG] WITH(NOLOCK)
+   WHERE IDBATCH = ? AND KD = 71
+""";
 }
