@@ -6,7 +6,6 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 
@@ -22,7 +21,7 @@ public class JobRefreshService {
     private final UploadDataService uploadDataService;
 
     @Inject
-    public JobRefreshService(JobRepository jobRepository, JobService jobService, 
+    public JobRefreshService(JobService jobService, 
         ProductService productService, UploadDataService uploadDataService) {
         this.jobService = jobService;
         this.productService = productService;

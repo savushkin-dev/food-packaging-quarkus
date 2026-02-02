@@ -15,7 +15,6 @@ import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_CAMERA_FACT;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
