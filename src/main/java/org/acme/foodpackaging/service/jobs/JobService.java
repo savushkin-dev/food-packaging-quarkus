@@ -32,6 +32,9 @@ public class JobService {
     private final LoadDataService loadDataService;
     private final JobRepository jobRepository;
     private final UploadDataService uploadDataService;
+    private final int START_FACT_EVENT = 1;
+    private final int START_CAMERA_EVENT = 2;
+    private final int END_CAMERA_EVENT =3;
 
     @Inject
     public JobService(
@@ -195,7 +198,7 @@ public class JobService {
                 continue;
             }
             applyCameraEventTimes(job, cameraStartEvents.get(idBatch), cameraEndEvents.get(idBatch));
-            if (job.getCameraStart() == null || job.getCameraEnd() == null) {
+            if (job.getCameraStart() == null || job.getCameraEnd() == null || job.getCameraStart().isBefore(LocalDateTime.now().minusHours(12))) {
                 applyFallbackFromPmLog(job, idBatch);
             }
         }
@@ -215,8 +218,14 @@ public class JobService {
         if (fallback == null) {
             return;
         }
+
+        if(fallback.cameraStart() != null){
             job.setCameraStart(fallback.cameraStart());
-            job.setCameraEnd(fallback.cameraEnd());
+        }
+         if(fallback.cameraEnd() != null){
+             job.setCameraEnd(fallback.cameraEnd());
+         }
+
     }
     /**
      * Load-all algorithm: initialize facts and camera using a single MS_LOG payload,
@@ -224,8 +233,8 @@ public class JobService {
      */
     public void initFromMsLogEvents(PackagingSchedule schedule, List<FactProductionRow> events) {
         Map<FactKey, FactProductionRow> factMap = buildFactMap(events);
-        Map<String, CameraEventRow> startEvents = buildStartEvents(events);
-        Map<String, CameraEventRow> endEvents = buildEndEvents(events);
+        Map<String, CameraEventRow> startEvents = buildEvents(events, START_CAMERA_EVENT);
+        Map<String, CameraEventRow> endEvents = buildEvents(events, END_CAMERA_EVENT);
 
         initFactProductionData(schedule, factMap);
         initCameraFromEvents(schedule, startEvents, endEvents);
@@ -235,7 +244,7 @@ public class JobService {
     private Map<FactKey, FactProductionRow> buildFactMap(List<FactProductionRow> events) {
         Map<FactKey, FactProductionRow> factMap = new HashMap<>();
         for (FactProductionRow ev : events) {
-            if (ev.eventType() != null && ev.eventType() == 1) {
+            if (ev.eventType() != null && ev.eventType() == START_FACT_EVENT) {
                 FactKey key = new FactKey(ev.kmc(), ev.np());
                 factMap.putIfAbsent(key, ev);
             }
@@ -243,34 +252,28 @@ public class JobService {
         return factMap;
     }
 
-    private Map<String, CameraEventRow> buildStartEvents(List<FactProductionRow> events) {
-        Map<String, CameraEventRow> startEvents = new HashMap<>();
+    private Map<String, CameraEventRow> buildEvents(List<FactProductionRow> events, int eventType) {
+        Map<String, CameraEventRow> eventsList = new HashMap<>();
         for (FactProductionRow ev : events) {
-            if (ev.eventType() != null && ev.eventType() == 2) {
-                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 2, ev.eventTime());
-                startEvents.merge(
-                        ev.idBatch(),
-                        candidate,
-                        (oldV, newV) -> oldV.eventTime().before(newV.eventTime()) ? oldV : newV
-                );
+            if (ev.eventType() != null && ev.eventType() == eventType) {
+                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), eventType, ev.eventTime());
+                if(eventType == START_CAMERA_EVENT) {
+                    eventsList.merge(
+                            ev.idBatch(),
+                            candidate,
+                            (oldV, newV) -> oldV.eventTime().before(newV.eventTime()) ? oldV : newV
+                    );
+                }
+                else if( eventType == END_CAMERA_EVENT) {
+                    eventsList.merge(
+                            ev.idBatch(),
+                            candidate,
+                            (oldV, newV) -> oldV.eventTime().after(newV.eventTime()) ? oldV : newV
+                    );
+                }
             }
         }
-        return startEvents;
-    }
-
-    private Map<String, CameraEventRow> buildEndEvents(List<FactProductionRow> events) {
-        Map<String, CameraEventRow> endEvents = new HashMap<>();
-        for (FactProductionRow ev : events) {
-            if (ev.eventType() != null && ev.eventType() == 3) {
-                CameraEventRow candidate = new CameraEventRow(ev.idBatch(), 3, ev.eventTime());
-                endEvents.merge(
-                        ev.idBatch(),
-                        candidate,
-                        (oldV, newV) -> oldV.eventTime().after(newV.eventTime()) ? oldV : newV
-                );
-            }
-        }
-        return endEvents;
+        return eventsList;
     }
 
     /**
@@ -295,12 +298,12 @@ public class JobService {
 
             if (!startEvents.containsKey(idBatch) && job.getCameraStart() != null) {
                 toInsertStart.put(idBatch, new PmLogInsertRow(
-                        idBatch, productId, dtv, np, 2, job.getCameraStart(), lineId
+                        idBatch, productId, dtv, np, START_CAMERA_EVENT, job.getCameraStart(), lineId
                 ));
             }
             if (!endEvents.containsKey(idBatch) && job.getCameraEnd() != null) {
                 toInsertEnd.put(idBatch, new PmLogInsertRow(
-                        idBatch, productId, dtv, np, 3, job.getCameraEnd(), lineId
+                        idBatch, productId, dtv, np, END_CAMERA_EVENT, job.getCameraEnd(), lineId
                 ));
             }
         }

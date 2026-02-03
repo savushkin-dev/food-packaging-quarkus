@@ -51,7 +51,6 @@ public class ScheduleBuilder {
         );
 
         jobService.initSolutionJobList(schedule);
-        // Load all events together and initialize facts + camera with fallback & persistence
         var msLogEvents = jobRepository.getMsLogEvents(
                 schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate());
         jobService.initFromMsLogEvents(schedule, msLogEvents);

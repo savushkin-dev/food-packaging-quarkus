@@ -106,9 +106,19 @@ public static final String INSERT_CAMERA_EVENT = """
 """;
 
 public static final String UPDATE_MS_LOG_EVENT3_DT = """
-    UPDATE [MES].[dbo].[MS_LOG]
-       SET DT = ?
-     WHERE IDBATCH = ? AND EVENT = 3
+   MERGE [MES].[dbo].[MS_LOG] AS t
+    USING (VALUES (?, ?, ?, ?, ?, ?, ?)) AS s
+    
+    (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+          ON t.IDBATCH = s.IDBATCH
+          AND t.EVENT   = s.EVENT
+WHEN MATCHED THEN
+      UPDATE SET
+          DT  = s.DT
+WHEN NOT MATCHED THEN
+  INSERT (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+     VALUES (s.IDBATCH, s.KMC, s.DTV, s.NP, s.EVENT, s.DT, s.KRC);
+        
 """;
 
 }
