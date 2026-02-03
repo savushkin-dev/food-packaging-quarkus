@@ -9,11 +9,8 @@ import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
-import java.util.UUID;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 
@@ -209,5 +206,96 @@ public class MaintenanceJob {
         fixPinnedJobs(line);
 
         return schedule;
+    }
+
+    public void addMaintenanceByBatchDurationDiff(PackagingSchedule schedule) {
+
+        for (Line line : schedule.getLines()) {
+
+            List<Job> jobs = line.getJobs();
+            if (jobs == null || jobs.isEmpty()) {
+                continue;
+            }
+
+            List<Job> block = new ArrayList<>();
+
+            for (int i = 0; i < jobs.size(); i++) {
+                Job job = jobs.get(i);
+
+                if (job.getIdBatch() != null) {
+                    block.add(job);
+                } else {
+                    processBlockIfNeeded(schedule, line, block, i);
+                    block.clear();
+                }
+            }
+
+            processBlockIfNeeded(schedule, line, block, jobs.size());
+        }
+
+    }
+
+
+    private long ceilMinutes(Duration duration) {
+        if (duration.isNegative() || duration.isZero()) {
+            return 0;
+        }
+        return (duration.toSeconds() + 59) / 60;
+    }
+
+    private void processBlockIfNeeded(
+            PackagingSchedule schedule,
+            Line line,
+            List<Job> block,
+            int insertIndex
+    ) {
+        if (block.isEmpty()) {
+            return;
+        }
+
+        long planMinutes = 0;
+        long factMinutes = 0;
+
+        for (Job job : block) {
+
+            // PLAN
+            if (job.getStartProductionDateTime() != null
+                    && job.getEndDateTime() != null) {
+                planMinutes += ceilMinutes(
+                        Duration.between(
+                                job.getStartProductionDateTime(),
+                                job.getEndDateTime()
+                        )
+                );
+            }
+
+            // FACT
+            if (job.getCameraStart() != null
+                    && job.getCameraEnd() != null) {
+                factMinutes += ceilMinutes(
+                        Duration.between(
+                                job.getCameraStart(),
+                                job.getCameraEnd()
+                        )
+                );
+            }
+        }
+
+        long diffMinutes = Math.abs(factMinutes - planMinutes);
+
+        if (diffMinutes <= 0) {
+            return;
+        }
+
+        MaintenanceRequest request = new MaintenanceRequest();
+        request.setLineId(line.getId());
+        request.setDurationMinutes((int) diffMinutes);
+        request.setMaintenanceTypeId(7);
+        request.setInsertIndex(insertIndex);
+        request.setMaintenanceNote(
+                "Отклонение план/факт по подряд идущим партиям"
+        );
+
+        addMaintenanceJob(schedule, request);
     }
 }
