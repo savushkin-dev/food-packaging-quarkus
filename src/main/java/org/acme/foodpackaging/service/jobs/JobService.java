@@ -187,31 +187,40 @@ public class JobService {
     /**
      * Initialize camera start/end from MS_LOG events (2=start, 3=end). Falls back to PM_LOG min/max if missing.
      */
-    public void initCameraFromEvents(
-            PackagingSchedule solution,
-            Map<String, CameraEventRow> cameraStartEvents,
-            Map<String, CameraEventRow> cameraEndEvents
-    ) {
-        for (Job job : solution.getJobs()) {
-            String idBatch = job.getIdBatch();
-            if (idBatch == null) {
-                continue;
-            }
-            applyCameraEventTimes(job, cameraStartEvents.get(idBatch), cameraEndEvents.get(idBatch));
-            if (job.getCameraStart() == null || job.getCameraEnd() == null || job.getCameraStart().isBefore(LocalDateTime.now().minusHours(12))) {
-                applyFallbackFromPmLog(job, idBatch);
-            }
-        }
-    }
+    public void initCameraFromPmLogIfMissing(PackagingSchedule solution) {
 
-    private void applyCameraEventTimes(Job job, CameraEventRow startEv, CameraEventRow endEv) {
-        if (startEv != null && startEv.eventTime() != null) {
-            job.setCameraStart(startEv.eventTime().toLocalDateTime());
+        Set<String> batchesToLoad = new HashSet<>();
+    
+        for (Job job : solution.getJobs()) {
+            if (job.getIdBatch() == null) continue;
+    
+            if (job.getCameraStart() == null || job.getCameraEnd() == null) {
+                batchesToLoad.add(job.getIdBatch());
+            }
         }
-        if (endEv != null && endEv.eventTime() != null) {
-            job.setCameraEnd(endEv.eventTime().toLocalDateTime());
+    
+        if (batchesToLoad.isEmpty()) {
+            return;
+        }
+    
+        Map<String, CameraValue> pmValues =
+                jobRepository.loadCameraValuesFromPmLog(batchesToLoad);
+    
+        for (Job job : solution.getJobs()) {
+            if (!batchesToLoad.contains(job.getIdBatch())) continue;
+    
+            CameraValue pm = pmValues.get(job.getIdBatch());
+            if (pm == null) continue;
+    
+            if (job.getCameraStart() == null && pm.cameraStart() != null) {
+                job.setCameraStart(pm.cameraStart());
+            }
+            if (job.getCameraEnd() == null && pm.cameraEnd() != null) {
+                job.setCameraEnd(pm.cameraEnd());
+            }
         }
     }
+    
 
     public void applyFallbackFromPmLog(Job job, String idBatch) {
         CameraValue fallback = jobRepository.getCameraValueByIdBatch(idBatch);
@@ -237,7 +246,7 @@ public class JobService {
         Map<String, CameraEventRow> endEvents = buildEvents(events, END_CAMERA_EVENT);
 
         initFactProductionData(schedule, factMap);
-        initCameraFromEvents(schedule, startEvents, endEvents);
+        initCameraFromPmLogIfMissing(schedule);
         persistMissingCameraEvents(schedule, startEvents, endEvents);
     }
 
