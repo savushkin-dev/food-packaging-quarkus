@@ -19,6 +19,7 @@ import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 
@@ -32,7 +33,6 @@ public class JobService {
     private final LoadDataService loadDataService;
     private final JobRepository jobRepository;
     private final UploadDataService uploadDataService;
-    private final int START_FACT_EVENT = 1;
     private final int START_CAMERA_EVENT = 2;
     private final int END_CAMERA_EVENT =3;
 
@@ -187,72 +187,47 @@ public class JobService {
     /**
      * Initialize camera start/end from MS_LOG events (2=start, 3=end). Falls back to PM_LOG min/max if missing.
      */
-    public void initCameraFromPmLogIfMissing(PackagingSchedule solution) {
-
-        Set<String> batchesToLoad = new HashSet<>();
-    
-        for (Job job : solution.getJobs()) {
-            if (job.getIdBatch() == null) continue;
-    
-            if (job.getCameraStart() == null || job.getCameraEnd() == null) {
-                batchesToLoad.add(job.getIdBatch());
-            }
-        }
-    
-        if (batchesToLoad.isEmpty()) {
-            return;
-        }
-    
-        Map<String, CameraValue> pmValues =
-                jobRepository.loadCameraValuesFromPmLog(batchesToLoad);
-    
-        for (Job job : solution.getJobs()) {
-            if (!batchesToLoad.contains(job.getIdBatch())) continue;
-    
-            CameraValue pm = pmValues.get(job.getIdBatch());
-            if (pm == null) continue;
-    
-            if (job.getCameraStart() == null && pm.cameraStart() != null) {
-                job.setCameraStart(pm.cameraStart());
-            }
-            if (job.getCameraEnd() == null && pm.cameraEnd() != null) {
-                job.setCameraEnd(pm.cameraEnd());
-            }
-        }
-    }
-    
-
-    public void applyFallbackFromPmLog(Job job, String idBatch) {
-        CameraValue fallback = jobRepository.getCameraValueByIdBatch(idBatch);
-        if (fallback == null) {
-            return;
-        }
-
-        if(fallback.cameraStart() != null){
-            job.setCameraStart(fallback.cameraStart());
-        }
-         if(fallback.cameraEnd() != null){
-             job.setCameraEnd(fallback.cameraEnd());
-         }
-
-    }
-    /**
-     * Load-all algorithm: initialize facts and camera using a single MS_LOG payload,
-     * then fallback to PM_LOG for missing camera values, and persist missing events.
-     */
     public void initFromMsLogEvents(PackagingSchedule schedule, List<FactProductionRow> events) {
+
         Map<FactKey, FactProductionRow> factMap = buildFactMap(events);
+        initFactProductionData(schedule, factMap);
+
         Map<String, CameraEventRow> startEvents = buildEvents(events, START_CAMERA_EVENT);
         Map<String, CameraEventRow> endEvents = buildEvents(events, END_CAMERA_EVENT);
 
-        initFactProductionData(schedule, factMap);
-        initCameraFromPmLogIfMissing(schedule);
-        persistMissingCameraEvents(schedule, startEvents, endEvents);
+        Set<String> batchesToLoad = schedule.getJobs().stream()
+                .filter(j -> j.getIdBatch() != null)
+                .filter(j -> j.getCameraStart() == null || j.getCameraEnd() == null)
+                .map(Job::getIdBatch)
+                .collect(Collectors.toSet());
+
+        if (!batchesToLoad.isEmpty()) {
+            Map<String, CameraValue> pmValues = jobRepository.getCameraValueMap(batchesToLoad);
+
+            for (Job job : schedule.getJobs()) {
+                if (!batchesToLoad.contains(job.getIdBatch())) continue;
+
+                CameraValue pm = pmValues.get(job.getIdBatch());
+                if (pm == null) continue;
+
+                if (job.getCameraStart() == null && pm.cameraStart() != null) {
+                    job.setCameraStart(pm.cameraStart());
+                }
+                if (job.getCameraEnd() == null && pm.cameraEnd() != null) {
+                    job.setCameraEnd(pm.cameraEnd());
+                }
+            }
+        }
+        prepareAndPersistFromPmLog(schedule, startEvents, endEvents, batchesToLoad);
     }
 
+    /**
+     * Build fact map for jobs from MS_LOG events.
+     */
     private Map<FactKey, FactProductionRow> buildFactMap(List<FactProductionRow> events) {
         Map<FactKey, FactProductionRow> factMap = new HashMap<>();
         for (FactProductionRow ev : events) {
+            int START_FACT_EVENT = 1;
             if (ev.eventType() != null && ev.eventType() == START_FACT_EVENT) {
                 FactKey key = new FactKey(ev.kmc(), ev.np());
                 factMap.putIfAbsent(key, ev);
@@ -261,24 +236,20 @@ public class JobService {
         return factMap;
     }
 
+    /**
+     * Build camera events map (start/end) from MS_LOG events.
+     */
     private Map<String, CameraEventRow> buildEvents(List<FactProductionRow> events, int eventType) {
         Map<String, CameraEventRow> eventsList = new HashMap<>();
         for (FactProductionRow ev : events) {
             if (ev.eventType() != null && ev.eventType() == eventType) {
                 CameraEventRow candidate = new CameraEventRow(ev.idBatch(), eventType, ev.eventTime());
-                if(eventType == START_CAMERA_EVENT) {
-                    eventsList.merge(
-                            ev.idBatch(),
-                            candidate,
-                            (oldV, newV) -> oldV.eventTime().before(newV.eventTime()) ? oldV : newV
-                    );
-                }
-                else if( eventType == END_CAMERA_EVENT) {
-                    eventsList.merge(
-                            ev.idBatch(),
-                            candidate,
-                            (oldV, newV) -> oldV.eventTime().after(newV.eventTime()) ? oldV : newV
-                    );
+                if (eventType == START_CAMERA_EVENT) {
+                    eventsList.merge(ev.idBatch(), candidate,
+                            (oldV, newV) -> oldV.eventTime().toLocalDateTime().isBefore(newV.eventTime().toLocalDateTime()) ? oldV : newV);
+                } else {
+                    eventsList.merge(ev.idBatch(), candidate,
+                            (oldV, newV) -> oldV.eventTime().toLocalDateTime().isAfter(newV.eventTime().toLocalDateTime()) ? oldV : newV);
                 }
             }
         }
@@ -286,41 +257,46 @@ public class JobService {
     }
 
     /**
-     * Persist camera start/end events (2/3) to MS_LOG for jobs that were initialized
-     * from fallback data and don't have corresponding events yet.
+     * Prepare camera events that were missing in MS_LOG (filled from PM_LOG)
+     * and call persist to insert them.
      */
-    public void persistMissingCameraEvents(
+    private void prepareAndPersistFromPmLog(
             PackagingSchedule schedule,
             Map<String, CameraEventRow> startEvents,
-            Map<String, CameraEventRow> endEvents
+            Map<String, CameraEventRow> endEvents,
+            Set<String> batchesLoadedFromPmLog
     ) {
         Map<String, PmLogInsertRow> toInsertStart = new HashMap<>();
         Map<String, PmLogInsertRow> toInsertEnd = new HashMap<>();
-       
+
         for (Job job : schedule.getJobs()) {
             String idBatch = job.getIdBatch();
-            if (idBatch == null) continue;
-            String productId = (job.getProduct() != null) ? job.getProduct().getId() : null;
+            if (idBatch == null || !batchesLoadedFromPmLog.contains(idBatch)) continue;
+
+
+            String productId = job.getProduct() != null ? job.getProduct().getId() : null;
             Integer np = job.getNp();
             LocalDateTime dtv = job.getDtv();
             String lineId = job.getLineIdFact();
 
+            // Insert only if missing in MS_LOG
             if (!startEvents.containsKey(idBatch) && job.getCameraStart() != null) {
                 toInsertStart.put(idBatch, new PmLogInsertRow(
                         idBatch, productId, dtv, np, START_CAMERA_EVENT, job.getCameraStart(), lineId
                 ));
             }
+
             if (!endEvents.containsKey(idBatch) && job.getCameraEnd() != null) {
                 toInsertEnd.put(idBatch, new PmLogInsertRow(
                         idBatch, productId, dtv, np, END_CAMERA_EVENT, job.getCameraEnd(), lineId
                 ));
             }
         }
+
         if (!toInsertStart.isEmpty() || !toInsertEnd.isEmpty()) {
             uploadDataService.writeCameraEventsBatchRows(toInsertStart, toInsertEnd);
         }
     }
-
     /**
      * Преобразует Timestamp в LocalDateTime.
      * 

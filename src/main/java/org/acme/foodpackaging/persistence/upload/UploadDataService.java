@@ -90,21 +90,6 @@ public class UploadDataService {
     }
 
     /**
-     * Writes a single camera event (2 = start, 3 = end) into MS_LOG.
-     */
-    public void writeCameraEvent(PmLogInsertRow insertRow) {
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            try (PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
-                setPmLogInsertRowParameters(ps, insertRow);
-                ps.executeUpdate();
-            }
-        } catch (SQLException e) {
-            log.error("Failed to write camera event", e);
-            throw new DataUploadException("Failed to write camera event", e);
-        }
-    }
-
-    /**
      * Batch-inserts camera events to MS_LOG for efficiency.
      * startEvents: idBatch -> start time (eventType=2)
      * endEvents:   idBatch -> end time   (eventType=3)
@@ -142,32 +127,6 @@ public class UploadDataService {
                 }
             }
             ps.executeBatch();
-        }
-    }
-
-    /**
-     * Batch update DT for EVENT=3 for many batches in a single transaction.
-     */
-    public int updateEvent3ForBatches(Map<String, java.time.LocalDateTime> endByBatch) {
-        if (endByBatch == null || endByBatch.isEmpty()) return 0;
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            conn.setAutoCommit(false);
-            int updated = 0;
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE_MS_LOG_EVENT3_DT)) {
-                for (var e : endByBatch.entrySet()) {
-                    if (e.getKey() == null || e.getValue() == null) continue;
-                    ps.setTimestamp(1, Timestamp.valueOf(e.getValue()));
-                    ps.setString(2, e.getKey());
-                    ps.addBatch();
-                }
-                int[] counts = ps.executeBatch();
-                for (int c : counts) if (c > 0) updated += c;
-            }
-            conn.commit();
-            return updated;
-        } catch (SQLException e) {
-            log.error("Failed to batch update EVENT=3 DT", e);
-            throw new DataUploadException("Failed to batch update EVENT=3 DT", e);
         }
     }
 

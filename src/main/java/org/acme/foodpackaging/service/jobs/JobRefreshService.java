@@ -7,7 +7,6 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.service.products.ProductService;
-import org.acme.foodpackaging.persistence.upload.UploadDataService;
 
 import java.util.Map;
 
@@ -18,14 +17,12 @@ public class JobRefreshService {
 
     private final JobService jobService;
     private final ProductService productService;
-    private final UploadDataService uploadDataService;
 
     @Inject
     public JobRefreshService(JobService jobService, 
-        ProductService productService, UploadDataService uploadDataService) {
+        ProductService productService) {
         this.jobService = jobService;
         this.productService = productService;
-        this.uploadDataService = uploadDataService;
     }
 
     public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
@@ -70,23 +67,6 @@ public class JobRefreshService {
         for (Job j : solution.getJobs()) {
             if(j.isMaintenance()) continue;
            solution.getJobIdMap().put(j.getSnpz(), j);
-        }
-    }
-
-   
-    /**
-     * Refresh cameraEnd from PM_LOG for each job and update corresponding MS_LOG EVENT=3 DT.
-     * Only updates when PM_LOG's DTEND differs from the current job.cameraEnd.
-     */
-
-    public void refreshCameraEnd(PackagingSchedule schedule) {
-        for (Job job : schedule.getJobs()) {
-            String idBatch = job.getIdBatch();
-            if (idBatch == null) continue;
-            
-            jobService.applyFallbackFromPmLog(job, idBatch);
-            uploadDataService.updateEvent3ForBatch(idBatch, job.getCameraEnd());
-
         }
     }
 }
