@@ -105,6 +105,16 @@ public static final String INSERT_CAMERA_EVENT = """
     VALUES (?, ?, ?, ?, ?, ?, ?)
 """;
 
+    public static final String LOAD_PM_CAMERA_END = """
+    SELECT
+        IDBATCH,
+        MAX(DTS) AS CAMERA_END
+    FROM [prommark].[dbo].[PM_LOG] WITH (NOLOCK)
+    WHERE KD = 71
+      AND IDBATCH IN (:batches)
+    GROUP BY IDBATCH
+""";
+
 public static final String UPDATE_MS_LOG_EVENT3_DT = """
    MERGE [MES].[dbo].[MS_LOG] AS t
     USING (VALUES (?, ?, ?, ?, ?, ?, ?)) AS s
@@ -120,5 +130,13 @@ WHEN NOT MATCHED THEN
      VALUES (s.IDBATCH, s.KMC, s.DTV, s.NP, s.EVENT, s.DT, s.KRC);
         
 """;
+
+    public static final String UPDATE_CAMERA_END_EVENT = """
+    UPDATE [MES].[dbo].[MS_LOG]
+    SET DT = ?
+    WHERE IDBATCH = ?
+      AND EVENT = 3
+""";
+
 
 }

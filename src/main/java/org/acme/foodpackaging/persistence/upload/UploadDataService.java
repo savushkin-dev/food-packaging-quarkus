@@ -153,21 +153,21 @@ public class UploadDataService {
         ps.addBatch();
     }
 
-    /**
-     * Update DT for EVENT=3 in MS_LOG for a specific batch.
-     * Returns the number of updated rows (0 or 1).
-     */
-    public int updateEvent3ForBatch(String idBatch, LocalDateTime endTime) {
-        if (idBatch == null || endTime == null) return 0;
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE_MS_LOG_EVENT3_DT)) {
-                ps.setTimestamp(1, Timestamp.valueOf(endTime));
-                ps.setString(2, idBatch);
-                return ps.executeUpdate();
-            }
+    public void updateCameraEndEvent(
+            String idBatch,
+            LocalDateTime cameraEnd
+    ) {
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(UPDATE_CAMERA_END_EVENT)) {
+
+            ps.setTimestamp(1, Timestamp.valueOf(cameraEnd));
+            ps.setString(2, idBatch);
+
+            ps.executeUpdate();
+
         } catch (SQLException e) {
-            log.error("Failed to update EVENT=3 DT for " + idBatch, e);
-            throw new DataUploadException("Failed to update EVENT=3 DT", e);
+            log.error("Failed to update camera end event for batch {}", idBatch, e);
+            throw new DataUploadException("Failed to update camera end event", e);
         }
     }
 }

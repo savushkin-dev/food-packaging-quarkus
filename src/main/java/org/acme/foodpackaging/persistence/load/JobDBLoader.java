@@ -141,5 +141,30 @@ public class JobDBLoader {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
+    public Map<String, LocalDateTime> loadActualCameraEndFromPmLog(Set<String> batches) {
+
+        if (batches == null || batches.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Object[]> rows = em.createNativeQuery(LOAD_PM_CAMERA_END)
+                .setParameter("batches", batches)
+                .getResultList();
+
+        Map<String, LocalDateTime> result = new HashMap<>();
+
+        for (Object[] row : rows) {
+            String idBatch = (String) row[0];
+            Timestamp ts = (Timestamp) row[1];
+            if (ts != null) {
+                result.put(idBatch, ts.toLocalDateTime());
+            }
+        }
+
+        return result;
+    }
+
+
 }
 

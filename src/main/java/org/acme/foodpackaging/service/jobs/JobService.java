@@ -16,6 +16,7 @@ import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 
+
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.*;
@@ -33,6 +34,8 @@ public class JobService {
     private final LoadDataService loadDataService;
     private final JobRepository jobRepository;
     private final UploadDataService uploadDataService;
+    private final JobRefreshService jobRefreshService;
+
     private final int START_CAMERA_EVENT = 2;
     private final int END_CAMERA_EVENT =3;
 
@@ -40,11 +43,12 @@ public class JobService {
     public JobService(
             LoadDataService loadDataService,
             JobRepository jobRepository,
-            UploadDataService uploadDataService
+            UploadDataService uploadDataService, JobRefreshService jobRefreshService
     ) {
         this.loadDataService = Objects.requireNonNull(loadDataService, "loadDataService must not be null");
         this.jobRepository = Objects.requireNonNull(jobRepository, "jobRepository must not be null");
         this.uploadDataService = Objects.requireNonNull(uploadDataService, "uploadDataService must not be null");
+        this.jobRefreshService = Objects.requireNonNull(jobRefreshService, "jobRefreshService must not be null");
     }
 
     /**
@@ -225,6 +229,8 @@ public class JobService {
             }
         }
         prepareAndPersistFromPmLog(schedule, startEvents, endEvents, batchesToLoad);
+        jobRefreshService.refreshRecentCameraEndIfNeeded(schedule, endEvents);
+
     }
 
     /**

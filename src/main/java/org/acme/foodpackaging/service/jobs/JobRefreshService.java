@@ -5,10 +5,18 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
 
@@ -17,10 +25,14 @@ public class JobRefreshService {
 
     private final JobService jobService;
     private final ProductService productService;
+    private final JobRepository jobRepository;
+    private final UploadDataService uploadDataService;
 
     @Inject
     public JobRefreshService(JobService jobService, 
-        ProductService productService) {
+        ProductService productService, JobRepository jobRepository, UploadDataService uploadDataService) {
+        this.jobRepository = jobRepository;
+        this.uploadDataService = uploadDataService;
         this.jobService = jobService;
         this.productService = productService;
     }
@@ -69,4 +81,53 @@ public class JobRefreshService {
            solution.getJobIdMap().put(j.getSnpz(), j);
         }
     }
+
+    public void refreshRecentCameraEndIfNeeded(
+            PackagingSchedule schedule,
+            Map<String, CameraEventRow> endEvents
+    ) {
+        LocalDateTime now = LocalDateTime.now();
+        Duration threshold = Duration.ofHours(12);
+
+        List<Job> candidates = schedule.getJobs().stream()
+                .filter(j -> j.getIdBatch() != null)
+                .filter(j -> j.getCameraStart() != null)
+                .filter(j ->
+                        Duration.between(j.getCameraStart(), now)
+                                .compareTo(threshold) < 0
+                )
+                .toList();
+
+        if (candidates.isEmpty()) {
+            return;
+        }
+
+        Set<String> batches = candidates.stream()
+                .map(Job::getIdBatch)
+                .collect(Collectors.toSet());
+
+        Map<String, LocalDateTime> pmCameraEnds =
+                jobRepository. getCameraUpdate(batches);
+
+        for (Job job : candidates) {
+            LocalDateTime pmEnd = pmCameraEnds.get(job.getIdBatch());
+            if (pmEnd == null) continue;
+
+            CameraEventRow msEndEvent = endEvents.get(job.getIdBatch());
+            LocalDateTime msEnd =
+                    msEndEvent != null
+                            ? msEndEvent.eventTime().toLocalDateTime()
+                            : null;
+
+            if (!pmEnd.equals(msEnd)) {
+                uploadDataService.updateCameraEndEvent(
+                        job.getIdBatch(),
+                        pmEnd
+                );
+
+                job.setCameraEnd(pmEnd);
+            }
+        }
+    }
+
 }

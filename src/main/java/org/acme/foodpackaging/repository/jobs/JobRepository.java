@@ -63,12 +63,12 @@ public class JobRepository {
         return jobDBLoader.loadMsLogEvents(from.atStartOfDay(), to.atStartOfDay());
     }
 
-    public CameraValue getCameraValueByIdBatch(String idBatch) {
-        return jobDBLoader.getCameraValueByIdBatch(idBatch);
-    }
-
     public  Map<String, CameraValue> getCameraValueMap(Set<String> batchIds) {
         return jobDBLoader.loadCameraValuesFromPmLogJDBC( batchIds);
+    }
+
+    public Map<String, LocalDateTime> getCameraUpdate(Set<String> batches){
+        return jobDBLoader.loadActualCameraEndFromPmLog( batches);
     }
 }
 
