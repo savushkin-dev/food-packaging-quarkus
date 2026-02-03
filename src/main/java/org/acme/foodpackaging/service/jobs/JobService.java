@@ -182,8 +182,10 @@ public class JobService {
     ) {
         for (Job job : solution.getJobs()) {
             String idBatch = job.getIdBatch();
-            LocalDateTime cameraStart = (idBatch != null) ? startEvents.get(idBatch).eventTime().toLocalDateTime() : null;
-            LocalDateTime cameraEnd = (idBatch != null) ? endEvents.get(idBatch).eventTime().toLocalDateTime() : null;
+            CameraEventRow cameraRowStart =  (idBatch != null) ?  startEvents.get(idBatch) : null;
+            CameraEventRow cameraRowEnd = (idBatch != null) ? endEvents.get(idBatch) : null;
+            LocalDateTime cameraStart = (cameraRowStart != null) ?  cameraRowStart.eventTime().toLocalDateTime() : null;
+            LocalDateTime cameraEnd = (cameraRowEnd != null) ?  cameraRowEnd.eventTime().toLocalDateTime() : null;
             if (cameraStart != null) {
                 job.setCameraStart(cameraStart);
             }
