@@ -8,8 +8,10 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -37,10 +39,11 @@ public class JobRefreshService {
         this.productService = productService;
     }
 
-    public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
-        for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
+    public PackagingSchedule applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
+        for (Map.Entry<Long, SelectionValue> entry : selection.entrySet()) {
             Long snpz = entry.getKey();
-            boolean enabled = entry.getValue();
+            boolean enabled = entry.getValue().isSelect();
+            boolean isHandPackaging = entry.getValue().isLabeling();
 
             if (enabled) {
                 if (!solution.getJobIdMap().containsKey(snpz)) {
@@ -48,6 +51,7 @@ public class JobRefreshService {
                     if (row != null) {
                         Job job = jobService.createJobById(row.snpz(), false, solution);
 
+                        job.setHandPackaging(isHandPackaging);
                         solution.getJobs().add(job);
                         solution.getJobIdMap().put(snpz, job);}
                 }

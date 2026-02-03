@@ -44,6 +44,7 @@ public class Job {
     private Product product;
     private Duration duration;
     private boolean maintenance;
+    private boolean handPackaging;
     private Integer maintenanceTypeId;
     private Integer eventType;
 
@@ -248,6 +249,9 @@ public class Job {
         }
         final int IF_CHANGING_PACKAGING = 4;
         long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+
+        if(isHandPackaging()) minutes*=2;
+
         return Duration.ofMinutes(minutes);
     }
 
