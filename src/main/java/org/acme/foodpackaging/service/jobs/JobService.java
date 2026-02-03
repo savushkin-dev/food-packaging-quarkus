@@ -168,18 +168,23 @@ public class JobService {
      * Инициализирует фактические данные по камере (начало/конец) по ID партии.
      *
      * @param solution The packaging schedule to initialize
-     * @param cameraMap Map keyed by idBatch with camera start/end values
+     * @param startEvents Map keyed by idBatch with camera end values
+     * @param endEvents Map keyed by idBatch with camera end values
      */
     public void initCameraFactData(
             PackagingSchedule solution,
-            Map<String, CameraValue> cameraMap
+            Map<String, CameraEventRow> startEvents,
+            Map<String, CameraEventRow> endEvents
     ) {
         for (Job job : solution.getJobs()) {
             String idBatch = job.getIdBatch();
-            CameraValue camera = (idBatch != null) ? cameraMap.get(idBatch) : null;
-            if (camera != null) {
-                job.setCameraStart(camera.cameraStart());
-                job.setCameraEnd(camera.cameraEnd());
+            LocalDateTime cameraStart = (idBatch != null) ? startEvents.get(idBatch).eventTime().toLocalDateTime() : null;
+            LocalDateTime cameraEnd = (idBatch != null) ? endEvents.get(idBatch).eventTime().toLocalDateTime() : null;
+            if (cameraStart != null) {
+                job.setCameraStart(cameraStart);
+            }
+            if(cameraEnd!=null){
+                job.setCameraEnd(cameraEnd);
             }
         }
     }
@@ -195,6 +200,7 @@ public class JobService {
         Map<String, CameraEventRow> startEvents = buildEvents(events, START_CAMERA_EVENT);
         Map<String, CameraEventRow> endEvents = buildEvents(events, END_CAMERA_EVENT);
 
+        initCameraFactData(schedule, startEvents, endEvents);
         Set<String> batchesToLoad = schedule.getJobs().stream()
                 .filter(j -> j.getIdBatch() != null)
                 .filter(j -> j.getCameraStart() == null || j.getCameraEnd() == null)
