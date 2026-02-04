@@ -72,8 +72,6 @@ public class Job {
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
 
-    @JsonIgnore
-    private SpeedCacheUtils speedCache;
     /**
      * Start is after cleanup.
      */
@@ -254,8 +252,6 @@ public class Job {
         }
         final int IF_CHANGING_PACKAGING = 4;
         long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
-
-        if(isHandPackaging()) minutes*=2;
 
         return Duration.ofMinutes(minutes);
     }
