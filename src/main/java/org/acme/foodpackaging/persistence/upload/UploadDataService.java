@@ -98,15 +98,12 @@ public void fillMsLogTable(List<MsLogInsertRow> rows) {
         for (MsLogInsertRow row : rows) {
             ps.setString(1, row.idBatch());
             ps.setString(2, row.productId());
-            if (row.dtv() != null) {
-                ps.setTimestamp(3, row.dtv());
-            } else {
-                ps.setNull(3, Types.TIMESTAMP);
-            }
+            ps.setString(3, row.lineIdFact());
             ps.setInt(4, row.np());
             ps.setInt(5, row.eventType());
-            ps.setTimestamp(6, row.eventTime());
-            ps.setString(7, row.lineIdFact());
+            ps.setTimestamp(6, row.dtv());
+            ps.setTimestamp(7, row.eventTime());
+
             ps.addBatch();
         }
 

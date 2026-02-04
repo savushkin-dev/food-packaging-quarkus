@@ -73,7 +73,7 @@ WHERE
     WHERE
         v.DTV > ?1
         AND v.DTV <= ?2
-        AND v.EVENT = 1
+        AND v.EVENT <=3
     ORDER BY
         v.DTV, v.KMC, v.NP
 """;
@@ -88,7 +88,7 @@ public static final String LOAD_CAMERA_FACT = """
 """;
 
 public static final String INSERT_CAMERA_EVENT = """
-    INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
+    INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, KMC, KRC, NP, EVENT, DTV, DT)
     VALUES (?, ?, ?, ?, ?, ?, ?)
 """;
 

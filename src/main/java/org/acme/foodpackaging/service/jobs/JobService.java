@@ -142,23 +142,21 @@ public class JobService {
         Integer np = job.getNp();
 
         FactProductionRow startFact = factMap.get(new FactKey(kmc, np, START_FACT_EVENT_TYPE));
+
         if (startFact != null) {
             job.setIdBatch(startFact.idBatch());
             job.setLineIdFact(startFact.lineIdFact());
+            job.setDtv(startFact.dtv().toLocalDateTime());
             job.setStartProductionDateTimeFact(startFact.eventTime().toLocalDateTime());
         }
 
         FactProductionRow startCamera = factMap.get(new FactKey(kmc, np, START_CAMERA_EVENT_TYPE));
         if (startCamera != null) {
-            job.setIdBatch(startCamera.idBatch());
-            job.setLineIdFact(startCamera.lineIdFact());
             job.setCameraStart(startCamera.eventTime().toLocalDateTime());
         }
 
         FactProductionRow endCamera = factMap.get(new FactKey(kmc, np, END_CAMERA_EVENT_TYPE));
         if (endCamera != null) {
-            job.setIdBatch(endCamera.idBatch());
-            job.setLineIdFact(endCamera.lineIdFact());
             job.setCameraEnd(endCamera.eventTime().toLocalDateTime());
         }
     }
@@ -171,11 +169,9 @@ public class JobService {
      */
     public void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
 
-        
-    
         List<Job> jobsWithoutCamera = solution.getJobs().stream()
                 .filter(j -> j.getIdBatch() != null)
-                .filter(j -> j.getCameraStart() == null && j.getCameraEnd() == null)
+                .filter(j -> j.getCameraStart() == null || j.getCameraEnd() == null)
                 .toList();
     
         if (jobsWithoutCamera.isEmpty()) {
