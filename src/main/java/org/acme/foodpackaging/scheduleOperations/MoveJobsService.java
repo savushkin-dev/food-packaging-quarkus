@@ -50,10 +50,8 @@ public class MoveJobsService {
                 Job job = fromJobs.get(i);
                 if (job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
-                Integer duration = SpeedCacheUtils.getLineSpeeds()
-                        .getOrDefault(toLine.getId(), Map.of())
-                        .get(productType);
-                if (duration == null || duration == 0) {
+                Integer speed = SpeedCacheUtils.getSpeed(toLine.getId(), productType);
+                if (speed == null || speed == 0) {
                     throw new IllegalArgumentException(
                             String.format("Cannot move job \"%s\" to line \"%s\": product type unsupported",
                                     job.getName(), toLine.getName()));

@@ -10,9 +10,6 @@ import org.acme.foodpackaging.record.CameraValue;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import jakarta.persistence.EntityManager;
 
-import static org.acme.foodpackaging.sql.SqlQueries.LOAD_CAMERA_FACT;
-
-import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;

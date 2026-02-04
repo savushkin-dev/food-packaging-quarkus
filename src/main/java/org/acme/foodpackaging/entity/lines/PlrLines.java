@@ -30,17 +30,21 @@ public class PlrLines {
     @Column(name = "PROD")
     private Integer speed;
 
+    @Column(name = "MPROD")
+    private Integer handPackagingSpeed;
+
     @Column(name = "F_DEL")
     private Integer fDel;
 
     @Override
     public String toString() {
-        return "LineEntity{" +
+        return "PlrLines{" +
                 "id=" + id +
-                ", krc='" + lineId + '\'' +
+                ", lineId='" + lineId + '\'' +
                 ", snm='" + snm + '\'' +
                 ", type='" + type + '\'' +
                 ", speed=" + speed +
+                ", handPackagingSpeed=" + handPackagingSpeed +
                 ", fDel=" + fDel +
                 '}';
     }

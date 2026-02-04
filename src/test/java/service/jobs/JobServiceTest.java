@@ -6,13 +6,12 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.domain.WorkCalendar;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.dto.PmLogInsertRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraEventRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
+import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +44,8 @@ class JobServiceTest {
     JobRepository jobRepository;
     @Mock
     UploadDataService uploadDataService;
+    @Mock
+    JobRefreshService jobRefreshService;
 
     private PackagingSchedule schedule;
 

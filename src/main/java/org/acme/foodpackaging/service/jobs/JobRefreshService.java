@@ -11,7 +11,6 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
