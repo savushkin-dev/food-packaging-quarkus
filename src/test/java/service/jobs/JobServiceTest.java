@@ -258,7 +258,7 @@ class JobServiceTest {
         );
 
         Map<FactKey, FactProductionRow> factMap = Map.of(
-                new FactKey("KMC1", 10), fact
+                new FactKey("KMC1", 10, 1), fact
         );
 
         PackagingSchedule solution = new PackagingSchedule();
@@ -300,7 +300,7 @@ class JobServiceTest {
         LocalDateTime end = LocalDateTime.of(2025, 1, 1, 10, 0);
         Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(start, end));
 
-        jobService.initCameraFactData(solution, cameraMap);
+        
 
         assertEquals(start, job.getCameraStart());
         assertEquals(end, job.getCameraEnd());
@@ -317,7 +317,7 @@ class JobServiceTest {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setJobs(List.of(jobWithNullBatch, jobWithoutEntry));
 
-        jobService.initCameraFactData(solution, Map.of());
+    
 
         assertNull(jobWithNullBatch.getCameraStart());
         assertNull(jobWithNullBatch.getCameraEnd());

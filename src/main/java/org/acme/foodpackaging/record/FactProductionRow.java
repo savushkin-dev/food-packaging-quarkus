@@ -8,7 +8,7 @@ public record FactProductionRow(
         Timestamp dtv,
         Integer np,
         Integer eventType,
-        Timestamp startProductionDateTimeFact,
+        Timestamp eventTime,
         String lineIdFact
 ) {}
 

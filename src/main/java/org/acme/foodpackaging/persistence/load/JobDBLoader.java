@@ -14,6 +14,9 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -89,7 +92,7 @@ public class JobDBLoader {
 
         return rows.stream()
                 .collect(Collectors.toMap(
-                        r -> new FactKey(r.kmc(), r.np()),
+                        r -> new FactKey(r.kmc(), r.np(), r.eventType()),
                         Function.identity(),
                         (existing, duplicate) -> existing // Keep first occurrence, skip duplicates
                 ));
@@ -97,25 +100,27 @@ public class JobDBLoader {
 
     @SuppressWarnings("unchecked")
     public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
-        java.util.Map<String, CameraValue> result = new java.util.HashMap<>();
-
-        if (jobs == null || jobs.isEmpty()) {
-            return result;
-        }
-
+    
+        Map<String, CameraValue> result = new HashMap<>();
+        Set<String> processedBatches = new HashSet<>();
+    
         for (Job job : jobs) {
             String idBatch = job.getIdBatch();
-            if (idBatch == null || result.containsKey(idBatch)) {
+            if (idBatch == null || processedBatches.contains(idBatch)) {
                 continue;
             }
+    
+            processedBatches.add(idBatch);
+    
             List<CameraFactRow> rows = em
                     .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
                     .setParameter(1, idBatch)
                     .getResultList();
-
+    
             if (rows.isEmpty()) {
                 continue;
             }
+    
             CameraFactRow row = rows.getFirst();
             result.put(
                     idBatch,

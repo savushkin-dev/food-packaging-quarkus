@@ -3,6 +3,8 @@ package org.acme.foodpackaging.persistence.upload;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.acme.foodpackaging.record.MsLogInsertRow;
+import jakarta.transaction.Transactional;
 
 import java.sql.*;
 import java.util.List;
@@ -85,5 +87,34 @@ public class UploadDataService {
             }
         }
     }
+        
+@Transactional
+public void fillMsLogTable(List<MsLogInsertRow> rows) {
+    if (rows.isEmpty()) return;
+
+    try (Connection conn = DriverManager.getConnection(dbUrl);
+         PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
+
+        for (MsLogInsertRow row : rows) {
+            ps.setString(1, row.idBatch());
+            ps.setString(2, row.productId());
+            if (row.dtv() != null) {
+                ps.setTimestamp(3, row.dtv());
+            } else {
+                ps.setNull(3, Types.TIMESTAMP);
+            }
+            ps.setInt(4, row.np());
+            ps.setInt(5, row.eventType());
+            ps.setTimestamp(6, row.eventTime());
+            ps.setString(7, row.lineIdFact());
+            ps.addBatch();
+        }
+
+        ps.executeBatch();
+    } catch (SQLException e) {
+        throw new RuntimeException("Failed to insert MS_LOG rows", e);
+    }
+ }
 }
+
 

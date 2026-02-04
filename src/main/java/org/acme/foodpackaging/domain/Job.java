@@ -48,6 +48,7 @@ public class Job {
 
     private LocalDateTime cameraStart;
     private LocalDateTime cameraEnd;
+    private LocalDateTime dtv;
     private LocalDateTime startProductionDateTimeFact;
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;

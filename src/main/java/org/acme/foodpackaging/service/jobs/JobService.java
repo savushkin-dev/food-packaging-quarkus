@@ -11,6 +11,9 @@ import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.record.MsLogInsertRow;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
@@ -27,8 +30,18 @@ import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 @ApplicationScoped
 public class JobService {
 
+    private static final int START_FACT_EVENT_TYPE = 1;
+    private static final int START_CAMERA_EVENT_TYPE = 2;
+    private static final int END_CAMERA_EVENT_TYPE = 3;
+
     @Inject
     LoadDataService loadDataService;
+
+    @Inject
+    UploadDataService uploadDataService;
+
+    @Inject
+    JobRepository jobRepository;
 
     /**
      * Инициализирует список задач из базы данных.
@@ -115,60 +128,109 @@ public class JobService {
      * @param solution The packaging schedule to initialize
      */
     public void initFactProductionData(
-            PackagingSchedule solution,
-            Map<FactKey, FactProductionRow> factMap
-    ) {
+        PackagingSchedule solution,
+        Map<FactKey, FactProductionRow> factMap
+) {
 
-        for (Job job : solution.getJobs()) {
+    for (Job job : solution.getJobs()) {
 
-            if (job.getProduct() == null) {
-                continue;
-            }
+        if (job.getProduct() == null) {
+            continue;
+        }
 
-            FactKey key = new FactKey(
-                    job.getProduct().getId(),
-                    job.getNp()
-            );
+        String kmc = job.getProduct().getId();
+        Integer np = job.getNp();
 
-            FactProductionRow factRow = factMap.get(key);
+        FactProductionRow startFact = factMap.get(new FactKey(kmc, np, START_FACT_EVENT_TYPE));
+        if (startFact != null) {
+            job.setIdBatch(startFact.idBatch());
+            job.setLineIdFact(startFact.lineIdFact());
+            job.setStartProductionDateTimeFact(startFact.eventTime().toLocalDateTime());
+        }
 
-            if (factRow == null) {
-                // факт не найден
-                continue;
-            }
+        FactProductionRow startCamera = factMap.get(new FactKey(kmc, np, START_CAMERA_EVENT_TYPE));
+        if (startCamera != null) {
+            job.setIdBatch(startCamera.idBatch());
+            job.setLineIdFact(startCamera.lineIdFact());
+            job.setCameraStart(startCamera.eventTime().toLocalDateTime());
+        }
 
-            job.setIdBatch(factRow.idBatch());
-            job.setLineIdFact(factRow.lineIdFact());
-            job.setStartProductionDateTimeFact(
-                    factRow.startProductionDateTimeFact().toLocalDateTime()
-            );
+        FactProductionRow endCamera = factMap.get(new FactKey(kmc, np, END_CAMERA_EVENT_TYPE));
+        if (endCamera != null) {
+            job.setIdBatch(endCamera.idBatch());
+            job.setLineIdFact(endCamera.lineIdFact());
+            job.setCameraEnd(endCamera.eventTime().toLocalDateTime());
         }
     }
+}
 
     /**
      * Инициализирует фактические данные по камере (начало/конец) по ID партии.
      *
      * @param solution The packaging schedule to initialize
-     * @param cameraMap Map keyed by idBatch with camera start/end values
      */
-    public void initCameraFactData(
-            PackagingSchedule solution,
-            Map<String, CameraValue> cameraMap
-    ) {
-        for (Job job : solution.getJobs()) {
-            String idBatch = job.getIdBatch();
-            if (idBatch == null) {
-                continue;
-            }
-            CameraValue camera = cameraMap.get(idBatch);
+    public void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
+
+        
+    
+        List<Job> jobsWithoutCamera = solution.getJobs().stream()
+                .filter(j -> j.getIdBatch() != null)
+                .filter(j -> j.getCameraStart() == null && j.getCameraEnd() == null)
+                .toList();
+    
+        if (jobsWithoutCamera.isEmpty()) {
+            return;
+        }
+    
+        Map<String, CameraValue> cameraMap = jobRepository.getCameraFactRowMap(jobsWithoutCamera);
+    
+        List<MsLogInsertRow> msLogRows = new ArrayList<>();
+    
+        for (Job job : jobsWithoutCamera) {
+    
+            CameraValue camera = cameraMap.get(job.getIdBatch());
             if (camera == null) {
                 continue;
             }
-            job.setCameraStart(camera.cameraStart());
-            job.setCameraEnd(camera.cameraEnd());
+    
+            if (camera.cameraStart() != null) {
+                job.setCameraStart(camera.cameraStart());
+    
+                msLogRows.add(buildMsLogRow(
+                        job,
+                        START_CAMERA_EVENT_TYPE,
+                        camera.cameraStart()
+                ));
+            }
+    
+            if (camera.cameraEnd() != null) {
+                job.setCameraEnd(camera.cameraEnd());
+    
+                msLogRows.add(buildMsLogRow(
+                        job,
+                        END_CAMERA_EVENT_TYPE,
+                        camera.cameraEnd()
+                ));
+            }
+        }
+    
+        if (!msLogRows.isEmpty()) {
+            uploadDataService.fillMsLogTable(msLogRows);
         }
     }
-
+    
+    private MsLogInsertRow buildMsLogRow(Job job, int eventType, LocalDateTime eventTime) {
+        return new MsLogInsertRow(
+                job.getIdBatch(),
+                job.getProduct().getId(),
+                job.getLineIdFact(),
+                job.getNp(),
+                eventType,
+                Timestamp.valueOf(job.getDtv()),
+                Timestamp.valueOf(eventTime)
+                
+        );
+    }
     /**
      * Преобразует Timestamp в LocalDateTime.
      * 

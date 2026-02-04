@@ -55,7 +55,7 @@ public class MsLog extends PanacheEntityBase {
     private Integer eventType;
 
     @Column(name = "DT")
-    private LocalDateTime startProductionDateTime;
+    private LocalDateTime eventTime;
 
     @Column(name = "KRC", columnDefinition = "CHAR(12)")
     private String lineIdFact;
@@ -69,7 +69,7 @@ public class MsLog extends PanacheEntityBase {
                 ", startDateTimeFact=" + startDateTimeFact +
                 ", np=" + np +
                 ", eventType=" + eventType +
-                ", startProductionDateTime=" + startProductionDateTime +
+                ", eventTime=" + eventTime +
                 ", lineId='" + lineIdFact + '\'' +
                 '}';
     }
