@@ -118,7 +118,7 @@ public class JobDBLoader {
             }
             CameraFactRow row = rows.getFirst();
             result.put(
-                    row.idBatch(),
+                    idBatch,
                     new CameraValue(
                             row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
                             row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
