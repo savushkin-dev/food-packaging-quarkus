@@ -87,6 +87,13 @@ public static final String LOAD_CAMERA_FACT = """
   WHERE IDBATCH = ? AND KD = 71
 """;
 
+    public static final String UPDATE_CAMERA_END_EVENT = """
+    UPDATE [MES].[dbo].[MS_LOG]
+    SET DT = ?
+    WHERE IDBATCH = ?
+      AND EVENT = ?
+""";
+
 public static final String INSERT_CAMERA_EVENT = """
     INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, KMC, KRC, NP, EVENT, DTV, DT)
     VALUES (?, ?, ?, ?, ?, ?, ?)

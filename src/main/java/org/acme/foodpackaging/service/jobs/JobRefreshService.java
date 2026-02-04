@@ -5,12 +5,20 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
 
 @ApplicationScoped
@@ -22,6 +30,8 @@ public class JobRefreshService {
     JobService jobService;
     @Inject
     ProductService productService;
+    @Inject
+    UploadDataService uploadDataService;
 
     public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
         for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
@@ -64,6 +74,47 @@ public class JobRefreshService {
         solution.getJobIdMap().clear();
         for (Job j : solution.getJobs()) {
            solution.getJobIdMap().put(j.getSnpz(), j);
+        }
+    }
+
+    public void refreshStaleCameraEndFromPmLog(PackagingSchedule solution) {
+
+        LocalDateTime threshold = LocalDateTime.now().minusHours(12);
+
+        List<Job> staleCameraJobs = solution.getJobs().stream()
+                .filter(j -> j.getIdBatch() != null)
+                .filter(j -> j.getCameraStart() != null)
+                .filter(j -> j.getCameraStart().isAfter(threshold))
+                .toList();
+
+        if (staleCameraJobs.isEmpty()) {
+            return;
+        }
+
+        Map<String, CameraValue> cameraMap =
+                jobRepository.getCameraFactRowMap(staleCameraJobs);
+
+        List<MsLogInsertRow> msLogRows = new ArrayList<>();
+
+        for (Job job : staleCameraJobs) {
+
+            CameraValue camera = cameraMap.get(job.getIdBatch());
+            if (camera == null || camera.cameraEnd() == null) {
+                continue;
+            }
+
+            job.setCameraEnd(camera.cameraEnd());
+
+            MsLogInsertRow row = new MsLogInsertRow(
+                    job, END_CAMERA_EVENT_TYPE,
+                    Timestamp.valueOf(camera.cameraEnd())
+            );
+
+            msLogRows.add(row);
+        }
+
+        if (!msLogRows.isEmpty()) {
+            uploadDataService.updateCameraEndInMsLog(msLogRows);
         }
     }
 }

@@ -11,7 +11,7 @@ import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.record.MsLogInsertRow;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
@@ -23,16 +23,14 @@ import java.util.Map;
 
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+
 /**
  * Business logic service for job management.
  * Handles job creation and initialization from database rows.
  */
 @ApplicationScoped
 public class JobService {
-
-    private static final int START_FACT_EVENT_TYPE = 1;
-    private static final int START_CAMERA_EVENT_TYPE = 2;
-    private static final int END_CAMERA_EVENT_TYPE = 3;
 
     @Inject
     LoadDataService loadDataService;
@@ -177,7 +175,7 @@ public class JobService {
         if (jobsWithoutCamera.isEmpty()) {
             return;
         }
-    
+
         Map<String, CameraValue> cameraMap = jobRepository.getCameraFactRowMap(jobsWithoutCamera);
     
         List<MsLogInsertRow> msLogRows = new ArrayList<>();
@@ -189,23 +187,21 @@ public class JobService {
                 continue;
             }
     
-            if (camera.cameraStart() != null) {
+            if (job.getCameraStart()== null && camera.cameraStart() != null) {
                 job.setCameraStart(camera.cameraStart());
     
-                msLogRows.add(buildMsLogRow(
-                        job,
-                        START_CAMERA_EVENT_TYPE,
-                        camera.cameraStart()
+                msLogRows.add(new MsLogInsertRow(
+                        job, START_CAMERA_EVENT_TYPE,
+                        Timestamp.valueOf(job.getCameraStart())
                 ));
             }
     
-            if (camera.cameraEnd() != null) {
+            if (job.getCameraEnd()== null && camera.cameraEnd() != null) {
                 job.setCameraEnd(camera.cameraEnd());
     
-                msLogRows.add(buildMsLogRow(
-                        job,
-                        END_CAMERA_EVENT_TYPE,
-                        camera.cameraEnd()
+                msLogRows.add(new MsLogInsertRow(
+                        job, END_CAMERA_EVENT_TYPE,
+                        Timestamp.valueOf(job.getCameraEnd())
                 ));
             }
         }
@@ -214,19 +210,7 @@ public class JobService {
             uploadDataService.fillMsLogTable(msLogRows);
         }
     }
-    
-    private MsLogInsertRow buildMsLogRow(Job job, int eventType, LocalDateTime eventTime) {
-        return new MsLogInsertRow(
-                job.getIdBatch(),
-                job.getProduct().getId(),
-                job.getLineIdFact(),
-                job.getNp(),
-                eventType,
-                Timestamp.valueOf(job.getDtv()),
-                Timestamp.valueOf(eventTime)
-                
-        );
-    }
+
     /**
      * Преобразует Timestamp в LocalDateTime.
      * 

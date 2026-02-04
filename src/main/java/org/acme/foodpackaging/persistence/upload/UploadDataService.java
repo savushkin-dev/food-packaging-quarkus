@@ -3,7 +3,7 @@ package org.acme.foodpackaging.persistence.upload;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.acme.foodpackaging.record.MsLogInsertRow;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
 import jakarta.transaction.Transactional;
 
 import java.sql.*;
@@ -88,21 +88,21 @@ public class UploadDataService {
         }
     }
         
-@Transactional
-public void fillMsLogTable(List<MsLogInsertRow> rows) {
+    @Transactional
+    public void fillMsLogTable(List<MsLogInsertRow> rows) {
     if (rows.isEmpty()) return;
 
     try (Connection conn = DriverManager.getConnection(dbUrl);
-         PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
+            PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
 
         for (MsLogInsertRow row : rows) {
-            ps.setString(1, row.idBatch());
-            ps.setString(2, row.productId());
-            ps.setString(3, row.lineIdFact());
-            ps.setInt(4, row.np());
-            ps.setInt(5, row.eventType());
-            ps.setTimestamp(6, row.dtv());
-            ps.setTimestamp(7, row.eventTime());
+            ps.setString(1, row.getIdBatch());
+            ps.setString(2, row.getProductId());
+            ps.setString(3, row.getLineIdFact());
+            ps.setInt(4, row.getNp());
+            ps.setInt(5, row.getEventType());
+            ps.setTimestamp(6, row.getDtv());
+            ps.setTimestamp(7, row.getEventTime());
 
             ps.addBatch();
         }
@@ -112,6 +112,25 @@ public void fillMsLogTable(List<MsLogInsertRow> rows) {
         throw new RuntimeException("Failed to insert MS_LOG rows", e);
     }
  }
+
+    public void updateCameraEndInMsLog(List<MsLogInsertRow> rows) {
+
+        if (rows.isEmpty()) return;
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(UPDATE_CAMERA_END_EVENT)) {
+
+            for (MsLogInsertRow row : rows) {
+                ps.setTimestamp(1, row.getEventTime());
+                ps.setString(2, row.getIdBatch());
+                ps.setInt(3, row.getEventType());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update camera end events in MS_LOG", e);
+        }
+    }
 }
 
 

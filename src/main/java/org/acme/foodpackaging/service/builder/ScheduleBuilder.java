@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
@@ -27,6 +28,8 @@ public class ScheduleBuilder {
     LineSchedulingService lineSchedulingService;
     @Inject
     ProductService productService;
+    @Inject
+    JobRefreshService jobRefreshService;
 
     public PackagingSchedule buildSchedule(LocalDate startDate) {
 
@@ -46,6 +49,7 @@ public class ScheduleBuilder {
         );
 
         jobService.enrichCameraFactsFromPmLog(schedule);
+        jobRefreshService.refreshStaleCameraEndFromPmLog(schedule);
         
         List<Line> lines = lineService.getLines();
         List<Product> products = productService.getProductList(schedule);

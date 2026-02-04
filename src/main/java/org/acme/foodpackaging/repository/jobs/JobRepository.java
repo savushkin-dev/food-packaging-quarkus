@@ -75,16 +75,11 @@ public class JobRepository {
      */
      public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) {
 
-        List<Job> jobsForCameraLoad = jobs.stream()
-                .filter(j -> j.getIdBatch() != null)
-                .filter(j -> j.getCameraStart() == null)
-                .toList();
-    
-        if (jobsForCameraLoad.isEmpty()) {
+        if (jobs.isEmpty()) {
             return Map.of();
         }
     
-        return jobDBLoader.loadCameraRowMap(jobsForCameraLoad);
+        return jobDBLoader.loadCameraRowMap(jobs);
     }    
 }
 
