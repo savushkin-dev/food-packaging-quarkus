@@ -92,7 +92,7 @@ public class UploadDataService {
       /**
      * Заполняет таблицу MS_LOG данными по камере.
      * 
-     * @param rows rows
+     * @param rows список записей для вставки в MS_LOG
      */  
     @Transactional
     public void fillMsLogTable(List<MsLogInsertRow> rows) {
@@ -121,7 +121,7 @@ public class UploadDataService {
    /**
      * Обновляет устаревшие данные по камере в таблице MS_LOG.
     * @param rows rows
-    */
+     * @param rows список записей с обновлёнными данными по камере
    public void updateCameraEndInMsLog(List<MsLogInsertRow> rows) {
 
         if (rows.isEmpty()) return;
