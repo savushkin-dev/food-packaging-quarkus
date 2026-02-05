@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
@@ -18,15 +19,20 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.remo
 public class ScheduleBuilder {
 
     @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobService jobService;
-    @Inject
-    LineService lineService;
-    @Inject
-    LineSchedulingService lineSchedulingService;
-    @Inject
-    ProductService productService;
+    public ScheduleBuilder(JobRepository jobRepository, JobService jobService, LineService lineService, LineSchedulingService lineSchedulingService, ProductService productService, JobRefreshService jobRefreshService) {
+        this.jobRepository = jobRepository;
+        this.jobService = jobService;
+        this.lineService = lineService;
+        this.lineSchedulingService = lineSchedulingService;
+        this.productService = productService;
+        this.jobRefreshService = jobRefreshService;
+    }
+    private final JobRepository jobRepository;
+    private final JobService jobService;
+    private final LineService lineService;
+    private final LineSchedulingService lineSchedulingService;
+    private final ProductService productService;
+    private final JobRefreshService jobRefreshService;
 
     public PackagingSchedule buildSchedule(LocalDate startDate) {
 
@@ -44,6 +50,9 @@ public class ScheduleBuilder {
         jobService.initFactProductionData(schedule, jobRepository.getFactProductionRowMap(
             schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
         );
+
+        jobService.enrichCameraFactsFromPmLog(schedule);
+        jobRefreshService.refreshStaleCameraEndFromPmLog(schedule);
         
         List<Line> lines = lineService.getLines();
         List<Product> products = productService.getProductList(schedule);

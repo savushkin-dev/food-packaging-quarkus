@@ -2,7 +2,11 @@ package org.acme.foodpackaging.persistence.upload;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.exception.service.DataUploadException;
+import org.acme.foodpackaging.rest.ApiFields;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
+import jakarta.transaction.Transactional;
 
 import java.sql.*;
 import java.util.List;
@@ -85,5 +89,59 @@ public class UploadDataService {
             }
         }
     }
+      /**
+     * Заполняет таблицу MS_LOG данными по камере.
+     * 
+     * @param rows список записей для вставки в MS_LOG
+     */  
+    @Transactional
+    public void fillMsLogTable(List<MsLogInsertRow> rows) {
+    if (rows.isEmpty()) return;
+
+    try (Connection conn = DriverManager.getConnection(dbUrl);
+            PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
+
+        for (MsLogInsertRow row : rows) {
+            ps.setString(1, row.getIdBatch());
+            ps.setString(2, row.getProductId());
+            ps.setString(3, row.getLineIdFact());
+            ps.setInt(4, row.getNp());
+            ps.setInt(5, row.getEventType());
+            ps.setTimestamp(6, row.getDtv());
+            ps.setTimestamp(7, row.getEventTime());
+
+            ps.addBatch();
+        }
+
+        ps.executeBatch();
+    } catch (SQLException e) {
+        throw new DataUploadException(ApiFields.MS_LOG_INSERT_FAILED, e);
+    }
+ }
+
+ /**
+    * Обновляет устаревшие данные по камере в таблице MS_LOG.
+    * @param rows список записей для обновления данных по камере
+    */
+
+   public void updateCameraEndInMsLog(List<MsLogInsertRow> rows) {
+
+        if (rows.isEmpty()) return;
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             PreparedStatement ps = conn.prepareStatement(UPDATE_CAMERA_END_EVENT)) {
+
+            for (MsLogInsertRow row : rows) {
+                ps.setTimestamp(1, row.getEventTime());
+                ps.setString(2, row.getIdBatch());
+                ps.setInt(3, row.getEventType());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        } catch (SQLException e) {
+            throw new DataUploadException(ApiFields.MS_LOG_UPDATE_CAMERA_END_FAILED, e);
+        }
+    }
 }
+
 

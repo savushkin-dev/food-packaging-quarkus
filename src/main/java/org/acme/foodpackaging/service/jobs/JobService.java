@@ -10,6 +10,10 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
+import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
@@ -19,6 +23,8 @@ import java.util.Map;
 
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 
+import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+
 /**
  * Business logic service for job management.
  * Handles job creation and initialization from database rows.
@@ -27,7 +33,16 @@ import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 public class JobService {
 
     @Inject
-    LoadDataService loadDataService;
+    public JobService(LoadDataService loadDataService, 
+        UploadDataService uploadDataService, JobRepository jobRepository) {
+        this.loadDataService = loadDataService;
+        this.uploadDataService = uploadDataService;
+        this.jobRepository = jobRepository;
+    }
+
+    private final LoadDataService loadDataService;
+    private final UploadDataService uploadDataService;
+    private final JobRepository jobRepository;
 
     /**
      * Инициализирует список задач из базы данных.
@@ -109,37 +124,93 @@ public class JobService {
 
     /**
      * Инициализирует фактические данные произвосдтва партий.
-     * Ищет задачи по ключу Pair<KMC, NP></KMC,>.
+     * Ищет задачи по ключу record FactKey{KMC, NP, EVENT_TYPE}.
      *
      * @param solution The packaging schedule to initialize
      */
     public void initFactProductionData(
-            PackagingSchedule solution,
-            Map<FactKey, FactProductionRow> factMap
-    ) {
+        PackagingSchedule solution,
+        Map<FactKey, FactProductionRow> factMap
+) {
 
-        for (Job job : solution.getJobs()) {
+    for (Job job : solution.getJobs()) {
 
-            if (job.getProduct() == null) {
+        if (job.getProduct() == null) {
+            continue;
+        }
+
+        String kmc = job.getProduct().getId();
+        Integer np = job.getNp();
+
+        FactProductionRow startFact = factMap.get(new FactKey(kmc, np, START_FACT_EVENT_TYPE));
+
+        if (startFact != null) {
+            job.setIdBatch(startFact.idBatch());
+            job.setLineIdFact(startFact.lineIdFact());
+            job.setDtv(startFact.dtv().toLocalDateTime());
+            job.setStartProductionDateTimeFact(startFact.eventTime().toLocalDateTime());
+        }
+
+        FactProductionRow startCamera = factMap.get(new FactKey(kmc, np, START_CAMERA_EVENT_TYPE));
+        if (startCamera != null) {
+            job.setCameraStart(startCamera.eventTime().toLocalDateTime());
+        }
+
+        FactProductionRow endCamera = factMap.get(new FactKey(kmc, np, END_CAMERA_EVENT_TYPE));
+        if (endCamera != null) {
+            job.setCameraEnd(endCamera.eventTime().toLocalDateTime());
+        }
+    }
+}
+
+    /**
+     * Инициализирует  недостающие данные по камере (начало/конец) по ID партии.
+     *
+     * @param solution The packaging schedule to initialize
+     */
+    public void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
+
+        List<Job> jobsWithoutCamera = solution.getJobs().stream()
+                .filter(j -> j.getIdBatch() != null)
+                .filter(j -> j.getCameraStart() == null || j.getCameraEnd() == null)
+                .toList();
+    
+        if (jobsWithoutCamera.isEmpty()) {
+            return;
+        }
+
+        Map<String, CameraValue> cameraMap = jobRepository.getCameraFactRowMap(jobsWithoutCamera);
+    
+        List<MsLogInsertRow> msLogRows = new ArrayList<>();
+    
+        for (Job job : jobsWithoutCamera) {
+    
+            CameraValue camera = cameraMap.get(job.getIdBatch());
+            if (camera == null) {
                 continue;
             }
-
-            FactKey key = new FactKey(
-                    job.getProduct().getId(),
-                    job.getNp()
-            );
-
-            FactProductionRow factRow = factMap.get(key);
-
-            if (factRow == null) {
-                // факт не найден
-                continue;
+    
+            if (job.getCameraStart()== null && camera.cameraStart() != null) {
+                job.setCameraStart(camera.cameraStart());
+    
+                msLogRows.add(new MsLogInsertRow(
+                        job, START_CAMERA_EVENT_TYPE,
+                        Timestamp.valueOf(job.getCameraStart())
+                ));
             }
-
-            job.setLineIdFact(factRow.lineIdFact());
-            job.setStartProductionDateTimeFact(
-                    factRow.startProductionDateTimeFact().toLocalDateTime()
-            );
+    
+            if (job.getCameraEnd()== null && camera.cameraEnd() != null) {
+                job.setCameraEnd(camera.cameraEnd());
+    
+                msLogRows.add(new MsLogInsertRow(
+                        job, END_CAMERA_EVENT_TYPE,
+                        Timestamp.valueOf(job.getCameraEnd())
+                ));
+            }
+        }
+    
+        if (!msLogRows.isEmpty()) {
+            uploadDataService.fillMsLogTable(msLogRows);
         }
     }
 

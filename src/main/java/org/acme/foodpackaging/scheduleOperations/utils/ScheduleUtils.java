@@ -12,6 +12,10 @@ import java.util.Map;
 import java.util.Objects;
 
 public class ScheduleUtils {
+
+    public static final int START_FACT_EVENT_TYPE = 1;
+    public static final int START_CAMERA_EVENT_TYPE = 2;
+    public static final int END_CAMERA_EVENT_TYPE = 3;
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */

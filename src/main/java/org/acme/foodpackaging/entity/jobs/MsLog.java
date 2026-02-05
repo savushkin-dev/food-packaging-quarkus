@@ -21,6 +21,7 @@ import java.util.UUID;
         classes = @ConstructorResult(
                 targetClass = FactProductionRow.class,
                 columns = {
+                        @ColumnResult(name = "IDBATCH", type = String.class),
                         @ColumnResult(name = "KMC", type = String.class),
                         @ColumnResult(name = "DTV", type = Timestamp.class),
                         @ColumnResult(name = "NP", type = Integer.class),
@@ -37,6 +38,10 @@ public class MsLog extends PanacheEntityBase {
     @Column(name = "F_GUID", nullable = false)
     public UUID id;
 
+    @Id
+    @Column(name = "IDBATCH")
+    public String idBatch;
+
     @Column(name = "KMC")
     public String kmc;
 
@@ -50,7 +55,7 @@ public class MsLog extends PanacheEntityBase {
     private Integer eventType;
 
     @Column(name = "DT")
-    private LocalDateTime startProductionDateTime;
+    private LocalDateTime eventTime;
 
     @Column(name = "KRC", columnDefinition = "CHAR(12)")
     private String lineIdFact;
@@ -59,11 +64,12 @@ public class MsLog extends PanacheEntityBase {
     public String toString() {
         return "MsLog{" +
                 "id=" + id +
+                ", idBatch='" + idBatch + '\'' +
                 ", kmc='" + kmc + '\'' +
                 ", startDateTimeFact=" + startDateTimeFact +
                 ", np=" + np +
                 ", eventType=" + eventType +
-                ", startProductionDateTime=" + startProductionDateTime +
+                ", eventTime=" + eventTime +
                 ", lineId='" + lineIdFact + '\'' +
                 '}';
     }

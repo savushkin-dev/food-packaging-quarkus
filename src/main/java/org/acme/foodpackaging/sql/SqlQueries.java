@@ -68,15 +68,37 @@ WHERE
 
     public static final String LOAD_FACT_DB = """
     SELECT
-        v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
+       v.IDBATCH, v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
     FROM [MES].[dbo].[MS_LOG] v
     WHERE
         v.DTV > ?1
         AND v.DTV <= ?2
-        AND v.EVENT = 1
+        AND v.EVENT <=3
     ORDER BY
         v.DTV, v.KMC, v.NP
 """;
+
+
+public static final String LOAD_CAMERA_FACT = """
+ SELECT
+  MIN(DTS) AS DTSTART,
+  MAX(DTS) AS DTEND
+  FROM [prommark].[dbo].[PM_LOG] WITH (NOLOCK)
+  WHERE IDBATCH = ? AND KD = 71
+""";
+
+    public static final String UPDATE_CAMERA_END_EVENT = """
+    UPDATE [MES].[dbo].[MS_LOG]
+    SET DT = ?
+    WHERE IDBATCH = ?
+      AND EVENT = ?
+""";
+
+public static final String INSERT_CAMERA_EVENT = """
+    INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, KMC, KRC, NP, EVENT, DTV, DT)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+""";
+
 public static final String UPDATE_WORK = """
     update [MES].[dbo].[BD_VZPMC]
     set KRC=?, PDTN=?, PDTO=?, PDUR=?

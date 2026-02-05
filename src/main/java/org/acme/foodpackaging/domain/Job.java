@@ -29,6 +29,7 @@ public class Job {
     @PlanningId
     private String id;
     private Long fId;
+    private String idBatch;
     private String lineId;
     private String lineIdFact;
     private String name;
@@ -45,6 +46,9 @@ public class Job {
     private boolean maintenance;
     private Integer maintenanceTypeId;
 
+    private LocalDateTime cameraStart;
+    private LocalDateTime cameraEnd;
+    private LocalDateTime dtv;
     private LocalDateTime startProductionDateTimeFact;
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
