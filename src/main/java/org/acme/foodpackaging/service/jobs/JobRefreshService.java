@@ -124,17 +124,16 @@ public class JobRefreshService {
             uploadDataService.updateCameraEndInMsLog(msLogRows);
         }
     }
-    /**
-     *  Сравнивает значения по камере у job с новыми значениями из БД.
-     *
-     *  Возвращает {@code true}, если значения отличаются не менее чем на одну минуту.
-     *
-     * @param a предыдущее значение времени по камере
-     * @param b новое значение времени по камере из БД
-     * @return {@code true}, если значения различаются более чем на одну минуту, иначе {@code false}
+/**
+ * Возвращает {@code true}, если значения отличаются не менее чем на одну минуту.
+ * @param a предыдущее значение времени по камере
+ * @param b новое значение времени по камере из БД
+ * @return {@code true}, если значения различаются более чем на одну минуту, иначе {@code false}
+*/
+    private boolean differsMoreThan(LocalDateTime a, LocalDateTime b) {
         if (a == null || b == null) {
-            return a != b;
+        return a != b;
         }
-        return Math.abs(Duration.between(a, b).toMinutes()) >= 1;
+    return Math.abs(Duration.between(a, b).toMinutes()) >= 1;
     }
 }

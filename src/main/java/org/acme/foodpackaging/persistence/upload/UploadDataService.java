@@ -118,10 +118,12 @@ public class UploadDataService {
         throw new DataUploadException(ApiFields.MS_LOG_INSERT_FAILED, e);
     }
  }
-   /**
-     * Обновляет устаревшие данные по камере в таблице MS_LOG.
-    * @param rows rows
-     * @param rows список записей для обновления данных по камере
+
+ /**
+    * Обновляет устаревшие данные по камере в таблице MS_LOG.
+    * @param rows список записей для обновления данных по камере
+    */
+
    public void updateCameraEndInMsLog(List<MsLogInsertRow> rows) {
 
         if (rows.isEmpty()) return;
