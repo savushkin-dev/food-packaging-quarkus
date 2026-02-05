@@ -42,8 +42,8 @@ public class JobRefreshService {
 
     public PackagingSchedule applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
         selection.forEach((snpz, value) -> {
-            if (value.isSelect()) {
-                addJobIfAbsent(snpz, value.isLabeling(), solution);
+            if (Boolean.TRUE.equals(value.isSelect())) {
+                addJobIfAbsent(snpz, Boolean.TRUE.equals(value.isLabeling()), solution);
             } else {
                 removeJobFromSolution(snpz, solution);
             }
