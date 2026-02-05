@@ -33,13 +33,16 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
 public class JobService {
 
     @Inject
-    LoadDataService loadDataService;
+    public JobService(LoadDataService loadDataService, 
+        UploadDataService uploadDataService, JobRepository jobRepository) {
+        this.loadDataService = loadDataService;
+        this.uploadDataService = uploadDataService;
+        this.jobRepository = jobRepository;
+    }
 
-    @Inject
-    UploadDataService uploadDataService;
-
-    @Inject
-    JobRepository jobRepository;
+    private final LoadDataService loadDataService;
+    private final UploadDataService uploadDataService;
+    private final JobRepository jobRepository;
 
     /**
      * Инициализирует список задач из базы данных.

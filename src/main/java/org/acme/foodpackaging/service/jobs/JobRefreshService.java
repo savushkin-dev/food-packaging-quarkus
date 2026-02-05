@@ -26,13 +26,18 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixL
 public class JobRefreshService {
 
     @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobService jobService;
-    @Inject
-    ProductService productService;
-    @Inject
-    UploadDataService uploadDataService;
+    public JobRefreshService(JobRepository jobRepository, JobService jobService, 
+        ProductService productService, UploadDataService uploadDataService) {
+        this.jobRepository = jobRepository;
+        this.jobService = jobService;
+        this.productService = productService;
+        this.uploadDataService = uploadDataService;
+    }
+
+    private final JobRepository jobRepository;
+    private final JobService jobService;
+    private final ProductService productService;
+    private final UploadDataService uploadDataService;
 
     public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
         for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {

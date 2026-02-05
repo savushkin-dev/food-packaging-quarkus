@@ -1,4 +1,4 @@
-package service;
+package service.products;
 
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.record.CleaningRule;
