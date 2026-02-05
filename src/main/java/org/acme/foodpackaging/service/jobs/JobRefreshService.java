@@ -74,6 +74,7 @@ public class JobRefreshService {
     private void rebuildId(PackagingSchedule solution) {
         solution.getJobIdMap().clear();
         for (Job j : solution.getJobs()) {
+            if(j.isMaintenance()) continue;
            solution.getJobIdMap().put(j.getSnpz(), j);
         }
     }

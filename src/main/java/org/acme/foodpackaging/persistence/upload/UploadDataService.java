@@ -43,7 +43,7 @@ public class UploadDataService {
             conn.setAutoCommit(false); // ручное управление транзакцией для атомарности
 
             try (PreparedStatement ps = conn.prepareStatement(UPDATE_WORK)) {
-                for (Job job : jobs) {
+                for (Job job : jobsToProcess) {
                     ps.setString(1, job.getLine().getId());
                     ps.setObject(2, job.getStartProductionDateTime());
                     ps.setObject(3, job.getEndDateTime());
