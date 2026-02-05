@@ -26,7 +26,7 @@ public class CleaningRuleRepository implements PanacheRepository<PlrChange> {
                 .map(r -> new CleaningRule(
                         r.parameter,
                         r.from, r.to,
-                        r.duration
+                        r.duration, r.isPLRLC
                 ))
                 .toList();
     }

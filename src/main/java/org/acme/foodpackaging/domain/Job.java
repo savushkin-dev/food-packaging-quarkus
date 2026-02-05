@@ -10,6 +10,7 @@ import ai.timefold.solver.core.api.domain.variable.CascadingUpdateShadowVariable
 import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
+import org.acme.foodpackaging.record.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -291,7 +292,16 @@ public class Job {
             startCleaning = previous.getEndDateTime();
             if (startCleaning != null && getProduct() != null && previous.getProduct() != null) {
                 try {
-                    Duration cleanupDuration = getProduct().getCleanupDuration(previous.getProduct());
+                    CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
+
+                    Duration cleanupDuration;
+                    if (meta.isPLRLC()) {
+                       
+                        cleanupDuration = product.getPlrLcCleaningDurations().get(line.getId());
+                    } else {
+                        cleanupDuration = product.getCleaningDurations().get(previous.getProduct());
+                    }
+
                     startProduction = startCleaning.plus(cleanupDuration);
                 } catch (IllegalArgumentException | NullPointerException e) {
                     // If cleanup duration is missing or cleaningDurations map is null, using zero duration as fallback
@@ -307,5 +317,5 @@ public class Job {
         setStartProductionDateTime(startProduction);
         var endTime = startProduction == null ? null : startProduction.plus(getDuration());
         setEndDateTime(endTime);
-    }
+    }   
 }
