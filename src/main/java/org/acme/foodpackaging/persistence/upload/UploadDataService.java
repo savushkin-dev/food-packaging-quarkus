@@ -2,6 +2,8 @@ package org.acme.foodpackaging.persistence.upload;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.exception.service.DataUploadException;
+import org.acme.foodpackaging.rest.ApiFields;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.acme.foodpackaging.dto.MsLogInsertRow;
 import jakarta.transaction.Transactional;
@@ -87,7 +89,11 @@ public class UploadDataService {
             }
         }
     }
-        
+      /**
+     * Заполняет таблицу MS_LOG данными по камере.
+     * 
+     * @param List<MsLogInsertRow> rows
+     */  
     @Transactional
     public void fillMsLogTable(List<MsLogInsertRow> rows) {
     if (rows.isEmpty()) return;
@@ -109,10 +115,14 @@ public class UploadDataService {
 
         ps.executeBatch();
     } catch (SQLException e) {
-        throw new RuntimeException("Failed to insert MS_LOG rows", e);
+        throw new DataUploadException(ApiFields.MS_LOG_INSERT_FAILED, e);
     }
  }
-
+   /**
+     * Обновляет устаревшие данные по камере в таблице MS_LOG.
+     * 
+     * @param List<MsLogInsertRow> rows
+     */  
     public void updateCameraEndInMsLog(List<MsLogInsertRow> rows) {
 
         if (rows.isEmpty()) return;
@@ -128,7 +138,7 @@ public class UploadDataService {
             }
             ps.executeBatch();
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to update camera end events in MS_LOG", e);
+            throw new DataUploadException(ApiFields.MS_LOG_UPDATE_CAMERA_END_FAILED, e);
         }
     }
 }

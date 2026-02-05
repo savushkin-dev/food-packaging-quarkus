@@ -106,29 +106,23 @@ public class JobDBLoader {
     
         for (Job job : jobs) {
             String idBatch = job.getIdBatch();
-            if (idBatch == null || processedBatches.contains(idBatch)) {
-                continue;
+            if (idBatch != null && !processedBatches.contains(idBatch)) {
+                processedBatches.add(idBatch);
+                List<CameraFactRow> rows = em
+                        .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
+                        .setParameter(1, idBatch)
+                        .getResultList();
+                if (!rows.isEmpty()) {
+                    CameraFactRow row = rows.getFirst();
+                    result.put(
+                            idBatch,
+                            new CameraValue(
+                                    row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
+                                    row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
+                            )
+                    );
+                }
             }
-    
-            processedBatches.add(idBatch);
-    
-            List<CameraFactRow> rows = em
-                    .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
-                    .setParameter(1, idBatch)
-                    .getResultList();
-    
-            if (rows.isEmpty()) {
-                continue;
-            }
-    
-            CameraFactRow row = rows.getFirst();
-            result.put(
-                    idBatch,
-                    new CameraValue(
-                            row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
-                            row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
-                    )
-            );
         }
         return result;
     }

@@ -100,7 +100,7 @@ class ScheduleBuilderTest {
         verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobService).initSolutionJobList(schedule);
         verify(jobService).initFactProductionData(eq(schedule), any());
-        verify(jobService).enrichCameraFactsFromPmLog(eq(schedule));
+        verify(jobService).enrichCameraFactsFromPmLog(schedule);
         verify(lineService).getLines();
         verify(lineSchedulingService).initJobListOnLine(schedule);
         verify(productService).getProductList(schedule);

@@ -124,7 +124,7 @@ public class JobService {
 
     /**
      * Инициализирует фактические данные произвосдтва партий.
-     * Ищет задачи по ключу Pair<KMC, NP></KMC,>.
+     * Ищет задачи по ключу record FactKey{KMC, NP, EVENT_TYPE}.
      *
      * @param solution The packaging schedule to initialize
      */
@@ -164,7 +164,7 @@ public class JobService {
 }
 
     /**
-     * Инициализирует фактические данные по камере (начало/конец) по ID партии.
+     * Инициализирует  недостающие данные по камере (начало/конец) по ID партии.
      *
      * @param solution The packaging schedule to initialize
      */

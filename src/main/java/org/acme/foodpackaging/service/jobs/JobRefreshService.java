@@ -84,6 +84,11 @@ public class JobRefreshService {
         }
     }
 
+    /**
+     * Обновляет данные по камере в MS_LOG для партий со времени старта которых прошло меньше 12 часов.
+     *
+     * @param solution The packaging schedule to initialize
+     */
     public void refreshStaleCameraEndFromPmLog(PackagingSchedule solution) {
 
         LocalDateTime threshold = LocalDateTime.now().minusHours(12);
@@ -104,35 +109,31 @@ public class JobRefreshService {
         List<MsLogInsertRow> msLogRows = new ArrayList<>();
 
         for (Job job : staleCameraJobs) {
-
             CameraValue camera = cameraMap.get(job.getIdBatch());
-            if (camera == null || camera.cameraEnd() == null) {
-                continue;
+            if (camera != null && camera.cameraEnd() != null
+                    && differsMoreThan(job.getCameraEnd(), camera.cameraEnd())) {
+                job.setCameraEnd(camera.cameraEnd());
+                msLogRows.add(new MsLogInsertRow(
+                        job, END_CAMERA_EVENT_TYPE,
+                        Timestamp.valueOf(camera.cameraEnd())
+                ));
             }
-
-            LocalDateTime oldEnd = job.getCameraEnd();
-            LocalDateTime newEnd = camera.cameraEnd();
-
-            if (!differsMoreThan(oldEnd, newEnd)) {
-                continue;
-            }
-
-            job.setCameraEnd(camera.cameraEnd());
-
-            MsLogInsertRow row = new MsLogInsertRow(
-                    job, END_CAMERA_EVENT_TYPE,
-                    Timestamp.valueOf(camera.cameraEnd())
-            );
-
-            msLogRows.add(row);
         }
 
         if (!msLogRows.isEmpty()) {
             uploadDataService.updateCameraEndInMsLog(msLogRows);
         }
     }
-
+/**
+     *  Сравнивает значения по камере у job с новыми значениями из бд.
+     * 
+     * @param startProductionDateTime Timestamp to convert
+     * @return LocalDateTime or null if input is null
+     */
     private boolean differsMoreThan(LocalDateTime a, LocalDateTime b) {
+        if (a == null || b == null) {
+            return a != b;
+        }
         return Math.abs(Duration.between(a, b).toMinutes()) >= 1;
     }
 }

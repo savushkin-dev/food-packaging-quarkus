@@ -19,17 +19,20 @@ import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.remo
 public class ScheduleBuilder {
 
     @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobService jobService;
-    @Inject
-    LineService lineService;
-    @Inject
-    LineSchedulingService lineSchedulingService;
-    @Inject
-    ProductService productService;
-    @Inject
-    JobRefreshService jobRefreshService;
+    public ScheduleBuilder(JobRepository jobRepository, JobService jobService, LineService lineService, LineSchedulingService lineSchedulingService, ProductService productService, JobRefreshService jobRefreshService) {
+        this.jobRepository = jobRepository;
+        this.jobService = jobService;
+        this.lineService = lineService;
+        this.lineSchedulingService = lineSchedulingService;
+        this.productService = productService;
+        this.jobRefreshService = jobRefreshService;
+    }
+    private final JobRepository jobRepository;
+    private final JobService jobService;
+    private final LineService lineService;
+    private final LineSchedulingService lineSchedulingService;
+    private final ProductService productService;
+    private final JobRefreshService jobRefreshService;
 
     public PackagingSchedule buildSchedule(LocalDate startDate) {
 
