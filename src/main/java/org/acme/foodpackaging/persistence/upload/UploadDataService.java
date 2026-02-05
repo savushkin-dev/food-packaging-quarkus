@@ -121,7 +121,7 @@ public class UploadDataService {
    /**
      * Обновляет устаревшие данные по камере в таблице MS_LOG.
     * @param rows rows
-     * @param rows список записей с обновлёнными данными по камере
+     * @param rows список записей для обновления данных по камере
    public void updateCameraEndInMsLog(List<MsLogInsertRow> rows) {
 
         if (rows.isEmpty()) return;
