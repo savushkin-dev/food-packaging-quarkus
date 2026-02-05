@@ -68,7 +68,7 @@ class JobRefreshServiceTest {
 
         assertEquals(1, solution.getJobs().size());
         assertSame(job, solution.getJobs().getFirst());
-        assertTrue( solution.getJobs().getFirst().isHandPackaging());
+        assertTrue(solution.getJobs().getFirst().isHandPackaging());
         assertEquals(job, solution.getJobIdMap().get(1L));
 
         verify(jobService).createJobById(1L, false, solution);
@@ -87,8 +87,8 @@ class JobRefreshServiceTest {
         when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, new SelectionValue(true, true)), solution);
-
+        service.applySelection(Map.of(1L, new SelectionValue(true, false)), solution);
+        assertFalse(solution.getJobs().getFirst().isHandPackaging());
         assertEquals(1, solution.getJobs().size());
         verify(jobService, never()).createJobById(anyLong(), anyBoolean(), any());
     }
@@ -147,7 +147,7 @@ class JobRefreshServiceTest {
         solution.setDbJobRowMap(new HashMap<>());
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, new SelectionValue(true, true)), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(true, false)), solution);
 
         assertEquals(0, solution.getJobs().size());
         assertNull(solution.getJobIdMap().get(1L));
@@ -214,16 +214,17 @@ class JobRefreshServiceTest {
         when(jobService.createJobById(1L, false, solution)).thenReturn(job1);
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        Map<Long, SelectionValue> selection = Map.of(1L, new SelectionValue(true, true), 2L, new SelectionValue(false, false));
-        PackagingSchedule result = service.applySelection(selection, solution);
-
-        assertSame(solution, result);
+        Map<Long, SelectionValue> selection = Map.of(
+                1L, new SelectionValue(true, false),
+                2L, new SelectionValue(false, true));
+        service.applySelection(selection, solution);
+        assertFalse(solution.getJobs().getFirst().isHandPackaging());    
         assertEquals(1, solution.getJobs().size());
         assertSame(job1, solution.getJobs().getFirst());
         assertSame(job1, solution.getJobIdMap().get(1L));
         assertNull(solution.getJobIdMap().get(2L));
+        assertFalse(solution.getJobs().getFirst().isHandPackaging());
         verify(jobService).createJobById(1L, false, solution);
-        verify(productService).getProductList(solution);
     }
 
     @Test
@@ -388,4 +389,3 @@ class JobRefreshServiceTest {
         verify(uploadDataService, never()).updateCameraEndInMsLog(any());
     }
 }
-
