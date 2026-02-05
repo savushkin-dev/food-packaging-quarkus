@@ -23,6 +23,7 @@ public class MsLogInsertRow {
       this.lineIdFact = job.getLineIdFact();
       this.np = job.getNp();
       this.eventType = eventType;
-      this.dtv = eventTime;
+      this.dtv = Timestamp.valueOf(job.getDtv());
+      this.eventTime = eventTime;
   }
 }

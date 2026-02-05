@@ -13,6 +13,7 @@ import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +104,13 @@ public class JobRefreshService {
                 continue;
             }
 
+            LocalDateTime oldEnd = job.getCameraEnd();
+            LocalDateTime newEnd = camera.cameraEnd();
+
+            if (!differsMoreThan(oldEnd, newEnd)) {
+                continue;
+            }
+
             job.setCameraEnd(camera.cameraEnd());
 
             MsLogInsertRow row = new MsLogInsertRow(
@@ -116,5 +124,9 @@ public class JobRefreshService {
         if (!msLogRows.isEmpty()) {
             uploadDataService.updateCameraEndInMsLog(msLogRows);
         }
+    }
+
+    private boolean differsMoreThan(LocalDateTime a, LocalDateTime b) {
+        return Math.abs(Duration.between(a, b).toMinutes()) >= 1;
     }
 }
