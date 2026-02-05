@@ -5,10 +5,11 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 
@@ -39,49 +40,55 @@ public class JobRefreshService {
     private final ProductService productService;
     private final UploadDataService uploadDataService;
 
-    public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
-        for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
-            Long snpz = entry.getKey();
-            boolean enabled = entry.getValue();
-
-            if (enabled) {
-                if (!solution.getJobIdMap().containsKey(snpz)) {
-                    DbJobRow row = solution.getDbJobRowMap().get(snpz);
-                    if (row != null) {
-                        Job job = jobService.createJobById(row.snpz(), false, solution);
-
-                        solution.getJobs().add(job);
-                        solution.getJobIdMap().put(snpz, job);}
-                }
+    public PackagingSchedule applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
+        selection.forEach((snpz, value) -> {
+            if (Boolean.TRUE.equals(value.isSelect())) {
+                addJobIfAbsent(snpz, Boolean.TRUE.equals(value.isLabeling()), solution);
             } else {
-                Job job = solution.getJobIdMap().remove(snpz);
-                if (job != null) {
-                    solution.getJobs().remove(job);
-
-                    Line line = job.getLine();
-                    if (line != null) {
-                        line.getJobs().remove(job);
-                        job.setLine(null);
-
-                        fixLineJobs(line);
-                        if(line.getFirstUnpinnedIndex()>line.getJobs().size()) {
-                            line.setFirstUnpinnedIndex(line.getJobs().size());
-                            }
-                        }
-                    }
-                }
+                removeJobFromSolution(snpz, solution);
             }
+        });
         rebuildId(solution);
         solution.setProducts(productService.getProductList(solution));
         return solution;
+    }
+
+    private void addJobIfAbsent(Long snpz, boolean isHandPackaging, PackagingSchedule solution) {
+        if (solution.getJobIdMap().containsKey(snpz)) {
+            return;
         }
+        DbJobRow row = solution.getDbJobRowMap().get(snpz);
+        if (row == null) {
+            return;
+        }
+        Job job = jobService.createJobById(row.snpz(), false, solution);
+        job.setHandPackaging(isHandPackaging);
+        solution.getJobs().add(job);
+        solution.getJobIdMap().put(snpz, job);
+    }
+
+    private void removeJobFromSolution(Long snpz, PackagingSchedule solution) {
+        Job job = solution.getJobIdMap().remove(snpz);
+        if (job == null) {
+            return;
+        }
+        solution.getJobs().remove(job);
+        Line line = job.getLine();
+        if (line != null) {
+            line.getJobs().remove(job);
+            job.setLine(null);
+            fixLineJobs(line);
+            if (line.getFirstUnpinnedIndex() > line.getJobs().size()) {
+                line.setFirstUnpinnedIndex(line.getJobs().size());
+            }
+        }
+    }
 
     private void rebuildId(PackagingSchedule solution) {
         solution.getJobIdMap().clear();
-        for (Job j : solution.getJobs()) {
-            if(j.isMaintenance()) continue;
-           solution.getJobIdMap().put(j.getSnpz(), j);
-        }
+        solution.getJobs().stream()
+                .filter(j -> !j.isMaintenance())
+                .forEach(j -> solution.getJobIdMap().put(j.getSnpz(), j));
     }
 
     /**

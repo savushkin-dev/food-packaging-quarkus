@@ -44,6 +44,7 @@ public class Job {
     private Product product;
     private Duration duration;
     private boolean maintenance;
+    private boolean handPackaging;
     private Integer maintenanceTypeId;
 
     private LocalDateTime cameraStart;
@@ -240,7 +241,12 @@ public class Job {
     public Duration getDuration() {
         if(isMaintenance()) return duration;
 
-        Integer speed = getSpeed();
+        Integer speed;
+        if (isHandPackaging()) {
+            speed = getHandPackagingSpeed();
+        } else {
+            speed = getSpeed();
+        }
 
         if (speed == null || speed <= 0) {
             return Duration.ZERO;
@@ -254,6 +260,12 @@ public class Job {
     public Integer getSpeed() {
         if (line == null || product == null || product.getType() == null) return null;
         return SpeedCacheUtils.getSpeed(line.getId(), product.getType());
+    }
+
+    @JsonIgnore
+    public Integer getHandPackagingSpeed() {
+        if (line == null || product == null || product.getType() == null) return null;
+        return SpeedCacheUtils.getHandPackagingSpeed(line.getId(), product.getType());
     }
     // ************************************************************************
     // Complex methods
