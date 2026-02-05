@@ -5,9 +5,11 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 
@@ -32,6 +34,11 @@ public class JobRefreshService {
         this.productService = productService;
         this.uploadDataService = uploadDataService;
     }
+
+    private final JobRepository jobRepository;
+    private final JobService jobService;
+    private final ProductService productService;
+    private final UploadDataService uploadDataService;
 
     public PackagingSchedule applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
         for (Map.Entry<Long, SelectionValue> entry : selection.entrySet()) {
