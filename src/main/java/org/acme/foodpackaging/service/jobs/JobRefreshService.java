@@ -124,11 +124,9 @@ public class JobRefreshService {
             uploadDataService.updateCameraEndInMsLog(msLogRows);
         }
     }
-/**
-     *  Сравнивает значения по камере у job с новыми значениями из бд.
-     * 
-     * @param startProductionDateTime Timestamp to convert
-     * @return LocalDateTime or null if input is null
+    /**
+     *  Сравнивает значения по камере у job с новыми значениями из бд,
+     *  если разница небольшая, обновления не требуются.
      */
     private boolean differsMoreThan(LocalDateTime a, LocalDateTime b) {
         if (a == null || b == null) {
