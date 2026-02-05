@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import org.apache.commons.lang3.tuple.Pair;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,10 +42,10 @@ class ScheduleUtilsTest {
         normalProduct.setCleaningDurations(cleaningForNormal);
 
         // Инициализация SpeedCacheUtils
-        Map<String, Map<String, org.apache.commons.lang3.tuple.Pair<Integer, Integer>>> speeds = new HashMap<>();
-        Map<String, org.apache.commons.lang3.tuple.Pair<Integer, Integer>> productSpeeds = new HashMap<>();
-        productSpeeds.put("MAINTENANCE", org.apache.commons.lang3.tuple.Pair.of(1, 0));
-        productSpeeds.put("NORMAL", org.apache.commons.lang3.tuple.Pair.of(2, 1));
+        Map<String, Map<String, Pair<Integer, Integer>>> speeds = new HashMap<>();
+        Map<String, Pair<Integer, Integer>> productSpeeds = new HashMap<>();
+        productSpeeds.put("MAINTENANCE", Pair.of(1, 0));
+        productSpeeds.put("NORMAL", Pair.of(2, 1));
         speeds.put("line1", productSpeeds);
         SpeedCacheUtils.init(speeds);
 
