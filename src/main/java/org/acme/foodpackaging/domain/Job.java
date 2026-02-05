@@ -44,6 +44,7 @@ public class Job {
     private Product product;
     private Duration duration;
     private boolean maintenance;
+    private boolean handPackaging;
     private Integer maintenanceTypeId;
 
     private LocalDateTime cameraStart;

@@ -8,9 +8,9 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -34,15 +34,11 @@ public class JobRefreshService {
         this.uploadDataService = uploadDataService;
     }
 
-    private final JobRepository jobRepository;
-    private final JobService jobService;
-    private final ProductService productService;
-    private final UploadDataService uploadDataService;
-
-    public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
-        for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
+    public PackagingSchedule applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
+        for (Map.Entry<Long, SelectionValue> entry : selection.entrySet()) {
             Long snpz = entry.getKey();
-            boolean enabled = entry.getValue();
+            boolean enabled = entry.getValue().isSelect();
+            boolean isHandPackaging = entry.getValue().isLabeling();
 
             if (enabled) {
                 if (!solution.getJobIdMap().containsKey(snpz)) {
@@ -50,6 +46,7 @@ public class JobRefreshService {
                     if (row != null) {
                         Job job = jobService.createJobById(row.snpz(), false, solution);
 
+                        job.setHandPackaging(isHandPackaging);
                         solution.getJobs().add(job);
                         solution.getJobIdMap().put(snpz, job);}
                 }

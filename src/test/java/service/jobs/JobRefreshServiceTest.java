@@ -7,6 +7,7 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
@@ -61,12 +62,13 @@ class JobRefreshServiceTest {
         when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
-        Map<Long, Boolean> selection = Map.of(1L, true);
+        Map<Long, SelectionValue> selection = Map.of(1L, new SelectionValue(true, true));
 
         service.applySelection(selection, solution);
 
         assertEquals(1, solution.getJobs().size());
         assertSame(job, solution.getJobs().getFirst());
+        assertTrue( solution.getJobs().getFirst().isHandPackaging());
         assertEquals(job, solution.getJobIdMap().get(1L));
 
         verify(jobService).createJobById(1L, false, solution);
@@ -85,7 +87,7 @@ class JobRefreshServiceTest {
         when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, true), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(true, true)), solution);
 
         assertEquals(1, solution.getJobs().size());
         verify(jobService, never()).createJobById(anyLong(), anyBoolean(), any());
@@ -110,7 +112,7 @@ class JobRefreshServiceTest {
         when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, false), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(false, false)), solution);
 
         assertTrue(solution.getJobs().isEmpty());
         assertTrue(line.getJobs().isEmpty());
@@ -145,7 +147,7 @@ class JobRefreshServiceTest {
         solution.setDbJobRowMap(new HashMap<>());
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, true), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(true, true)), solution);
 
         assertEquals(0, solution.getJobs().size());
         assertNull(solution.getJobIdMap().get(1L));
@@ -165,7 +167,7 @@ class JobRefreshServiceTest {
 
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, false), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(false, false)), solution);
 
         assertTrue(solution.getJobs().isEmpty());
         assertNull(solution.getJobIdMap().get(1L));
@@ -212,7 +214,7 @@ class JobRefreshServiceTest {
         when(jobService.createJobById(1L, false, solution)).thenReturn(job1);
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        Map<Long, Boolean> selection = Map.of(1L, true, 2L, false);
+        Map<Long, SelectionValue> selection = Map.of(1L, new SelectionValue(true, true), 2L, new SelectionValue(false, false));
         PackagingSchedule result = service.applySelection(selection, solution);
 
         assertSame(solution, result);
@@ -241,7 +243,7 @@ class JobRefreshServiceTest {
 
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, false), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(false, false)), solution);
 
         assertTrue(solution.getJobs().isEmpty());
         assertTrue(line.getJobs().isEmpty());
