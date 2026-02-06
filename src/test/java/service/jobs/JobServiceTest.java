@@ -13,7 +13,7 @@ import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

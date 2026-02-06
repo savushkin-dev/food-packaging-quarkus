@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 /**
  * Business logic service for job management.

@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
 
 @ApplicationScoped
 public class JobRefreshService {

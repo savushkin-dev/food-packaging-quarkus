@@ -1,11 +1,11 @@
-package org.acme.foodpackaging.scheduleOperations;
+package org.acme.foodpackaging.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 import java.util.*;
 /**

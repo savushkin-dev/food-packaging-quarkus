@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleOperations.utils;
+package org.acme.foodpackaging.scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;

@@ -1,13 +1,16 @@
-package org.acme.foodpackaging.scheduleOperations.utils;
+package org.acme.foodpackaging.scheduleoperations.utils;
 
 import lombok.Getter;
 import java.util.Map;
 
 public class CleaningDurationUtils {
+
     @Getter
     private static Map<String, Integer> linesCleaning;
 
-    public static void init(Map<String, Integer> cleanings ) {
+    private CleaningDurationUtils() {}
+
+    public static void init(Map<String, Integer> cleanings) {
         linesCleaning = cleanings;
     }
 }

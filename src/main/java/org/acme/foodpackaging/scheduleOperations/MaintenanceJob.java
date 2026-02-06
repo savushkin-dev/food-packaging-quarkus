@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleOperations;
+package org.acme.foodpackaging.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -6,7 +6,7 @@ import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleOperations.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.UUID;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class MaintenanceJob {

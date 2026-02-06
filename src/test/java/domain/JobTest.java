@@ -6,9 +6,9 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.CleaningResult;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.scheduleOperations.utils.CleaningDurationUtils;
-import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.createMaintenanceProduct;
+import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JobTest {

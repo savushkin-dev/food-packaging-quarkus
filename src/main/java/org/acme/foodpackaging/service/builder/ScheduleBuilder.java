@@ -13,7 +13,7 @@ import org.acme.foodpackaging.service.lines.LineService;
 import java.time.LocalDate;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.removeJobsWithoutLine;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.removeJobsWithoutLine;
 
 @ApplicationScoped
 public class ScheduleBuilder {

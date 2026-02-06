@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleOperations;
+package org.acme.foodpackaging.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -7,14 +7,14 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MoveJobsRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import java.util.*;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class MoveJobsService {
