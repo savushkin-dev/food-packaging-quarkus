@@ -12,7 +12,6 @@ import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import java.util.*;
 import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;

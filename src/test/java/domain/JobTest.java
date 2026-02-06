@@ -4,7 +4,9 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.CleaningResult;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.scheduleOperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.createMaintenanceProduct;
@@ -196,6 +199,106 @@ class JobTest {
         assertNull(job.getStartCleaningDateTime());
         assertNull(job.getStartProductionDateTime());
         assertNull(job.getEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTimeWhenNotPLRLC() {
+        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
+        Line line = new Line("line1", "Line 1", "op", lineStart);
+
+        Product prodA = new Product("A", "Prod A");
+        Product prodB = new Product("B", "Prod B");
+        Map<Product, Duration> cleaningDurations = new HashMap<>();
+        cleaningDurations.put(prodA, Duration.ofMinutes(25));
+        prodB.setCleaningDurations(cleaningDurations);
+        Map<Product, CleaningResult> cleaningResults = new HashMap<>();
+        cleaningResults.put(prodA, new CleaningResult(25, false));
+        prodB.setCleaningResults(cleaningResults);
+
+        Job job1 = new Job();
+        job1.setProduct(prodA);
+        job1.setMaintenance(true);
+        job1.setDuration(Duration.ofMinutes(60));
+        job1.setStartCleaningDateTime(lineStart);
+        job1.setStartProductionDateTime(lineStart);
+        job1.setEndDateTime(lineStart.plusMinutes(60));
+
+        Job job2 = new Job();
+        job2.setProduct(prodB);
+        job2.setMaintenance(true);
+        job2.setDuration(Duration.ofMinutes(30));
+
+        line.setJobs(java.util.List.of(job1, job2));
+        ScheduleUtils.fixLineJobs(line);
+
+        LocalDateTime expectedStartProduction = lineStart.plusMinutes(60).plusMinutes(25);
+        assertEquals(expectedStartProduction, job2.getStartProductionDateTime());
+        assertEquals(expectedStartProduction.plusMinutes(30), job2.getEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenPLRLC() {
+        CleaningDurationUtils.init(Map.of("line1", 40));
+
+        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
+        Line line = new Line("line1", "Line 1", "op", lineStart);
+
+        Product prodA = new Product("A", "Prod A");
+        Product prodB = new Product("B", "Prod B");
+        Map<Product, Duration> cleaningDurations = new HashMap<>();
+        cleaningDurations.put(prodA, Duration.ofMinutes(10)); // ignored when PLRLC
+        prodB.setCleaningDurations(cleaningDurations);
+        Map<Product, CleaningResult> cleaningResults = new HashMap<>();
+        cleaningResults.put(prodA, new CleaningResult(0, true)); // isPLRLC=true -> use linesCleaning
+        prodB.setCleaningResults(cleaningResults);
+
+        Job job1 = new Job();
+        job1.setProduct(prodA);
+        job1.setMaintenance(true);
+        job1.setDuration(Duration.ofMinutes(60));
+        job1.setStartCleaningDateTime(lineStart);
+        job1.setStartProductionDateTime(lineStart);
+        job1.setEndDateTime(lineStart.plusMinutes(60));
+
+        Job job2 = new Job();
+        job2.setProduct(prodB);
+        job2.setMaintenance(true);
+        job2.setDuration(Duration.ofMinutes(30));
+
+        line.setJobs(java.util.List.of(job1, job2));
+        ScheduleUtils.fixLineJobs(line);
+
+        LocalDateTime expectedStartProduction = lineStart.plusMinutes(60).plusMinutes(40);
+        assertEquals(expectedStartProduction, job2.getStartProductionDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenCleaningResultMissing() {
+        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
+        Line line = new Line("line1", "Line 1", "op", lineStart);
+
+        Product prodA = new Product("A", "Prod A");
+        Product prodB = new Product("B", "Prod B");
+        prodB.setCleaningDurations(null);
+        prodB.setCleaningResults(null);
+
+        Job job1 = new Job();
+        job1.setProduct(prodA);
+        job1.setMaintenance(true);
+        job1.setDuration(Duration.ofMinutes(60));
+        job1.setStartCleaningDateTime(lineStart);
+        job1.setStartProductionDateTime(lineStart);
+        job1.setEndDateTime(lineStart.plusMinutes(60));
+
+        Job job2 = new Job();
+        job2.setProduct(prodB);
+        job2.setMaintenance(true);
+        job2.setDuration(Duration.ofMinutes(30));
+
+        line.setJobs(java.util.List.of(job1, job2));
+        ScheduleUtils.fixLineJobs(line);
+
+        assertEquals(lineStart.plusMinutes(60), job2.getStartProductionDateTime());
     }
 
     private Product createProductWithType(String type) {
