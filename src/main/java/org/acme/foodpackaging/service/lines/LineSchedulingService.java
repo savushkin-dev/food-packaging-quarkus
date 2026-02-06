@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.pinnAllLines;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.pinnAllLines;
 
 @ApplicationScoped
 public class LineSchedulingService {

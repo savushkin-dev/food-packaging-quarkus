@@ -18,7 +18,7 @@ import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 
-import static org.acme.foodpackaging.scheduleOperations.MaintenanceJob.createMaintenanceProduct;
+import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 
 @Setter
 @Getter

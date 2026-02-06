@@ -15,8 +15,8 @@ import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.repository.jobs.PlrPevRepository;
 import org.acme.foodpackaging.repository.lines.PlrLcRepository;
-import org.acme.foodpackaging.scheduleOperations.utils.CleaningDurationUtils;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;

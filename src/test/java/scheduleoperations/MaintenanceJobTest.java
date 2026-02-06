@@ -1,10 +1,11 @@
-package scheduleOperations;
+package scheduleoperations;
 
 import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -206,9 +207,8 @@ class MaintenanceJobTest {
 
     @Test
     void addMaintenanceAddsExtraWhenDurationAtLeastSixHours() {
-        ConcurrentMap<String, Integer> lc = new ConcurrentHashMap<>();
-        lc.put("line1", 40);
-        when(loadDataService.getLinesCleaning()).thenReturn(lc);
+        Map<String, Integer> lc = Map.of("line1", 40);
+        CleaningDurationUtils.init(lc);
 
         // Seed one job to make line non-empty
         MaintenanceRequest seed = new MaintenanceRequest();
@@ -238,9 +238,8 @@ class MaintenanceJobTest {
 
     @Test
     void addMaintenanceAddsExtraWhenDurationAtLeastSixHours_EmptyLineReusesStart() {
-        ConcurrentMap<String, Integer> lc = new ConcurrentHashMap<>();
-        lc.put("line1", 30);
-        when(loadDataService.getLinesCleaning()).thenReturn(lc);
+        Map<String, Integer> lc = Map.of("line1", 30);
+        CleaningDurationUtils.init(lc);
 
         LocalDateTime start = LocalDateTime.now();
         MaintenanceRequest req = new MaintenanceRequest();

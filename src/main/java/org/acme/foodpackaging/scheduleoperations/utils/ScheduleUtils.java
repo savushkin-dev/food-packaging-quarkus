@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleOperations.utils;
+package org.acme.foodpackaging.scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
@@ -10,12 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class ScheduleUtils {
 
     public static final int START_FACT_EVENT_TYPE = 1;
     public static final int START_CAMERA_EVENT_TYPE = 2;
     public static final int END_CAMERA_EVENT_TYPE = 3;
+
+    private ScheduleUtils() {}
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
@@ -112,11 +115,13 @@ public class ScheduleUtils {
         }
     }
 
+    private static final Pattern NAME_CLEANER_PATTERN = Pattern.compile(
+            "Сырок\\s*(тв\\.\\s*г\\.с?|тв\\.\\s*гл\\.с?|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.CANON_EQ
+    );
+
     public static String nameCleaner(String input) {
-        return input.replaceFirst(
-                "(?i)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
-                ""
-        ).trim();
+        return NAME_CLEANER_PATTERN.matcher(input).replaceFirst("").trim();
     }
 
     /**
