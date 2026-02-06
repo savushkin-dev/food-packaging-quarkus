@@ -19,6 +19,7 @@ import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.MaintenanceJobParams;
 import org.acme.foodpackaging.record.ProductionJobParams;
+import org.acme.foodpackaging.scheduleOperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
 
 @Getter
@@ -296,8 +297,7 @@ public class Job {
 
                     Duration cleanupDuration;
                     if (meta.isPLRLC()) {
-                       
-                        cleanupDuration = product.getPlrLcCleaningDurations().get(line.getId());
+                        cleanupDuration = Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
                     } else {
                         cleanupDuration = product.getCleaningDurations().get(previous.getProduct());
                     }

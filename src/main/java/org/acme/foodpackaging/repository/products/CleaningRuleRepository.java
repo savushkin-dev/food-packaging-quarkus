@@ -8,6 +8,7 @@ import org.acme.foodpackaging.record.CleaningRule;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
+import java.util.Objects;
 
 @ApplicationScoped
 public class CleaningRuleRepository implements PanacheRepository<PlrChange> {
@@ -18,15 +19,18 @@ public class CleaningRuleRepository implements PanacheRepository<PlrChange> {
     public List<CleaningRule> loadRules() {
 
         List<PlrChange> rows =
-                find("deletedFlag = 0 and lineId = ?1 and duration is not null order by parameter",
+                find(
+                        "deletedFlag = 0 and lineId = ?1 and duration is not null order by parameter",
                         lineId)
                         .list();
 
         return rows.stream()
                 .map(r -> new CleaningRule(
-                        r.parameter,
-                        r.from, r.to,
-                        r.duration, r.isPLRLC
+                        Objects.requireNonNullElse(r.parameter, ""),
+                        Objects.requireNonNullElse(r.from, ""),
+                        Objects.requireNonNullElse(r.to, ""),
+                        r.duration,
+                        Boolean.TRUE.equals(r.isPLRLC)
                 ))
                 .toList();
     }

@@ -26,9 +26,7 @@ public class Product {
     private Map<Product, Duration> cleaningDurations;
     @JsonIgnore
     private Map<Product, CleaningResult> cleaningResults;
-    @JsonIgnore
-    private Map<String, Duration> plrLcCleaningDurations;
-    
+
     public Product() {
     }
 

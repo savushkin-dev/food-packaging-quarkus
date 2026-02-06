@@ -33,8 +33,8 @@ public class PlrChange extends PanacheEntityBase {
     @Column(name = "KRC")
     public String lineId;
 
-    @Column(name = "CLEAN")
-    public boolean isPLRLC;
+    @Column(name = "LINECLEAN")
+    public Boolean isPLRLC;
 
     @Override
     public String toString() {
