@@ -16,6 +16,8 @@ public class ScheduleUtils {
     public static final int START_FACT_EVENT_TYPE = 1;
     public static final int START_CAMERA_EVENT_TYPE = 2;
     public static final int END_CAMERA_EVENT_TYPE = 3;
+
+    private ScheduleUtils() {}
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
@@ -114,7 +116,7 @@ public class ScheduleUtils {
 
     public static String nameCleaner(String input) {
         return input.replaceFirst(
-                "(?i)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
+                "(?iu)Сырок\\s*(тв\\.\\s*г\\.с|тв\\.\\s*гл\\.с|тв\\.\\s*гл\\.|тв\\.\\s*г\\.|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
                 ""
         ).trim();
     }

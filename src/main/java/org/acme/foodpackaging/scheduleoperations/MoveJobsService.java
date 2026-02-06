@@ -1,12 +1,10 @@
 package org.acme.foodpackaging.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MoveJobsRequest;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 
 import java.util.ArrayList;
@@ -18,8 +16,7 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class MoveJobsService {
-    @Inject
-    LoadDataService loadDataService;
+
     /**
      * Выполняет перемещение подпоследовательности задач.
      * Бросает IllegalArgumentException при некорректных входных данных.
@@ -123,7 +120,7 @@ public class MoveJobsService {
             List<Job> moved = new ArrayList<>(jobs.subList(fromIndex, fromEnd));
             jobs.subList(fromIndex, fromEnd).clear();
 
-            insertIndex = Math.max(0, Math.min(insertIndex, jobs.size()));
+            insertIndex = Math.clamp(insertIndex, 0, jobs.size());
             jobs.addAll(insertIndex, moved);
 
             fromLine.setJobs(jobs);
@@ -139,7 +136,7 @@ public class MoveJobsService {
         List<Job> jobsToMove = new ArrayList<>(fromJobs.subList(fromIndex, fromEnd));
         fromJobs.subList(fromIndex, fromEnd).clear();
 
-        insertIndex = Math.max(0, Math.min(insertIndex, toJobs.size()));
+        insertIndex = Math.clamp(insertIndex, 0, toJobs.size());
         toJobs.addAll(insertIndex, jobsToMove);
 
         fromLine.setJobs(fromJobs);

@@ -203,38 +203,23 @@ public class SortByNpService {
         List<Job> buffer = new ArrayList<>();
 
         for (Job job : original) {
-
-            if (job.getLineId() != null) {
-
-                if (!buffer.isEmpty()) {
-                    result.addAll(fillSubchain(buffer, iters));
-                    buffer.clear();
-                }
+            if (job.getLineId() != null || job.isMaintenance()) {
+                flushBuffer(buffer, result, iters);
                 result.add(job);
                 continue;
             }
-            // Граница подцепочки — была мойка перед задачей
             if (hadCleaningBefore(job)) {
-                if (!buffer.isEmpty()) {
-                    result.addAll(fillSubchain(buffer, iters));
-                    buffer.clear();
-                }
+                flushBuffer(buffer, result, iters);
             }
-            // Задача maintenance сама является границей подцепочки
-            if (job.isMaintenance()) {
-                if (!buffer.isEmpty()) {
-                    result.addAll(fillSubchain(buffer, iters));
-                    buffer.clear();
-                }
-                result.add(job);
-                continue;
-            }
-            // Иначе — внутри подцепочки
             buffer.add(job);
         }
-        // Завершает последнюю подцепочку
+        flushBuffer(buffer, result, iters);
+    }
+
+    private void flushBuffer(List<Job> buffer, List<Job> result, Map<Product, Iterator<Job>> iters) {
         if (!buffer.isEmpty()) {
             result.addAll(fillSubchain(buffer, iters));
+            buffer.clear();
         }
     }
     /**
