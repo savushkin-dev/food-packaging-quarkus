@@ -14,12 +14,12 @@ class CleaningCalculatorServiceTest {
     private CleaningCalculatorService createCalculator() {
 
         List<CleaningRule> rules = List.of(
-                new CleaningRule("1", "Классика", "Стержень", 90),
-                new CleaningRule("1", "Плюш", "Классика", 160),
-                new CleaningRule("1", "Стержень", "Классика", 150),
-                new CleaningRule("1", "Классика", "Плюш", 180),
-                new CleaningRule("1", "", "Кактус", 180),   // ANY → Кактус
-                new CleaningRule("1", "Кактус", "", 180)    // Кактус → ANY
+                new CleaningRule("1", "Классика", "Стержень", 90, false),
+                new CleaningRule("1", "Плюш", "Классика", 160, false),
+                new CleaningRule("1", "Стержень", "Классика", 150, false),
+                new CleaningRule("1", "Классика", "Плюш", 180, false),
+                new CleaningRule("1", "", "Кактус", 180, false),   // ANY → Кактус
+                new CleaningRule("1", "Кактус", "", 180, false)   // Кактус → ANY
         );
 
         CleaningCalculatorService cleaningCalculatorService = new CleaningCalculatorService();
@@ -42,10 +42,10 @@ class CleaningCalculatorServiceTest {
 
         CleaningCalculatorService calc = createCalculator();
 
-        int time = calc.getCleaningTime(
+        int time = calc.getCleaningResult(
                 product("Классика"),
                 product("Стержень")
-        );
+        ).minutes();
 
         assertEquals(90, time);
     }
@@ -55,10 +55,10 @@ class CleaningCalculatorServiceTest {
 
         CleaningCalculatorService calc = createCalculator();
 
-        int time = calc.getCleaningTime(
+        int time = calc.getCleaningResult(
                 product("Стержень"),
                 product("Кактус")
-        );
+        ).minutes();
 
         assertEquals(180, time);
     }
@@ -68,10 +68,10 @@ class CleaningCalculatorServiceTest {
 
         CleaningCalculatorService calc = createCalculator();
 
-        int time = calc.getCleaningTime(
+        int time = calc.getCleaningResult(
                 product("Кактус"),
                 product("Плюш")
-        );
+        ).minutes();
 
         assertEquals(180, time);
     }
@@ -81,10 +81,10 @@ class CleaningCalculatorServiceTest {
 
         CleaningCalculatorService calc = createCalculator();
 
-        int time = calc.getCleaningTime(
+        int time = calc.getCleaningResult(
                 product("Неизвестный"),
                 product("Другой")
-        );
+        ).minutes();
 
         assertEquals(0, time);
     }
