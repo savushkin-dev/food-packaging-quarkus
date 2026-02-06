@@ -369,7 +369,7 @@ public class PackagingScheduleResource {
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
-        return Response.ok("Sorted successfully").build();
+        return Response.ok("Cleanings added successfully").build();
     }
 
     /**

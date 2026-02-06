@@ -233,30 +233,42 @@ public class MaintenanceJob {
 
                 LocalDateTime sc = job.getStartCleaningDateTime();
                 LocalDateTime sp = job.getStartProductionDateTime();
-                if (sc == null || sp == null) {
-                    continue;
-                }
 
-                Duration d = Duration.between(sc, sp);
-                if (d.isNegative() || d.isZero()) {
-                    continue;
-                }
+                if (sc != null && sp != null) {
+                    Duration d = Duration.between(sc, sp);
+                    if (!d.isNegative() && !d.isZero()) {
 
-                if (d.compareTo(longestDuration) > 0) {
-                    longestDuration = d;
-                    longestJob = job;
-                }
+                        if (d.compareTo(longestDuration) > 0) {
+                            longestDuration = d;
+                            longestJob = job;
+                        }
 
-                if (job.isMaintenance()
-                        && Integer.valueOf(2).equals(job.getMaintenanceTypeId())
-                        && d.compareTo(longestMaintenance2Duration) > 0) {
+                        if (job.isMaintenance()
+                                && Integer.valueOf(2).equals(job.getMaintenanceTypeId())
+                                && d.compareTo(longestMaintenance2Duration) > 0) {
 
-                    longestMaintenance2Duration = d;
-                    longestMaintenance2 = job;
+                            longestMaintenance2Duration = d;
+                            longestMaintenance2 = job;
+                        }
+                    }
                 }
             }
 
-            if (longestJob == null) {
+            if (longestJob == null && longestMaintenance2 == null) {
+
+                Job lastJob = jobs.getLast();
+                LocalDateTime insertTime = lastJob.getEndDateTime();
+
+                MaintenanceRequest request = new MaintenanceRequest();
+                request.setLineId(line.getId());
+                request.setMaintenanceTypeId(2);
+                request.setDurationMinutes(
+                        CleaningDurationUtils.getLinesCleaning().get(line.getId())
+                );
+                request.setStartProductionDateTime(insertTime);
+                request.setInsertIndex(jobs.size());
+
+                addMaintenanceJob(schedule, request);
                 continue;
             }
 
@@ -266,18 +278,25 @@ public class MaintenanceJob {
 
             Job baseJob = useMaintenance ? longestMaintenance2 : longestJob;
 
-            LocalDateTime baseTime = useMaintenance
-                    ? baseJob.getStartProductionDateTime()
-                    : baseJob.getStartCleaningDateTime();
+            LocalDateTime baseTime;
+            if (useMaintenance) {
+                baseTime = baseJob.getStartProductionDateTime();
+            } else {
+                assert baseJob != null;
+                baseTime = baseJob.getStartCleaningDateTime();
+            }
 
             LocalDateTime insertTime = baseTime.plusHours(24);
 
             MaintenanceRequest request = new MaintenanceRequest();
             LocalDateTime lineEndDateTime = line.getJobs().getLast().getEndDateTime().plusHours(24);
             line.setMaxEndTime(lineEndDateTime);
+
             request.setLineId(line.getId());
             request.setMaintenanceTypeId(2);
-            request.setDurationMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
+            request.setDurationMinutes(
+                    CleaningDurationUtils.getLinesCleaning().get(line.getId())
+            );
             request.setStartProductionDateTime(insertTime);
 
             addMaintenanceJob(schedule, request);
