@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.UUID;
 
+import static io.micrometer.core.instrument.config.validate.PropertyValidator.getDuration;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
@@ -248,23 +249,47 @@ public class MaintenanceJob {
         }
 
         CleaningAnchor anchor = findDailyCleaningAnchor(lineJobs);
-        if (anchor.anchorJob() == null) {
+        Job anchorJob = anchor.anchorJob();
+        if (anchorJob == null || anchorJob.getEndDateTime() == null) {
             return;
         }
 
-        LocalDateTime anchorEndTime = anchor.anchorJob().getEndDateTime();
-        if (anchorEndTime == null) {
+        LocalDateTime dailyCleaningTime =
+                anchorJob.getEndDateTime().plusHours(24);
+
+        Job targetJob = findJobCoveringTime(lineJobs, dailyCleaningTime);
+        if (targetJob == null) {
             return;
         }
+        Duration targetDuration = targetJob.getDuration();
+        Duration newCleaningDuration = Duration.ofMinutes(cleaningDurationMinutes);
 
-        LocalDateTime dailyCleaningStartTime = anchorEndTime.plusHours(24);
+        if(targetJob.isMaintenance()){
+                if(targetDuration.compareTo(newCleaningDuration)>0) {
+                    return;
+                }
+        else {
+            targetJob.setDuration(newCleaningDuration);
+            return;
+         }
+        }
 
-        createDailyCleaningJob(
-                schedule,
-                line,
-                dailyCleaningStartTime,
-                cleaningDurationMinutes
-        );
+        targetJob.setPinned_cleaning_duration(cleaningDurationMinutes);
+        targetJob.setPinned_cleaning(true);
+    }
+
+    private Job findJobCoveringTime(List<Job> jobs, LocalDateTime time) {
+        for (Job job : jobs) {
+            LocalDateTime start = job.getStartProductionDateTime();
+            LocalDateTime end = job.getEndDateTime();
+
+            if (start != null && end != null
+                    && !time.isBefore(start)
+                    && time.isBefore(end)) {
+                return job;
+            }
+        }
+        return null;
     }
 
     private CleaningAnchor findDailyCleaningAnchor(List<Job> jobs) {
@@ -294,7 +319,6 @@ public class MaintenanceJob {
             }
         }
 
-
         Job anchorJob = chooseLongerJob(
                 longestWashJob, longestWashDuration,
                 longestMaintenanceJob, longestMaintenanceDuration
@@ -317,6 +341,7 @@ public class MaintenanceJob {
                 ? maintenanceJob
                 : washJob;
     }
+
     private Duration calculateWashDuration(Job job) {
         LocalDateTime cleaningStart = job.getStartCleaningDateTime();
         LocalDateTime productionStart = job.getStartProductionDateTime();
@@ -328,20 +353,6 @@ public class MaintenanceJob {
         return Duration.between(cleaningStart, productionStart);
     }
 
-    private void createDailyCleaningJob(
-            PackagingSchedule schedule,
-            Line line,
-            LocalDateTime startTime,
-            int durationMinutes
-    ) {
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId(line.getId());
-        request.setMaintenanceTypeId(2);
-        request.setDurationMinutes(durationMinutes);
-        request.setStartProductionDateTime(startTime);
-
-        addMaintenanceJob(schedule, request);
-    }
 
     private boolean isMaintenanceType2(Job job) {
         return job.isMaintenance()

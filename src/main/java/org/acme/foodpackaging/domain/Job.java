@@ -40,6 +40,7 @@ public class Job {
     private Long snpz;
     private int np;
     private int quantity;
+    private Integer pinned_cleaning_duration;
 
     private double mass;
 
@@ -47,6 +48,7 @@ public class Job {
     private Duration duration;
     private boolean maintenance;
     private boolean handPackaging;
+    private boolean pinned_cleaning;
     private Integer maintenanceTypeId;
 
     private LocalDateTime cameraStart;
@@ -283,11 +285,15 @@ public class Job {
             }
             return;
         }
+
         Job previous = getPreviousJob();
         LocalDateTime startCleaning = previous == null ? line.getStartDateTime() : previous.getEndDateTime();
         LocalDateTime startProduction = computeStartProduction(previous, startCleaning);
         setStartCleaningDateTime(startCleaning);
         setStartProductionDateTime(startProduction);
+        if(isPinned_cleaning() && pinned_cleaning_duration!=null){
+            setStartCleaningDateTime(startProductionDateTime.minusMinutes(pinned_cleaning_duration));
+        }
         setEndDateTime(startProduction == null ? null : startProduction.plus(getDuration()));
     }
 
