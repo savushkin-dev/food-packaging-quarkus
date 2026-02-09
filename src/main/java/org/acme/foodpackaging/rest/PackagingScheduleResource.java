@@ -10,24 +10,15 @@ import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 
 import jakarta.ws.rs.core.Response;
-import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.LoadRequest;
-import org.acme.foodpackaging.dto.MoveJobsRequest;
-import org.acme.foodpackaging.dto.PinRequest;
+import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
-import org.acme.foodpackaging.persistence.upload.JobSaveService;
-import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.FrontendDataWrapper;
-import org.acme.foodpackaging.record.JobSelection;
-import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
-import org.acme.foodpackaging.scheduleoperations.MoveJobsService;
-import org.acme.foodpackaging.scheduleoperations.PinService;
-import org.acme.foodpackaging.scheduleoperations.SortByNpService;
-import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.service.jobs.JobRefreshService;
+import org.acme.foodpackaging.persistence.upload.*;
+import org.acme.foodpackaging.service.builder.ScheduleBuilder;
+import org.acme.foodpackaging.service.jobs.*;
+import org.acme.foodpackaging.scheduleoperations.*;
+import org.acme.foodpackaging.record.*;
 
 import java.util.*;
 
@@ -49,6 +40,7 @@ public class PackagingScheduleResource {
     private final UploadDataService uploadDataService;
     private final JobRefreshService jobRefreshService;
     private final JobSaveService jobSaveService;
+    private final DailyCleaningService dailyCleaningService;
 
     @Inject
     public PackagingScheduleResource(
@@ -63,7 +55,8 @@ public class PackagingScheduleResource {
             LoadDataService loadDataService,
             UploadDataService uploadDataService,
             JobRefreshService jobRefreshService,
-            JobSaveService jobSaveService
+            JobSaveService jobSaveService,
+            DailyCleaningService dailyCleaningService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -77,6 +70,7 @@ public class PackagingScheduleResource {
         this.uploadDataService = uploadDataService;
         this.jobRefreshService = jobRefreshService;
         this.jobSaveService = jobSaveService;
+        this.dailyCleaningService = dailyCleaningService;
     }
 
     @GET
@@ -364,7 +358,7 @@ public class PackagingScheduleResource {
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
-        maintenanceJob.addDailyFullCleaning(schedule);
+        dailyCleaningService.addDailyFullCleaning(schedule);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
