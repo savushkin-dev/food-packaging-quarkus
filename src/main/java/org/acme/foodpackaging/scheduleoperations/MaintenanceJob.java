@@ -57,18 +57,33 @@ public class MaintenanceJob {
         maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
         int insertedIndex;
-        if (request.isEmptyLineMode()) {
+
+        if (lineJobs.isEmpty()) {
+
             line.setStartDateTime(request.getStartProductionDateTime());
+
             LocalDateTime startTime = request.getStartProductionDateTime();
             maintenanceJob.setStartCleaningDateTime(startTime);
             maintenanceJob.setStartProductionDateTime(startTime);
+
             lineJobs.add(maintenanceJob);
-            insertedIndex = lineJobs.size() - 1;
+            insertedIndex = 0;
+
         } else {
-            int insertIndex = request.getInsertIndex();
+
+            Integer insertIndex = request.getInsertIndex();
+
+            if (insertIndex == null) {
+                insertIndex = findInsertIndexByTime(
+                        lineJobs,
+                        request.getStartProductionDateTime()
+                );
+            }
+
             if (insertIndex < 0 || insertIndex > lineJobs.size()) {
                 throw new IllegalArgumentException("Invalid insertIndex: " + insertIndex);
             }
+
             lineJobs.add(insertIndex, maintenanceJob);
             insertedIndex = insertIndex;
         }
@@ -221,98 +236,141 @@ public class MaintenanceJob {
     }
 
     private void addDailyFullCleaningForLine(PackagingSchedule schedule, Line line) {
-        List<Job> jobs = line.getJobs();
-        if (jobs == null || jobs.isEmpty()) {
-            return;
-        }
-        Integer cleaningMinutes = getLineCleaningMinutes(line.getId());
-        if (cleaningMinutes == null) {
+
+        List<Job> lineJobs = line.getJobs();
+        if (lineJobs == null || lineJobs.isEmpty()) {
             return;
         }
 
-        LongestJobs longestJobs = findLongestCleaningJobs(jobs);
-        if (longestJobs.longestJob == null && longestJobs.longestMaintenance2 == null) {
-            addDailyCleaningAtEnd(schedule, line, jobs.size(), jobs.getLast().getEndDateTime(), cleaningMinutes);
+        Integer cleaningDurationMinutes = getDailyCleaningDurationMinutes(line);
+        if (cleaningDurationMinutes == null) {
             return;
         }
 
-        boolean useMaintenance = longestJobs.longestMaintenance2 != null
-                && longestJobs.longestMaintenance2Duration.compareTo(longestJobs.longestDuration) >= 0;
-        Job baseJob = useMaintenance ? longestJobs.longestMaintenance2 : longestJobs.longestJob;
-        LocalDateTime baseTime = useMaintenance
-                ? baseJob.getStartProductionDateTime()
-                : baseJob.getStartCleaningDateTime();
-        LocalDateTime insertTime = baseTime.plusHours(24);
-        addDailyCleaningWithStartTime(schedule, line, insertTime, cleaningMinutes);
-        extendLineMaxEndTime(line, 24);
+        CleaningAnchor anchor = findDailyCleaningAnchor(lineJobs);
+        if (anchor.anchorJob() == null) {
+            return;
+        }
+
+        LocalDateTime anchorEndTime = anchor.anchorJob().getEndDateTime();
+        if (anchorEndTime == null) {
+            return;
+        }
+
+        LocalDateTime dailyCleaningStartTime = anchorEndTime.plusHours(24);
+
+        createDailyCleaningJob(
+                schedule,
+                line,
+                dailyCleaningStartTime,
+                cleaningDurationMinutes
+        );
     }
 
-    private LongestJobs findLongestCleaningJobs(List<Job> jobs) {
-        Job longestJob = null;
-        Duration longestDuration = Duration.ZERO;
-        Job longestMaintenance2 = null;
-        Duration longestMaintenance2Duration = Duration.ZERO;
+    private CleaningAnchor findDailyCleaningAnchor(List<Job> jobs) {
+
+        Job longestWashJob = null;
+        Duration longestWashDuration = Duration.ZERO;
+
+        Job longestMaintenanceJob = null;
+        Duration longestMaintenanceDuration = Duration.ZERO;
 
         for (Job job : jobs) {
-            Duration d = getCleaningDuration(job);
-            if (d == null || d.isNegative() || d.isZero()) {
+
+            Duration washDuration = calculateWashDuration(job);
+            if (washDuration == null || washDuration.isZero() || washDuration.isNegative()) {
                 continue;
             }
-            if (d.compareTo(longestDuration) > 0) {
-                longestDuration = d;
-                longestJob = job;
+
+            if (washDuration.compareTo(longestWashDuration) >= 0) {
+                longestWashDuration = washDuration;
+                longestWashJob = job;
             }
-            if (isMaintenanceType2(job) && d.compareTo(longestMaintenance2Duration) > 0) {
-                longestMaintenance2Duration = d;
-                longestMaintenance2 = job;
+
+            if (isMaintenanceType2(job)
+                    && washDuration.compareTo(longestMaintenanceDuration) >= 0) {
+                longestMaintenanceDuration = washDuration;
+                longestMaintenanceJob = job;
             }
         }
-        return new LongestJobs(longestJob, longestDuration, longestMaintenance2, longestMaintenance2Duration);
+
+
+        Job anchorJob = chooseLongerJob(
+                longestWashJob, longestWashDuration,
+                longestMaintenanceJob, longestMaintenanceDuration
+        );
+
+        return new CleaningAnchor(anchorJob, longestWashDuration, longestMaintenanceDuration);
     }
 
-    private Duration getCleaningDuration(Job job) {
-        LocalDateTime sc = job.getStartCleaningDateTime();
-        LocalDateTime sp = job.getStartProductionDateTime();
-        return sc != null && sp != null ? Duration.between(sc, sp) : null;
+    private Job chooseLongerJob(
+            Job washJob, Duration washDuration,
+            Job maintenanceJob, Duration maintenanceDuration
+    ) {
+        if (maintenanceJob == null) {
+            return washJob;
+        }
+        if (washJob == null) {
+            return maintenanceJob;
+        }
+        return maintenanceDuration.compareTo(washDuration) >= 0
+                ? maintenanceJob
+                : washJob;
+    }
+    private Duration calculateWashDuration(Job job) {
+        LocalDateTime cleaningStart = job.getStartCleaningDateTime();
+        LocalDateTime productionStart = job.getStartProductionDateTime();
+
+        if (cleaningStart == null || productionStart == null) {
+            return null;
+        }
+
+        return Duration.between(cleaningStart, productionStart);
+    }
+
+    private void createDailyCleaningJob(
+            PackagingSchedule schedule,
+            Line line,
+            LocalDateTime startTime,
+            int durationMinutes
+    ) {
+        MaintenanceRequest request = new MaintenanceRequest();
+        request.setLineId(line.getId());
+        request.setMaintenanceTypeId(2);
+        request.setDurationMinutes(durationMinutes);
+        request.setStartProductionDateTime(startTime);
+
+        addMaintenanceJob(schedule, request);
     }
 
     private boolean isMaintenanceType2(Job job) {
-        return job.isMaintenance() && Integer.valueOf(2).equals(job.getMaintenanceTypeId());
+        return job.isMaintenance()
+                && Integer.valueOf(2).equals(job.getMaintenanceTypeId());
     }
 
-    private Integer getLineCleaningMinutes(String lineId) {
+    private Integer getDailyCleaningDurationMinutes(Line line) {
         Map<String, Integer> cleanings = CleaningDurationUtils.getLinesCleaning();
-        return cleanings != null ? cleanings.get(lineId) : null;
+        return cleanings != null ? cleanings.get(line.getId()) : null;
     }
 
-    private void extendLineMaxEndTime(Line line, int hours) {
-        Job lastJob = line.getJobs().getLast();
-        if (lastJob.getEndDateTime() != null) {
-            line.setMaxEndTime(lastJob.getEndDateTime().plusHours(hours));
+    private record CleaningAnchor(
+            Job anchorJob,
+            Duration longestWashDuration,
+            Duration longestMaintenanceDuration
+    ) {}
+
+    private int findInsertIndexByTime(
+            List<Job> jobs,
+            LocalDateTime insertTime
+    ) {
+        for (int i = 0; i < jobs.size(); i++) {
+            Job j = jobs.get(i);
+
+            LocalDateTime jStart = j.getStartProductionDateTime();
+            if (jStart != null && insertTime.isBefore(jStart)) {
+                return i;
+            }
         }
+        return jobs.size();
     }
-
-    private void addDailyCleaningAtEnd(PackagingSchedule schedule, Line line,
-                                       int insertIndex, LocalDateTime insertTime, int durationMinutes) {
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId(line.getId());
-        request.setMaintenanceTypeId(2);
-        request.setDurationMinutes(durationMinutes);
-        request.setStartProductionDateTime(insertTime);
-        request.setInsertIndex(insertIndex);
-        addMaintenanceJob(schedule, request);
-    }
-
-    private void addDailyCleaningWithStartTime(PackagingSchedule schedule, Line line,
-                                               LocalDateTime insertTime, int durationMinutes) {
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId(line.getId());
-        request.setMaintenanceTypeId(2);
-        request.setDurationMinutes(durationMinutes);
-        request.setStartProductionDateTime(insertTime);
-        addMaintenanceJob(schedule, request);
-    }
-
-    private record LongestJobs(Job longestJob, Duration longestDuration,
-                               Job longestMaintenance2, Duration longestMaintenance2Duration) {}
 }
