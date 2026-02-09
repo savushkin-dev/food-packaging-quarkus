@@ -2,6 +2,8 @@ package scheduleoperations;
 
 import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.CleaningResult;
+import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
@@ -335,29 +337,67 @@ class MaintenanceJobTest {
         maintenanceTypes.put(2, "Мойка");
         when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
 
-        Product product = schedule.getProducts().get(1);
+        Product maintenanceProduct = schedule.getProducts().get(0);
+        Product normalProduct = schedule.getProducts().get(1);
+        normalProduct.setCleaningResults(Map.of(maintenanceProduct, new CleaningResult(15, false)));
+
+        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 7, 30);
         LocalDateTime prodStart = LocalDateTime.of(2025, 1, 15, 8, 15);
-        LocalDateTime lineMaxEndTime  = prodStart.plusMinutes(120);
-        Job job = Job.fromDbMaintenanceRow(
+        line.setStartDateTime(lineStart);
+
+        Job maintenanceJob1 = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
+                        Timestamp.valueOf(lineStart),
+                        Timestamp.valueOf(lineStart.plusMinutes(45)),
+                        45, 2211L, 1, "note"),
+                "Maintenance", maintenanceProduct, lineStart);
+        line.getJobs().add(maintenanceJob1);
+        schedule.getJobs().add(maintenanceJob1);
+
+        Job job = Job.fromDbJobRow(
+                new DbJobRow(null, "", 0, 0, 0.0,
                         Timestamp.valueOf(prodStart),
                         Timestamp.valueOf(prodStart.plusMinutes(60)),
-                        60, 2212L, 1, "note"),
-                "Job", product, prodStart);
-        job.setMaintenance(true);
+                        60, 2212L, 0, "line1", "Job"),
+                normalProduct, prodStart, null);
         line.getJobs().add(job);
-        line.setMaxEndTime(lineMaxEndTime);
         schedule.getJobs().add(job);
         ScheduleUtils.fixLineJobs(line);
 
         maintenanceJob.addDailyFullCleaning(schedule);
 
-        assertEquals(2, line.getJobs().size());
-        Job added = line.getJobs().get(1);
+        assertEquals(3, line.getJobs().size());
+        Job added = line.getJobs().get(2);
         assertTrue(added.isMaintenance());
         assertEquals(2, added.getMaintenanceTypeId());
         assertEquals(40, added.getDuration().toMinutes());
-        assertNotNull(line.getMaxEndTime(), "Line maxEndTime should be extended after adding maintenance");
+        assertNotNull(line.getMaxEndTime());
+    }
+
+    @Test
+    void extendLineMaxEndTime_skipsWhenLastJobEndDateTimeNull() {
+        CleaningDurationUtils.init(Map.of("line1", 30));
+        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
+        maintenanceTypes.put(2, "Мойка");
+        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
+
+        Line lineNoStart = new Line("line1", "Line 1");
+        lineNoStart.setStartDateTime(null);
+        schedule.setLines(List.of(lineNoStart));
+
+        Product product = schedule.getProducts().get(1);
+        Job job = Job.fromDbJobRow(
+                new DbJobRow(null, "", 0, 0, 0.0,
+                        null, null, 60, 2212L, 0, "line1", "Job"),
+                product, null, null);
+        lineNoStart.getJobs().add(job);
+        schedule.getJobs().add(job);
+        ScheduleUtils.fixLineJobs(lineNoStart);
+
+        maintenanceJob.addDailyFullCleaning(schedule);
+
+        assertEquals(2, lineNoStart.getJobs().size());
+        assertNull(lineNoStart.getMaxEndTime());
     }
 
     @Test
