@@ -30,7 +30,7 @@ abstract class BaseExceptionMapper<T extends Throwable> implements ExceptionMapp
         if (uriInfo != null) {
             body.put(ApiFields.PATH, uriInfo.getPath());
         }
-
+e.printStackTrace();
         return Response.status(status)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(body)

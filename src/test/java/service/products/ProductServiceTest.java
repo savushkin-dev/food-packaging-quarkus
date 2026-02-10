@@ -48,19 +48,19 @@ class ProductServiceTest {
                 "KMC1", 10, 5, 2.0,
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1"
+                5, 123L, 1, "L1", "Product1", 18
         );
         DbJobRow jobRow2 = new DbJobRow(
                 new Timestamp(System.currentTimeMillis()),
                 "KMC2", 20, 10, 3.0,
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                10, 124L, 2, "L2", "Product2"
+                10, 124L, 2, "L2", "Product2", 19
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
-        Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
-        Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2");
+        Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
+        Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2", "4810268008300");
         Map<String, Product> products = Map.of("KMC1", product1, "KMC2", product2);
         List<CleaningRule> cleaningRules = List.of();
 
@@ -97,11 +97,11 @@ class ProductServiceTest {
                 "KMC1", 10, 5, 2.0,
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1"
+                5, 123L, 1, "L1", "Product1", 18
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow));
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
+        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
         Map<String, Product> products = Map.of("KMC1", product);
 
         when(loadDataService.getProducts()).thenReturn(products);
@@ -126,7 +126,7 @@ class ProductServiceTest {
                 "UNKNOWN_KMC", 10, 5, 2.0,
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1"
+                5, 123L, 1, "L1", "Product1", 18
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow));
 
@@ -148,18 +148,18 @@ class ProductServiceTest {
                 "KMC1", 10, 5, 2.0,
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1"
+                5, 123L, 1, "L1", "Product1", 18
         );
         DbJobRow jobRow2 = new DbJobRow(
                 new Timestamp(System.currentTimeMillis()),
                 "KMC1", 20, 10, 3.0,
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                10, 124L, 2, "L2", "Product1"
+                10, 124L, 2, "L2", "Product1", 19
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
+        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
         Map<String, Product> products = Map.of("KMC1", product);
 
         when(loadDataService.getProducts()).thenReturn(products);
@@ -184,18 +184,18 @@ class ProductServiceTest {
                 "KMC1", 10, 5, 2.0,
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1"
+                5, 123L, 1, "L1", "Product1", 18
         );
         DbJobRow jobRow2 = new DbJobRow(
                 new Timestamp(System.currentTimeMillis()),
                 null, 20, 10, 3.0, // null KMC should be filtered
                 new Timestamp(System.currentTimeMillis()),
                 new Timestamp(System.currentTimeMillis()),
-                10, 124L, 2, "L2", "Product2"
+                10, 124L, 2, "L2", "Product2", 19
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
+        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
         Map<String, Product> products = Map.of("KMC1", product);
 
         when(loadDataService.getProducts()).thenReturn(products);

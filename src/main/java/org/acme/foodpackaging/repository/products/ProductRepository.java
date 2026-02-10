@@ -44,7 +44,8 @@ public class ProductRepository {
             Product product = new Product(
                     r.shortName(), r.kmc(),
                     r.krkmc(), r.type(),
-                    r.glaze(), r.mass(), r.filling()
+                    r.glaze(), r.mass(), r.filling(),
+                    r.ean13()
             );
             result.put(r.kmc(), product);
         }
