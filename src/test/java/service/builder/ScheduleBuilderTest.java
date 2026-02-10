@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
@@ -26,6 +27,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +46,8 @@ class ScheduleBuilderTest {
     LineSchedulingService lineSchedulingService;
     @Mock
     ProductService productService;
+    @Mock
+    JobRefreshService jobRefreshService;
 
     @Test
     void buildSchedule() {
@@ -82,7 +86,7 @@ class ScheduleBuilderTest {
 
         when(jobRepository.getDbJobRowMap(any(), any())).thenReturn(jobRows);
         when(jobRepository.getDbMaintenanceRowMap(any(), any())).thenReturn(maintenanceRows);
-        when(jobRepository.getMsLogEvents(any(), any())).thenReturn(msLogEvents);
+        when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
         when(lineService.getLines()).thenReturn(lines);
         doNothing().when(lineSchedulingService).initJobListOnLine(any());
         when(productService.getProductList(any())).thenReturn(products);
@@ -98,8 +102,6 @@ class ScheduleBuilderTest {
         verify(jobRepository).getDbJobRowMap(any(), any());
         verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobService).initSolutionJobList(schedule);
-        verify(jobService).initFromMsLogEvents(schedule, msLogEvents);
-        verify(jobRepository).getMsLogEvents(any(), any());
         verify(lineService).getLines();
         verify(lineSchedulingService).initJobListOnLine(schedule);
         verify(productService).getProductList(schedule);

@@ -18,5 +18,7 @@ public final class ApiFields {
     public static final String SESSION_ID_REQUIRED = "Session ID is required";
     public static final String REFRESH_OK = "Data refreshed successfully from database";
     public static final String WORK_SENT = "The task has been sent to work";
+    public static final String MS_LOG_INSERT_FAILED = "Failed to insert MS_LOG rows";
+    public static final String MS_LOG_UPDATE_CAMERA_END_FAILED = "Failed to update camera end events in MS_LOG";
 }
 

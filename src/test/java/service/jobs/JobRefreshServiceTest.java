@@ -1,9 +1,13 @@
-package service;
+package service.jobs;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
@@ -14,12 +18,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +41,8 @@ class JobRefreshServiceTest {
     JobService jobService;
     @Mock
     ProductService productService;
+    @Mock
+    UploadDataService uploadDataService;
 
     @Test
     void enabledJobNotPresent() {
@@ -53,12 +62,13 @@ class JobRefreshServiceTest {
         when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
-        Map<Long, Boolean> selection = Map.of(1L, true);
+        Map<Long, SelectionValue> selection = Map.of(1L, new SelectionValue(true, true));
 
         service.applySelection(selection, solution);
 
         assertEquals(1, solution.getJobs().size());
         assertSame(job, solution.getJobs().getFirst());
+        assertTrue(solution.getJobs().getFirst().isHandPackaging());
         assertEquals(job, solution.getJobIdMap().get(1L));
 
         verify(jobService).createJobById(1L, false, solution);
@@ -77,8 +87,8 @@ class JobRefreshServiceTest {
         when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, true), solution);
-
+        service.applySelection(Map.of(1L, new SelectionValue(true, false)), solution);
+        assertFalse(solution.getJobs().getFirst().isHandPackaging());
         assertEquals(1, solution.getJobs().size());
         verify(jobService, never()).createJobById(anyLong(), anyBoolean(), any());
     }
@@ -102,7 +112,7 @@ class JobRefreshServiceTest {
         when(productService.getProductList(solution))
                 .thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, false), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(false, false)), solution);
 
         assertTrue(solution.getJobs().isEmpty());
         assertTrue(line.getJobs().isEmpty());
@@ -137,7 +147,7 @@ class JobRefreshServiceTest {
         solution.setDbJobRowMap(new HashMap<>());
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, true), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(true, false)), solution);
 
         assertEquals(0, solution.getJobs().size());
         assertNull(solution.getJobIdMap().get(1L));
@@ -157,7 +167,7 @@ class JobRefreshServiceTest {
 
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, false), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(false, false)), solution);
 
         assertTrue(solution.getJobs().isEmpty());
         assertNull(solution.getJobIdMap().get(1L));
@@ -204,16 +214,17 @@ class JobRefreshServiceTest {
         when(jobService.createJobById(1L, false, solution)).thenReturn(job1);
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        Map<Long, Boolean> selection = Map.of(1L, true, 2L, false);
-        PackagingSchedule result = service.applySelection(selection, solution);
-
-        assertSame(solution, result);
+        Map<Long, SelectionValue> selection = Map.of(
+                1L, new SelectionValue(true, false),
+                2L, new SelectionValue(false, true));
+        service.applySelection(selection, solution);
+        assertFalse(solution.getJobs().getFirst().isHandPackaging());    
         assertEquals(1, solution.getJobs().size());
         assertSame(job1, solution.getJobs().getFirst());
         assertSame(job1, solution.getJobIdMap().get(1L));
         assertNull(solution.getJobIdMap().get(2L));
+        assertFalse(solution.getJobs().getFirst().isHandPackaging());
         verify(jobService).createJobById(1L, false, solution);
-        verify(productService).getProductList(solution);
     }
 
     @Test
@@ -233,11 +244,148 @@ class JobRefreshServiceTest {
 
         when(productService.getProductList(solution)).thenReturn(List.of());
 
-        service.applySelection(Map.of(1L, false), solution);
+        service.applySelection(Map.of(1L, new SelectionValue(false, false)), solution);
 
         assertTrue(solution.getJobs().isEmpty());
         assertTrue(line.getJobs().isEmpty());
         assertEquals(0, line.getFirstUnpinnedIndex());
     }
-}
 
+    // --- refreshStaleCameraEndFromPmLog tests ---
+
+    @Test
+    void refreshStaleCameraEndFromPmLog_updatesWhenEndDiffersMoreThanOneMinute() {
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setProduct(new Product("KMC1", "Product1"));
+        job.setDtv(LocalDateTime.now().minusHours(2));
+        job.setCameraStart(LocalDateTime.now().minusHours(1));
+        job.setCameraEnd(LocalDateTime.now().minusHours(1).plusMinutes(5));
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        LocalDateTime newEnd = LocalDateTime.now().minusHours(1).plusMinutes(10);
+        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(null, newEnd));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+
+        service.refreshStaleCameraEndFromPmLog(solution);
+
+        assertEquals(newEnd, job.getCameraEnd());
+        verify(uploadDataService).updateCameraEndInMsLog(argThat(list -> list.size() == 1));
+    }
+
+    @Test
+    void refreshStaleCameraEndFromPmLog_skipsWhenDiffLessThanOneMinute() {
+        LocalDateTime cameraStart = LocalDateTime.now().minusHours(1);
+        LocalDateTime oldEnd = cameraStart.plusMinutes(10);
+
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setProduct(new Product("KMC1", "Product1"));
+        job.setDtv(LocalDateTime.now().minusHours(2));
+        job.setCameraStart(cameraStart);
+        job.setCameraEnd(oldEnd);
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        LocalDateTime newEnd = oldEnd.plusSeconds(30);
+        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(null, newEnd));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+
+        service.refreshStaleCameraEndFromPmLog(solution);
+
+        assertEquals(oldEnd, job.getCameraEnd());
+        verify(uploadDataService, never()).updateCameraEndInMsLog(any());
+    }
+
+    @Test
+    void refreshStaleCameraEndFromPmLog_returnsEarlyWhenNoStaleJobs() {
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of());
+
+        service.refreshStaleCameraEndFromPmLog(solution);
+
+        verify(jobRepository, never()).getCameraFactRowMap(any());
+        verify(uploadDataService, never()).updateCameraEndInMsLog(any());
+    }
+
+    @Test
+    void refreshStaleCameraEndFromPmLog_skipsWhenIdBatchNull() {
+        Job job = new Job();
+        job.setIdBatch(null);
+        job.setCameraStart(LocalDateTime.now().minusHours(1));
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        service.refreshStaleCameraEndFromPmLog(solution);
+
+        verify(jobRepository, never()).getCameraFactRowMap(any());
+    }
+
+    @Test
+    void refreshStaleCameraEndFromPmLog_skipsWhenCameraStartNull() {
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setCameraStart(null);
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        service.refreshStaleCameraEndFromPmLog(solution);
+
+        verify(jobRepository, never()).getCameraFactRowMap(any());
+    }
+
+    @Test
+    void refreshStaleCameraEndFromPmLog_skipsWhenCameraMapHasNoEntry() {
+        LocalDateTime cameraStart = LocalDateTime.now().minusHours(1);
+        LocalDateTime cameraEnd = cameraStart.plusMinutes(5);
+
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setProduct(new Product("KMC1", "Product1"));
+        job.setDtv(cameraStart.minusHours(1));
+        job.setCameraStart(cameraStart);
+        job.setCameraEnd(cameraEnd);
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(Map.of());
+
+        service.refreshStaleCameraEndFromPmLog(solution);
+
+        assertEquals(cameraEnd, job.getCameraEnd());
+        verify(uploadDataService, never()).updateCameraEndInMsLog(any());
+    }
+
+    @Test
+    void refreshStaleCameraEndFromPmLog_skipsWhenCameraEndNull() {
+        LocalDateTime cameraStart = LocalDateTime.now().minusHours(1);
+        LocalDateTime cameraEnd = cameraStart.plusMinutes(5);
+
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setProduct(new Product("KMC1", "Product1"));
+        job.setDtv(cameraStart.minusHours(1));
+        job.setCameraStart(cameraStart);
+        job.setCameraEnd(cameraEnd);
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(null, null));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+
+        service.refreshStaleCameraEndFromPmLog(solution);
+
+        assertEquals(cameraEnd, job.getCameraEnd());
+        verify(uploadDataService, never()).updateCameraEndInMsLog(any());
+    }
+}

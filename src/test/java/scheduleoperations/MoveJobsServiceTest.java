@@ -1,4 +1,4 @@
-package scheduleOperations;
+package scheduleoperations;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
@@ -6,8 +6,9 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.MoveJobsRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.MoveJobsService;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,8 +54,8 @@ class MoveJobsServiceTest {
 
         // speed cache
         SpeedCacheUtils.init(Map.of(
-                "line1", Map.of("TYPE_A", 10, "TYPE_B", 10),
-                "line2", Map.of("TYPE_A", 15, "TYPE_B", 20)
+                "line1", Map.of("TYPE_A", Pair.of(10, 5), "TYPE_B", Pair.of(10, 5)),
+                "line2", Map.of("TYPE_A", Pair.of(15, 7), "TYPE_B", Pair.of(20, 10))
         ));
     }
 

@@ -5,20 +5,25 @@ import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraEventRow;
+import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
 
 @ApplicationScoped
 public class JobRefreshService {
@@ -29,105 +34,106 @@ public class JobRefreshService {
     private final UploadDataService uploadDataService;
 
     @Inject
-    public JobRefreshService(JobService jobService, 
-        ProductService productService, JobRepository jobRepository, UploadDataService uploadDataService) {
-        this.jobRepository = jobRepository;
-        this.uploadDataService = uploadDataService;
-        this.jobService = jobService;
-        this.productService = productService;
-    }
+    JobRepository jobRepository;
+    @Inject
+    JobService jobService;
+    @Inject
+    ProductService productService;
 
-    public PackagingSchedule applySelection(Map<Long, Boolean> selection, PackagingSchedule solution) {
-        for (Map.Entry<Long, Boolean> entry : selection.entrySet()) {
-            Long snpz = entry.getKey();
-            boolean enabled = entry.getValue();
+    private final JobRepository jobRepository;
+    private final JobService jobService;
+    private final ProductService productService;
+    private final UploadDataService uploadDataService;
 
-            if (enabled) {
-                if (!solution.getJobIdMap().containsKey(snpz)) {
-                    DbJobRow row = solution.getDbJobRowMap().get(snpz);
-                    if (row != null) {
-                        Job job = jobService.createJobById(row.snpz(), false, solution);
-
-                        solution.getJobs().add(job);
-                        solution.getJobIdMap().put(snpz, job);}
-                }
+    public PackagingSchedule applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
+        selection.forEach((snpz, value) -> {
+            if (Boolean.TRUE.equals(value.isSelect())) {
+                addJobIfAbsent(snpz, Boolean.TRUE.equals(value.isLabeling()), solution);
             } else {
-                Job job = solution.getJobIdMap().remove(snpz);
-                if (job != null) {
-                    solution.getJobs().remove(job);
-
-                    Line line = job.getLine();
-                    if (line != null) {
-                        line.getJobs().remove(job);
-                        job.setLine(null);
-
-                        fixLineJobs(line);
-                        if(line.getFirstUnpinnedIndex()>line.getJobs().size()) {
-                            line.setFirstUnpinnedIndex(line.getJobs().size());
-                            }
-                        }
-                    }
-                }
+                removeJobFromSolution(snpz, solution);
             }
+        });
         rebuildId(solution);
         solution.setProducts(productService.getProductList(solution));
         return solution;
-        }
-
-    private void rebuildId(PackagingSchedule solution) {
-        solution.getJobIdMap().clear();
-        for (Job j : solution.getJobs()) {
-            if(j.isMaintenance()) continue;
-           solution.getJobIdMap().put(j.getSnpz(), j);
-        }
     }
 
-    public void refreshRecentCameraEndIfNeeded(
-            PackagingSchedule schedule,
-            Map<String, CameraEventRow> endEvents
-    ) {
-        LocalDateTime now = LocalDateTime.now();
-        Duration threshold = Duration.ofHours(12);
-
-        List<Job> candidates = schedule.getJobs().stream()
-                .filter(j -> j.getIdBatch() != null)
-                .filter(j -> j.getCameraStart() != null)
-                .filter(j ->
-                        Duration.between(j.getCameraStart(), now)
-                                .compareTo(threshold) < 0
-                )
-                .toList();
-
-        if (candidates.isEmpty()) {
+    private void addJobIfAbsent(Long snpz, boolean isHandPackaging, PackagingSchedule solution) {
+        if (solution.getJobIdMap().containsKey(snpz)) {
             return;
         }
+        DbJobRow row = solution.getDbJobRowMap().get(snpz);
+        if (row == null) {
+            return;
+        }
+        Job job = jobService.createJobById(row.snpz(), false, solution);
+        job.setHandPackaging(isHandPackaging);
+        solution.getJobs().add(job);
+        solution.getJobIdMap().put(snpz, job);
+    }
 
-        Set<String> batches = candidates.stream()
-                .map(Job::getIdBatch)
-                .collect(Collectors.toSet());
-
-        Map<String, LocalDateTime> pmCameraEnds =
-                jobRepository. getCameraUpdate(batches);
-
-        for (Job job : candidates) {
-            LocalDateTime pmEnd = pmCameraEnds.get(job.getIdBatch());
-            if (pmEnd == null) continue;
-
-            CameraEventRow msEndEvent = endEvents.get(job.getIdBatch());
-            LocalDateTime msEnd =
-                    msEndEvent != null
-                            ? msEndEvent.eventTime().toLocalDateTime()
-                            : null;
-
-            if (!pmEnd.equals(msEnd)) {
-                uploadDataService.updateCameraEndEvent(
-                        job.getIdBatch(),
-                        pmEnd
-                );
-
-                job.setCameraEnd(pmEnd);
+    private void removeJobFromSolution(Long snpz, PackagingSchedule solution) {
+        Job job = solution.getJobIdMap().remove(snpz);
+        if (job == null) {
+            return;
+        }
+        solution.getJobs().remove(job);
+        Line line = job.getLine();
+        if (line != null) {
+            line.getJobs().remove(job);
+            job.setLine(null);
+            fixLineJobs(line);
+            if (line.getFirstUnpinnedIndex() > line.getJobs().size()) {
+                line.setFirstUnpinnedIndex(line.getJobs().size());
             }
         }
     }
 
+    private void rebuildId(PackagingSchedule solution) {
+        solution.getJobIdMap().clear();
+        solution.getJobs().stream()
+                .filter(j -> !j.isMaintenance())
+                .forEach(j -> solution.getJobIdMap().put(j.getSnpz(), j));
+    }
+
+    /**
+     * Обновляет данные по камере в MS_LOG для партий со времени старта которых прошло меньше 12 часов.
+     *
+     * @param solution The packaging schedule to initialize
+     */
+    public void refreshStaleCameraEndFromPmLog(PackagingSchedule solution) {
+
+        LocalDateTime threshold = LocalDateTime.now().minusHours(12);
+
+        List<Job> staleCameraJobs = solution.getJobs().stream()
+                .filter(j -> j.getIdBatch() != null)
+                .filter(j -> j.getCameraStart() != null)
+                .filter(j -> j.getCameraStart().isAfter(threshold))
+                .toList();
+
+        if (staleCameraJobs.isEmpty()) {
+            return;
+        }
+
+        Map<String, CameraValue> cameraMap =
+                jobRepository.getCameraFactRowMap(staleCameraJobs);
+
+        List<MsLogInsertRow> msLogRows = new ArrayList<>();
+
+        for (Job job : staleCameraJobs) {
+            CameraValue camera = cameraMap.get(job.getIdBatch());
+            if (camera != null && camera.cameraEnd() != null
+                    && differsMoreThan(job.getCameraEnd(), camera.cameraEnd())) {
+                job.setCameraEnd(camera.cameraEnd());
+                msLogRows.add(new MsLogInsertRow(
+                        job, END_CAMERA_EVENT_TYPE,
+                        Timestamp.valueOf(camera.cameraEnd())
+                ));
+            }
+        }
+
+        if (!msLogRows.isEmpty()) {
+            uploadDataService.updateCameraEndInMsLog(msLogRows);
+        }
+    }
 }

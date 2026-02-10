@@ -3,19 +3,21 @@ package org.acme.foodpackaging.persistence.load;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.record.CameraValue;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import java.sql.*;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.sql.SqlQueries.*;
@@ -91,80 +93,41 @@ public class JobDBLoader {
                 .getResultList();
     }
 
+        return rows.stream()
+                .collect(Collectors.toMap(
+                        r -> new FactKey(r.kmc(), r.np(), r.eventType()),
+                        Function.identity(),
+                        (existing, duplicate) -> existing // Keep first occurrence, skip duplicates
+                ));
+    }
+
     @SuppressWarnings("unchecked")
-    private CameraValue fetchCameraValue(String idBatch) {
-        List<CameraFactRow> rows = em
-                .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
-                .setParameter(1, idBatch)
-                .getResultList();
-
-        if (rows.isEmpty()) {
-            return null;
-        }
-        CameraFactRow row = rows.getFirst();
-        return new CameraValue(
-                row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
-                row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
-        );
-    }
-
-    public CameraValue getCameraValueByIdBatch(String idBatch) {
-        return fetchCameraValue(idBatch);
-    }
-
-    public Map<String, CameraValue> loadCameraValuesFromPmLogJDBC(Set<String> batchIds) {
-        if (batchIds.isEmpty()) return Map.of();
-
+    public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
+    
         Map<String, CameraValue> result = new HashMap<>();
-
-        try (Connection conn =  DriverManager.getConnection(dbUrl)) {
-            try (PreparedStatement ps = conn.prepareStatement(LOAD_CAMERA_FACT)) {
-                for (String batchId : batchIds) {
-                    ps.setString(1, batchId);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            LocalDateTime start = rs.getTimestamp("DTSTART") != null
-                                    ? rs.getTimestamp("DTSTART").toLocalDateTime()
-                                    : null;
-                            LocalDateTime end = rs.getTimestamp("DTEND") != null
-                                    ? rs.getTimestamp("DTEND").toLocalDateTime()
-                                    : null;
-                            result.put(batchId, new CameraValue(start, end));
-                        }
-                    }
+        Set<String> processedBatches = new HashSet<>();
+    
+        for (Job job : jobs) {
+            String idBatch = job.getIdBatch();
+            if (idBatch != null && !processedBatches.contains(idBatch)) {
+                processedBatches.add(idBatch);
+                List<CameraFactRow> rows = em
+                        .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
+                        .setParameter(1, idBatch)
+                        .getResultList();
+                if (!rows.isEmpty()) {
+                    CameraFactRow row = rows.getFirst();
+                    result.put(
+                            idBatch,
+                            new CameraValue(
+                                    row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
+                                    row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
+                            )
+                    );
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
-
         return result;
     }
-
-    @SuppressWarnings("unchecked")
-    public Map<String, LocalDateTime> loadActualCameraEndFromPmLog(Set<String> batches) {
-
-        if (batches == null || batches.isEmpty()) {
-            return Map.of();
-        }
-
-        List<Object[]> rows = em.createNativeQuery(LOAD_PM_CAMERA_END)
-                .setParameter("batches", batches)
-                .getResultList();
-
-        Map<String, LocalDateTime> result = new HashMap<>();
-
-        for (Object[] row : rows) {
-            String idBatch = (String) row[0];
-            Timestamp ts = (Timestamp) row[1];
-            if (ts != null) {
-                result.put(idBatch, ts.toLocalDateTime());
-            }
-        }
-
-        return result;
-    }
-
-
 }
 

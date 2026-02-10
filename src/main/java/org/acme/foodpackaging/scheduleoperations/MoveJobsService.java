@@ -1,26 +1,22 @@
-package org.acme.foodpackaging.scheduleOperations;
+package org.acme.foodpackaging.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MoveJobsRequest;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import java.util.*;
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class MoveJobsService {
-    @Inject
-    LoadDataService loadDataService;
+
     /**
      * Выполняет перемещение подпоследовательности задач.
      * Бросает IllegalArgumentException при некорректных входных данных.
@@ -50,10 +46,8 @@ public class MoveJobsService {
                 Job job = fromJobs.get(i);
                 if (job.isMaintenance()) continue;
                 String productType = job.getProduct().getType();
-                Integer duration = SpeedCacheUtils.getLineSpeeds()
-                        .getOrDefault(toLine.getId(), Map.of())
-                        .get(productType);
-                if (duration == null || duration == 0) {
+                Integer speed = SpeedCacheUtils.getSpeed(toLine.getId(), productType);
+                if (speed == null || speed == 0) {
                     throw new IllegalArgumentException(
                             String.format("Cannot move job \"%s\" to line \"%s\": product type unsupported",
                                     job.getName(), toLine.getName()));
@@ -126,7 +120,7 @@ public class MoveJobsService {
             List<Job> moved = new ArrayList<>(jobs.subList(fromIndex, fromEnd));
             jobs.subList(fromIndex, fromEnd).clear();
 
-            insertIndex = Math.max(0, Math.min(insertIndex, jobs.size()));
+            insertIndex = Math.clamp(insertIndex, 0, jobs.size());
             jobs.addAll(insertIndex, moved);
 
             fromLine.setJobs(jobs);
@@ -142,7 +136,7 @@ public class MoveJobsService {
         List<Job> jobsToMove = new ArrayList<>(fromJobs.subList(fromIndex, fromEnd));
         fromJobs.subList(fromIndex, fromEnd).clear();
 
-        insertIndex = Math.max(0, Math.min(insertIndex, toJobs.size()));
+        insertIndex = Math.clamp(insertIndex, 0, toJobs.size());
         toJobs.addAll(insertIndex, jobsToMove);
 
         fromLine.setJobs(fromJobs);

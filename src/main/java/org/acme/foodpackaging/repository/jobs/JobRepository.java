@@ -2,6 +2,7 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
@@ -61,14 +62,6 @@ public class JobRepository {
 
     public List<FactProductionRow> getMsLogEvents(LocalDate from, LocalDate to) {
         return jobDBLoader.loadMsLogEvents(from.atStartOfDay(), to.atStartOfDay());
-    }
-
-    public  Map<String, CameraValue> getCameraValueMap(Set<String> batchIds) {
-        return jobDBLoader.loadCameraValuesFromPmLogJDBC( batchIds);
-    }
-
-    public Map<String, LocalDateTime> getCameraUpdate(Set<String> batches){
-        return jobDBLoader.loadActualCameraEndFromPmLog( batches);
     }
 }
 

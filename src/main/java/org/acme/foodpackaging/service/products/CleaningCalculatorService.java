@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.record.CleaningRule;
+import org.acme.foodpackaging.record.CleaningResult;
 
 import java.time.Duration;
 import java.util.*;
@@ -25,28 +26,21 @@ public class CleaningCalculatorService {
      * 3. Для всех четырёх параметров собираем найденные длительности.
      * 4. Итоговое время мойки — максимальное из четырёх (жёсткое правило цеха).
      */
-    public int getCleaningTime(Product from, Product to) {
-        List<Integer> times = new ArrayList<>();
+    public CleaningResult getCleaningResult(Product from, Product to) {
 
-        // Поиск длительности по каждому параметру (1 — тип продукта)
-        times.add(findDuration("1", from.getType(), to.getType()));
-
-        // 2 — глазурь
-        times.add(findDuration("2", from.getGlaze(), to.getGlaze()));
-
-        // 3 — масса сырка
-        times.add(findDuration("3", from.getCurdMass(), to.getCurdMass()));
-
-        // 4 — наполнитель
-        times.add(findDuration("4", from.getFilling(), to.getFilling()));
-
-        // Максимальная длительность определяет итоговое время мойки
-        return times.stream()
+        List<CleaningResult> results = new ArrayList<>();
+    
+        results.add(findRuleResult("1", from.getType(), to.getType()));
+        results.add(findRuleResult("2", from.getGlaze(), to.getGlaze()));
+        results.add(findRuleResult("3", from.getCurdMass(), to.getCurdMass()));
+        results.add(findRuleResult("4", from.getFilling(), to.getFilling()));
+    
+        return results.stream()
                 .filter(Objects::nonNull)
-                .max(Integer::compare)
-                .orElse(0);
+                .max(Comparator.comparingInt(CleaningResult::minutes))
+                .orElse(CleaningResult.zero());
     }
-
+    
     /**
      * Проверяет, подходит ли значение правила под фактический параметр.
      * Пустое ruleValue = wildcard (подходит ко всем значениям).
@@ -63,7 +57,7 @@ public class CleaningCalculatorService {
      * 3. Сортируем по "специфичности": чем больше конкретных совпадений, тем выше приоритет.
      * 4. Берём длительность самого специфичного правила.
      */
-    private Integer findDuration(String parameter, String from, String to) {
+    private CleaningResult findRuleResult(String parameter, String from, String to) {
         return rules.stream()
                 .filter(r -> r.parameter().equals(parameter))
                 .filter(r -> matches(r.from(), from) && matches(r.to(), to))
@@ -71,7 +65,7 @@ public class CleaningCalculatorService {
                         specificity(r2, from, to),
                         specificity(r1, from, to)
                 ))
-                .map(CleaningRule::duration)
+                .map(r -> new CleaningResult(r.duration(), r.isPLRLC()))
                 .findFirst()
                 .orElse(null);
     }
@@ -105,41 +99,49 @@ public class CleaningCalculatorService {
     public void cleaningCalculate(List<Product> products) {
 
         for (Product current : products) {
-            Map<Product, Duration> durations = new HashMap<>(products.size());
-
+    
+            Map<Product, Duration> durations = new HashMap<>();
+            Map<Product, CleaningResult> results = new HashMap<>();
+    
             for (Product previous : products) {
-                Duration duration;
-
-                // Мойка не нужна при переходе от/к тех. обслуживанию
-                if (current.getId().equals("MAINTENANCE") || previous.getId().equals("MAINTENANCE")) {
-                    duration = Duration.ZERO;
+    
+                CleaningResult result;
+    
+                if (isMaintenance(current, previous)) {
+                    result = CleaningResult.zero();
                 }
-                // Переход на тот же продукт — 0
                 else if (current.getId().equals(previous.getId())) {
-                    duration = Duration.ZERO;
+                    result = CleaningResult.zero();
                 }
-                // Все параметры идентичны, кроме ID ⇒ это тот же продукт, но другая упаковка
-                else if (current.getType().equals(previous.getType())
-                        && current.getGlaze().equals(previous.getGlaze())
-                        && current.getCurdMass().equals(previous.getCurdMass())
-                        && current.getFilling().equals(previous.getFilling())
-                        && !current.getId().equals(previous.getId())) {
-
-                    // На линии требуется только смена упаковочного материала
-                    duration = Duration.ofMinutes(10);
+                else if (isSameProductDifferentPackaging(current, previous)) {
+                    result = new CleaningResult(10, false);
                 }
-                // Общий случай: считаем по правилам БД
                 else {
-                    duration = Duration.ofMinutes(getCleaningTime(previous, current));
+                    result = getCleaningResult(previous, current);
                 }
-
-                durations.put(previous, duration);
+    
+                durations.put(previous, Duration.ofMinutes(result.minutes()));
+                results.put(previous, result);
             }
-
-            // Присваиваем рассчитанную таблицу переходов
+    
             current.setCleaningDurations(durations);
+            current.setCleaningResults(results);
         }
     }
+    
+    private boolean isMaintenance(Product current, Product previous) {
+        return "MAINTENANCE".equals(current.getId())
+            || "MAINTENANCE".equals(previous.getId());
+    }
+    
+    private boolean isSameProductDifferentPackaging(Product a, Product b) {
+        return a.getType().equals(b.getType())
+            && a.getGlaze().equals(b.getGlaze())
+            && a.getCurdMass().equals(b.getCurdMass())
+            && a.getFilling().equals(b.getFilling())
+            && !a.getId().equals(b.getId());
+    }
+    
 }
 
 

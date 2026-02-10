@@ -15,7 +15,9 @@ import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
 import org.acme.foodpackaging.repository.products.ProductRepository;
 import org.acme.foodpackaging.repository.jobs.PlrPevRepository;
 import org.acme.foodpackaging.repository.lines.PlrLcRepository;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.Map;
@@ -38,11 +40,7 @@ public class LoadDataService {
     @Getter
     private Map<String, Product> products;
     @Getter
-    private Map<String, Map<String, Integer>> lineSpeeds;
-    @Getter
     private List<CleaningRule> cleaningRules;
-    @Getter
-    private Map<String, Integer> linesCleaning;
 
     @Inject
     public LoadDataService(
@@ -81,20 +79,22 @@ public class LoadDataService {
                         (existing, ignored) -> existing
                 ));
 
-        Map<SpeedRepository.LineTypeKey, Integer> rawSpeeds = allLineEntities.stream()
+        Map<SpeedRepository.LineTypeKey, Pair<Integer, Integer>> rawSpeeds = allLineEntities.stream()
                 .filter(e -> e.getSpeed() != null)
                 .collect(Collectors.toMap(
                         e -> new SpeedRepository.LineTypeKey(
                                 e.getLineId().trim(),
                                 e.getType().trim()
                         ),
-                        PlrLines::getSpeed,
+                        e -> Pair.of(
+                                e.getSpeed(),
+                                e.getHandPackagingSpeed() != null ? e.getHandPackagingSpeed() : 0
+                        ),
                         (existing, ignored) -> existing
                 ));
 
-        this.lineSpeeds = SpeedRepository.createSpeedMap(rawSpeeds);
-        this.linesCleaning = plrLcRepository.loadLinesCleaning();
-        SpeedCacheUtils.init(this.lineSpeeds);
+        SpeedCacheUtils.init(SpeedRepository.createSpeedMap(rawSpeeds));
+        CleaningDurationUtils.init(plrLcRepository.loadLinesCleaning());
 
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();

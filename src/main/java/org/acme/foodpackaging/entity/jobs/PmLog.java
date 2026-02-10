@@ -21,7 +21,6 @@ import java.util.UUID;
         classes = @ConstructorResult(
                 targetClass = CameraFactRow.class,
                 columns = {
-                        @ColumnResult(name = "IDBATCH", type = String.class),
                         @ColumnResult(name = "DTSTART", type = Timestamp.class),
                         @ColumnResult(name = "DTEND", type = Timestamp.class)
                 }
@@ -34,10 +33,6 @@ public class PmLog extends PanacheEntityBase {
     @Column(name = "F_GUID", nullable = false)
     public UUID id;
 
-    @Id
-    @Column(name = "IDBATCH")
-    public String idBatch;
-
     @Column(name = "DTS")
     private LocalDateTime cameraStart;
 
@@ -45,7 +40,6 @@ public class PmLog extends PanacheEntityBase {
     public String toString() {
         return "PmLog{" +
                 "id=" + id +
-                ", idBatch='" + idBatch + '\'' +
                 ", cameraStart=" + cameraStart +
                 '}';
     }

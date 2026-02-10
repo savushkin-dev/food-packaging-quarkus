@@ -6,14 +6,14 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.domain.WorkCalendar;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.dto.PmLogInsertRow;
-import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraEventRow;
+import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.service.jobs.JobService;
+import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 /**
@@ -244,14 +246,16 @@ class JobServiceTest {
         );
     }
 
+    // --- initFactProductionData tests ---
+
     @Test
-    void initJobFromFactProductionRow() {
+    void initFactProductionData_setsStartFactAndCameraData() {
         Job job = new Job();
-        job.setProduct(new Product("KMC1", "VANILLA"));
+        job.setProduct(new Product("KMC1", "Vanilla"));
         job.setNp(10);
 
         FactProductionRow fact = new FactProductionRow(
-                "IdBatch", "KMC1",
+                "KMC1",
                 Timestamp.valueOf(
                         LocalDateTime.of(2025, 1, 1, 8, 0)),
                 10,
@@ -260,9 +264,21 @@ class JobServiceTest {
                         LocalDateTime.of(2025, 1, 1, 8, 0)),
                 "LINE_1"
         );
+        FactProductionRow startCamera = new FactProductionRow(
+                "BATCH-1", "KMC1", null, 10, ScheduleUtils.START_CAMERA_EVENT_TYPE,
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 9, 0)),
+                "LINE_1"
+        );
+        FactProductionRow endCamera = new FactProductionRow(
+                "BATCH-1", "KMC1", null, 10, ScheduleUtils.END_CAMERA_EVENT_TYPE,
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 10, 0)),
+                "LINE_1"
+        );
 
         Map<FactKey, FactProductionRow> factMap = Map.of(
-                new FactKey("KMC1", 10), fact
+                new FactKey("KMC1", 10, ScheduleUtils.START_FACT_EVENT_TYPE), startFact,
+                new FactKey("KMC1", 10, ScheduleUtils.START_CAMERA_EVENT_TYPE), startCamera,
+                new FactKey("KMC1", 10, ScheduleUtils.END_CAMERA_EVENT_TYPE), endCamera
         );
 
         PackagingSchedule solution = new PackagingSchedule();
@@ -270,17 +286,42 @@ class JobServiceTest {
 
         jobService.initFactProductionData(solution, factMap);
 
-        assertEquals("IdBatch", job.getIdBatch());
         assertEquals("LINE_1", job.getLineIdFact());
-        assertEquals(
-                LocalDateTime.of(2025, 1, 1, 8, 0),
-                job.getStartProductionDateTimeFact()
-        );
+        assertEquals(LocalDateTime.of(2025, 1, 1, 8, 0), job.getDtv());
+        assertEquals(LocalDateTime.of(2025, 1, 1, 8, 0), job.getStartProductionDateTimeFact());
+        assertEquals(LocalDateTime.of(2025, 1, 1, 9, 0), job.getCameraStart());
+        assertEquals(LocalDateTime.of(2025, 1, 1, 10, 0), job.getCameraEnd());
     }
+
     @Test
-    void IgnoreJobWhenFactNotFound() {
+    void initFactProductionData_skipsJobWithNullProduct() {
+        Job jobWithProduct = new Job();
+        jobWithProduct.setProduct(new Product("KMC1", "Vanilla"));
+        jobWithProduct.setNp(10);
+
+        Job jobWithoutProduct = new Job();
+        jobWithoutProduct.setNp(20);
+
+        Map<FactKey, FactProductionRow> factMap = Map.of(
+                new FactKey("KMC1", 10, ScheduleUtils.START_FACT_EVENT_TYPE),
+                new FactProductionRow("BATCH-1", "KMC1",
+                        Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)),
+                        10, 1, Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)), "LINE_1")
+        );
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(jobWithProduct, jobWithoutProduct));
+
+        jobService.initFactProductionData(solution, factMap);
+
+        assertEquals("BATCH-1", jobWithProduct.getIdBatch());
+        assertNull(jobWithoutProduct.getIdBatch());
+    }
+
+    @Test
+    void initFactProductionData_ignoresWhenFactNotFound() {
         Job job = new Job();
-        job.setProduct(new Product("KMC1", "VANILLA"));
+        job.setProduct(new Product("KMC1", "Vanilla"));
         job.setNp(99);
 
         PackagingSchedule solution = new PackagingSchedule();
@@ -288,8 +329,10 @@ class JobServiceTest {
 
         jobService.initFactProductionData(solution, Map.of());
 
+        assertNull(job.getIdBatch());
         assertNull(job.getLineIdFact());
         assertNull(job.getStartProductionDateTimeFact());
+        assertNull(job.getCameraStart());
+        assertNull(job.getCameraEnd());
     }
-
 }

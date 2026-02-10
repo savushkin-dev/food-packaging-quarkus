@@ -2,9 +2,11 @@ package org.acme.foodpackaging.persistence.upload;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.dto.PmLogInsertRow;
-import org.acme.foodpackaging.exception.rest.service.DataUploadException;
+import org.acme.foodpackaging.exception.service.DataUploadException;
+import org.acme.foodpackaging.rest.ApiFields;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.acme.foodpackaging.dto.MsLogInsertRow;
+import jakarta.transaction.Transactional;
 
 import java.sql.*;
 import java.util.*;
@@ -88,87 +90,6 @@ public class UploadDataService {
             }
         }
     }
-
-    /**
-     * Batch-inserts camera events to MS_LOG for efficiency.
-     * startEvents: idBatch -> start time (eventType=2)
-     * endEvents:   idBatch -> end time   (eventType=3)
-     */
-    public void writeCameraEventsBatchRows(Map<String, PmLogInsertRow> startEvents, Map<String, PmLogInsertRow> endEvents) {
-
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-            conn.setAutoCommit(false);
-            writeCameraEventsBatchRowsInternal(conn, startEvents, endEvents);
-            conn.commit();
-        } catch (SQLException e) {
-            log.error("Failed to batch write camera events", e);
-            throw new DataUploadException("Failed to batch write camera events", e);
-        }
-    }
-
-    /**
-     * Extracted internal writer for batch events to reduce nesting.
-     */
-    private void writeCameraEventsBatchRowsInternal(Connection conn,
-                                                    Map<String, PmLogInsertRow> startEvents,
-                                                    Map<String, PmLogInsertRow> endEvents
-                                                   ) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
-            if (startEvents != null && !startEvents.isEmpty()) {
-                for (var entry : startEvents.entrySet()) {
-                    if (entry.getValue() == null) continue;
-                    addPmLogInsertRow(ps, entry.getValue());
-                }
-            }
-            if (endEvents != null && !endEvents.isEmpty()) {
-                for (var entry : endEvents.entrySet()) {
-                    if (entry.getValue() == null) continue;
-                    addPmLogInsertRow(ps, entry.getValue());
-                }
-            }
-            ps.executeBatch();
-        }
-    }
-
-    /**
-     * Sets PreparedStatement parameters for PmLogInsertRow.
-     * Parameters: (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
-     */
-    private static void setPmLogInsertRowParameters(PreparedStatement ps, PmLogInsertRow insertRow) throws SQLException {
-        ps.setString(1, insertRow.getIdBatch());
-        ps.setString(2, insertRow.getProductId());
-        ps.setTimestamp(3, Timestamp.valueOf(insertRow.getDtv()));
-        if (insertRow.getNp() == null) {
-            ps.setNull(4, Types.INTEGER);
-        } else {
-            ps.setInt(4, insertRow.getNp());
-        }
-        ps.setInt(5, insertRow.getEventType());
-        ps.setTimestamp(6, Timestamp.valueOf(insertRow.getEventTime()));
-        ps.setString(7, insertRow.getLineId());
-    }
-
-    private static void addPmLogInsertRow(PreparedStatement ps, PmLogInsertRow insertRow) throws SQLException {
-        setPmLogInsertRowParameters(ps, insertRow);
-        ps.addBatch();
-    }
-
-    public void updateCameraEndEvent(
-            String idBatch,
-            LocalDateTime cameraEnd
-    ) {
-        try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement ps = conn.prepareStatement(UPDATE_CAMERA_END_EVENT)) {
-
-            ps.setTimestamp(1, Timestamp.valueOf(cameraEnd));
-            ps.setString(2, idBatch);
-
-            ps.executeUpdate();
-
-        } catch (SQLException e) {
-            log.error("Failed to update camera end event for batch {}", idBatch, e);
-            throw new DataUploadException("Failed to update camera end event", e);
-        }
-    }
 }
+
 

@@ -1,4 +1,4 @@
-package service;
+package service.lines;
 
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.persistence.load.LoadDataService;

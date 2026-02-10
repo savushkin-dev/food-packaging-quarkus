@@ -33,6 +33,9 @@ public class PlrChange extends PanacheEntityBase {
     @Column(name = "KRC")
     public String lineId;
 
+    @Column(name = "LINECLEAN")
+    public Boolean isPLRLC;
+
     @Override
     public String toString() {
         return "CleaningRuleEntity{" +
@@ -43,6 +46,7 @@ public class PlrChange extends PanacheEntityBase {
                 ", duration=" + duration +
                 ", deletedFlag=" + deletedFlag +
                 ", lineId='" + lineId + '\'' +
+                ", isPLRLC=" + isPLRLC +
                 '}';
     }
 }

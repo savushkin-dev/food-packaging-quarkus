@@ -21,17 +21,17 @@ import org.acme.foodpackaging.persistence.upload.JobSaveService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.FrontendDataWrapper;
 import org.acme.foodpackaging.record.JobSelection;
-import org.acme.foodpackaging.scheduleOperations.MaintenanceJob;
-import org.acme.foodpackaging.scheduleOperations.MoveJobsService;
-import org.acme.foodpackaging.scheduleOperations.PinService;
-import org.acme.foodpackaging.scheduleOperations.SortByNpService;
+import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.scheduleoperations.MoveJobsService;
+import org.acme.foodpackaging.scheduleoperations.PinService;
+import org.acme.foodpackaging.scheduleoperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @Path("schedule")
 @ApplicationScoped

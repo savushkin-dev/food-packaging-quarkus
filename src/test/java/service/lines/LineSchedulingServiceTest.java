@@ -1,4 +1,4 @@
-package service;
+package service.lines;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.service.lines.LineSchedulingService;
@@ -14,7 +14,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class LineSchedulingServiceTest {
+class LineSchedulingServiceTest {
 
     LineSchedulingService schedulingService = new LineSchedulingService();
 
