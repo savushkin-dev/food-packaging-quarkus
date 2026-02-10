@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleOperations.utils;
+package org.acme.foodpackaging.scheduleoperations.utils;
 
 import lombok.Getter;
 import org.apache.commons.lang3.tuple.Pair;
@@ -9,6 +9,8 @@ public class SpeedCacheUtils {
     @Getter
     private static Map<String, Map<String, Pair<Integer, Integer>>> lineSpeeds;
 
+    private SpeedCacheUtils() {}
+    
     public static void init(Map<String, Map<String, Pair<Integer, Integer>>> speeds) {
         lineSpeeds = speeds;
     }

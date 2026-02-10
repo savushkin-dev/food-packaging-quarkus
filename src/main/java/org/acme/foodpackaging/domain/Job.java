@@ -10,6 +10,7 @@ import ai.timefold.solver.core.api.domain.variable.CascadingUpdateShadowVariable
 import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
+import org.acme.foodpackaging.record.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -18,7 +19,8 @@ import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.MaintenanceJobParams;
 import org.acme.foodpackaging.record.ProductionJobParams;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 
 @Getter
 @Setter
@@ -282,30 +284,25 @@ public class Job {
             return;
         }
         Job previous = getPreviousJob();
-        LocalDateTime startCleaning;
-        LocalDateTime startProduction;
-        if (previous == null) {
-            startCleaning = line.getStartDateTime();
-            startProduction = line.getStartDateTime();
-        } else {
-            startCleaning = previous.getEndDateTime();
-            if (startCleaning != null && getProduct() != null && previous.getProduct() != null) {
-                try {
-                    Duration cleanupDuration = getProduct().getCleanupDuration(previous.getProduct());
-                    startProduction = startCleaning.plus(cleanupDuration);
-                } catch (IllegalArgumentException | NullPointerException e) {
-                    // If cleanup duration is missing or cleaningDurations map is null, using zero duration as fallback
-                    // This can happen if cleaning durations were not properly initialized
-                    // For maintenance jobs, cleanup duration should be zero anyway
-                    startProduction = startCleaning;
-                }
-            } else {
-                startProduction = startCleaning;
-            }
-        }
+        LocalDateTime startCleaning = previous == null ? line.getStartDateTime() : previous.getEndDateTime();
+        LocalDateTime startProduction = computeStartProduction(previous, startCleaning);
         setStartCleaningDateTime(startCleaning);
         setStartProductionDateTime(startProduction);
-        var endTime = startProduction == null ? null : startProduction.plus(getDuration());
-        setEndDateTime(endTime);
+        setEndDateTime(startProduction == null ? null : startProduction.plus(getDuration()));
     }
+
+    private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
+        if (previous == null || startCleaning == null || getProduct() == null || previous.getProduct() == null) {
+            return startCleaning;
+        }
+        try {
+            CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
+            Duration cleanupDuration = meta.isPLRLC()
+                    ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()))
+                    : product.getCleaningDurations().get(previous.getProduct());
+            return startCleaning.plus(cleanupDuration);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return startCleaning;
+        }
+    }   
 }

@@ -2,6 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import ai.timefold.solver.core.api.domain.lookup.PlanningId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.acme.foodpackaging.record.CleaningResult;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,6 +24,8 @@ public class Product {
     /** The map key is previous product on assembly line. */
     @JsonIgnore
     private Map<Product, Duration> cleaningDurations;
+    @JsonIgnore
+    private Map<Product, CleaningResult> cleaningResults;
 
     public Product() {
     }

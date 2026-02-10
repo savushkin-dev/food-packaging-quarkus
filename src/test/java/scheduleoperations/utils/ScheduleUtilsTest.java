@@ -1,9 +1,9 @@
-package scheduleOperations.utils;
+package scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.scheduleOperations.utils.ScheduleUtils;
-import org.acme.foodpackaging.scheduleOperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
