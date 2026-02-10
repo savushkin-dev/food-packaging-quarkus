@@ -18,12 +18,6 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.remo
 @ApplicationScoped
 public class ScheduleBuilder {
 
-    private final JobRepository jobRepository;
-    private final JobService jobService;
-    private final LineService lineService;
-    private final LineSchedulingService lineSchedulingService;
-    private final ProductService productService;
-
     @Inject
     public ScheduleBuilder(JobRepository jobRepository, JobService jobService, LineService lineService, LineSchedulingService lineSchedulingService, ProductService productService, JobRefreshService jobRefreshService) {
         this.jobRepository = jobRepository;
@@ -54,12 +48,12 @@ public class ScheduleBuilder {
 
         jobService.initSolutionJobList(schedule);
         jobService.initFactProductionData(schedule, jobRepository.getFactProductionRowMap(
-            schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
+                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
         );
 
         jobService.enrichCameraFactsFromPmLog(schedule);
         jobRefreshService.refreshStaleCameraEndFromPmLog(schedule);
-        
+
         List<Line> lines = lineService.getLines();
         List<Product> products = productService.getProductList(schedule);
         schedule.setLines(lines);
@@ -67,7 +61,7 @@ public class ScheduleBuilder {
         lineSchedulingService.initJobListOnLine(schedule);
         schedule.setDateForEmptySolution(startDate);
         removeJobsWithoutLine(schedule.getJobs());
-        
+
         return schedule;
     }
 
@@ -77,4 +71,3 @@ public class ScheduleBuilder {
         return schedule;
     }
 }
-

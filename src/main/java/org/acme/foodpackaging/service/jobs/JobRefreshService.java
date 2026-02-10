@@ -1,3 +1,4 @@
+
 package org.acme.foodpackaging.service.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -19,8 +20,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
@@ -28,17 +27,14 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixL
 @ApplicationScoped
 public class JobRefreshService {
 
-    private final JobService jobService;
-    private final ProductService productService;
-    private final JobRepository jobRepository;
-    private final UploadDataService uploadDataService;
-
     @Inject
-    JobRepository jobRepository;
-    @Inject
-    JobService jobService;
-    @Inject
-    ProductService productService;
+    public JobRefreshService(JobRepository jobRepository, JobService jobService,
+                             ProductService productService, UploadDataService uploadDataService) {
+        this.jobRepository = jobRepository;
+        this.jobService = jobService;
+        this.productService = productService;
+        this.uploadDataService = uploadDataService;
+    }
 
     private final JobRepository jobRepository;
     private final JobService jobService;
@@ -135,5 +131,17 @@ public class JobRefreshService {
         if (!msLogRows.isEmpty()) {
             uploadDataService.updateCameraEndInMsLog(msLogRows);
         }
+    }
+    /**
+     * Возвращает {@code true}, если значения отличаются не менее чем на одну минуту.
+     * @param a предыдущее значение времени по камере
+     * @param b новое значение времени по камере из БД
+     * @return {@code true}, если значения различаются более чем на одну минуту, иначе {@code false}
+     */
+    private boolean differsMoreThan(LocalDateTime a, LocalDateTime b) {
+        if (a == null || b == null) {
+            return a != b;
+        }
+        return Math.abs(Duration.between(a, b).toMinutes()) >= 1;
     }
 }

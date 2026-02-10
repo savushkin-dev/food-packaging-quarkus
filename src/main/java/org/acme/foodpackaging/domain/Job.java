@@ -2,6 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.function.UnaryOperator;
 
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
 import ai.timefold.solver.core.api.domain.entity.PlanningPin;
@@ -10,6 +11,7 @@ import ai.timefold.solver.core.api.domain.variable.CascadingUpdateShadowVariable
 import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -141,7 +143,7 @@ public class Job {
         DbJobRow row,
         Product product,
         LocalDateTime startProductionDateTime,
-        java.util.function.UnaryOperator<String> nameCleaner
+        UnaryOperator<String> nameCleaner
 ) {
         String jobName = row.shortName() != null ? row.shortName().trim() : "";
         if (nameCleaner != null) {
@@ -172,7 +174,7 @@ public class Job {
      * @param startProductionDateTime The start production date/time (can be null)
      * @return A new maintenance Job instance
      */
-    public static Job fromDbMaintenanceRow(org.acme.foodpackaging.dto.DbMaintenanceRow row, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
+    public static Job fromDbMaintenanceRow(DbMaintenanceRow row, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
         Job job = new Job(new MaintenanceJobParams(
                 String.valueOf(row.getFId()),
                 row.getLineId(),

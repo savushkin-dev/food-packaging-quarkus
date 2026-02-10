@@ -1,3 +1,4 @@
+
 package org.acme.foodpackaging.persistence.load;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -6,12 +7,12 @@ import jakarta.persistence.EntityManager;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.record.CameraValue;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
@@ -27,9 +28,6 @@ public class JobDBLoader {
 
     @Inject
     EntityManager em;
-
-    @ConfigProperty(name = "db.url")
-    String dbUrl;
 
     @SuppressWarnings("unchecked")
     public Map<Long, DbJobRow> loadJobRowMap(
@@ -85,13 +83,13 @@ public class JobDBLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public List<FactProductionRow> loadMsLogEvents(LocalDateTime from, LocalDateTime to) {
-        return em
+    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
+
+        List<FactProductionRow> rows = em
                 .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .getResultList();
-    }
 
         return rows.stream()
                 .collect(Collectors.toMap(
@@ -103,10 +101,10 @@ public class JobDBLoader {
 
     @SuppressWarnings("unchecked")
     public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
-    
+
         Map<String, CameraValue> result = new HashMap<>();
         Set<String> processedBatches = new HashSet<>();
-    
+
         for (Job job : jobs) {
             String idBatch = job.getIdBatch();
             if (idBatch != null && !processedBatches.contains(idBatch)) {
@@ -130,4 +128,3 @@ public class JobDBLoader {
         return result;
     }
 }
-

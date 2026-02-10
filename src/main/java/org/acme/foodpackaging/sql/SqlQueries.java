@@ -1,3 +1,4 @@
+
 package org.acme.foodpackaging.sql;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -5,7 +6,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * SQL queries for database operations.
- * 
+ *
  * NOTE: Schema names (e.g., "MES") are environment-specific and may vary
  * between different database instances. These queries use parameterized
  * statements to prevent SQL injection and do not expose sensitive data.
@@ -48,8 +49,7 @@ WHERE
         v.PDUR, v.SNPZ, v.F_DEL, v.EVTYPE, v.NOTE
     FROM [MES].[dbo].[OEE_PEV] v
     WHERE
-        (v.SNPZ = 0  OR v.SNPZ IS NULL)
-        AND v.F_DEL = 0
+        v.F_DEL = 0
         AND (
             (
                 v.PDTN >= ?1
@@ -75,11 +75,11 @@ WHERE
         AND v.DTV <= ?2
         AND v.EVENT <=3
     ORDER BY
-        v.EVENT, v.DTV, v.KMC, v.NP
+        v.DTV, v.KMC, v.NP
 """;
 
 
-public static final String LOAD_CAMERA_FACT = """
+    public static final String LOAD_CAMERA_FACT = """
  SELECT
   MIN(DTS) AS DTSTART,
   MAX(DTS) AS DTEND
@@ -94,60 +94,20 @@ public static final String LOAD_CAMERA_FACT = """
       AND EVENT = ?
 """;
 
-public static final String INSERT_CAMERA_EVENT = """
+    public static final String INSERT_CAMERA_EVENT = """
     INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, KMC, KRC, NP, EVENT, DTV, DT)
     VALUES (?, ?, ?, ?, ?, ?, ?)
 """;
 
-public static final String UPDATE_WORK = """
+    public static final String UPDATE_WORK = """
     update [MES].[dbo].[BD_VZPMC]
     set KRC=?, PDTN=?, PDTO=?, PDUR=?
     where SNPZ=?;
     """;
 
-public static final String REFRESH_FASP = "DECLARE @pdt1 datetime = GETDATE()-2, " +
-"        @pdt2 datetime = GETDATE()+7, " +
-"        @pkrca char(20) = ?, " +
-"        @pksk  char(10) = ? " +
-"EXEC mes_refreshfasp @pdt1, @pdt2, @pkrca, 1, 14, @pksk ";
-
-public static final String INSERT_CAMERA_EVENT = """
-    INSERT INTO [MES].[dbo].[MS_LOG] (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-""";
-
-    public static final String LOAD_PM_CAMERA_END = """
-    SELECT
-        IDBATCH,
-        MAX(DTS) AS CAMERA_END
-    FROM [prommark].[dbo].[PM_LOG] WITH (NOLOCK)
-    WHERE KD = 71
-      AND IDBATCH IN (:batches)
-    GROUP BY IDBATCH
-""";
-
-public static final String UPDATE_MS_LOG_EVENT3_DT = """
-   MERGE [MES].[dbo].[MS_LOG] AS t
-    USING (VALUES (?, ?, ?, ?, ?, ?, ?)) AS s
-    
-    (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
-          ON t.IDBATCH = s.IDBATCH
-          AND t.EVENT   = s.EVENT
-WHEN MATCHED THEN
-      UPDATE SET
-          DT  = s.DT
-WHEN NOT MATCHED THEN
-  INSERT (IDBATCH, KMC, DTV, NP, EVENT, DT, KRC)
-     VALUES (s.IDBATCH, s.KMC, s.DTV, s.NP, s.EVENT, s.DT, s.KRC);
-        
-""";
-
-    public static final String UPDATE_CAMERA_END_EVENT = """
-    UPDATE [MES].[dbo].[MS_LOG]
-    SET DT = ?
-    WHERE IDBATCH = ?
-      AND EVENT = 3
-""";
-
-
+    public static final String REFRESH_FASP = "DECLARE @pdt1 datetime = GETDATE()-2, " +
+            "        @pdt2 datetime = GETDATE()+7, " +
+            "        @pkrca char(20) = ?, " +
+            "        @pksk  char(10) = ? " +
+            "EXEC mes_refreshfasp @pdt1, @pdt2, @pkrca, 1, 14, @pksk ";
 }
