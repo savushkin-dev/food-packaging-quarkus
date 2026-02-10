@@ -97,121 +97,120 @@ public class MaintenanceJob {
         Integer extraMinutes = cleanings.get(request.getLineId());
         if (extraMinutes == null || extraMinutes <= 0) return;
 
-
         Job extraJob = Job.createMaintenanceJob(
-            "MAINTENANCE-" + UUID.randomUUID(),
-            null,
-            2,
-            "Мойка",
-            "Auto extra maintenance",
-            schedule.getMaintenanceProduct(),
-            extraMinutes
-    );
-    extraJob.setLine(line);
-    extraJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
-    if (request.isEmptyLineMode()) {
-        extraJob.setStartCleaningDateTime(primaryJob.getStartCleaningDateTime());
-        extraJob.setStartProductionDateTime(primaryJob.getStartProductionDateTime());
-    }
-    int idx = Math.min(insertedIndex + 1, lineJobs.size());
-    lineJobs.add(idx, extraJob);
-    schedule.getJobs().add(extraJob);
-    fixLineJobs(line);
-    fixPinnedJobs(line);
-}
-
-public static Product createMaintenanceProduct() {
-   return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "");
-}
-
-public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
-                                              MaintenanceRequest request) {
-
-    Line line = findLineById(schedule, request.getLineId());
-
-    List<Job> lineJobs = line.getJobs();
-    int index = request.getRemoveIndex();
-
-    if (index < 0 || index >= lineJobs.size()) {
-        throw new IllegalArgumentException("Invalid insertIndex: " + index);
+                "MAINTENANCE-" + UUID.randomUUID(),
+                null,
+                2,
+                "Мойка",
+                "Auto extra maintenance",
+                schedule.getMaintenanceProduct(),
+                extraMinutes
+        );
+        extraJob.setLine(line);
+        extraJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        if (request.isEmptyLineMode()) {
+            extraJob.setStartCleaningDateTime(primaryJob.getStartCleaningDateTime());
+            extraJob.setStartProductionDateTime(primaryJob.getStartProductionDateTime());
+        }
+        int idx = Math.min(insertedIndex + 1, lineJobs.size());
+        lineJobs.add(idx, extraJob);
+        schedule.getJobs().add(extraJob);
+        fixLineJobs(line);
+        fixPinnedJobs(line);
     }
 
-    Job jobToRemove = lineJobs.get(index);
-
-    lineJobs.remove(index);
-    schedule.getJobs().remove(jobToRemove);
-    markDeletedByFId(jobToRemove.getFId(), schedule.getDbMaintenanceRowMap());
-
-    fixLineJobs(line);
-    fixPinnedJobs(line);
-
-    return schedule;
-
-}
-
-public void markDeletedByFId(
-        Long fId,
-        Map<Long, DbMaintenanceRow> jobs
-) {
-
-    if (fId == null || jobs == null || jobs.isEmpty()) {
-        return;
+    public static Product createMaintenanceProduct() {
+       return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "");
     }
 
-    jobs.values().stream()
-            .filter(Objects::nonNull)
-            .filter(job -> Objects.equals(job.getFId(), fId))
-            .forEach(job -> job.setFDel((short) 1));
-}
+    public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
+                                                  MaintenanceRequest request) {
 
-public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {
+        Line line = findLineById(schedule, request.getLineId());
 
-    Line line = findLineById(schedule, request.getLineId());
+        List<Job> lineJobs = line.getJobs();
+        int index = request.getRemoveIndex();
 
-    List<Job> jobs = line.getJobs();
+        if (index < 0 || index >= lineJobs.size()) {
+            throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        }
 
-    int index = request.getUpdateIndex();
-    if (index < 0 || index >= jobs.size()) {
-        throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        Job jobToRemove = lineJobs.get(index);
+
+        lineJobs.remove(index);
+        schedule.getJobs().remove(jobToRemove);
+        markDeletedByFId(jobToRemove.getFId(), schedule.getDbMaintenanceRowMap());
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+
+        return schedule;
+
     }
 
-    Job job = jobs.get(index);
+    public void markDeletedByFId(
+            Long fId,
+            Map<Long, DbMaintenanceRow> jobs
+    ) {
 
-    job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+        if (fId == null || jobs == null || jobs.isEmpty()) {
+            return;
+        }
 
-    fixLineJobs(line);
-    fixPinnedJobs(line);
-
-    return schedule;
-}
-
-public PackagingSchedule updateMaintenanceType(PackagingSchedule schedule, MaintenanceRequest request) {
-
-    Line line = findLineById(schedule, request.getLineId());
-
-    List<Job> jobs = line.getJobs();
-
-    int index = request.getUpdateIndex();
-    if (index < 0 || index >= jobs.size()) {
-        throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        jobs.values().stream()
+                .filter(Objects::nonNull)
+                .filter(job -> Objects.equals(job.getFId(), fId))
+                .forEach(job -> job.setFDel((short) 1));
     }
 
-    Job job = jobs.get(index);
-    job.setMaintenanceTypeId(request.getMaintenanceTypeId());
-    job.setName(loadDataService.getMaintenanceTypes().get(job.getMaintenanceTypeId()));
+    public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {
 
-    if(request.getDurationMinutes()!=null){
+        Line line = findLineById(schedule, request.getLineId());
+
+        List<Job> jobs = line.getJobs();
+
+        int index = request.getUpdateIndex();
+        if (index < 0 || index >= jobs.size()) {
+            throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        }
+
+        Job job = jobs.get(index);
+
         job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+
+        return schedule;
     }
 
-    if(request.getMaintenanceNote()!=null)
-    {
-        job.setMaintenanceNote(request.getMaintenanceNote());
+    public PackagingSchedule updateMaintenanceType(PackagingSchedule schedule, MaintenanceRequest request) {
+
+        Line line = findLineById(schedule, request.getLineId());
+
+        List<Job> jobs = line.getJobs();
+
+        int index = request.getUpdateIndex();
+        if (index < 0 || index >= jobs.size()) {
+            throw new IllegalArgumentException("Invalid insertIndex: " + index);
+        }
+
+        Job job = jobs.get(index);
+        job.setMaintenanceTypeId(request.getMaintenanceTypeId());
+        job.setName(loadDataService.getMaintenanceTypes().get(job.getMaintenanceTypeId()));
+
+        if(request.getDurationMinutes()!=null){
+            job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+        }
+
+        if(request.getMaintenanceNote()!=null)
+        {
+            job.setMaintenanceNote(request.getMaintenanceNote());
+        }
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+
+        return schedule;
     }
-
-    fixLineJobs(line);
-    fixPinnedJobs(line);
-
-    return schedule;
-}
 }
