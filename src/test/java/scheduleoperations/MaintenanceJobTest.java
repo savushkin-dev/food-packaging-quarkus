@@ -263,28 +263,20 @@ class MaintenanceJobTest {
     
     @Test
     void marksMatchingRowsAsDeletedTest() {
-        Map<Long, DbMaintenanceRow> jobs = new HashMap<>();
-
-        DbMaintenanceRow match = new DbMaintenanceRow(
-                100L, (short) 0, "L1",
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)),
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 9, 0)),
-                60, 123L, 1, "note"
-        );
-        DbMaintenanceRow other = new DbMaintenanceRow(
-                200L, (short) 0, "L1",
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 10, 0)),
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 11, 0)),
-                60, 124L, 1, "note2"
+        List<Job> jobs = List.of(
+                new Job(), new Job()
         );
 
-        jobs.put(100L, match);
-        jobs.put(200L, other);
-        jobs.put(300L, null);
+        jobs.getFirst().setFDel((short) 0);
+        jobs.getLast().setFDel((short) 0);
+        jobs.getFirst().setFId(100L);
+        jobs.getLast().setFId(1L);
+        jobs.getFirst().setMaintenance(true);
+        jobs.getLast().setMaintenance(true);
 
         maintenanceJob.markDeletedByFId(100L, jobs);
 
-        assertEquals((short) 1, match.getFDel());
-        assertEquals((short) 0, other.getFDel());
+        assertEquals((short) 1, jobs.getFirst().getFDel());
+        assertEquals((short) 0, jobs.getLast().getFDel());
     }
 }

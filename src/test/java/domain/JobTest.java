@@ -63,6 +63,7 @@ class JobTest {
     void setProductionFields() {
         LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
         LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
+        LocalDateTime startCleaningDateTime = LocalDateTime.of(2025, 1, 15, 8, 45);
         LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
 
         Product product =  new Product("12", "Vanilla");
@@ -72,7 +73,7 @@ class JobTest {
                 Timestamp.valueOf(dti),"1623", 34,5600,1600.23,
                 Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime),
                 20,3L, 0, "17000234", "Strawberry");
-        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
+        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, startCleaningDateTime, ScheduleUtils::nameCleaner);
 
         assertEquals("3", job.getId());
         assertEquals("17000234", job.getLineId());
@@ -82,6 +83,7 @@ class JobTest {
         assertEquals(1600.23, job.getMass());
         assertEquals(1, job.getPriority());
         assertEquals(startProductionDateTime, job.getStartProductionDateTime());
+        assertEquals(startCleaningDateTime, job.getStartCleaningDateTime());
         assertEquals(startProductionDateTime.plus(duration), job.getEndDateTime());
     }
 

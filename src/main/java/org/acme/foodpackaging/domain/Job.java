@@ -33,6 +33,7 @@ public class Job {
     @PlanningId
     private String id;
     private Long fId;
+    private short fDel;
     private String idBatch;
     private String lineId;
     private String lineIdFact;
@@ -42,6 +43,8 @@ public class Job {
     private Long snpz;
     private int np;
     private int quantity;
+    private int pinned_cleaning_duration;
+    private int priority;
 
     private double mass;
 
@@ -49,6 +52,8 @@ public class Job {
     private Duration duration;
     private boolean maintenance;
     private boolean handPackaging;
+    private boolean pinned_cleaning;
+    private boolean saved_job;
     private Integer maintenanceTypeId;
     private Integer eventType;
 
@@ -60,7 +65,6 @@ public class Job {
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
 
-    private int priority;
 
     @PlanningPin
     private boolean pinned;
@@ -106,6 +110,7 @@ public class Job {
         this.product = params.product();
         this.duration = params.duration();
         this.startProductionDateTime = params.startProductionDateTime();
+        this.startCleaningDateTime = params.startCleaningDateTime();
         this.endDateTime = params.startProductionDateTime() == null ? null 
                 : params.startProductionDateTime().plus(params.duration());
     }
@@ -142,7 +147,7 @@ public class Job {
     public static Job fromDbJobRow(
         DbJobRow row,
         Product product,
-        LocalDateTime startProductionDateTime,
+        LocalDateTime startProductionDateTime, LocalDateTime startCleaningDateTime,
         UnaryOperator<String> nameCleaner
 ) {
         String jobName = row.shortName() != null ? row.shortName().trim() : "";
@@ -161,7 +166,7 @@ public class Job {
                 row.mass(),
                 product,
                 row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
-                startProductionDateTime
+                startProductionDateTime, startCleaningDateTime
         ));
     }
 
@@ -244,7 +249,7 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if(isMaintenance()) return duration;
+        if(isMaintenance() || isSaved_job()) return duration;
 
         Integer speed;
         if (isHandPackaging()) {
@@ -276,19 +281,33 @@ public class Job {
     // Complex methods
     // ************************************************************************
 
-    @SuppressWarnings("unused")
     public void updateStartCleaningDateTime() {
-        if (getLine() == null) {
-            if (getStartCleaningDateTime() != null) {
-                setStartCleaningDateTime(null);
-                setStartProductionDateTime(null);
-                setEndDateTime(null);
-            }
+
+        if(isSaved_job() && startCleaningDateTime!= null){
             return;
         }
+
+        if (getLine() == null) {
+            setStartCleaningDateTime(null);
+            setStartProductionDateTime(null);
+            setEndDateTime(null);
+            return;
+        }
+
         Job previous = getPreviousJob();
-        LocalDateTime startCleaning = previous == null ? line.getStartDateTime() : previous.getEndDateTime();
+        LocalDateTime startCleaning =
+                previous == null ? line.getStartDateTime() : previous.getEndDateTime();
+
+        if (isPinned_cleaning() && startProductionDateTime != null) {
+            startCleaning = startProductionDateTime.minusMinutes(pinned_cleaning_duration);
+        }
+
         LocalDateTime startProduction = computeStartProduction(previous, startCleaning);
+
+        if (startProduction != null && startProduction.isBefore(startCleaning)) {
+            startProduction = startCleaning;
+        }
+
         setStartCleaningDateTime(startCleaning);
         setStartProductionDateTime(startProduction);
         setEndDateTime(startProduction == null ? null : startProduction.plus(getDuration()));
@@ -307,5 +326,5 @@ public class Job {
         } catch (IllegalArgumentException | NullPointerException e) {
             return startCleaning;
         }
-    }   
+    }
 }

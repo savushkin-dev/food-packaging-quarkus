@@ -1,24 +1,23 @@
-
 package org.acme.foodpackaging.service.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.*;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.record.FactKey;
-import org.acme.foodpackaging.record.FactProductionRow;
-import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +39,7 @@ public class JobService {
         this.uploadDataService = uploadDataService;
         this.jobRepository = jobRepository;
     }
-
+    private  Map<Long, Job> allJobsById;
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
     private final JobRepository jobRepository;
@@ -51,42 +50,74 @@ public class JobService {
      *
      * @param solution The packaging schedule to initialize
      */
-    public void initSolutionJobList(PackagingSchedule solution) {
+    public Map<Long, DbJobRow> initSolutionJobList(PackagingSchedule solution) {
+
+        MaintenanceData serviceData = jobRepository.getMaintenanceData(
+                solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
+
+        Map<Long, DbJobRow> jobsBySnpz = jobRepository.getDbJobRowMap(
+                solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
+
+        Map<Long, DbMaintenanceRow> maintenanceByFid = serviceData.maintenanceByFid();
+        Map<Long, DbMaintenanceRow> cleaningBySnpz = serviceData.cleaningBySnpz();
+
         List<Job> jobs = new ArrayList<>();
+        this.allJobsById = new HashMap<>();
+        LocalDateTime minStartDateTime = solution.getWorkCalendar().getMinStartDateTime();
 
-        for (DbJobRow r : solution.getDbJobRowMap().values()) {
-            if (r.lineId() == null) continue;
-            Job job = createJobById(r.snpz(), false, solution);
+        for (DbJobRow row : jobsBySnpz.values()) {
+
+            Job job = createJobById(row, cleaningBySnpz);
+            if(row.lineId()!= null){
+                Line line = findLineById(solution, job.getLineId());
+                if(line.getJobs() == null){
+                    line.setJobs(new ArrayList<>());
+                }
+                job.setMinStartTime(minStartDateTime);
+                job.setSaved_job(true);
+                job.setLine(line);
+                line.getJobs().add(job);
+            }
             jobs.add(job);
         }
 
-        for (DbMaintenanceRow rm : solution.getDbMaintenanceRowMap().values()) {
-            if (rm.getLineId() == null) continue;
-            Job job = createJobById(rm.getFId(), true, solution);
-            jobs.add(job);
+        for (DbMaintenanceRow rm : maintenanceByFid.values()) {
+
+            Job job = createJobById(rm, solution.getMaintenanceProduct());
+            if(rm.getLineId() != null){
+                Line line =  findLineById(solution, job.getLineId());
+                if(line.getJobs() == null){
+                    line.setJobs(new ArrayList<>());
+                }
+                job.setLine(line);
+                job.setMinStartTime(minStartDateTime);
+                job.setMaintenance(true);
+                job.setSaved_job(true);
+                line.getJobs().add(job);
+                jobs.add(job);
+            }
         }
 
+        solution.setAllJobsById(allJobsById);
         solution.setJobs(jobs);
+        return jobsBySnpz;
     }
 
     /**
      * Создает задачу по ID из базы данных.
      * Поддерживает как обычные задачи, так и задачи обслуживания (maintenance).
      *
-     * @param id The job ID (SNPZ for regular jobs, FId for maintenance)
-     * @param serviceWork Whether this is a maintenance job
-     * @param solution The packaging schedule containing the job data
+     * @param row data from db about serviceWork
+     * @param maintenanceProduct common product for all serviceWork
      * @return Created Job object
-     * @throws IllegalArgumentException if job not found
+     * @throws IllegalArgumentException if maintenance not found
      * @throws IllegalStateException if product not found
      */
-    public Job createJobById(long id, boolean serviceWork, PackagingSchedule solution) {
-        Job job = new Job();
+    private Job createJobById(DbMaintenanceRow row, Product maintenanceProduct) {
+            Job job;
 
-        if (serviceWork) {
-            DbMaintenanceRow row = solution.getDbMaintenanceRowMap().get(id);
             if (row == null) {
-                throw new IllegalArgumentException("Unknown maintenance job FId=" + id);
+                throw new IllegalArgumentException("Unknown maintenance job FId=" + row.getFId());
             }
 
             var maintenanceTypes = loadDataService != null ? loadDataService.getMaintenanceTypes() : null;
@@ -97,29 +128,43 @@ public class JobService {
             job = Job.fromDbMaintenanceRow(
                     row,
                     maintenanceTypeName,
-                    solution.getMaintenanceProduct(),
+                    maintenanceProduct,
                     getStartProductionDateTime(row.getStartProductionDateTime())
             );
-        } else {
-            Job existing = solution.getJobIdMap().get(id);
-            if (existing != null) {
-                return existing;
-            }
+            return job;
+    }
 
-            DbJobRow row = solution.getDbJobRowMap().get(id);
-            if (row == null) {
-                throw new IllegalArgumentException("Unknown SNPZ=" + id);
-            }
+    private Job createJobById(DbJobRow row, Map<Long, DbMaintenanceRow> cleaningBySnpz){
 
-            Product product = loadDataService.getProducts().get(row.kmc());
-            if (product == null) {
-                throw new IllegalStateException("Unknown product KMC=" + row.kmc());
-            }
+        if(row == null) return null;
+        Job job;
+        LocalDateTime cleaningStart = null;
+        LocalDateTime startProductionDateTime = getStartProductionDateTime(row.startProductionDateTime());
 
-            job = Job.fromDbJobRow(row, product, getStartProductionDateTime(row.startProductionDateTime()), ScheduleUtils::nameCleaner);
-            solution.getJobIdMap().put(row.snpz(), job);
+        Product product = loadDataService.getProducts().get(row.kmc());
+        if (product == null) {
+            throw new IllegalStateException("Unknown product KMC=" + row.kmc());
         }
-        job.setMinStartTime(solution.getWorkCalendar().getMinStartDateTime());
+
+        if(row.lineId()!=null) {
+
+            if(cleaningBySnpz.containsKey(row.snpz())){
+                cleaningStart = getStartProductionDateTime(cleaningBySnpz.get(row.snpz()).getStartProductionDateTime());
+            }
+            job = Job.fromDbJobRow(row, product, startProductionDateTime,
+                    cleaningStart, ScheduleUtils::nameCleaner);
+
+            if(cleaningStart !=null) {
+                long pinned_cleaning = Duration.between(job.getStartProductionDateTime(), job.getStartCleaningDateTime()).toMinutes();
+                //job.setPinned_cleaning(true);
+                job.setPinned_cleaning_duration((int) pinned_cleaning);
+            }
+        }
+        else{
+            job = Job.fromDbJobRow(row, product, null,
+                    null, ScheduleUtils::nameCleaner);
+        }
+        allJobsById.put(row.snpz(),job);
         return job;
     }
 

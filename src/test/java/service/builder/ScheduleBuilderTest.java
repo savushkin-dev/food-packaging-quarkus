@@ -5,6 +5,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
@@ -85,22 +86,19 @@ class ScheduleBuilderTest {
         }).when(jobService).initSolutionJobList(any());
 
         when(jobRepository.getDbJobRowMap(any(), any())).thenReturn(jobRows);
-        when(jobRepository.getDbMaintenanceRowMap(any(), any())).thenReturn(maintenanceRows);
         when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
         when(lineService.getLines()).thenReturn(lines);
         doNothing().when(lineSchedulingService).initJobListOnLine(any());
         when(productService.getProductList(any())).thenReturn(products);
 
-        PackagingSchedule schedule = builder.buildSchedule(date);
+        InitData initData = builder.buildSchedule(date);
 
-        assertEquals(jobRows, schedule.getDbJobRowMap());
-        assertEquals(maintenanceRows, schedule.getDbMaintenanceRowMap());
+        PackagingSchedule schedule = initData.schedule();
         assertEquals(lines, schedule.getLines());
         assertEquals(products, schedule.getProducts());
         assertEquals(date, schedule.getWorkCalendar().getFromDate());
 
         verify(jobRepository).getDbJobRowMap(any(), any());
-        verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobService).initSolutionJobList(schedule);
         verify(lineService).getLines();
         verify(lineSchedulingService).initJobListOnLine(schedule);

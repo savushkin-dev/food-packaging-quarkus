@@ -5,11 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
-import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.record.FactKey;
-import org.acme.foodpackaging.record.FactProductionRow;
-import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.record.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -49,8 +45,8 @@ public class JobRepository {
      * @param to End date (inclusive)
      * @return Map of maintenance rows by FId
      */
-    public Map<Long, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to) {
-        return jobDBLoader.loadMaintenanceRowMap(
+    public MaintenanceData getMaintenanceData(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadMaintenanceData(
                 from.atStartOfDay(), to.atStartOfDay()
         );
     }

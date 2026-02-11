@@ -107,9 +107,19 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
     // TODO Currently dwarfed by minimizeAndLoadBalanceMakeSpan in the same score level, because that squares
     protected Constraint minimizeCleaningDuration(ConstraintFactory factory) {
         return factory.forEach(Job.class)
-                .filter(job -> job.getStartProductionDateTime() != null)
-                .penalizeLong(HardMediumSoftLongScore.ONE_MEDIUM, job -> job.getPriority()
-                        * Duration.between(job.getStartCleaningDateTime(), job.getStartProductionDateTime()).toMinutes())
+                .filter(job -> job.getStartProductionDateTime() != null
+                        && job.getStartCleaningDateTime() != null)
+                .penalizeLong(HardMediumSoftLongScore.ONE_MEDIUM,
+                        job -> {
+                            long minutes = Duration.between(
+                                    job.getStartCleaningDateTime(),
+                                    job.getStartProductionDateTime()
+                            ).toMinutes();
+
+                            long safeMinutes = Math.max(0, minutes);
+
+                            return job.getPriority() * safeMinutes;
+                        })
                 .asConstraint("Minimize cleaning duration");
     }
 }

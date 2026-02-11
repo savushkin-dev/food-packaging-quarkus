@@ -3,6 +3,8 @@ package org.acme.foodpackaging.service.builder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
@@ -34,35 +36,27 @@ public class ScheduleBuilder {
     private final ProductService productService;
     private final JobRefreshService jobRefreshService;
 
-    public PackagingSchedule buildSchedule(LocalDate startDate) {
+    public InitData buildSchedule(LocalDate startDate) {
 
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate));
+        schedule.setLines(lineService.getLines());
 
-        schedule.setDbJobRowMap(jobRepository.getDbJobRowMap(
-                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
-        );
-        schedule.setDbMaintenanceRowMap(jobRepository.getDbMaintenanceRowMap(
-                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
-        );
-
-        jobService.initSolutionJobList(schedule);
+         Map<Long, DbJobRow> jobRows = jobService.initSolutionJobList(schedule);
         jobService.initFactProductionData(schedule, jobRepository.getFactProductionRowMap(
                 schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
         );
 
         jobService.enrichCameraFactsFromPmLog(schedule);
         jobRefreshService.refreshStaleCameraEndFromPmLog(schedule);
-
-        List<Line> lines = lineService.getLines();
-        List<Product> products = productService.getProductList(schedule);
-        schedule.setLines(lines);
-        schedule.setProducts(products);
         lineSchedulingService.initJobListOnLine(schedule);
+        List<Product> products = productService.getProductList(schedule);
+        schedule.setProducts(products);
+
         schedule.setDateForEmptySolution(startDate);
         removeJobsWithoutLine(schedule.getJobs());
 
-        return schedule;
+        return new InitData(schedule, jobRows);
     }
 
     public PackagingSchedule updateProductList(PackagingSchedule schedule){

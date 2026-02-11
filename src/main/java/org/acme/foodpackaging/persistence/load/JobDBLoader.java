@@ -11,6 +11,8 @@ import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.record.MaintenanceData;
+
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,7 +59,7 @@ public class JobDBLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<Long, DbMaintenanceRow> loadMaintenanceRowMap(
+    public MaintenanceData loadMaintenanceData(
             LocalDateTime from,
             LocalDateTime to
     ) {
@@ -70,16 +72,28 @@ public class JobDBLoader {
                 .setParameter(4, Timestamp.valueOf(to))
                 .getResultList();
 
-        return rows.stream()
-                .collect(Collectors.toMap(
-                        DbMaintenanceRow::getFId,
-                        r -> r,
-                        (existing, duplicate) -> {
-                            throw new IllegalStateException(
-                                    "Duplicate F_ID: " + existing.getFId()
-                            );
-                        }
-                ));
+        Map<Long, DbMaintenanceRow> maintenanceByFid = new HashMap<>();
+        Map<Long, DbMaintenanceRow> cleaningBySnpz = new HashMap<>();
+
+        for (DbMaintenanceRow row : rows) {
+            if (row.getSnpz() == null || row.getSnpz() == 0) {
+                DbMaintenanceRow prev = maintenanceByFid.put(row.getFId(), row);
+                if (prev != null) {
+                    throw new IllegalStateException(
+                            "Duplicate maintenance F_ID=" + row.getFId()
+                    );
+                }
+            } else {
+                DbMaintenanceRow prev = cleaningBySnpz.put(row.getSnpz(), row);
+                if (prev != null) {
+                    throw new IllegalStateException(
+                            "Duplicate cleaning SNPZ=" + row.getSnpz()
+                    );
+                }
+            }
+        }
+
+        return new MaintenanceData(maintenanceByFid, cleaningBySnpz);
     }
 
     @SuppressWarnings("unchecked")

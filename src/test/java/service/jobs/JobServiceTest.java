@@ -24,7 +24,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,11 +57,10 @@ class JobServiceTest {
     void setUp() {
         WorkCalendar workCalendar = new WorkCalendar(LocalDate.of(2025, 1, 15));
         workCalendar.setMinStartDateTime(LocalDateTime.of(2025, 1, 15, 8, 0));
-        
+
         schedule = new PackagingSchedule();
         schedule.setWorkCalendar(workCalendar);
         schedule.setDbJobRowMap(new HashMap<>());
-        schedule.setDbMaintenanceRowMap(new HashMap<>());
         schedule.setJobIdMap(new HashMap<>());
         schedule.setJobs(new ArrayList<>());
     }
@@ -71,7 +73,7 @@ class JobServiceTest {
                 jobRow1.mass(), jobRow1.startProductionDateTime(), jobRow1.endDateTime(),
                 jobRow1.duration(), jobRow1.snpz(), jobRow1.priority(), "L1", jobRow1.shortName()
         );
-        
+
         DbJobRow jobRow2 = createDbJobRow("KMC2", 124L);
         jobRow2 = new DbJobRow(
                 jobRow2.dti(), jobRow2.kmc(), jobRow2.np(), jobRow2.quantity(),
@@ -82,7 +84,6 @@ class JobServiceTest {
         DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
 
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
-        schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
 
         Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2");
@@ -109,7 +110,7 @@ class JobServiceTest {
         Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product));
 
-        Job job = jobService.createJobById(123L, false, schedule);
+        Job job = jobService.createJobById(123L, false, null, schedule, null);
 
         assertNotNull(job);
         assertEquals("123", job.getId());
@@ -123,9 +124,8 @@ class JobServiceTest {
     @Test
     void createJobByIdForMaintenanceJob() {
         DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
-        schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
 
-        Job job = jobService.createJobById(1L, true, schedule);
+        Job job = jobService.createJobById(1L, true, null, schedule, null);
 
         assertNotNull(job);
         assertEquals("1", job.getId());
@@ -141,18 +141,17 @@ class JobServiceTest {
         schedule.setDbJobRowMap(Map.of());
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> jobService.createJobById(999L, false, schedule));
-        
+                () -> jobService.createJobById(999L, false, null, schedule, null));
+
         assertTrue(exception.getMessage().contains("Unknown SNPZ=999"));
     }
 
     @Test
     void createJobByIdThrowsWhenMaintenanceJobNotFound() {
-        schedule.setDbMaintenanceRowMap(Map.of());
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> jobService.createJobById(999L, true, schedule));
-        
+                () -> jobService.createJobById(999L, true, null, schedule, null));
+
         assertTrue(exception.getMessage().contains("Unknown maintenance job FId=999"));
     }
 
@@ -169,8 +168,8 @@ class JobServiceTest {
         when(loadDataService.getProducts()).thenReturn(Map.of());
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> jobService.createJobById(123L, false, schedule));
-        
+                () -> jobService.createJobById(123L, false, null, schedule, null));
+
         assertTrue(exception.getMessage().contains("Unknown product KMC=UNKNOWN_KMC"));
     }
 
@@ -181,7 +180,7 @@ class JobServiceTest {
         existingJob.setSnpz(123L);
         schedule.getJobIdMap().put(123L, existingJob);
 
-        Job result = jobService.createJobById(123L, false, schedule);
+        Job result = jobService.createJobById(123L, false, null, schedule, null);
 
         assertSame(existingJob, result, "Should return existing job from cache");
         verify(loadDataService, never()).getProducts();
@@ -211,7 +210,7 @@ class JobServiceTest {
                 jobRow1.mass(), jobRow1.startProductionDateTime(), jobRow1.endDateTime(),
                 jobRow1.duration(), jobRow1.snpz(), jobRow1.priority(), "L1", jobRow1.shortName()
         );
-        
+
         DbJobRow jobRow2 = createDbJobRow("KMC2", 124L);
         jobRow2 = new DbJobRow(
                 jobRow2.dti(), jobRow2.kmc(), jobRow2.np(), jobRow2.quantity(),
@@ -220,7 +219,6 @@ class JobServiceTest {
         );
 
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
-        schedule.setDbMaintenanceRowMap(Map.of());
 
         Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product1));
@@ -242,7 +240,7 @@ class JobServiceTest {
     private DbMaintenanceRow createDbMaintenanceRow() {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         return new DbMaintenanceRow(
-               1L, (short) 0, "L1", now, now, 30, 123L, 1, "Maintenance Note"
+                1L, (short) 0, "L1", now, now, 30, 123L, 1, "Maintenance Note"
         );
     }
 
@@ -254,14 +252,11 @@ class JobServiceTest {
         job.setProduct(new Product("KMC1", "Vanilla"));
         job.setNp(10);
 
-        FactProductionRow fact = new FactProductionRow(
-                "KMC1",
-                Timestamp.valueOf(
-                        LocalDateTime.of(2025, 1, 1, 8, 0)),
-                10,
-                1,
-                Timestamp.valueOf(
-                        LocalDateTime.of(2025, 1, 1, 8, 0)),
+        FactProductionRow startFact = new FactProductionRow(
+                "BATCH-1", "KMC1",
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)),
+                10, ScheduleUtils.START_FACT_EVENT_TYPE,
+                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)),
                 "LINE_1"
         );
         FactProductionRow startCamera = new FactProductionRow(
@@ -286,6 +281,7 @@ class JobServiceTest {
 
         jobService.initFactProductionData(solution, factMap);
 
+        assertEquals("BATCH-1", job.getIdBatch());
         assertEquals("LINE_1", job.getLineIdFact());
         assertEquals(LocalDateTime.of(2025, 1, 1, 8, 0), job.getDtv());
         assertEquals(LocalDateTime.of(2025, 1, 1, 8, 0), job.getStartProductionDateTimeFact());
@@ -334,5 +330,112 @@ class JobServiceTest {
         assertNull(job.getStartProductionDateTimeFact());
         assertNull(job.getCameraStart());
         assertNull(job.getCameraEnd());
+    }
+
+    // --- enrichCameraFactsFromPmLog tests ---
+
+    @Test
+    void enrichCameraFactsFromPmLog_setsStartAndEndAndCallsFillMsLogTable() {
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setProduct(new Product("KMC1", "Product1"));
+        job.setDtv(LocalDateTime.of(2025, 1, 1, 8, 0));
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        LocalDateTime start = LocalDateTime.of(2025, 1, 1, 9, 0);
+        LocalDateTime end = LocalDateTime.of(2025, 1, 1, 10, 0);
+        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(start, end));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+
+        jobService.enrichCameraFactsFromPmLog(solution);
+
+        assertEquals(start, job.getCameraStart());
+        assertEquals(end, job.getCameraEnd());
+        verify(uploadDataService).fillMsLogTable(argThat(list -> list.size() == 2));
+    }
+
+    @Test
+    void enrichCameraFactsFromPmLog_ignoresWhenCameraMapEmpty() {
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(Map.of());
+
+        jobService.enrichCameraFactsFromPmLog(solution);
+
+        assertNull(job.getCameraStart());
+        assertNull(job.getCameraEnd());
+        verify(uploadDataService, never()).fillMsLogTable(any());
+    }
+
+    @Test
+    void enrichCameraFactsFromPmLog_returnsEarlyWhenNoJobsNeedCamera() {
+        Job jobWithFullCamera = new Job();
+        jobWithFullCamera.setIdBatch("BATCH-1");
+        jobWithFullCamera.setCameraStart(LocalDateTime.of(2025, 1, 1, 9, 0));
+        jobWithFullCamera.setCameraEnd(LocalDateTime.of(2025, 1, 1, 10, 0));
+
+        Job jobWithNullBatch = new Job();
+        jobWithNullBatch.setIdBatch(null);
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(jobWithFullCamera, jobWithNullBatch));
+
+        jobService.enrichCameraFactsFromPmLog(solution);
+
+        verify(jobRepository, never()).getCameraFactRowMap(any());
+        verify(uploadDataService, never()).fillMsLogTable(any());
+    }
+
+    @Test
+    void enrichCameraFactsFromPmLog_fillsOnlyMissingCameraStart() {
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setProduct(new Product("KMC1", "Product1"));
+        job.setDtv(LocalDateTime.of(2025, 1, 1, 8, 0));
+        job.setCameraEnd(LocalDateTime.of(2025, 1, 1, 10, 0));
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        LocalDateTime start = LocalDateTime.of(2025, 1, 1, 9, 0);
+        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(start, null));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+
+        jobService.enrichCameraFactsFromPmLog(solution);
+
+        assertEquals(start, job.getCameraStart());
+        assertEquals(LocalDateTime.of(2025, 1, 1, 10, 0), job.getCameraEnd());
+        verify(uploadDataService).fillMsLogTable(argThat(list -> list.size() == 1));
+    }
+
+    @Test
+    void enrichCameraFactsFromPmLog_fillsOnlyMissingCameraEnd() {
+        Job job = new Job();
+        job.setIdBatch("BATCH-1");
+        job.setProduct(new Product("KMC1", "Product1"));
+        job.setDtv(LocalDateTime.of(2025, 1, 1, 8, 0));
+        job.setCameraStart(LocalDateTime.of(2025, 1, 1, 9, 0));
+
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(List.of(job));
+
+        LocalDateTime end = LocalDateTime.of(2025, 1, 1, 10, 0);
+        Map<String, CameraValue> cameraMap = Map.of("BATCH-1", new CameraValue(null, end));
+
+        when(jobRepository.getCameraFactRowMap(any())).thenReturn(cameraMap);
+
+        jobService.enrichCameraFactsFromPmLog(solution);
+
+        assertEquals(LocalDateTime.of(2025, 1, 1, 9, 0), job.getCameraStart());
+        assertEquals(end, job.getCameraEnd());
+        verify(uploadDataService).fillMsLogTable(argThat(list -> list.size() == 1));
     }
 }

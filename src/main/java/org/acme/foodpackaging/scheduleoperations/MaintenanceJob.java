@@ -136,7 +136,7 @@ public class MaintenanceJob {
 
         lineJobs.remove(index);
         schedule.getJobs().remove(jobToRemove);
-        markDeletedByFId(jobToRemove.getFId(), schedule.getDbMaintenanceRowMap());
+        markDeletedByFId(jobToRemove.getFId(), schedule.getJobs());
 
         fixLineJobs(line);
         fixPinnedJobs(line);
@@ -147,17 +147,22 @@ public class MaintenanceJob {
 
     public void markDeletedByFId(
             Long fId,
-            Map<Long, DbMaintenanceRow> jobs
+            List<Job> jobs
     ) {
 
         if (fId == null || jobs == null || jobs.isEmpty()) {
             return;
         }
 
-        jobs.values().stream()
-                .filter(Objects::nonNull)
-                .filter(job -> Objects.equals(job.getFId(), fId))
-                .forEach(job -> job.setFDel((short) 1));
+        jobs.stream().filter(Objects::nonNull)
+                .filter(Job::isMaintenance)
+                .filter(j -> j.getFId() != null)
+                .filter(j ->
+                        j.getSnpz() == null ||
+                                j.getSnpz() == 0
+                )
+                .filter(j -> Objects.equals(j.getFId(), fId))
+                .forEach(j -> j.setFDel((short) 1));
     }
 
     public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {

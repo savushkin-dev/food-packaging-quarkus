@@ -27,20 +27,6 @@ public class LineSchedulingService {
             }
         }
         else {
-            Map<String, List<Job>> jobsByLineId = solution.getJobs().stream()
-                    .filter(job -> job.getLineId() != null)
-                    .collect(Collectors.groupingBy(Job::getLineId));
-
-            for (Line line : solution.getLines()) {
-                List<Job> lineJobs = jobsByLineId.getOrDefault(line.getId(), List.of());
-                List<Job> mutableJobs = new ArrayList<>(lineJobs);
-
-                line.setJobs(mutableJobs);
-
-                for (Job job : mutableJobs) {
-                    job.setLine(line);
-                }
-            }
             pinnAllLines(solution.getLines());
             //  Найти конец самой длинной линии
             LocalDateTime lineEndTime = findMaxEndTime(solution.getLines());

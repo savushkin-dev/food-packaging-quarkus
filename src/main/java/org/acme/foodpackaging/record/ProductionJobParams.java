@@ -19,5 +19,6 @@ public record ProductionJobParams(
         double mass,
         Product product,
         Duration duration,
-        LocalDateTime startProductionDateTime
+        LocalDateTime startProductionDateTime,
+        LocalDateTime startCleaningDateTime
 ) {}
