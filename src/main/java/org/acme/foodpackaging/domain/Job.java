@@ -56,6 +56,8 @@ public class Job {
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
+    private Integer emk;
+    private String placeFactInfo;
 
     private int priority;
 
@@ -105,6 +107,7 @@ public class Job {
         this.startProductionDateTime = params.startProductionDateTime();
         this.endDateTime = params.startProductionDateTime() == null ? null 
                 : params.startProductionDateTime().plus(params.duration());
+        this.emk = params.emk();
     }
 
     /**
@@ -158,7 +161,8 @@ public class Job {
                 row.mass(),
                 product,
                 row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
-                startProductionDateTime
+                startProductionDateTime,
+                row.emk()
         ));
     }
 

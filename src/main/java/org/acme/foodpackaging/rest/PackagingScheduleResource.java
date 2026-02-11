@@ -28,6 +28,7 @@ import org.acme.foodpackaging.scheduleoperations.SortByNpService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
+import org.acme.foodpackaging.service.jobs.JobInfoService;
 
 import java.util.*;
 
@@ -49,6 +50,7 @@ public class PackagingScheduleResource {
     private final UploadDataService uploadDataService;
     private final JobRefreshService jobRefreshService;
     private final JobSaveService jobSaveService;
+    private final JobInfoService jobInfoService;
 
     @Inject
     public PackagingScheduleResource(
@@ -63,7 +65,7 @@ public class PackagingScheduleResource {
             LoadDataService loadDataService,
             UploadDataService uploadDataService,
             JobRefreshService jobRefreshService,
-            JobSaveService jobSaveService
+            JobSaveService jobSaveService, JobInfoService jobInfoService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -77,6 +79,7 @@ public class PackagingScheduleResource {
         this.uploadDataService = uploadDataService;
         this.jobRefreshService = jobRefreshService;
         this.jobSaveService = jobSaveService;
+        this.jobInfoService = jobInfoService;
     }
 
     @GET
@@ -126,6 +129,20 @@ public class PackagingScheduleResource {
             throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
         }
         return loadDataService.getMaintenanceTypes();
+    }
+
+    @POST
+    @Path("placeFact")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response determineFactPlace(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        schedule = jobInfoService.determineFactPlace(schedule, placeFactRequest.getSnpz());
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, ""
+        )).build();
     }
 
     @POST

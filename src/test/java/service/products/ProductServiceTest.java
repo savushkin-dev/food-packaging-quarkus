@@ -59,8 +59,8 @@ class ProductServiceTest {
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
-        Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
-        Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2", "4810268008300");
+        Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300", 0.0);
+        Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2", "4810268008300", 0.0);
         Map<String, Product> products = Map.of("KMC1", product1, "KMC2", product2);
         List<CleaningRule> cleaningRules = List.of();
 
@@ -101,7 +101,7 @@ class ProductServiceTest {
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow));
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
+        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300", 0.0);
         Map<String, Product> products = Map.of("KMC1", product);
 
         when(loadDataService.getProducts()).thenReturn(products);
@@ -159,7 +159,7 @@ class ProductServiceTest {
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
+        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300", 0.0);
         Map<String, Product> products = Map.of("KMC1", product);
 
         when(loadDataService.getProducts()).thenReturn(products);
@@ -195,7 +195,7 @@ class ProductServiceTest {
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300");
+        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1", "4810268008300", 0.0);
         Map<String, Product> products = Map.of("KMC1", product);
 
         when(loadDataService.getProducts()).thenReturn(products);
