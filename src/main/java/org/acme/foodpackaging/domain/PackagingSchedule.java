@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.domain;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ public class PackagingSchedule {
     private Map<Long, DbJobRow> dbJobRowMap;
     private Map<Long, DbMaintenanceRow> dbMaintenanceRowMap;
     private Map<Long, Job> jobIdMap;
+    private List<Job> deletedMaintenance;
 
     @PlanningScore
     private HardMediumSoftLongScore score;
@@ -51,15 +53,16 @@ public class PackagingSchedule {
 
     // No-arg constructor required for Timefold
     public PackagingSchedule() {
-        maintenanceProduct = createMaintenanceProduct();
-        jobIdMap = new HashMap<>();
+        this.maintenanceProduct = createMaintenanceProduct();
+        this.jobIdMap = new HashMap<>();
+        this.deletedMaintenance = new ArrayList<>();
     }
 
     public boolean isEmptySolution() {
         return jobs == null || jobs.isEmpty();
     }
 
-    public void setDateForEmptySolution(LocalDate startDate ) {
+    public void setDateForEmptySolution(LocalDate startDate) {
         if (isEmptySolution()) {
             workCalendar.setFromDate(startDate);
             workCalendar.setToDate(startDate.plusDays(1));

@@ -260,23 +260,4 @@ class MaintenanceJobTest {
         assertEquals(2, extra.getMaintenanceTypeId());
         assertEquals("Мойка", extra.getName());
     }
-
-    @Test
-    void marksMatchingRowsAsDeletedTest() {
-        List<Job> jobs = List.of(
-                new Job(), new Job()
-        );
-
-        jobs.getFirst().setFDel((short) 0);
-        jobs.getLast().setFDel((short) 0);
-        jobs.getFirst().setFId(100L);
-        jobs.getLast().setFId(1L);
-        jobs.getFirst().setMaintenance(true);
-        jobs.getLast().setMaintenance(true);
-
-        maintenanceJob.markDeletedByFId(100L, jobs);
-
-        assertEquals((short) 1, jobs.getFirst().getFDel());
-        assertEquals((short) 0, jobs.getLast().getFDel());
-    }
 }

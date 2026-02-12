@@ -5,15 +5,12 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @ApplicationScoped
 public class JobSaveService {
@@ -202,7 +199,7 @@ public class JobSaveService {
     }
 
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
-        for (Job job : schedule.getJobs()) {
+        for (Job job : schedule.getDeletedMaintenance()) {
             if (job.isMaintenance() && job.getFDel() == DELETED_FLAG) {
                 OeePev existing = oeePevRepository.findByFId(job.getFId());
                 if (existing != null) {
