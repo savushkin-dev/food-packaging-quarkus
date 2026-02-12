@@ -70,6 +70,7 @@ public class JobService {
             Job job = createJobById(row, cleaningBySnpz);
             if(row.lineId()!= null){
                 Line line = findLineById(solution, job.getLineId());
+                if(line == null) continue;
                 if(line.getJobs() == null){
                     line.setJobs(new ArrayList<>());
                 }
