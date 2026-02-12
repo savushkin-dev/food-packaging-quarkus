@@ -132,11 +132,25 @@ public class PackagingScheduleResource {
     }
 
     @POST
-    @Path("placeFact")
+    @Path("findCameraFact")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response determineFactPlace(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
+    public Response findCameraFact(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
-        schedule = jobInfoService.determineFactPlace(schedule, placeFactRequest.getSnpz());
+        schedule = jobInfoService.findCameraFact(schedule, placeFactRequest.getSnpz());
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, ""
+        )).build();
+    }
+
+    @POST
+    @Path("findPlaceFact")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response findFactPlace(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+        schedule = jobInfoService.findFactPlace(schedule, placeFactRequest.getSnpz());
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
