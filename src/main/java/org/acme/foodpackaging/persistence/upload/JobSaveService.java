@@ -34,66 +34,54 @@ public class JobSaveService {
         markDeletedMaintenanceJobs(schedule);
 
         for (Job job : schedule.getJobs()) {
-
             if (job.isMaintenance()) {
-                saveMaintenance(job);
+                saveMaintenanceJob(job);
             } else {
-                saveProduction(job);
+                saveRegularJob(job);
             }
         }
     }
 
-    private void saveProduction(Job job) {
-
-        syncCleaningOperation(job);
-        updateProductionJob(job);
+    private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
+        for (Job job : schedule.getDeletedMaintenance()) {
+            if (job.getFDel() == DELETED_FLAG) {
+                OeePev existing = oeePevRepository.findByFId(job.getFId());
+                if (existing != null) {
+                    existing.setFDel(DELETED_FLAG);
+                    oeePevRepository.persist(existing);
+                }
+            }
+        }
     }
 
-    private void saveMaintenance(Job job) {
-
+    private void saveMaintenanceJob(Job job) {
         if (job.isMaintenance()) {
+             saveNewMaintenanceJob(job);
+        } else {
+            updateExistingMaintenanceJob(job);
+        }
+    }
 
+    private void  saveNewMaintenanceJob(Job job) {
+        OeePev entity = buildMaintenanceOeePev(job);
+        oeePevRepository.persist(entity);
+
+        // After saving, get the assigned fId and assign it to the session plan
+        long fId = entity.getFId();
+        job.setId(String.valueOf(fId));
+        job.setFId(fId);
+    }
+
+    private void updateExistingMaintenanceJob(Job job) {
+        OeePev existing = oeePevRepository.findByFId(job.getFId());
+        if (existing != null) {
+            updateMaintenanceOeePev(existing, job);
+            oeePevRepository.persist(existing);
+        } else {
+            // If not found, create new one
             OeePev entity = buildMaintenanceOeePev(job);
             oeePevRepository.persist(entity);
-
-            long fId = entity.getFId();
-            job.setId(String.valueOf(fId));
-            job.setFId(fId);
-
-        } else {
-
-            OeePev existing = oeePevRepository.findByFId(job.getFId());
-
-            if (existing != null) {
-                updateMaintenanceOeePev(existing, job);
-                oeePevRepository.persist(existing);
-            } else {
-
-                OeePev entity = buildMaintenanceOeePev(job);
-                oeePevRepository.persist(entity);
-
-                long fId = entity.getFId();
-                job.setId(String.valueOf(fId));
-                job.setFId(fId);
-            }
         }
-    }
-
-    private OeePev buildCleaningOeePev(Job job) {
-
-        LocalDateTime startCleaning = job.getStartCleaningDateTime();
-        LocalDateTime startProduction = job.getStartProductionDateTime();
-
-        return OeePev.builder()
-                .lineId(job.getLine().getId())
-                .startProductionDateTime(startCleaning)
-                .endDateTime(startProduction)
-                .duration(calculateDurationMinutes(startCleaning, startProduction))
-                .maintenanceTypeId(null)
-                .reason(null)
-                .note(CLEANING_NOTE)
-                .snpz(job.getSnpz())
-                .build();
     }
 
     private OeePev buildMaintenanceOeePev(Job job) {
@@ -109,18 +97,61 @@ public class JobSaveService {
                 .build();
     }
 
-    private void updateProductionJob(Job job) {
+    private void updateMaintenanceOeePev(OeePev existing, Job job) {
+        existing.setLineId(job.getLine().getId());
+        existing.setStartProductionDateTime(job.getStartProductionDateTime());
+        existing.setEndDateTime(job.getEndDateTime());
+        existing.setDuration(calculateDurationMinutes(job.getStartProductionDateTime(), job.getEndDateTime()));
+        existing.setMaintenanceTypeId(job.getMaintenanceTypeId());
+        existing.setReason(null);
+        existing.setNote(job.getMaintenanceNote());
+        existing.setSnpz(0L);
+    }
 
+    private void saveRegularJob(Job job) {
+
+        OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
+
+        if (hasCleaningOperation(job)) {
+
+            if (existing != null) {
+                updateCleaningOeePev(existing, job);
+            } else {
+                oeePevRepository.persist(buildCleaningOeePev(job));
+            }
+
+        } else {
+            if (existing != null) {
+                oeePevRepository.delete(existing);
+            }
+        }
+
+        updateProductionJob(job);
+    }
+
+    private boolean hasCleaningOperation(Job job) {
+        LocalDateTime startCleaning = job.getStartCleaningDateTime();
         LocalDateTime startProduction = job.getStartProductionDateTime();
-        LocalDateTime endDateTime = job.getEndDateTime();
 
-        bdVpmcRepository.updateBySnpz(
-                job.getSnpz(),
-                startProduction,
-                endDateTime,
-                calculateDurationMinutes(startProduction, endDateTime),
-                job.getLine().getId()
-        );
+        return startCleaning != null
+                && startProduction != null
+                && !startCleaning.isEqual(startProduction);
+    }
+
+    private OeePev buildCleaningOeePev(Job job) {
+        LocalDateTime startCleaning = job.getStartCleaningDateTime();
+        LocalDateTime startProduction = job.getStartProductionDateTime();
+
+        return OeePev.builder()
+                .lineId(job.getLine().getId())
+                .startProductionDateTime(startCleaning)
+                .endDateTime(startProduction)
+                .duration(calculateDurationMinutes(startCleaning, startProduction))
+                .maintenanceTypeId(null)
+                .reason(null)
+                .note(CLEANING_NOTE)
+                .snpz(job.getSnpz())
+                .build();
     }
 
     private void updateCleaningOeePev(OeePev existing, Job job) {
@@ -136,90 +167,23 @@ public class JobSaveService {
         existing.setNote(CLEANING_NOTE);
     }
 
-
-    private void updateMaintenanceOeePev(OeePev existing, Job job) {
-
-        LocalDateTime start = job.getStartProductionDateTime();
-        LocalDateTime end = job.getEndDateTime();
-
-        existing.setLineId(job.getLine().getId());
-        existing.setStartProductionDateTime(start);
-        existing.setEndDateTime(end);
-        existing.setDuration(calculateDurationMinutes(start, end));
-        existing.setMaintenanceTypeId(job.getMaintenanceTypeId());
-        existing.setReason(null);
-        existing.setNote(job.getMaintenanceNote());
-        existing.setSnpz(0L);
-    }
-
-    private boolean shouldHaveCleaning(Job job) {
-
-        if (job.isMaintenance()) {
-            return false;
-        }
-
-        Job previous = job.getPreviousJob();
-
-        if (previous == null) {
-            return false;
-        }
-
-        if (previous.isMaintenance()) {
-            return false;
-        }
-
-        LocalDateTime startCleaning = job.getStartCleaningDateTime();
+    private void updateProductionJob(Job job) {
         LocalDateTime startProduction = job.getStartProductionDateTime();
+        LocalDateTime endDateTime = job.getEndDateTime();
 
-        return startCleaning != null
-                && startProduction != null
-                && startCleaning.isBefore(startProduction);
-    }
-
-    private void syncCleaningOperation(Job job) {
-
-        OeePev existingCleaning = oeePevRepository.findBySnpz(job.getSnpz());
-
-        if (shouldHaveCleaning(job)) {
-
-            if (existingCleaning != null) {
-                updateCleaningOeePev(existingCleaning, job);
-                oeePevRepository.persist(existingCleaning);
-            } else {
-                OeePev entity = buildCleaningOeePev(job);
-                oeePevRepository.persist(entity);
-            }
-
-        } else {
-
-            if (existingCleaning != null) {
-                oeePevRepository.delete(existingCleaning);
-            }
-        }
-    }
-
-    private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
-        for (Job job : schedule.getDeletedMaintenance()) {
-            if (job.isMaintenance() && job.getFDel() == DELETED_FLAG) {
-                OeePev existing = oeePevRepository.findByFId(job.getFId());
-                if (existing != null) {
-                    existing.setFDel(DELETED_FLAG);
-                    oeePevRepository.persist(existing);
-                }
-            }
-        }
+        bdVpmcRepository.updateBySnpz(
+                job.getSnpz(),
+                startProduction,
+                endDateTime,
+                calculateDurationMinutes(startProduction, endDateTime),
+                job.getLine().getId()
+        );
     }
 
     private int calculateDurationMinutes(LocalDateTime start, LocalDateTime end) {
-
         if (start == null || end == null) {
             return 0;
         }
-
-        if (!end.isAfter(start)) {
-            return 0;
-        }
-
         return (int) Duration.between(start, end).toMinutes();
     }
 }
