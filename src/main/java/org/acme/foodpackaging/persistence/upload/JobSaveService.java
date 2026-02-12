@@ -55,7 +55,7 @@ public class JobSaveService {
     }
 
     private void saveMaintenanceJob(Job job) {
-        if (job.isMaintenance()) {
+        if (job.isMaintenance() && job.getFId()==null) {
              saveNewMaintenanceJob(job);
         } else {
             updateExistingMaintenanceJob(job);
