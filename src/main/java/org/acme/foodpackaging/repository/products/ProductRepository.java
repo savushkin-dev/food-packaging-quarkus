@@ -31,7 +31,7 @@ public class ProductRepository {
             select new org.acme.foodpackaging.record.ProductRow(
                 p.kmc, p.ean13, p.type, p.glaze,
                 p.mass, p.filling, p.ns.shortName,
-                p.ns.krkmc
+                p.ns.krkmc, p.ns.massa
             )
             from PlrMc p
             join p.ns n
@@ -46,6 +46,9 @@ public class ProductRepository {
                     r.krkmc(), r.type(),
                     r.glaze(), r.mass(), r.filling()
             );
+            product.setEan13(r.ean13());
+            product.setMass(r.massa());
+
             result.put(r.kmc(), product);
         }
 

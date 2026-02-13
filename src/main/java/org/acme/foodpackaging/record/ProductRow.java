@@ -8,6 +8,7 @@ public record ProductRow(
     String mass,
     String filling,
     String shortName,
-    String krkmc
+    String krkmc,
+    Double massa
 ) {}
 
