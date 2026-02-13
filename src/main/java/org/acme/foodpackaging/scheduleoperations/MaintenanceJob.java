@@ -120,7 +120,7 @@ public class MaintenanceJob {
     }
 
     public static Product createMaintenanceProduct() {
-       return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "", "", 0.0);
+       return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "");
     }
 
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
