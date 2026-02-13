@@ -37,7 +37,7 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String name, String id, String krKmc,  String type, String glaze, String curdMass, String filling, String ean13, Double mass) {
+    public Product(String name, String id, String krKmc,  String type, String glaze, String curdMass, String filling) {
         this.name = name;
         this.id = id;
         this.krKmc = krKmc;
@@ -45,8 +45,6 @@ public class Product {
         this.glaze = glaze;
         this.curdMass = curdMass;
         this.filling = filling;
-        this.ean13 = ean13;
-        this.mass = mass;
     }
 
     @Override
