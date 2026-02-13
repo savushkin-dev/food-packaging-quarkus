@@ -13,8 +13,13 @@ import java.time.format.DateTimeFormatter;
 @ApplicationScoped
 public class JobInfoService {
 
+
+    private final PmLogRepository pmLogRepository;
+
     @Inject
-    PmLogRepository pmLogRepository;
+    public JobInfoService(PmLogRepository pmLogRepository) {
+        this.pmLogRepository = pmLogRepository;
+    }
 
     public PackagingSchedule findFactPlace(PackagingSchedule solution, long snpz){
 
@@ -62,7 +67,7 @@ public class JobInfoService {
         String formattedNp = String.format("%09d", job.getNp());
 
         String dateToIdBatch = solution.getDbJobRowMap().get(snpz).dti().toLocalDateTime()
-                .format(DateTimeFormatter.ofPattern("yyyyMMdd"));;
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         return ean13 + dateToIdBatch + formattedNp;
     }
