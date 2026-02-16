@@ -23,7 +23,7 @@ public class SqlQueries {
     public static final String LOAD_JOBS_DB =  """
  SELECT
  v.DTI, v.KMC, v.NP, v.KOLEV, v.MASSA, v.PDTN,
- v.PDTO, v.PDUR, v.SNPZ, v.UX, v.KRC, m.SNM
+ v.PDTO, v.PDUR, v.SNPZ, v.UX, v.KRC, m.SNM, v.EMK
  FROM [MES].[dbo].[BD_VZPMC] AS v
     JOIN [MES].[dbo].[NS_MC] AS m
       ON v.KMC = m.KMC

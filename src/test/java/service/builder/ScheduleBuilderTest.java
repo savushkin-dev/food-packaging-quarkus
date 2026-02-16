@@ -59,7 +59,7 @@ class ScheduleBuilderTest {
                         "KMC1", 10, 5, 2.0,
                         new Timestamp(System.currentTimeMillis()),
                         new Timestamp(System.currentTimeMillis()),
-                        5, 123L, 1, null, "Vanilla"
+                        5, 123L, 1, null, "Vanilla", 18
                 )
         );
 

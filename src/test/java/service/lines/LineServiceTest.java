@@ -40,4 +40,3 @@ class LineServiceTest {
         verify(loadDataService).getLines();
     }
 }
-
