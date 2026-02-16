@@ -209,9 +209,12 @@ class MaintenanceJobTest {
     }
 
     @Test
-    void addMaintenanceExtra_WhenDurationAtLeastSixHours() {
-        Map<String, Integer> lc = Map.of("line1", 40);
-        CleaningDurationUtils.init(lc);
+    void addMaintenanceAddsExtraWhenDurationAtLeastSixHours() {
+        ConcurrentMap<String, Integer> lc = new ConcurrentHashMap<>();
+        lc.put("line1", 40);
+        when(loadDataService.getLinesCleaning()).thenReturn(lc);
+
+        // Seed one job to make line non-empty
         MaintenanceRequest seed = new MaintenanceRequest();
         seed.setLineId("line1");
         seed.setDurationMinutes(20);
@@ -237,9 +240,10 @@ class MaintenanceJobTest {
     }
 
     @Test
-    void addmaintenanceExtra_EmptyLineReusesStart() {
-        Map<String, Integer> lc = Map.of("line1", 30);
-        CleaningDurationUtils.init(lc);
+    void addMaintenanceAddsExtraWhenDurationAtLeastSixHours_EmptyLineReusesStart() {
+        ConcurrentMap<String, Integer> lc = new ConcurrentHashMap<>();
+        lc.put("line1", 30);
+        when(loadDataService.getLinesCleaning()).thenReturn(lc);
 
         LocalDateTime start = LocalDateTime.now();
         MaintenanceRequest req = new MaintenanceRequest();

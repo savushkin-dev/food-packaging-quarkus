@@ -21,6 +21,8 @@ public class Product {
     private String glaze;
     private String filling;
     private String curdMass;
+    private String ean13;
+    private Double mass;
     /** The map key is previous product on assembly line. */
     @JsonIgnore
     private Map<Product, Duration> cleaningDurations;
@@ -35,7 +37,7 @@ public class Product {
         this.name = name;
     }
 
-    public Product(String name, String id, String krKmc,  String type, String glaze, String curdMass, String filling ) {
+    public Product(String name, String id, String krKmc,  String type, String glaze, String curdMass, String filling) {
         this.name = name;
         this.id = id;
         this.krKmc = krKmc;

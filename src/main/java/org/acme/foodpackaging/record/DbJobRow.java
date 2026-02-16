@@ -14,5 +14,6 @@ public record DbJobRow(
         Long snpz,                            // numeric(12,0)
         Integer priority,                    // UX
         String lineId,                      // krc
-        String shortName                   // SNM
+        String shortName,                // SNM
+        Integer emk
 ) {}

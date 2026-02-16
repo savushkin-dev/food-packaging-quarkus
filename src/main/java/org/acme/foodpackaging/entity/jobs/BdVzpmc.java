@@ -33,6 +33,7 @@ import java.util.UUID;
                         @ColumnResult(name = "UX", type = Integer.class),
                         @ColumnResult(name = "KRC", type = String.class),
                         @ColumnResult(name = "SNM", type = String.class),
+                        @ColumnResult(name = "EMK", type = Integer.class),
                 }
         )
 )
@@ -77,6 +78,9 @@ public class BdVzpmc extends PanacheEntityBase {
 
     @Column(name = "PDUR")
     private Integer duration;
+
+    @Column(name = "EMK")
+    private Integer emk;
 
     @Override
     public String toString() {

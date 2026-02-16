@@ -72,14 +72,14 @@ class JobServiceTest {
         jobRow1 = new DbJobRow(
                 jobRow1.dti(), jobRow1.kmc(), jobRow1.np(), jobRow1.quantity(),
                 jobRow1.mass(), jobRow1.startProductionDateTime(), jobRow1.endDateTime(),
-                jobRow1.duration(), jobRow1.snpz(), jobRow1.priority(), "L1", jobRow1.shortName()
+                jobRow1.duration(), jobRow1.snpz(), jobRow1.priority(), "L1", jobRow1.shortName(), 18
         );
         
         DbJobRow jobRow2 = createDbJobRow("KMC2", 124L);
         jobRow2 = new DbJobRow(
                 jobRow2.dti(), jobRow2.kmc(), jobRow2.np(), jobRow2.quantity(),
                 jobRow2.mass(), jobRow2.startProductionDateTime(), jobRow2.endDateTime(),
-                jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName()
+                jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName(), 19
         );
 
         DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
@@ -105,7 +105,7 @@ class JobServiceTest {
         jobRow = new DbJobRow(
                 jobRow.dti(), jobRow.kmc(), jobRow.np(), jobRow.quantity(),
                 jobRow.mass(), jobRow.startProductionDateTime(), jobRow.endDateTime(),
-                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName()
+                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName(), 18
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow));
 
@@ -165,7 +165,7 @@ class JobServiceTest {
         jobRow = new DbJobRow(
                 jobRow.dti(), jobRow.kmc(), jobRow.np(), jobRow.quantity(),
                 jobRow.mass(), jobRow.startProductionDateTime(), jobRow.endDateTime(),
-                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName()
+                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName(), 18
         );
         schedule.setDbJobRowMap(Map.of(123L, jobRow));
 
@@ -212,14 +212,14 @@ class JobServiceTest {
         jobRow1 = new DbJobRow(
                 jobRow1.dti(), jobRow1.kmc(), jobRow1.np(), jobRow1.quantity(),
                 jobRow1.mass(), jobRow1.startProductionDateTime(), jobRow1.endDateTime(),
-                jobRow1.duration(), jobRow1.snpz(), jobRow1.priority(), "L1", jobRow1.shortName()
+                jobRow1.duration(), jobRow1.snpz(), jobRow1.priority(), "L1", jobRow1.shortName(), 18
         );
         
         DbJobRow jobRow2 = createDbJobRow("KMC2", 124L);
         jobRow2 = new DbJobRow(
                 jobRow2.dti(), jobRow2.kmc(), jobRow2.np(), jobRow2.quantity(),
                 jobRow2.mass(), jobRow2.startProductionDateTime(), jobRow2.endDateTime(),
-                jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName()
+                jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName(), 19
         );
 
         schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
@@ -238,7 +238,7 @@ class JobServiceTest {
         Timestamp now = new Timestamp(System.currentTimeMillis());
         return new DbJobRow(
                 now, kmc, 10, 5, 2.0,
-                now, now, 5, snpz, 1, "L1", "Product"
+                now, now, 5, snpz, 1, "L1", "Product", 18
         );
     }
 
