@@ -18,7 +18,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-
+import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -44,12 +44,6 @@ class JobInfoServiceTest {
         product.setEan13("4810268053150");
         product.setMass(2.5);
 
-        job = new Job();
-        job.setSnpz(SNPZ);
-        job.setNp(111);
-        job.setProduct(product);
-        job.setEmk(EMK);
-
         Timestamp timestamp = Timestamp.valueOf(NOW);
         DbJobRow dbJobRow = new DbJobRow(
                 timestamp, "KMC001", 111, 100, 2.5,
@@ -57,11 +51,12 @@ class JobInfoServiceTest {
                 "L1", "Product Name", 19
         );
 
+        job = Job.fromDbJobRow(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
+        job.setEmk(EMK);
+        job.setDti(NOW);
         schedule = new PackagingSchedule();
-        schedule.setDbJobRowMap(new HashMap<>());
-        schedule.getDbJobRowMap().put(SNPZ, dbJobRow);
-        schedule.setJobIdMap(new HashMap<>());
-        schedule.getJobIdMap().put(SNPZ, job);
+        schedule.setAllJobsById(new HashMap<>());
+        schedule.getAllJobsById().put(SNPZ, job);
     }
 
     @Test
@@ -81,7 +76,7 @@ class JobInfoServiceTest {
         PackagingSchedule result = jobInfoService.findFactPlace(schedule, SNPZ);
 
         assertNotNull(result);
-        assertEquals(expectedResult, result.getJobIdMap().get(SNPZ).getPlaceFactInfo());
+        assertEquals(expectedResult, result.getAllJobsById().get(SNPZ).getPlaceFactInfo());
         verify(pmLogRepository).countByIdBatch(idBatch);
     }
 
@@ -100,8 +95,8 @@ class JobInfoServiceTest {
 
         PackagingSchedule result = jobInfoService.findCameraFact(schedule, SNPZ);
 
-        assertEquals(start, result.getJobIdMap().get(SNPZ).getCameraStart());
-        assertEquals(end, result.getJobIdMap().get(SNPZ).getCameraEnd());
+        assertEquals(start, result.getAllJobsById().get(SNPZ).getCameraStart());
+        assertEquals(end, result.getAllJobsById().get(SNPZ).getCameraEnd());
         verify(pmLogRepository).getCameraFactRow(idBatch);
     }
 
@@ -124,8 +119,8 @@ class JobInfoServiceTest {
 
         jobInfoService.findCameraFact(schedule, SNPZ);
 
-        assertNull(schedule.getJobIdMap().get(SNPZ).getCameraStart());
-        assertNull(schedule.getJobIdMap().get(SNPZ).getCameraEnd());
+        assertNull(schedule.getAllJobsById().get(SNPZ).getCameraStart());
+        assertNull(schedule.getAllJobsById().get(SNPZ).getCameraEnd());
     }
 
     @Test
@@ -135,7 +130,7 @@ class JobInfoServiceTest {
 
         jobInfoService.findFactPlace(schedule, SNPZ);
 
-        assertEquals("0 (0 шт., 0 кг.)", schedule.getJobIdMap().get(SNPZ).getPlaceFactInfo());
+        assertEquals("0 (0 шт., 0 кг.)", schedule.getAllJobsById().get(SNPZ).getPlaceFactInfo());
     }
 
     @Test

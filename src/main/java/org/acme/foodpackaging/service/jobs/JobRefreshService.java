@@ -49,29 +49,44 @@ public class JobRefreshService {
     }
 
     private void addJobIfAbsent(Long snpz, boolean isHandPackaging, PackagingSchedule solution) {
-        if (solution.getAllJobsById().containsKey(snpz)) {
-            return;
-        }
+
         Job job = solution.getAllJobsById().get(snpz);
+
         if (job == null) {
             return;
         }
+    
+        if (solution.getJobs().contains(job)) {
+            return;
+        }
+    
         job.setHandPackaging(isHandPackaging);
         job.setMinStartTime(solution.getWorkCalendar().getMinStartDateTime());
+    
         solution.getJobs().add(job);
     }
 
     private void removeJobFromSolution(Long snpz, PackagingSchedule solution) {
+
         Job job = solution.getAllJobsById().get(snpz);
+    
         if (job == null) {
             return;
         }
+    
+        if (!solution.getJobs().contains(job)) {
+            return;
+        }
+    
         solution.getJobs().remove(job);
+    
         Line line = job.getLine();
         if (line != null) {
             line.getJobs().remove(job);
             job.setLine(null);
+    
             fixLineJobs(line);
+    
             if (line.getFirstUnpinnedIndex() > line.getJobs().size()) {
                 line.setFirstUnpinnedIndex(line.getJobs().size());
             }

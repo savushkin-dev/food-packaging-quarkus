@@ -4,8 +4,6 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.record.CleaningRule;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.junit.jupiter.api.Test;
@@ -14,10 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,189 +33,81 @@ class ProductServiceTest {
     @Mock
     LoadDataService loadDataService;
 
-    @Test
-    void getProductList() {
-        PackagingSchedule schedule = new PackagingSchedule();
-        schedule.setJobs(new ArrayList<>());
-        
-        DbJobRow jobRow1 = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                "KMC1", 10, 5, 2.0,
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1", 18
-        );
-        DbJobRow jobRow2 = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                "KMC2", 20, 10, 3.0,
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                10, 124L, 2, "L2", "Product2", 19
-        );
+@Test
+void getProductList_basicFlow() {
 
-        Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
-        Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2");
-        Map<String, Product> products = Map.of("KMC1", product1, "KMC2", product2);
-        List<CleaningRule> cleaningRules = List.of();
+    PackagingSchedule schedule = new PackagingSchedule();
 
-        when(loadDataService.getProducts()).thenReturn(products);
-        when(loadDataService.getCleaningRules()).thenReturn(cleaningRules);
-        doNothing().when(cleaningCalculator).setRules(any());
-        doNothing().when(cleaningCalculator).cleaningCalculate(any());
+    Product maintenance = new Product("Maintenance Product", "MNT",
+            null, null, null, null, null);
+    schedule.setMaintenanceProduct(maintenance);
 
-        List<Product> result = productService.getProductList(schedule);
+    Product product1 = new Product("Product1", "KMC1",
+            null, null, null, null, null);
 
-        assertNotNull(result);
-        assertEquals(3, result.size(), "Should contain 2 products + 1 maintenance product");
-        assertTrue(result.contains(product1));
-        assertTrue(result.contains(product2));
-        assertTrue(result.stream().anyMatch(p -> p.getName().equals("Maintenance Product")),
-                "Maintenance product should be included");
+    Job job = new Job();
+    job.setProduct(product1);
 
-        verify(loadDataService).getProducts();
-        verify(loadDataService).getCleaningRules();
-        verify(cleaningCalculator).setRules(cleaningRules);
-        verify(cleaningCalculator).cleaningCalculate(any());
-    }
+    schedule.setJobs(List.of(job));
 
-    @Test
-    void getProductListWithMaintenanceJobs() {
-        PackagingSchedule schedule = new PackagingSchedule();
-        
-        Job maintenanceJob = new Job();
-        maintenanceJob.setMaintenance(true);
-        schedule.setJobs(List.of(maintenanceJob));
+    when(loadDataService.getCleaningRules()).thenReturn(List.of());
 
-        DbJobRow jobRow = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                "KMC1", 10, 5, 2.0,
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1", 18
-        );
+    List<Product> result = productService.getProductList(schedule);
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
-        Map<String, Product> products = Map.of("KMC1", product);
+    assertEquals(2, result.size());
+    assertTrue(result.contains(product1));
+    assertTrue(result.contains(maintenance));
 
-        when(loadDataService.getProducts()).thenReturn(products);
-        when(loadDataService.getCleaningRules()).thenReturn(List.of());
-        doNothing().when(cleaningCalculator).setRules(any());
-        doNothing().when(cleaningCalculator).cleaningCalculate(any());
+    verify(cleaningCalculator).setRules(any());
+    verify(cleaningCalculator).cleaningCalculate(result);
+}
 
-        List<Product> result = productService.getProductList(schedule);
+@Test
+void getProductList_shouldRemoveDuplicates() {
 
-        assertNotNull(result);
-        assertNotNull(maintenanceJob.getProduct(), "Maintenance job should have product set");
-        assertEquals("Maintenance Product", maintenanceJob.getProduct().getName());
-    }
+    PackagingSchedule schedule = new PackagingSchedule();
 
-    @Test
-    void getProductListThrowsWhenProductNotFound() {
-        PackagingSchedule schedule = new PackagingSchedule();
-        schedule.setJobs(new ArrayList<>());
+    Product maintenance = new Product("Maintenance Product", "MNT",
+            null, null, null, null, null);
+    schedule.setMaintenanceProduct(maintenance);
 
-        DbJobRow jobRow = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                "UNKNOWN_KMC", 10, 5, 2.0,
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1", 18
-        );
+    Product product = new Product("Product1", "KMC1",
+            null, null, null, null, null);
 
-        when(loadDataService.getProducts()).thenReturn(Map.of());
+    Job job1 = new Job();
+    job1.setProduct(product);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, 
-                () -> productService.getProductList(schedule));
-        
-        assertTrue(exception.getMessage().contains("Product not found for KMC: UNKNOWN_KMC"));
-    }
+    Job job2 = new Job();
+    job2.setProduct(product);
 
-    @Test
-    void getProductListWithDuplicateKMCs() {
-        PackagingSchedule schedule = new PackagingSchedule();
-        schedule.setJobs(new ArrayList<>());
+    schedule.setJobs(List.of(job1, job2));
 
-        DbJobRow jobRow1 = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                "KMC1", 10, 5, 2.0,
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1", 18
-        );
-        DbJobRow jobRow2 = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                "KMC1", 20, 10, 3.0,
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                10, 124L, 2, "L2", "Product1", 19
-        );
+    when(loadDataService.getCleaningRules()).thenReturn(List.of());
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
-        Map<String, Product> products = Map.of("KMC1", product);
+    List<Product> result = productService.getProductList(schedule);
 
-        when(loadDataService.getProducts()).thenReturn(products);
-        when(loadDataService.getCleaningRules()).thenReturn(List.of());
-        doNothing().when(cleaningCalculator).setRules(any());
-        doNothing().when(cleaningCalculator).cleaningCalculate(any());
+    assertEquals(2, result.size()); // 1 unique + maintenance
+}
 
-        List<Product> result = productService.getProductList(schedule);
+@Test
+void getProductList_shouldAssignMaintenanceProductToMaintenanceJobs() {
 
-        assertNotNull(result);
-        assertEquals(2, result.size(), "Should have only one unique product (KMC1) + maintenance product");
-        assertTrue(result.contains(product));
-    }
+    PackagingSchedule schedule = new PackagingSchedule();
 
-    @Test
-    void getProductListFiltersNullKMCs() {
-        PackagingSchedule schedule = new PackagingSchedule();
-        schedule.setJobs(new ArrayList<>());
+    Product maintenance = new Product("Maintenance Product", "MNT",
+            null, null, null, null, null);
+    schedule.setMaintenanceProduct(maintenance);
 
-        DbJobRow jobRow1 = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                "KMC1", 10, 5, 2.0,
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                5, 123L, 1, "L1", "Product1", 18
-        );
-        DbJobRow jobRow2 = new DbJobRow(
-                new Timestamp(System.currentTimeMillis()),
-                null, 20, 10, 3.0, // null KMC should be filtered
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                10, 124L, 2, "L2", "Product2", 19
-        );
+    Job maintenanceJob = new Job();
+    maintenanceJob.setMaintenance(true);
 
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
-        Map<String, Product> products = Map.of("KMC1", product);
+    schedule.setJobs(List.of(maintenanceJob));
 
-        when(loadDataService.getProducts()).thenReturn(products);
-        when(loadDataService.getCleaningRules()).thenReturn(List.of());
-        doNothing().when(cleaningCalculator).setRules(any());
-        doNothing().when(cleaningCalculator).cleaningCalculate(any());
+    when(loadDataService.getCleaningRules()).thenReturn(List.of());
 
-        List<Product> result = productService.getProductList(schedule);
+    List<Product> result = productService.getProductList(schedule);
 
-        assertNotNull(result);
-        assertEquals(2, result.size(), "Should have 1 product + 1 maintenance product (null KMC filtered)");
-        assertTrue(result.contains(product));
-    }
-
-    @Test
-    void getProductListWithEmptySchedule() {
-        PackagingSchedule schedule = new PackagingSchedule();
-        schedule.setJobs(new ArrayList<>());
-
-        when(loadDataService.getProducts()).thenReturn(Map.of());
-        when(loadDataService.getCleaningRules()).thenReturn(List.of());
-        doNothing().when(cleaningCalculator).setRules(any());
-        doNothing().when(cleaningCalculator).cleaningCalculate(any());
-
-        List<Product> result = productService.getProductList(schedule);
-
-        assertNotNull(result);
-        assertEquals(1, result.size(), "Should only have maintenance product when schedule is empty");
-        assertTrue(result.stream().anyMatch(p -> p.getName().equals("Maintenance Product")));
-        
-        verify(cleaningCalculator).cleaningCalculate(any());
-    }
+    assertEquals(1, result.size());
+    assertEquals(maintenance, maintenanceJob.getProduct());
+}
 }

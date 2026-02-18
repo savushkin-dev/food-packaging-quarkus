@@ -6,11 +6,9 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.record.DbJobRow;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
