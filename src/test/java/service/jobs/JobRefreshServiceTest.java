@@ -143,4 +143,172 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
     assertNotEquals(newEnd, job.getCameraEnd());
     verify(uploadDataService, never()).updateCameraEndInMsLog(any());
 }
+
+    @Test
+    void removeJobFromSolution_whenJobIsNull_shouldNotThrowException() {
+       
+        solution.getAllJobsById().put(1L, null);
+        when(productService.getProductList(solution)).thenReturn(List.of());
+        assertDoesNotThrow(() -> {
+            service.applySelection(
+                    Map.of(1L, new SelectionValue(false, false)),
+                    solution
+            );
+        });
+
+        assertEquals(0, solution.getJobs().size());
+    }
+
+    @Test
+    void removeJobFromSolution_whenJobNotInSolutionJobs_shouldNotRemove() {
+      
+        Job job = new Job();
+        job.setSnpz(1L);
+        job.setLine(null);
+        solution.getAllJobsById().put(1L, job);
+       
+        when(productService.getProductList(solution)).thenReturn(List.of());
+
+        service.applySelection(
+                Map.of(1L, new SelectionValue(false, false)),
+                solution
+        );
+        assertEquals(0, solution.getJobs().size());
+        assertNull(job.getLine());
+    }
+
+    @Test
+    void removeJobFromSolution_whenJobHasLine_shouldRemoveFromLineAndSolution() {
+        
+        Job job = new Job();
+        job.setSnpz(1L);
+        job.setId("J1");
+
+        Line line = new Line("L1", "Line 1");
+        line.setJobs(new ArrayList<>(List.of(job)));
+        job.setLine(line);
+        line.setFirstUnpinnedIndex(1);
+
+        solution.getJobs().add(job);
+        solution.getAllJobsById().put(1L, job);
+        solution.setLines(List.of(line));
+
+        when(productService.getProductList(solution)).thenReturn(List.of());
+
+        service.applySelection(
+                Map.of(1L, new SelectionValue(false, false)),
+                solution
+        );
+
+        assertFalse(solution.getJobs().contains(job));
+        assertFalse(line.getJobs().contains(job));
+        assertNull(job.getLine());
+        assertEquals(0, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
+    void removeJobFromSolution_whenJobHasNoLine_shouldOnlyRemoveFromSolution() {
+       
+        Job job = new Job();
+        job.setSnpz(1L);
+        job.setLine(null);
+
+        solution.getJobs().add(job);
+        solution.getAllJobsById().put(1L, job);
+
+        when(productService.getProductList(solution)).thenReturn(List.of());
+
+        service.applySelection(
+                Map.of(1L, new SelectionValue(false, false)),
+                solution
+        );
+
+        assertFalse(solution.getJobs().contains(job));
+        assertNull(job.getLine());
+    }
+
+    @Test
+    void removeJobFromSolution_whenFirstUnpinnedIndexGreaterThanJobsSize_shouldAdjustIndex() {
+      
+        Job job1 = new Job();
+        job1.setSnpz(1L);
+        Job job2 = new Job();
+        job2.setSnpz(2L);
+
+        Line line = new Line("L1", "Line 1");
+        line.setJobs(new ArrayList<>(List.of(job1, job2)));
+        job1.setLine(line);
+        job2.setLine(line);
+        line.setFirstUnpinnedIndex(3);
+
+        solution.getJobs().add(job1);
+        solution.getJobs().add(job2);
+        solution.getAllJobsById().put(1L, job1);
+        solution.getAllJobsById().put(2L, job2);
+        solution.setLines(List.of(line));
+
+        when(productService.getProductList(solution)).thenReturn(List.of());
+
+        service.applySelection(
+                Map.of(1L, new SelectionValue(false, false)),
+                solution
+        );
+
+        assertEquals(1, line.getJobs().size());
+        assertEquals(job2, line.getJobs().get(0));
+        assertEquals(1, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
+    void removeJobFromSolution_whenFirstUnpinnedIndexLessThanJobsSize_shouldNotAdjustIndex() {
+       
+        Job job1 = new Job();
+        job1.setSnpz(1L);
+        Job job2 = new Job();
+        job2.setSnpz(2L);
+
+        Line line = new Line("L1", "Line 1");
+        line.setJobs(new ArrayList<>(List.of(job1, job2)));
+        job1.setLine(line);
+        job2.setLine(line);
+        line.setFirstUnpinnedIndex(1);
+
+        solution.getJobs().add(job1);
+        solution.getJobs().add(job2);
+        solution.getAllJobsById().put(1L, job1);
+        solution.getAllJobsById().put(2L, job2);
+        solution.setLines(List.of(line));
+
+        when(productService.getProductList(solution)).thenReturn(List.of());
+        service.applySelection(
+                Map.of(1L, new SelectionValue(false, false)),
+                solution
+        );
+
+        assertEquals(1, line.getJobs().size());
+        assertEquals(1, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
+    void removeJobFromSolution_shouldCallFixLineJobs() {
+       
+        Job job = new Job();
+        job.setSnpz(1L);
+
+        Line line = new Line("L1", "Line 1");
+        line.setJobs(new ArrayList<>(List.of(job)));
+        job.setLine(line);
+
+        solution.getJobs().add(job);
+        solution.getAllJobsById().put(1L, job);
+        solution.setLines(List.of(line));
+
+        when(productService.getProductList(solution)).thenReturn(List.of());
+        service.applySelection(
+                Map.of(1L, new SelectionValue(false, false)),
+                solution
+        );
+        assertNull(job.getLine());
+        assertFalse(line.getJobs().contains(job));
+    }
 }
