@@ -162,7 +162,7 @@ public class Job {
                 product,
                 row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
                 startProductionDateTime,
-                row.emk()
+                row.emk() != null ? row.emk() : 0
         ));
     }
 

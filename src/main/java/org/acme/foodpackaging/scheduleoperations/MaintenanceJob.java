@@ -68,22 +68,28 @@ public class MaintenanceJob {
 
             lineJobs.add(maintenanceJob);
             insertedIndex = 0;
-
         } else {
 
             Integer insertIndex = request.getInsertIndex();
-
+        
             if (insertIndex == null) {
                 insertIndex = findInsertIndexByTime(
                         lineJobs,
                         request.getStartProductionDateTime()
                 );
             }
-
+        
             if (insertIndex < 0 || insertIndex > lineJobs.size()) {
                 throw new IllegalArgumentException("Invalid insertIndex: " + insertIndex);
             }
-
+        
+            LocalDateTime startTime = request.getStartProductionDateTime();
+        
+            if (startTime != null) {
+                maintenanceJob.setStartCleaningDateTime(startTime);
+                maintenanceJob.setStartProductionDateTime(startTime);
+            }
+        
             lineJobs.add(insertIndex, maintenanceJob);
             insertedIndex = insertIndex;
         }
