@@ -115,7 +115,7 @@ public class JobService {
         Job job;
 
         if (row == null) {
-            throw new IllegalArgumentException("Unknown maintenance job FId=" + row.getFId());
+            throw new IllegalArgumentException("Unknown maintenance job: row is null");
         }
 
         var maintenanceTypes = loadDataService != null ? loadDataService.getMaintenanceTypes() : null;
