@@ -48,11 +48,9 @@ class JobRefreshServiceTest {
     void enabledJobNotPresent() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setJobs(new ArrayList<>());
-        solution.setJobIdMap(new HashMap<>());
 
         DbJobRow row = mock(DbJobRow.class);
         when(row.snpz()).thenReturn(Long.valueOf(1));
-        solution.setDbJobRowMap(Map.of(1L, row));
 
         Job job = new Job();
         job.setSnpz(1L);
@@ -69,9 +67,8 @@ class JobRefreshServiceTest {
         assertEquals(1, solution.getJobs().size());
         assertSame(job, solution.getJobs().getFirst());
         assertTrue(solution.getJobs().getFirst().isHandPackaging());
-        assertEquals(job, solution.getJobIdMap().get(1L));
+        assertEquals(job, solution.getAllJobsById().get(1L));
 
-        verify(jobService).createJobById(1L, false, solution);
         verify(productService).getProductList(solution);
     }
 
@@ -218,7 +215,7 @@ class JobRefreshServiceTest {
                 1L, new SelectionValue(true, false),
                 2L, new SelectionValue(false, true));
         service.applySelection(selection, solution);
-        assertFalse(solution.getJobs().getFirst().isHandPackaging());    
+        assertFalse(solution.getJobs().getFirst().isHandPackaging());
         assertEquals(1, solution.getJobs().size());
         assertSame(job1, solution.getJobs().getFirst());
         assertSame(job1, solution.getJobIdMap().get(1L));

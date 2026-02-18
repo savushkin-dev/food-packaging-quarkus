@@ -57,7 +57,6 @@ class ProductServiceTest {
                 new Timestamp(System.currentTimeMillis()),
                 10, 124L, 2, "L2", "Product2", 19
         );
-        schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
         Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2");
@@ -99,7 +98,6 @@ class ProductServiceTest {
                 new Timestamp(System.currentTimeMillis()),
                 5, 123L, 1, "L1", "Product1", 18
         );
-        schedule.setDbJobRowMap(Map.of(123L, jobRow));
 
         Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         Map<String, Product> products = Map.of("KMC1", product);
@@ -128,7 +126,6 @@ class ProductServiceTest {
                 new Timestamp(System.currentTimeMillis()),
                 5, 123L, 1, "L1", "Product1", 18
         );
-        schedule.setDbJobRowMap(Map.of(123L, jobRow));
 
         when(loadDataService.getProducts()).thenReturn(Map.of());
 
@@ -157,7 +154,6 @@ class ProductServiceTest {
                 new Timestamp(System.currentTimeMillis()),
                 10, 124L, 2, "L2", "Product1", 19
         );
-        schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
         Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         Map<String, Product> products = Map.of("KMC1", product);
@@ -193,7 +189,6 @@ class ProductServiceTest {
                 new Timestamp(System.currentTimeMillis()),
                 10, 124L, 2, "L2", "Product2", 19
         );
-        schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
 
         Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         Map<String, Product> products = Map.of("KMC1", product);
@@ -214,7 +209,6 @@ class ProductServiceTest {
     void getProductListWithEmptySchedule() {
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setJobs(new ArrayList<>());
-        schedule.setDbJobRowMap(Map.of());
 
         when(loadDataService.getProducts()).thenReturn(Map.of());
         when(loadDataService.getCleaningRules()).thenReturn(List.of());

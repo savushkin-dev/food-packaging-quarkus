@@ -1,7 +1,7 @@
 package org.acme.foodpackaging.domain;
 
 import java.time.LocalDate;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -15,8 +15,6 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 import ai.timefold.solver.core.api.solver.SolverStatus;
 import lombok.Getter;
 import lombok.Setter;
-import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 
 import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 
@@ -39,9 +37,8 @@ public class PackagingSchedule {
     private List<Job> jobs;
 
     private Product maintenanceProduct;
-    private Map<Long, DbJobRow> dbJobRowMap;
-    private Map<Long, DbMaintenanceRow> dbMaintenanceRowMap;
-    private Map<Long, Job> jobIdMap;
+    private Map<Long, Job> allJobsById;
+    private List<Job> deletedMaintenance;
 
     @PlanningScore
     private HardMediumSoftLongScore score;
@@ -52,7 +49,7 @@ public class PackagingSchedule {
     // No-arg constructor required for Timefold
     public PackagingSchedule() {
         maintenanceProduct = createMaintenanceProduct();
-        jobIdMap = new HashMap<>();
+        this.deletedMaintenance = new ArrayList<>();
     }
 
     public boolean isEmptySolution() {

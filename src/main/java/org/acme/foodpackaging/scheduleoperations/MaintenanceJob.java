@@ -136,31 +136,17 @@ public class MaintenanceJob {
         }
 
         Job jobToRemove = lineJobs.get(index);
+        if(jobToRemove.isMaintenance()) {
+            schedule.getDeletedMaintenance().add(jobToRemove);
+            jobToRemove.setFDel((short) 1);
+            schedule.getJobs().remove(jobToRemove);
 
-        lineJobs.remove(index);
-        schedule.getJobs().remove(jobToRemove);
-        markDeletedByFId(jobToRemove.getFId(), schedule.getDbMaintenanceRowMap());
+            lineJobs.remove(index);
 
-        fixLineJobs(line);
-        fixPinnedJobs(line);
-
-        return schedule;
-
-    }
-
-    public void markDeletedByFId(
-            Long fId,
-            Map<Long, DbMaintenanceRow> jobs
-    ) {
-
-        if (fId == null || jobs == null || jobs.isEmpty()) {
-            return;
+            fixLineJobs(line);
+            fixPinnedJobs(line);
         }
-
-        jobs.values().stream()
-                .filter(Objects::nonNull)
-                .filter(job -> Objects.equals(job.getFId(), fId))
-                .forEach(job -> job.setFDel((short) 1));
+        return schedule;
     }
 
     public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {

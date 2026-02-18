@@ -60,9 +60,7 @@ class JobServiceTest {
         
         schedule = new PackagingSchedule();
         schedule.setWorkCalendar(workCalendar);
-        schedule.setDbJobRowMap(new HashMap<>());
-        schedule.setDbMaintenanceRowMap(new HashMap<>());
-        schedule.setJobIdMap(new HashMap<>());
+        schedule.setAllJobsById(new HashMap<>());
         schedule.setJobs(new ArrayList<>());
     }
 
@@ -84,9 +82,6 @@ class JobServiceTest {
 
         DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
 
-        schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
-        schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
-
         Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         Product product2 = new Product("Product2", "KMC2", "KRKMC2", "Type2", "Glaze2", "200", "Filling2");
         when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product1, "KMC2", product2));
@@ -97,97 +92,6 @@ class JobServiceTest {
         assertEquals(2, schedule.getJobs().size(), "Only jobs with lineId should be included");
         assertTrue(schedule.getJobs().stream().anyMatch(j -> j.getSnpz() == 123L));
         assertTrue(schedule.getJobs().stream().anyMatch(Job::isMaintenance));
-    }
-
-    @Test
-    void createJobByIdForRegularJob() {
-        DbJobRow jobRow = createDbJobRow("KMC1", 123L);
-        jobRow = new DbJobRow(
-                jobRow.dti(), jobRow.kmc(), jobRow.np(), jobRow.quantity(),
-                jobRow.mass(), jobRow.startProductionDateTime(), jobRow.endDateTime(),
-                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName(), 18
-        );
-        schedule.setDbJobRowMap(Map.of(123L, jobRow));
-
-        Product product = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
-        when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product));
-
-        Job job = jobService.createJobById(123L, false, schedule);
-
-        assertNotNull(job);
-        assertEquals("123", job.getId());
-        assertEquals(123L, job.getSnpz());
-        assertEquals("L1", job.getLineId());
-        assertEquals(product, job.getProduct());
-        assertFalse(job.isMaintenance());
-        assertTrue(schedule.getJobIdMap().containsKey(123L), "Job should be cached in jobIdMap");
-    }
-
-    @Test
-    void createJobByIdForMaintenanceJob() {
-        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
-        schedule.setDbMaintenanceRowMap(Map.of(1L, maintenanceRow));
-
-        Job job = jobService.createJobById(1L, true, schedule);
-
-        assertNotNull(job);
-        assertEquals("1", job.getId());
-        assertEquals(1L, job.getFId());
-        assertEquals("L1", job.getLineId());
-        assertTrue(job.isMaintenance());
-        assertNotNull(job.getProduct());
-        assertEquals("MAINTENANCE", job.getProduct().getId());
-    }
-
-    @Test
-    void createJobByIdThrowsWhenJobNotFound() {
-        schedule.setDbJobRowMap(Map.of());
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> jobService.createJobById(999L, false, schedule));
-        
-        assertTrue(exception.getMessage().contains("Unknown SNPZ=999"));
-    }
-
-    @Test
-    void createJobByIdThrowsWhenMaintenanceJobNotFound() {
-        schedule.setDbMaintenanceRowMap(Map.of());
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> jobService.createJobById(999L, true, schedule));
-        
-        assertTrue(exception.getMessage().contains("Unknown maintenance job FId=999"));
-    }
-
-    @Test
-    void createJobByIdThrowsWhenProductNotFound() {
-        DbJobRow jobRow = createDbJobRow("UNKNOWN_KMC", 123L);
-        jobRow = new DbJobRow(
-                jobRow.dti(), jobRow.kmc(), jobRow.np(), jobRow.quantity(),
-                jobRow.mass(), jobRow.startProductionDateTime(), jobRow.endDateTime(),
-                jobRow.duration(), jobRow.snpz(), jobRow.priority(), "L1", jobRow.shortName(), 18
-        );
-        schedule.setDbJobRowMap(Map.of(123L, jobRow));
-
-        when(loadDataService.getProducts()).thenReturn(Map.of());
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> jobService.createJobById(123L, false, schedule));
-        
-        assertTrue(exception.getMessage().contains("Unknown product KMC=UNKNOWN_KMC"));
-    }
-
-    @Test
-    void createJobByIdReturnsExistingJob() {
-        Job existingJob = new Job();
-        existingJob.setId("123");
-        existingJob.setSnpz(123L);
-        schedule.getJobIdMap().put(123L, existingJob);
-
-        Job result = jobService.createJobById(123L, false, schedule);
-
-        assertSame(existingJob, result, "Should return existing job from cache");
-        verify(loadDataService, never()).getProducts();
     }
 
     @Test
@@ -221,9 +125,6 @@ class JobServiceTest {
                 jobRow2.mass(), jobRow2.startProductionDateTime(), jobRow2.endDateTime(),
                 jobRow2.duration(), jobRow2.snpz(), jobRow2.priority(), null, jobRow2.shortName(), 19
         );
-
-        schedule.setDbJobRowMap(Map.of(123L, jobRow1, 124L, jobRow2));
-        schedule.setDbMaintenanceRowMap(Map.of());
 
         Product product1 = new Product("Product1", "KMC1", "KRKMC1", "Type1", "Glaze1", "100", "Filling1");
         when(loadDataService.getProducts()).thenReturn(Map.of("KMC1", product1));

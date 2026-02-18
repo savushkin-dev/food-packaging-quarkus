@@ -35,7 +35,7 @@ public class JobDBLoader {
             String ksk
     ) {
 
-        List<DbJobRow> rows = (List<DbJobRow>) em
+        List<DbJobRow> rows = em
                 .createNativeQuery(LOAD_JOBS_DB, "DbJobRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
@@ -56,29 +56,18 @@ public class JobDBLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<Long, DbMaintenanceRow> loadMaintenanceRowMap(
+    public List<DbMaintenanceRow> loadMaintenanceRows(
             LocalDateTime from,
             LocalDateTime to
     ) {
 
-        List<DbMaintenanceRow> rows = (List<DbMaintenanceRow>) em
+        return   em
                 .createNativeQuery(LOAD_MAINTENANCE_DB, "DbMaintenanceRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .setParameter(3, Timestamp.valueOf(from))
                 .setParameter(4, Timestamp.valueOf(to))
                 .getResultList();
-
-        return rows.stream()
-                .collect(Collectors.toMap(
-                        DbMaintenanceRow::getFId,
-                        r -> r,
-                        (existing, duplicate) -> {
-                            throw new IllegalStateException(
-                                    "Duplicate F_ID: " + existing.getFId()
-                            );
-                        }
-                ));
     }
 
     @SuppressWarnings("unchecked")
