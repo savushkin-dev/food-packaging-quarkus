@@ -31,6 +31,7 @@ public class Job {
     @PlanningId
     private String id;
     private Long fId;
+    private short fDel;
     private String idBatch;
     private String lineId;
     private String lineIdFact;
@@ -52,6 +53,7 @@ public class Job {
     private LocalDateTime cameraStart;
     private LocalDateTime cameraEnd;
     private LocalDateTime dtv;
+    private LocalDateTime dti;
     private LocalDateTime startProductionDateTimeFact;
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
