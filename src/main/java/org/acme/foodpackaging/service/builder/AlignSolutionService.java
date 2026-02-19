@@ -99,14 +99,7 @@ public class AlignSolutionService {
         return (duration.toSeconds() + 59) / 60;
     }
 
-    private static class MaintenanceToInsert {
-        private final Job job;
-        private final long diffMinutes;
-
-        public MaintenanceToInsert(Job job, long diffMinutes) {
-            this.job = job;
-            this.diffMinutes = diffMinutes;
-        }
+    private record MaintenanceToInsert(Job job, long diffMinutes) {
     }
 
     public void alignLineStartByFact(PackagingSchedule schedule) {
@@ -141,7 +134,7 @@ public class AlignSolutionService {
                 ? previous.getEndDateTime()
                 : earliestPlanJob.getStartProductionDateTime();
         long diffMinutes = ceilMinutes(Duration.between(referenceTime, factStart));
-        if (diffMinutes > 0) {
+        if (diffMinutes > 5) {
             MaintenanceRequest request = new MaintenanceRequest();
             request.setLineId(line.getId());
             request.setInsertIndex(index);
