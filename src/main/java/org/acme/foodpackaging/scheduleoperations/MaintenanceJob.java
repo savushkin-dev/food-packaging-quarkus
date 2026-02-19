@@ -81,9 +81,9 @@ public class MaintenanceJob {
         int PACKAGING_TYPE = 7;
         int ALIGN_TYPE = 8;
 
-        if (!(request.getMaintenanceTypeId()== PACKAGING_TYPE || request.getMaintenanceTypeId() == ALIGN_TYPE)) {
+        if (!(typeKey == PACKAGING_TYPE || typeKey == ALIGN_TYPE)) {
             maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
-        }
+        }   
 
         return schedule;
     }
