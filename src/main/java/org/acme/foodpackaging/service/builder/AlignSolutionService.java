@@ -116,8 +116,8 @@ public class AlignSolutionService {
     }
 
     private void alignLineStartByFactForLine(PackagingSchedule schedule, Line line) {
-        List<Job> jobs = line.getJobs();
-        List<Job> factJobs = jobs != null && !jobs.isEmpty()
+        List<Job> jobs = line.getJobs() != null ? line.getJobs() : List.of();
+        List<Job> factJobs = !jobs.isEmpty()
                 ? jobs.stream()
                         .filter(j -> j.getCameraStart() != null)
                         .filter(j -> j.getCameraEnd() != null)
