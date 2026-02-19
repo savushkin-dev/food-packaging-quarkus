@@ -78,8 +78,14 @@ public class MaintenanceJob {
 
         schedule.getJobs().add(maintenanceJob);
 
-        maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
+        int PACKAGING_TYPE = 7;
+        int ALIGN_TYPE = 8;
 
+        if (!(request.getMaintenanceTypeId()== PACKAGING_TYPE || request.getMaintenanceTypeId() == ALIGN_TYPE)) {
+            maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
+        }
+
+        maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
         return schedule;
     }
 
