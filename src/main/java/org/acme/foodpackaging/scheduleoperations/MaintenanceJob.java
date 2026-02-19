@@ -85,7 +85,6 @@ public class MaintenanceJob {
             maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
         }
 
-        maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
         return schedule;
     }
 
