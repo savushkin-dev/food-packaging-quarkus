@@ -35,7 +35,7 @@ public class AlignSolutionService {
 
     private List<MaintenanceToInsert> collectMaintenanceToInsert(List<Job> jobs) {
         List<MaintenanceToInsert> toInsert = new ArrayList<>();
-        int acceptable_diff = 5;
+        int acceptableDiff = 5;
         for (Job job : jobs) {
             Long factMinutes = calculateFactMinutes(job);
             if (factMinutes == null) {
@@ -44,7 +44,7 @@ public class AlignSolutionService {
             long planMinutes = calculatePlanMinutes(job);
             long diff = factMinutes - planMinutes;
     
-            if (diff > acceptable_diff) {
+            if (diff > acceptableDiff) {
                 toInsert.add(new MaintenanceToInsert(job, diff));
             }
         }
