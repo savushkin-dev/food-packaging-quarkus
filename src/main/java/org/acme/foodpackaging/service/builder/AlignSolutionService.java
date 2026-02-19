@@ -111,42 +111,46 @@ public class AlignSolutionService {
 
     public void alignLineStartByFact(PackagingSchedule schedule) {
         for (Line line : schedule.getLines()) {
-            List<Job> jobs = line.getJobs();
-            List<Job> factJobs = jobs != null && !jobs.isEmpty()
-                    ? jobs.stream()
-                            .filter(j -> j.getCameraStart() != null)
-                            .filter(j -> j.getCameraEnd() != null)
-                            .filter(j -> j.getStartProductionDateTime() != null)
-                            .toList()
-                    : List.of();
-            Job earliestPlanJob = factJobs.isEmpty() ? null
-                    : factJobs.stream()
-                            .min(Comparator.comparing(Job::getStartProductionDateTime))
-                            .orElse(null);
-            int index = earliestPlanJob != null ? jobs.indexOf(earliestPlanJob) : -1;
-            if (factJobs.isEmpty() || index < 0) {
-                continue;
-            }
-            Job earliestFactJob = factJobs.stream()
-                    .min(Comparator.comparing(Job::getCameraStart))
-                    .orElse(null);
-            LocalDateTime factStart = earliestFactJob.getCameraStart();
-            Job previous = earliestPlanJob.getPreviousJob();
-            LocalDateTime referenceTime = previous != null && previous.getEndDateTime() != null
-                    ? previous.getEndDateTime()
-                    : earliestPlanJob.getStartProductionDateTime();
-            long diffMinutes = ceilMinutes(Duration.between(referenceTime, factStart));
-            if (diffMinutes > 0) {
-                MaintenanceRequest request = new MaintenanceRequest();
-                request.setLineId(line.getId());
-                request.setInsertIndex(index);
-                request.setDurationMinutes((int) diffMinutes);
-                request.setMaintenanceTypeId(8);
-                request.setMaintenanceNote(
-                        "Сдвиг старта линии по факту. PlanJob id=" + earliestPlanJob.getId()
-                );
-                maintenanceJob.addMaintenanceJob(schedule, request);
-            }
+            alignLineStartByFactForLine(schedule, line);
+        }
+    }
+
+    private void alignLineStartByFactForLine(PackagingSchedule schedule, Line line) {
+        List<Job> jobs = line.getJobs();
+        List<Job> factJobs = jobs != null && !jobs.isEmpty()
+                ? jobs.stream()
+                        .filter(j -> j.getCameraStart() != null)
+                        .filter(j -> j.getCameraEnd() != null)
+                        .filter(j -> j.getStartProductionDateTime() != null)
+                        .toList()
+                : List.of();
+        Job earliestPlanJob = factJobs.isEmpty() ? null
+                : factJobs.stream()
+                        .min(Comparator.comparing(Job::getStartProductionDateTime))
+                        .orElse(null);
+        int index = earliestPlanJob != null ? jobs.indexOf(earliestPlanJob) : -1;
+        if (factJobs.isEmpty() || index < 0) {
+            return;
+        }
+        Job earliestFactJob = factJobs.stream()
+                .min(Comparator.comparing(Job::getCameraStart))
+                .orElse(null);
+        LocalDateTime factStart = earliestFactJob.getCameraStart();
+        Job previous = earliestPlanJob.getPreviousJob();
+        LocalDateTime referenceTime = previous != null && previous.getEndDateTime() != null
+                ? previous.getEndDateTime()
+                : earliestPlanJob.getStartProductionDateTime();
+        long diffMinutes = ceilMinutes(Duration.between(referenceTime, factStart));
+        if (diffMinutes > 0) {
+            MaintenanceRequest request = new MaintenanceRequest();
+            request.setLineId(line.getId());
+            request.setInsertIndex(index);
+            request.setDurationMinutes((int) diffMinutes);
+            request.setMaintenanceTypeId(8);
+            request.setMaintenanceNote(
+                    "Сдвиг старта линии по факту. PlanJob id=" + earliestPlanJob.getId()
+            );
+            maintenanceJob.addMaintenanceJob(schedule, request);
         }
     }
 }
