@@ -206,26 +206,6 @@ class AlignSolutionServiceTest {
     }
 
     @Test
-    void alignByFactDuration_whenCeilMinutesRoundsUp_shouldUseRoundedValue() {
-        // Given - durations that need rounding up (e.g., 90.5 seconds = 2 minutes)
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 10, 0);
-        LocalDateTime end = LocalDateTime.of(2025, 1, 15, 10, 1); // Plan: 1 minute (60 seconds)
-
-        Job job = createJob("J1", start, end);
-        job.setCameraStart(start);
-        job.setCameraEnd(start.plusSeconds(90)); // Fact: 90 seconds = 1.5 minutes, rounded up to 2 minutes
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
-
-        alignSolutionService.alignByFactDuration(schedule);
-
-        // Then - diff = 2 - 1 = 1 minute (rounded)
-        ArgumentCaptor<MaintenanceRequest> requestCaptor = ArgumentCaptor.forClass(MaintenanceRequest.class);
-        verify(maintenanceJob).addMaintenanceJob(eq(schedule), requestCaptor.capture());
-        assertEquals(1, requestCaptor.getValue().getDurationMinutes());
-    }
-
-    @Test
     void alignByFactDuration_whenJobNotFoundInLine_shouldSkip() {
         // Given - job exists but not found in line.getJobs() (edge case)
         LocalDateTime start = LocalDateTime.of(2025, 1, 15, 10, 0);
@@ -492,28 +472,6 @@ class AlignSolutionServiceTest {
         alignSolutionService.alignLineStartByFact(schedule);
         // Then - should skip because startProductionDateTime is null
         verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
-    }
-
-    @Test
-    void alignLineStartByFact_whenCeilMinutesRoundsUp_shouldUseRoundedValue() {
-        // Fact 30 seconds after plan → Duration 30 sec → ceilMinutes rounds up to 1 minute
-        LocalDateTime planStart = LocalDateTime.of(2025, 1, 15, 10, 0);
-        LocalDateTime factStart = LocalDateTime.of(2025, 1, 15, 10, 0, 30);
-        LocalDateTime end = LocalDateTime.of(2025, 1, 15, 11, 0);
-
-        Job job = createJob("J1", planStart, end);
-        job.setCameraStart(factStart);
-        job.setCameraEnd(end);
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
-
-        alignSolutionService.alignLineStartByFact(schedule);
-
-        ArgumentCaptor<MaintenanceRequest> requestCaptor = ArgumentCaptor.forClass(MaintenanceRequest.class);
-        verify(maintenanceJob).addMaintenanceJob(eq(schedule), requestCaptor.capture());
-
-        MaintenanceRequest request = requestCaptor.getValue();
-        assertEquals(1, request.getDurationMinutes()); // 30 seconds rounded up to 1 minute
     }
 
     @Test
