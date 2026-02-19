@@ -73,6 +73,7 @@ public class JobService {
                 if(line.getJobs() == null){
                     line.setJobs(new ArrayList<>());
                 }
+                job.setDti(row.dti().toLocalDateTime());
                 job.setMinStartTime(minStartDateTime);
                 job.setLine(line);
                 line.getJobs().add(job);
