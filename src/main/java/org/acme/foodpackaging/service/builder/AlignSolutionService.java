@@ -1,7 +1,6 @@
 package org.acme.foodpackaging.service.builder;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
@@ -17,55 +16,55 @@ import java.util.List;
 @ApplicationScoped
 public class AlignSolutionService {
 
-    @Inject
-    MaintenanceJob maintenanceJob;
+    private final MaintenanceJob maintenanceJob;
+
+    public AlignSolutionService(MaintenanceJob maintenanceJob) {
+        this.maintenanceJob = maintenanceJob;
+    }
+
     public void alignByFactDuration(PackagingSchedule schedule) {
-
         for (Line line : schedule.getLines()) {
-
             List<Job> jobs = line.getJobs();
             if (jobs == null || jobs.isEmpty()) {
                 continue;
             }
+            List<MaintenanceToInsert> toInsert = collectMaintenanceToInsert(jobs);
+            insertMaintenanceItems(schedule, line, toInsert);
+        }
+    }
 
-            List<MaintenanceToInsert> toInsert = new ArrayList<>();
-
-            for (Job job : jobs) {
-
-                Long factMinutes = calculateFactMinutes(job);
-                if (factMinutes == null) {
-                    continue;
-                }
-
-                long planMinutes = calculatePlanMinutes(job);
-
-                if (factMinutes > planMinutes) {
-                    long diff = factMinutes - planMinutes;
-                    toInsert.add(new MaintenanceToInsert(job, diff));
-                }
+    private List<MaintenanceToInsert> collectMaintenanceToInsert(List<Job> jobs) {
+        List<MaintenanceToInsert> toInsert = new ArrayList<>();
+        for (Job job : jobs) {
+            Long factMinutes = calculateFactMinutes(job);
+            if (factMinutes == null) {
+                continue;
             }
-
-            for (int i = toInsert.size() - 1; i >= 0; i--) {
-
-                MaintenanceToInsert item = toInsert.get(i);
-
-                int index = line.getJobs().indexOf(item.job);
-
-                if (index < 0) {
-                    continue;
-                }
-
-                MaintenanceRequest request = new MaintenanceRequest();
-                request.setLineId(line.getId());
-                request.setInsertIndex(index + 1);
-                request.setDurationMinutes((int) item.diffMinutes);
-                request.setMaintenanceTypeId(7);
-                request.setMaintenanceNote(
-                        "Отклонение факт > план. Job id=" + item.job.getId()
-                );
-
-                maintenanceJob.addMaintenanceJob(schedule, request);
+            long planMinutes = calculatePlanMinutes(job);
+            if (factMinutes > planMinutes) {
+                toInsert.add(new MaintenanceToInsert(job, factMinutes - planMinutes));
             }
+        }
+        return toInsert;
+    }
+
+    private void insertMaintenanceItems(PackagingSchedule schedule, Line line,
+                                       List<MaintenanceToInsert> toInsert) {
+        for (int i = toInsert.size() - 1; i >= 0; i--) {
+            MaintenanceToInsert item = toInsert.get(i);
+            int index = line.getJobs().indexOf(item.job);
+            if (index < 0) {
+                continue;
+            }
+            MaintenanceRequest request = new MaintenanceRequest();
+            request.setLineId(line.getId());
+            request.setInsertIndex(index + 1);
+            request.setDurationMinutes((int) item.diffMinutes);
+            request.setMaintenanceTypeId(7);
+            request.setMaintenanceNote(
+                    "Отклонение факт > план. Job id=" + item.job.getId()
+            );
+            maintenanceJob.addMaintenanceJob(schedule, request);
         }
     }
 
@@ -111,64 +110,41 @@ public class AlignSolutionService {
     }
 
     public void alignLineStartByFact(PackagingSchedule schedule) {
-
         for (Line line : schedule.getLines()) {
-
             List<Job> jobs = line.getJobs();
-            if (jobs == null || jobs.isEmpty()) {
+            List<Job> factJobs = jobs != null && !jobs.isEmpty()
+                    ? jobs.stream()
+                            .filter(j -> j.getCameraStart() != null)
+                            .filter(j -> j.getCameraEnd() != null)
+                            .filter(j -> j.getStartProductionDateTime() != null)
+                            .toList()
+                    : List.of();
+            Job earliestPlanJob = factJobs.isEmpty() ? null
+                    : factJobs.stream()
+                            .min(Comparator.comparing(Job::getStartProductionDateTime))
+                            .orElse(null);
+            int index = earliestPlanJob != null ? jobs.indexOf(earliestPlanJob) : -1;
+            if (factJobs.isEmpty() || index < 0) {
                 continue;
             }
-
-            List<Job> factJobs = jobs.stream()
-                    .filter(j -> j.getCameraStart() != null)
-                    .filter(j -> j.getCameraEnd() != null)
-                    .filter(j -> j.getStartProductionDateTime() != null)
-                    .toList();
-
-            if (factJobs.isEmpty()) {
-                continue;
-            }
-
-
-            Job earliestPlanJob = factJobs.stream()
-                    .min(Comparator.comparing(Job::getStartProductionDateTime))
-                    .orElse(null);
-
             Job earliestFactJob = factJobs.stream()
                     .min(Comparator.comparing(Job::getCameraStart))
                     .orElse(null);
-
             LocalDateTime factStart = earliestFactJob.getCameraStart();
-
-            int index = jobs.indexOf(earliestPlanJob);
-            if (index < 0) {
-                continue;
-            }
-
             Job previous = earliestPlanJob.getPreviousJob();
-
-            LocalDateTime referenceTime;
-
-            if (previous != null && previous.getEndDateTime() != null) {
-                referenceTime = previous.getEndDateTime();
-            } else {
-                referenceTime = earliestPlanJob.getStartProductionDateTime();
-            }
-
+            LocalDateTime referenceTime = previous != null && previous.getEndDateTime() != null
+                    ? previous.getEndDateTime()
+                    : earliestPlanJob.getStartProductionDateTime();
             long diffMinutes = ceilMinutes(Duration.between(referenceTime, factStart));
-
             if (diffMinutes > 0) {
-
                 MaintenanceRequest request = new MaintenanceRequest();
                 request.setLineId(line.getId());
                 request.setInsertIndex(index);
                 request.setDurationMinutes((int) diffMinutes);
                 request.setMaintenanceTypeId(8);
                 request.setMaintenanceNote(
-                        "Сдвиг старта линии по факту. PlanJob id="
-                                + earliestPlanJob.getId()
+                        "Сдвиг старта линии по факту. PlanJob id=" + earliestPlanJob.getId()
                 );
-
                 maintenanceJob.addMaintenanceJob(schedule, request);
             }
         }
