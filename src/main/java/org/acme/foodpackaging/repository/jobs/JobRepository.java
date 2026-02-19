@@ -35,7 +35,7 @@ public class JobRepository {
      * @param to End date (inclusive)
      * @return Map of job rows by SNPZ
      */
-    public Map<Long, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to) {
+    public Map<Long,DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to) {
         return jobDBLoader.loadJobRowMap(
                 from.atStartOfDay(), to.atStartOfDay(), ksk
         );
@@ -48,8 +48,8 @@ public class JobRepository {
      * @param to End date (inclusive)
      * @return Map of maintenance rows by FId
      */
-    public Map<Long, DbMaintenanceRow> getDbMaintenanceRowMap(LocalDate from, LocalDate to) {
-        return jobDBLoader.loadMaintenanceRowMap(
+    public List<DbMaintenanceRow> getMaintenanceData(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadMaintenanceRows(
                 from.atStartOfDay(), to.atStartOfDay()
         );
     }

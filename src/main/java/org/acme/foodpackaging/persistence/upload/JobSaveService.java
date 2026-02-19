@@ -56,9 +56,9 @@ public class JobSaveService {
     }
 
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
-        for (DbMaintenanceRow dbMaintenanceRow : schedule.getDbMaintenanceRowMap().values()) {
-            if (dbMaintenanceRow.getFDel() == DELETED_FLAG) {
-                OeePev existing = oeePevRepository.findByFId(dbMaintenanceRow.getFId());
+        for (Job job : schedule.getDeletedMaintenance()) {
+            if (job.getFDel() == DELETED_FLAG) {
+                OeePev existing = oeePevRepository.findByFId(job.getFId());
                 if (existing != null) {
                     existing.setFDel(DELETED_FLAG);
                     oeePevRepository.persist(existing);

@@ -16,6 +16,7 @@ import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.FrontendDataWrapper;
+import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.record.JobSelection;
 import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
@@ -207,15 +208,16 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-            PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
-            solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-            repository.writeForSession(sessionId, schedule);
+        InitData data =  scheduleBuilder.buildSchedule(loadDTO.getStartDate());
+        PackagingSchedule schedule = data.schedule();
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
 
-            if (loadDataService == null) {
+        if (loadDataService == null) {
                 throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
             }
 
-            return Response.ok(getDbJobRowList(schedule.getDbJobRowMap())).build();
+            return Response.ok(data.jobsFromDbRow()).build();
     }
 
     @POST
