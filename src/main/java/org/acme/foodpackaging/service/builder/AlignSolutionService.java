@@ -62,6 +62,17 @@ public class AlignSolutionService {
             && (next.getMaintenanceTypeId() == 7
                 || next.getMaintenanceTypeId() == 8);
 }
+
+private boolean hasStartShiftMaintenance(Job job) {
+    Job previous = job.getPreviousJob();
+    if (previous == null) {
+        return false;
+    }
+
+    return previous.isMaintenance()
+            && previous.getMaintenanceTypeId() == 8;
+}
+
     private void insertMaintenanceItems(PackagingSchedule schedule, Line line,
                                        List<MaintenanceToInsert> toInsert) {
         for (int i = toInsert.size() - 1; i >= 0; i--) {
@@ -138,6 +149,10 @@ public class AlignSolutionService {
         int index = earliestPlanJob != null ? jobs.indexOf(earliestPlanJob) : -1;
         if (factJobs.isEmpty() || index < 0) {
             return;
+        }
+
+        if (hasStartShiftMaintenance(earliestPlanJob)) {
+        return;
         }
         Job earliestFactJob = factJobs.stream()
                 .min(Comparator.comparing(Job::getCameraStart))
