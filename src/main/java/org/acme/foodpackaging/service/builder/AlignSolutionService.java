@@ -8,10 +8,12 @@ import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class AlignSolutionService {
@@ -134,45 +136,105 @@ private boolean hasStartShiftMaintenance(Job job) {
     }
 
     private void alignLineStartByFactForLine(PackagingSchedule schedule, Line line) {
-        List<Job> jobs = line.getJobs() != null ? line.getJobs() : List.of();
-        List<Job> factJobs = !jobs.isEmpty()
-                ? jobs.stream()
-                        .filter(j -> j.getCameraStart() != null)
-                        .filter(j -> j.getCameraEnd() != null)
-                        .filter(j -> j.getStartProductionDateTime() != null)
-                        .toList()
-                : List.of();
-        Job earliestPlanJob = factJobs.isEmpty() ? null
-                : factJobs.stream()
-                        .min(Comparator.comparing(Job::getStartProductionDateTime))
-                        .orElse(null);
-        int index = earliestPlanJob != null ? jobs.indexOf(earliestPlanJob) : -1;
-        if (factJobs.isEmpty() || index < 0) {
+
+        List<Job> jobs = line.getJobs();
+        if (jobs == null || jobs.isEmpty()) {
             return;
         }
 
-        if (hasStartShiftMaintenance(earliestPlanJob)) {
-        return;
-        }
-        Job earliestFactJob = factJobs.stream()
-                .min(Comparator.comparing(Job::getCameraStart))
-                .orElse(null);
-        LocalDateTime factStart = earliestFactJob.getCameraStart();
-        Job previous = earliestPlanJob.getPreviousJob();
-        LocalDateTime referenceTime = previous != null && previous.getEndDateTime() != null
-                ? previous.getEndDateTime()
-                : earliestPlanJob.getStartProductionDateTime();
-        long diffMinutes = ceilMinutes(Duration.between(referenceTime, factStart));
-        if (diffMinutes > 5) {
+        // факт по batch (глобально)
+        Map<String, List<Job>> factBatches = jobs.stream()
+                .filter(j -> j.getCameraStart() != null)
+                .filter(j -> j.getCameraEnd() != null)
+                .filter(j -> j.getIdBatch() != null)
+                .collect(Collectors.groupingBy(Job::getIdBatch));
+
+        List<MaintenanceRequest> requests = new ArrayList<>();
+
+        int i = 0;
+
+        while (i < jobs.size()) {
+
+            Job current = jobs.get(i);
+
+            if (current.isMaintenance() || current.getIdBatch() == null) {
+                i++;
+                continue;
+            }
+
+            String batchId = current.getIdBatch();
+            int chainStartIndex = i;
+
+            // строим непрерывную цепочку одинакового batch
+            while (i < jobs.size()
+                    && !jobs.get(i).isMaintenance()
+                    && batchId.equals(jobs.get(i).getIdBatch())) {
+                i++;
+            }
+
+            int chainEndIndex = i - 1;
+
+            List<Job> factBatch = factBatches.get(batchId);
+            if (factBatch == null || factBatch.isEmpty()) {
+                continue; // факта нет — игнорируем
+            }
+
+            Job firstPlan = jobs.get(chainStartIndex);
+
+            // защита от повторного добавления
+            if (hasAlignMaintenanceForBatch(line, batchId)) {
+                continue;
+            }
+
+            Job firstFact = factBatch.stream()
+                    .min(Comparator.comparing(Job::getCameraStart))
+                    .orElse(null);
+
+            if (firstFact == null
+                    || firstPlan.getStartProductionDateTime() == null) {
+                continue;
+            }
+
+            long diffMinutes = ceilMinutes(
+                    Duration.between(
+                            firstPlan.getStartProductionDateTime(),
+                            firstFact.getCameraStart()
+                    )
+            );
+
+            if (diffMinutes <= 5) {
+                continue;
+            }
+
             MaintenanceRequest request = new MaintenanceRequest();
             request.setLineId(line.getId());
-            request.setInsertIndex(index);
+            request.setInsertIndex(chainStartIndex);
             request.setDurationMinutes((int) diffMinutes);
             request.setMaintenanceTypeId(8);
             request.setMaintenanceNote(
-                    "Сдвиг старта линии по факту. PlanJob id=" + earliestPlanJob.getId()
+                    "Сдвиг batch " + batchId +
+                            " по факту. PlanJob id=" + firstPlan.getId()
             );
+
+            requests.add(request);
+        }
+
+        // вставка с конца
+        requests.sort(Comparator.comparing(MaintenanceRequest::getInsertIndex).reversed());
+
+        for (MaintenanceRequest request : requests) {
             maintenanceJob.addMaintenanceJob(schedule, request);
         }
     }
+
+    private boolean hasAlignMaintenanceForBatch(Line line, String batchId) {
+        return line.getJobs().stream()
+                .anyMatch(j ->
+                        j.isMaintenance()
+                                && j.getMaintenanceTypeId() == 8
+                                && j.getMaintenanceNote() != null
+                                && j.getMaintenanceNote().contains("batch " + batchId)
+                );
+    }
+
 }
