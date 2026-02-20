@@ -44,13 +44,24 @@ public class AlignSolutionService {
             long planMinutes = calculatePlanMinutes(job);
             long diff = factMinutes - planMinutes;
     
-            if (diff > acceptableDiff) {
+            if (diff > acceptableDiff && !hasDeviationMaintenance(job)) {
                 toInsert.add(new MaintenanceToInsert(job, diff));
             }
         }
         return toInsert;
     }
 
+    private boolean hasDeviationMaintenance(Job job) {
+
+        Job next = job.getNextJob();
+        if (next == null) {
+            return false;
+        }
+
+        return next.isMaintenance()
+            && (next.getMaintenanceTypeId() == 7
+                || next.getMaintenanceTypeId() == 8);
+}
     private void insertMaintenanceItems(PackagingSchedule schedule, Line line,
                                        List<MaintenanceToInsert> toInsert) {
         for (int i = toInsert.size() - 1; i >= 0; i--) {
