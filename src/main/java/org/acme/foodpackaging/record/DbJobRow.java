@@ -1,8 +1,11 @@
 package org.acme.foodpackaging.record;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.sql.Timestamp;
 
 public record DbJobRow(
+        @JsonFormat(timezone = "Europe/Minsk")
         Timestamp dti,
         String kmc,
         Integer np,
