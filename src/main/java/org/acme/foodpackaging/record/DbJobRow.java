@@ -11,7 +11,9 @@ public record DbJobRow(
         Integer np,
         Integer quantity,                          // KOLEV
         double mass,
+        @JsonFormat(timezone = "Europe/Minsk")
         Timestamp startProductionDateTime,       // PDTN
+        @JsonFormat(timezone = "Europe/Minsk")
         Timestamp endDateTime,
         Integer duration,                      // numeric(7,2)
         Long snpz,                            // numeric(12,0)
