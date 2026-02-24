@@ -88,6 +88,76 @@ class AlignSolutionServiceTest {
         verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
     }
 
+    @Test
+    void alignByFactDuration_whenNextJobIsDeviationOrAlignMaintenance_shouldNotAddMaintenance() {
+        Job job = createPlanJob("J1", LocalDateTime.of(2025, 1, 15, 10, 0), 60, 90);
+        Job maintenanceNext = new Job();
+        maintenanceNext.setMaintenance(true);
+        maintenanceNext.setMaintenanceTypeId(7);
+        job.setNextJob(maintenanceNext);
+
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        alignSolutionService.alignByFactDuration(schedule);
+
+        verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
+    }
+
+    @Test
+    void alignByFactDuration_whenNextJobIsAlignMaintenanceType8_shouldNotAddMaintenance() {
+        Job job = createPlanJob("J1", LocalDateTime.of(2025, 1, 15, 10, 0), 60, 90);
+        Job maintenanceNext = new Job();
+        maintenanceNext.setMaintenance(true);
+        maintenanceNext.setMaintenanceTypeId(8);
+        job.setNextJob(maintenanceNext);
+
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        alignSolutionService.alignByFactDuration(schedule);
+
+        verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
+    }
+
+    @Test
+    void alignByFactDuration_whenLineHasNullJobs_shouldSkipLine() {
+        line.setJobs(null);
+        schedule.setLines(List.of(line));
+
+        alignSolutionService.alignByFactDuration(schedule);
+
+        verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
+    }
+
+    @Test
+    void alignByFactDuration_whenLineHasEmptyJobs_shouldSkipLine() {
+        line.getJobs().clear();
+
+        alignSolutionService.alignByFactDuration(schedule);
+
+        verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
+    }
+
+    @Test
+    void alignByFactDuration_whenJobHasNullPlanDates_shouldUseZeroPlanMinutesAndAddMaintenance() {
+        Job job = new Job();
+        job.setId("J1");
+        job.setStartProductionDateTime(null);
+        job.setEndDateTime(null);
+        job.setCameraStart(LocalDateTime.of(2025, 1, 15, 10, 0));
+        job.setCameraEnd(LocalDateTime.of(2025, 1, 15, 11, 0));
+
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        alignSolutionService.alignByFactDuration(schedule);
+
+        ArgumentCaptor<MaintenanceRequest> captor = ArgumentCaptor.forClass(MaintenanceRequest.class);
+        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
+        assertEquals(60, captor.getValue().getDurationMinutes());
+    }
+
     // ============================================================
     // alignLineStartByFact (новая логика)
     // ============================================================
