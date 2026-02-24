@@ -259,12 +259,53 @@ public class AlignSolutionService {
         LocalDateTime factStart = firstFact.getCameraStart();
 
         LocalDateTime planStart = targetPlanJob.getStartProductionDateTime();
+        if (planStart == null) return;
 
-        if (planStart == null) {
+        Job previousJob = targetPlanJob.getPreviousJob();
+
+        boolean hasAlignMaintenance =
+                previousJob != null &&
+                        previousJob.isMaintenance() &&
+                        previousJob.getMaintenanceTypeId() != null &&
+                        previousJob.getMaintenanceTypeId() == 8;
+
+// --------------------------------------------------
+// Если уже есть сервис — обновляем его
+// --------------------------------------------------
+        if (hasAlignMaintenance) {
+
+            LocalDateTime maintenanceStart =
+                    previousJob.getStartProductionDateTime();
+
+            if (maintenanceStart == null) return;
+
+            long newDuration =
+                    ceilMinutes(Duration.between(maintenanceStart, factStart));
+
+            if (newDuration <= 0) return;
+
+            long existing =
+                    previousJob.getDuration() != null
+                            ? previousJob.getDuration().toMinutes()
+                            : -1;
+
+            if (existing != newDuration) {
+
+                MaintenanceRequest updateRequest = new MaintenanceRequest();
+                updateRequest.setLineId(line.getId());
+                updateRequest.setUpdateIndex(jobs.indexOf(previousJob));
+                updateRequest.setDurationMinutes((int) newDuration);
+
+                maintenanceJob.updateDuration(schedule, updateRequest);
+            }
+
             return;
         }
 
-// если план уже начинается позже или ровно в то же время — ничего не делаем
+// --------------------------------------------------
+// Если сервиса нет — вставляем новый
+// --------------------------------------------------
+
         if (!planStart.isBefore(factStart)) {
             return;
         }
@@ -275,6 +316,7 @@ public class AlignSolutionService {
         if (diffMinutes <= 0) {
             return;
         }
+
 
         // ---------------------------------------------------------
         // 9. Создаем ОДНУ сервисную операцию
