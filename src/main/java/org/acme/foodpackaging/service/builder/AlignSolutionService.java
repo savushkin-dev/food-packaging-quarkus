@@ -10,7 +10,6 @@ import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class AlignSolutionService {
@@ -151,7 +150,7 @@ public class AlignSolutionService {
         LocalDateTime planStart = target.job().getStartProductionDateTime();
         if (planStart == null) return;
 
-        if (tryUpdateExistingAlignMaintenance(schedule, line, jobs, target.job(), planStart, factStart)) {
+        if (tryUpdateExistingAlignMaintenance(schedule, line, jobs, target.job(), factStart)) {
             return;
         }
 
@@ -181,31 +180,26 @@ public class AlignSolutionService {
     }
 
     private Map<String, List<Job>> buildLastChainsByProduct(List<Job> factJobs) {
-
         Map<String, List<Job>> result = new LinkedHashMap<>();
-
-        for (int i = factJobs.size() - 1; i >= 0; ) {
-
-            String productId = factJobs.get(i).getProduct().getId();
-
-            if (result.containsKey(productId)) {
-                i--;
-                continue;
-            }
-
-            int end = i;
-
-            while (i >= 0 &&
-                    productId.equals(factJobs.get(i).getProduct().getId())) {
-                i--;
-            }
-
-            int start = i + 1;
-            result.put(productId,
-                    new ArrayList<>(factJobs.subList(start, end + 1)));
+        for (int i = factJobs.size() - 1; i >= 0; i = processRunAndReturnNextIndex(i, result, factJobs)) {
+            // loop counter updated only in for clause
         }
-
         return result;
+    }
+
+    private int processRunAndReturnNextIndex(int idx, Map<String, List<Job>> result, List<Job> factJobs) {
+        String productId = factJobs.get(idx).getProduct().getId();
+        if (result.containsKey(productId)) {
+            return idx - 1;
+        }
+        int end = idx;
+        int pos = idx;
+        while (pos >= 0 && productId.equals(factJobs.get(pos).getProduct().getId())) {
+            pos--;
+        }
+        int start = pos + 1;
+        result.put(productId, new ArrayList<>(factJobs.subList(start, end + 1)));
+        return pos;
     }
 
     private List<Job> findPlanJobsByProduct(List<Job> jobs, String productId) {
@@ -236,7 +230,6 @@ public class AlignSolutionService {
                                                      Line line,
                                                      List<Job> jobs,
                                                      Job targetPlanJob,
-                                                     LocalDateTime planStart,
                                                      LocalDateTime factStart) {
         Job previousJob = targetPlanJob.getPreviousJob();
         boolean hasAlignMaintenance = previousJob != null
