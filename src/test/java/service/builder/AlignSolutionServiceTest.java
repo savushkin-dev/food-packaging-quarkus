@@ -52,9 +52,8 @@ class AlignSolutionServiceTest {
     @Test
     void alignByFactDuration_whenFactGreaterThanPlan_shouldAddMaintenance() {
 
-        Job job = createPlanJob("J1",
+        Job job = createPlanJob(
                 LocalDateTime.of(2025,1,15,10,0),
-                60,
                 90);
 
         line.getJobs().add(job);
@@ -75,9 +74,8 @@ class AlignSolutionServiceTest {
     @Test
     void alignByFactDuration_whenFactLessOrEqualPlan_shouldNotAddMaintenance() {
 
-        Job job = createPlanJob("J1",
+        Job job = createPlanJob(
                 LocalDateTime.of(2025,1,15,10,0),
-                60,
                 60);
 
         line.getJobs().add(job);
@@ -107,7 +105,7 @@ class AlignSolutionServiceTest {
 
     @Test
     void alignByFactDuration_whenNextJobIsDeviationOrAlignMaintenance_shouldNotAddMaintenance() {
-        Job job = createPlanJob("J1", LocalDateTime.of(2025, 1, 15, 10, 0), 60, 90);
+        Job job = createPlanJob(LocalDateTime.of(2025, 1, 15, 10, 0), 90);
         Job maintenanceNext = new Job();
         maintenanceNext.setMaintenance(true);
         maintenanceNext.setMaintenanceTypeId(7);
@@ -123,7 +121,7 @@ class AlignSolutionServiceTest {
 
     @Test
     void alignByFactDuration_whenNextJobIsAlignMaintenanceType8_shouldNotAddMaintenance() {
-        Job job = createPlanJob("J1", LocalDateTime.of(2025, 1, 15, 10, 0), 60, 90);
+        Job job = createPlanJob(LocalDateTime.of(2025, 1, 15, 10, 0), 90);
         Job maintenanceNext = new Job();
         maintenanceNext.setMaintenance(true);
         maintenanceNext.setMaintenanceTypeId(8);
@@ -176,7 +174,7 @@ class AlignSolutionServiceTest {
     }
 
     // ============================================================
-    // alignLineStartByFact (новая логика)
+    // alignLineStartByFact
     // ============================================================
 
     @Test
@@ -238,7 +236,7 @@ class AlignSolutionServiceTest {
         align.setStartProductionDateTime(
                 LocalDateTime.of(2025,1,15,9,0)
         );
-        align.setDuration(Duration.ofMinutes(60)); // ⚠ обязательно
+        align.setDuration(Duration.ofMinutes(60));
 
         Job j1 = createChainJob("J1", product, 1,
                 LocalDateTime.of(2025,1,15,9,30),
@@ -328,15 +326,13 @@ class AlignSolutionServiceTest {
         return p;
     }
 
-    private Job createPlanJob(String id,
-                              LocalDateTime planStart,
-                              long planMinutes,
+    private Job createPlanJob(LocalDateTime planStart,
                               long factMinutes) {
 
         Job job = new Job();
-        job.setId(id);
+        job.setId("J1");
         job.setStartProductionDateTime(planStart);
-        job.setEndDateTime(planStart.plusMinutes(planMinutes));
+        job.setEndDateTime(planStart.plusMinutes(60));
 
         job.setCameraStart(planStart);
         job.setCameraEnd(planStart.plusMinutes(factMinutes));
