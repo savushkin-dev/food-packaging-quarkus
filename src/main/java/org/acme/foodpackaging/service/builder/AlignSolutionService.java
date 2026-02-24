@@ -9,11 +9,7 @@ import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.LinkedHashMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -46,7 +42,7 @@ public class AlignSolutionService {
             }
             long planMinutes = calculatePlanMinutes(job);
             long diff = factMinutes - planMinutes;
-    
+
             if (diff > acceptableDiff && !hasDeviationMaintenance(job)) {
                 toInsert.add(new MaintenanceToInsert(job, diff));
             }
@@ -62,22 +58,22 @@ public class AlignSolutionService {
         }
 
         return next.isMaintenance()
-            && (next.getMaintenanceTypeId() == 7
+                && (next.getMaintenanceTypeId() == 7
                 || next.getMaintenanceTypeId() == 8);
-}
-
-private boolean hasStartShiftMaintenance(Job job) {
-    Job previous = job.getPreviousJob();
-    if (previous == null) {
-        return false;
     }
 
-    return previous.isMaintenance()
-            && previous.getMaintenanceTypeId() == 8;
-}
+    private boolean hasStartShiftMaintenance(Job job) {
+        Job previous = job.getPreviousJob();
+        if (previous == null) {
+            return false;
+        }
+
+        return previous.isMaintenance()
+                && previous.getMaintenanceTypeId() == 8;
+    }
 
     private void insertMaintenanceItems(PackagingSchedule schedule, Line line,
-                                       List<MaintenanceToInsert> toInsert) {
+                                        List<MaintenanceToInsert> toInsert) {
         for (int i = toInsert.size() - 1; i >= 0; i--) {
             MaintenanceToInsert item = toInsert.get(i);
             int index = line.getJobs().indexOf(item.job);
@@ -138,100 +134,147 @@ private boolean hasStartShiftMaintenance(Job job) {
 
     private void alignLineStartByFactForLine(PackagingSchedule schedule, Line line) {
 
-        List<Job> jobs = line.getJobs() != null ? line.getJobs() : List.of();
-        if (jobs.isEmpty()) {
-            return;
-        }
+        List<Job> jobs = line.getJobs();
+        if (jobs == null || jobs.isEmpty()) return;
 
-        // --- 1. Собираем продукты, которые есть по факту ---
-        Map<String, List<Job>> factByProduct = jobs.stream()
-                .filter(j -> j.getCameraStart() != null)
-                .filter(j -> j.getCameraEnd() != null)
+        // ---------------------------------------------------------
+        // 1. Берем все задачи с фактом и сортируем по старту
+        // ---------------------------------------------------------
+        List<Job> factJobs = jobs.stream()
+                .filter(j -> !j.isMaintenance())
                 .filter(j -> j.getProduct() != null)
-                .collect(Collectors.groupingBy(j -> j.getProduct().getName()));
+                .filter(j -> j.getCameraStart() != null)
+                .sorted(Comparator.comparing(Job::getCameraStart))
+                .toList();
 
-        if (factByProduct.isEmpty()) {
+        if (factJobs.isEmpty()) return;
+
+        // ---------------------------------------------------------
+        // 2. Последняя по времени фактическая задача
+        // ---------------------------------------------------------
+        Job lastFact = factJobs.getLast();
+        String productId = lastFact.getProduct().getId();
+
+        // ---------------------------------------------------------
+        // 3. Определяем направление сортировки ПЛАНА для продукта
+        // ---------------------------------------------------------
+        List<Job> planJobs = jobs.stream()
+                .filter(j -> !j.isMaintenance())
+                .filter(j -> j.getProduct() != null)
+                .filter(j -> productId.equals(j.getProduct().getId()))
+                .toList();
+
+        if (planJobs.size() < 2) return;
+
+// ищем начало последней цепочки
+        int chainStartIndex = factJobs.size() - 1;
+
+        for (int i = factJobs.size() - 2; i >= 0; i--) {
+
+            Job current = factJobs.get(i);
+
+            if (!productId.equals(current.getProduct().getId())) {
+                break;
+            }
+
+            chainStartIndex = i;
+        }
+
+// теперь у нас диапазон:
+// chainStartIndex ... factJobs.size()-1
+
+        List<Job> factChain =
+                factJobs.subList(chainStartIndex, factJobs.size());
+// ---------------------------------------------------------
+// 5. Берем min / max np внутри цепочки
+// ---------------------------------------------------------
+
+        Job minNpJob = factChain.stream()
+                .min(Comparator.comparing(Job::getNp))
+                .orElse(null);
+
+        Job maxNpJob = factChain.stream()
+                .max(Comparator.comparing(Job::getNp))
+                .orElse(null);
+
+        if (minNpJob == null)
             return;
+
+// ---------------------------------------------------------
+// 6. Находим их в плане
+// ---------------------------------------------------------
+
+        Job planMin = planJobs.stream()
+                .filter(j -> j.getId().equals(minNpJob.getId()))
+                .findFirst()
+                .orElse(null);
+
+        Job planMax = planJobs.stream()
+                .filter(j -> j.getId().equals(maxNpJob.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (planMin == null || planMax == null)
+            return;
+
+        int indexMin = jobs.indexOf(planMin);
+        int indexMax = jobs.indexOf(planMax);
+
+        if (indexMin < 0 || indexMax < 0)
+            return;
+
+// ---------------------------------------------------------
+// 7. Кто раньше в плане — тот опорный
+// ---------------------------------------------------------
+
+        Job targetPlanJob;
+        int insertIndex;
+
+        if (indexMin < indexMax) {
+            targetPlanJob = planMin;
+            insertIndex = indexMin;
+        } else {
+            targetPlanJob = planMax;
+            insertIndex = indexMax;
         }
 
-        List<MaintenanceRequest> requests = new ArrayList<>();
+        // ---------------------------------------------------------
+// 8. Первый элемент фактической цепочки по времени
+// ---------------------------------------------------------
 
-        for (String product : factByProduct.keySet()) {
+        Job firstFact = factChain.getFirst();
 
-            // самая ранняя плановая задача этого продукта
-            Job earliestPlanJob = jobs.stream()
-                    .filter(j -> !j.isMaintenance())
-                    .filter(j -> j.getProduct() != null)
-                    .filter(j -> product.equals(j.getProduct().getName()))
-                    .filter(j -> j.getCameraStart() != null)
-                    .filter(j -> j.getCameraEnd() != null)
-                    .filter(j -> j.getStartProductionDateTime() != null)
-                    .filter(j -> j.getLine() != null
-                            && line.getId().equals(j.getLine().getId()))
-                    .min(Comparator.comparing(Job::getStartProductionDateTime))
-                    .orElse(null);
+        LocalDateTime factStart = firstFact.getCameraStart();
 
-            if (earliestPlanJob == null) {
-                continue;
-            }
+        LocalDateTime referenceTime =
+                targetPlanJob.getStartProductionDateTime() != null
+                        ? targetPlanJob.getStartProductionDateTime()
+                        : factStart;
 
-            int index = jobs.indexOf(earliestPlanJob);
-            if (index < 0) {
-                continue;
-            }
+        if (referenceTime == null || !referenceTime.isBefore(factStart))
+            return;
 
-            Job earliestFactJob = factByProduct.get(product).stream()
-                    .min(Comparator.comparing(Job::getCameraStart))
-                    .orElse(null);
+        long diffMinutes =
+                ceilMinutes(Duration.between(targetPlanJob.getStartProductionDateTime(), factStart));
 
-            if (earliestFactJob == null) {
-                continue;
-            }
+        if (diffMinutes <= 5)
+            return;
 
-            LocalDateTime planStart = earliestPlanJob.getStartProductionDateTime();
-            LocalDateTime factStart = earliestFactJob.getCameraStart();
 
-            if (!planStart.isBefore(factStart)) {
-                continue;
-            }
+        // ---------------------------------------------------------
+        // 9. Создаем ОДНУ сервисную операцию
+        // ---------------------------------------------------------
+        MaintenanceRequest request = new MaintenanceRequest();
+        request.setLineId(line.getId());
+        request.setInsertIndex(insertIndex);
+        request.setDurationMinutes((int) diffMinutes);
+        request.setMaintenanceTypeId(8);
+        request.setMaintenanceNote(
+                "Выравнивание последней фактической цепочки продукта "
+                        + productId + ", batch="
+        );
 
-            long diffMinutes = ceilMinutes(
-                    Duration.between(planStart, factStart)
-            );
-
-            if (diffMinutes <= 5) {
-                continue;
-            }
-
-            // --- защита от дублей ---
-            if (index > 0) {
-                Job previous = jobs.get(index - 1);
-                if (previous.isMaintenance()
-                        && previous.getMaintenanceTypeId() != null
-                        && previous.getMaintenanceTypeId() == 8) {
-                    continue;
-                }
-            }
-
-            MaintenanceRequest request = new MaintenanceRequest();
-            request.setLineId(line.getId());
-            request.setInsertIndex(index);
-            request.setDurationMinutes((int) diffMinutes);
-            request.setMaintenanceTypeId(8);
-            request.setMaintenanceNote(
-                    "Сдвиг продукта " + product +
-                            ". PlanJob id=" + earliestPlanJob.getId()
-            );
-
-            requests.add(request);
-        }
-
-        // вставляем с конца
-        requests.sort(Comparator.comparing(MaintenanceRequest::getInsertIndex).reversed());
-
-        for (MaintenanceRequest request : requests) {
-            maintenanceJob.addMaintenanceJob(schedule, request);
-        }
+        maintenanceJob.addMaintenanceJob(schedule, request);
+    }
     }
 
-}
