@@ -144,20 +144,54 @@ public class AlignSolutionService {
                 .filter(j -> !j.isMaintenance())
                 .filter(j -> j.getProduct() != null)
                 .filter(j -> j.getCameraStart() != null)
+                .filter(j->j.getCameraEnd()!=null)
                 .sorted(Comparator.comparing(Job::getCameraStart))
                 .toList();
 
         if (factJobs.isEmpty()) return;
 
-        // ---------------------------------------------------------
-        // 2. Последняя по времени фактическая задача
-        // ---------------------------------------------------------
-        Job lastFact = factJobs.getLast();
-        String productId = lastFact.getProduct().getId();
+        Map<String, List<List<Job>>> chainsByProduct = new LinkedHashMap<>();
 
-        // ---------------------------------------------------------
-        // 3. Определяем направление сортировки ПЛАНА для продукта
-        // ---------------------------------------------------------
+        int i = factJobs.size() - 1;
+
+        while (i >= 0 && chainsByProduct.size() < 3) {
+
+            Job last = factJobs.get(i);
+            String productId = last.getProduct().getId();
+
+            List<Job> chain = new ArrayList<>();
+            chain.add(last);
+
+            int j = i - 1;
+
+            // собираем подряд идущую цепочку этого продукта
+            while (j >= 0) {
+                Job current = factJobs.get(j);
+
+                if (!productId.equals(current.getProduct().getId())) {
+                    break;
+                }
+
+                chain.add(current);
+                j--;
+            }
+
+            // сортируем цепочку по времени (от раннего к позднему)
+            chain.sort(Comparator.comparing(Job::getCameraStart));
+
+            // добавляем в map
+            chainsByProduct
+                    .computeIfAbsent(productId, k -> new ArrayList<>())
+                    .add(chain);
+
+            // переходим к следующей позиции
+            i = j;
+        }
+
+       List< List<Job>> factLists = chainsByProduct.get(factJobs.getLast().getProduct().getId());
+        List<Job> factChain = factLists.getLast();
+        String productId = factChain.getLast().getProduct().getId();
+
         List<Job> planJobs = jobs.stream()
                 .filter(j -> !j.isMaintenance())
                 .filter(j -> j.getProduct() != null)
@@ -165,26 +199,6 @@ public class AlignSolutionService {
                 .toList();
 
         if (planJobs.size() < 2) return;
-
-// ищем начало последней цепочки
-        int chainStartIndex = factJobs.size() - 1;
-
-        for (int i = factJobs.size() - 2; i >= 0; i--) {
-
-            Job current = factJobs.get(i);
-
-            if (!productId.equals(current.getProduct().getId())) {
-                break;
-            }
-
-            chainStartIndex = i;
-        }
-
-// теперь у нас диапазон:
-// chainStartIndex ... factJobs.size()-1
-
-        List<Job> factChain =
-                factJobs.subList(chainStartIndex, factJobs.size());
 // ---------------------------------------------------------
 // 5. Берем min / max np внутри цепочки
 // ---------------------------------------------------------
@@ -241,25 +255,26 @@ public class AlignSolutionService {
         // ---------------------------------------------------------
 // 8. Первый элемент фактической цепочки по времени
 // ---------------------------------------------------------
-
         Job firstFact = factChain.getFirst();
-
         LocalDateTime factStart = firstFact.getCameraStart();
 
-        LocalDateTime referenceTime =
-                targetPlanJob.getStartProductionDateTime() != null
-                        ? targetPlanJob.getStartProductionDateTime()
-                        : factStart;
+        LocalDateTime planStart = targetPlanJob.getStartProductionDateTime();
 
-        if (referenceTime == null || !referenceTime.isBefore(factStart))
+        if (planStart == null) {
             return;
+        }
+
+// если план уже начинается позже или ровно в то же время — ничего не делаем
+        if (!planStart.isBefore(factStart)) {
+            return;
+        }
 
         long diffMinutes =
-                ceilMinutes(Duration.between(targetPlanJob.getStartProductionDateTime(), factStart));
+                ceilMinutes(Duration.between(planStart, factStart));
 
-        if (diffMinutes <= 5)
+        if (diffMinutes <= 0) {
             return;
-
+        }
 
         // ---------------------------------------------------------
         // 9. Создаем ОДНУ сервисную операцию
