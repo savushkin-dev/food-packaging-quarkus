@@ -181,8 +181,9 @@ public class AlignSolutionService {
 
     private Map<String, List<Job>> buildLastChainsByProduct(List<Job> factJobs) {
         Map<String, List<Job>> result = new LinkedHashMap<>();
-        for (int i = factJobs.size() - 1; i >= 0; i = processRunAndReturnNextIndex(i, result, factJobs)) {
-            // loop counter updated only in for clause
+        int i = factJobs.size() - 1;
+        while (i >= 0) {
+            i = processRunAndReturnNextIndex(i, result, factJobs);
         }
         return result;
     }
