@@ -133,205 +133,137 @@ public class AlignSolutionService {
     }
 
     private void alignLineStartByFactForLine(PackagingSchedule schedule, Line line) {
-
         List<Job> jobs = line.getJobs();
         if (jobs == null || jobs.isEmpty()) return;
 
-        // ---------------------------------------------------------
-        // 1. Берем все задачи с фактом и сортируем по старту
-        // ---------------------------------------------------------
-        List<Job> factJobs = jobs.stream()
-                .filter(j -> !j.isMaintenance())
-                .filter(j -> j.getProduct() != null)
-                .filter(j -> j.getCameraStart() != null)
-                .filter(j->j.getCameraEnd()!=null)
-                .sorted(Comparator.comparing(Job::getCameraStart))
-                .toList();
-
+        List<Job> factJobs = collectFactJobs(jobs);
         if (factJobs.isEmpty()) return;
 
-        Map<String, List<List<Job>>> chainsByProduct = new LinkedHashMap<>();
+        Map<String, List<List<Job>>> chainsByProduct = buildChainsByProduct(factJobs);
+        if (chainsByProduct.isEmpty()) return;
 
-        int i = factJobs.size() - 1;
-
-        while (i >= 0 && chainsByProduct.size() < 3) {
-
-            Job last = factJobs.get(i);
-            String productId = last.getProduct().getId();
-
-            List<Job> chain = new ArrayList<>();
-            chain.add(last);
-
-            int j = i - 1;
-
-            // собираем подряд идущую цепочку этого продукта
-            while (j >= 0) {
-                Job current = factJobs.get(j);
-
-                if (!productId.equals(current.getProduct().getId())) {
-                    break;
-                }
-
-                chain.add(current);
-                j--;
-            }
-
-            // сортируем цепочку по времени (от раннего к позднему)
-            chain.sort(Comparator.comparing(Job::getCameraStart));
-
-            // добавляем в map
-            chainsByProduct
-                    .computeIfAbsent(productId, k -> new ArrayList<>())
-                    .add(chain);
-
-            // переходим к следующей позиции
-            i = j;
-        }
-
-       List< List<Job>> factLists = chainsByProduct.get(factJobs.getLast().getProduct().getId());
+        // Возьмем последнюю цепочку последнего продукта по факту
+        List<List<Job>> factLists = chainsByProduct.get(factJobs.getLast().getProduct().getId());
+        if (factLists == null || factLists.isEmpty()) return;
         List<Job> factChain = factLists.getLast();
         String productId = factChain.getLast().getProduct().getId();
 
-        List<Job> planJobs = jobs.stream()
+        List<Job> planJobs = findPlanJobsByProduct(jobs, productId);
+        if (planJobs.size() < 2) return;
+
+        NpBounds bounds = getNpBounds(factChain);
+        if (bounds.min() == null) return;
+
+        PlanTarget target = selectTargetPlan(jobs, planJobs, bounds.min(), bounds.max());
+        if (target == null) return;
+
+        Job firstFact = factChain.getFirst();
+        LocalDateTime factStart = firstFact.getCameraStart();
+        LocalDateTime planStart = target.job().getStartProductionDateTime();
+        if (planStart == null) return;
+
+        if (tryUpdateExistingAlignMaintenance(schedule, line, jobs, target.job(), planStart, factStart)) {
+            return;
+        }
+
+        if (!planStart.isBefore(factStart)) return;
+
+        long diffMinutes = ceilMinutes(Duration.between(planStart, factStart));
+        if (diffMinutes <= 0) return;
+
+        MaintenanceRequest request = new MaintenanceRequest();
+        request.setLineId(line.getId());
+        request.setInsertIndex(target.index());
+        request.setDurationMinutes((int) diffMinutes);
+        request.setMaintenanceTypeId(8);
+        request.setMaintenanceNote("Выравнивание последней фактической цепочки продукта " + productId);
+
+        maintenanceJob.addMaintenanceJob(schedule, request);
+    }
+
+    private List<Job> collectFactJobs(List<Job> jobs) {
+        return jobs.stream()
+                .filter(j -> !j.isMaintenance())
+                .filter(j -> j.getProduct() != null)
+                .filter(j -> j.getCameraStart() != null)
+                .filter(j -> j.getCameraEnd() != null)
+                .sorted(Comparator.comparing(Job::getCameraStart))
+                .toList();
+    }
+
+    private Map<String, List<List<Job>>> buildChainsByProduct(List<Job> factJobs) {
+        Map<String, List<List<Job>>> chainsByProduct = new LinkedHashMap<>();
+        int i = factJobs.size() - 1;
+        while (i >= 0 && chainsByProduct.size() < 3) {
+            Job last = factJobs.get(i);
+            String productId = last.getProduct().getId();
+            List<Job> chain = new ArrayList<>();
+            chain.add(last);
+            int j = i - 1;
+            while (j >= 0) {
+                Job current = factJobs.get(j);
+                if (!productId.equals(current.getProduct().getId())) break;
+                chain.add(current);
+                j--;
+            }
+            chain.sort(Comparator.comparing(Job::getCameraStart));
+            chainsByProduct.computeIfAbsent(productId, k -> new ArrayList<>()).add(chain);
+            i = j;
+        }
+        return chainsByProduct;
+    }
+
+    private List<Job> findPlanJobsByProduct(List<Job> jobs, String productId) {
+        return jobs.stream()
                 .filter(j -> !j.isMaintenance())
                 .filter(j -> j.getProduct() != null)
                 .filter(j -> productId.equals(j.getProduct().getId()))
                 .toList();
+    }
 
-        if (planJobs.size() < 2) return;
-// ---------------------------------------------------------
-// 5. Берем min / max np внутри цепочки
-// ---------------------------------------------------------
+    private NpBounds getNpBounds(List<Job> chain) {
+        Job minNpJob = chain.stream().min(Comparator.comparing(Job::getNp)).orElse(null);
+        Job maxNpJob = chain.stream().max(Comparator.comparing(Job::getNp)).orElse(null);
+        return new NpBounds(minNpJob, maxNpJob);
+    }
 
-        Job minNpJob = factChain.stream()
-                .min(Comparator.comparing(Job::getNp))
-                .orElse(null);
-
-        Job maxNpJob = factChain.stream()
-                .max(Comparator.comparing(Job::getNp))
-                .orElse(null);
-
-        if (minNpJob == null)
-            return;
-
-// ---------------------------------------------------------
-// 6. Находим их в плане
-// ---------------------------------------------------------
-
-        Job planMin = planJobs.stream()
-                .filter(j -> j.getId().equals(minNpJob.getId()))
-                .findFirst()
-                .orElse(null);
-
-        Job planMax = planJobs.stream()
-                .filter(j -> j.getId().equals(maxNpJob.getId()))
-                .findFirst()
-                .orElse(null);
-
-        if (planMin == null || planMax == null)
-            return;
-
+    private PlanTarget selectTargetPlan(List<Job> jobs, List<Job> planJobs, Job minJob, Job maxJob) {
+        Job planMin = planJobs.stream().filter(j -> j.getId().equals(minJob.getId())).findFirst().orElse(null);
+        Job planMax = planJobs.stream().filter(j -> j.getId().equals(maxJob.getId())).findFirst().orElse(null);
+        if (planMin == null || planMax == null) return null;
         int indexMin = jobs.indexOf(planMin);
         int indexMax = jobs.indexOf(planMax);
+        if (indexMin < 0 || indexMax < 0) return null;
+        return (indexMin < indexMax) ? new PlanTarget(planMin, indexMin) : new PlanTarget(planMax, indexMax);
+    }
 
-        if (indexMin < 0 || indexMax < 0)
-            return;
-
-// ---------------------------------------------------------
-// 7. Кто раньше в плане — тот опорный
-// ---------------------------------------------------------
-
-        Job targetPlanJob;
-        int insertIndex;
-
-        if (indexMin < indexMax) {
-            targetPlanJob = planMin;
-            insertIndex = indexMin;
-        } else {
-            targetPlanJob = planMax;
-            insertIndex = indexMax;
-        }
-
-        // ---------------------------------------------------------
-// 8. Первый элемент фактической цепочки по времени
-// ---------------------------------------------------------
-        Job firstFact = factChain.getFirst();
-        LocalDateTime factStart = firstFact.getCameraStart();
-
-        LocalDateTime planStart = targetPlanJob.getStartProductionDateTime();
-        if (planStart == null) return;
-
+    private boolean tryUpdateExistingAlignMaintenance(PackagingSchedule schedule,
+                                                     Line line,
+                                                     List<Job> jobs,
+                                                     Job targetPlanJob,
+                                                     LocalDateTime planStart,
+                                                     LocalDateTime factStart) {
         Job previousJob = targetPlanJob.getPreviousJob();
+        boolean hasAlignMaintenance = previousJob != null
+                && previousJob.isMaintenance()
+                && previousJob.getMaintenanceTypeId() != null
+                && previousJob.getMaintenanceTypeId() == 8;
+        if (!hasAlignMaintenance) return false;
 
-        boolean hasAlignMaintenance =
-                previousJob != null &&
-                        previousJob.isMaintenance() &&
-                        previousJob.getMaintenanceTypeId() != null &&
-                        previousJob.getMaintenanceTypeId() == 8;
+        LocalDateTime alignStart = previousJob.getStartProductionDateTime();
 
-// --------------------------------------------------
-// Если уже есть сервис — обновляем его
-// --------------------------------------------------
-        if (hasAlignMaintenance) {
+        long newDuration = Duration.between(alignStart, factStart).toMinutes();
+        if (newDuration <= 0) return true;
 
-            LocalDateTime maintenanceStart =
-                    previousJob.getStartProductionDateTime();
-
-            if (maintenanceStart == null) return;
-
-            long newDuration =
-                    ceilMinutes(Duration.between(maintenanceStart, factStart));
-
-            if (newDuration <= 0) return;
-
-            long existing =
-                    previousJob.getDuration() != null
-                            ? previousJob.getDuration().toMinutes()
-                            : -1;
-
-            if (existing != newDuration) {
-
-                MaintenanceRequest updateRequest = new MaintenanceRequest();
-                updateRequest.setLineId(line.getId());
-                updateRequest.setUpdateIndex(jobs.indexOf(previousJob));
-                updateRequest.setDurationMinutes((int) newDuration);
-
-                maintenanceJob.updateDuration(schedule, updateRequest);
-            }
-
-            return;
-        }
-
-// --------------------------------------------------
-// Если сервиса нет — вставляем новый
-// --------------------------------------------------
-
-        if (!planStart.isBefore(factStart)) {
-            return;
-        }
-
-        long diffMinutes =
-                ceilMinutes(Duration.between(planStart, factStart));
-
-        if (diffMinutes <= 0) {
-            return;
-        }
-
-
-        // ---------------------------------------------------------
-        // 9. Создаем ОДНУ сервисную операцию
-        // ---------------------------------------------------------
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId(line.getId());
-        request.setInsertIndex(insertIndex);
-        request.setDurationMinutes((int) diffMinutes);
-        request.setMaintenanceTypeId(8);
-        request.setMaintenanceNote(
-                "Выравнивание последней фактической цепочки продукта "
-                        + productId + ", batch="
-        );
-
-        maintenanceJob.addMaintenanceJob(schedule, request);
-    }
+        MaintenanceRequest updateRequest = new MaintenanceRequest();
+        updateRequest.setLineId(line.getId());
+        updateRequest.setUpdateIndex(jobs.indexOf(previousJob));
+        updateRequest.setDurationMinutes((int) newDuration);
+        maintenanceJob.updateDuration(schedule, updateRequest);
+        return true;
     }
 
+    private record PlanTarget(Job job, int index) {}
+    private record NpBounds(Job min, Job max) {}
+
+}
