@@ -89,6 +89,23 @@ class AlignSolutionServiceTest {
     }
 
     @Test
+    void alignByFactDuration_whenJobHasNullCameraTimes_shouldSkipJob() {
+        Job job = new Job();
+        job.setId("J1");
+        job.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 10, 0));
+        job.setEndDateTime(LocalDateTime.of(2025, 1, 15, 11, 0));
+        job.setCameraStart(null);
+        job.setCameraEnd(null);
+
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        alignSolutionService.alignByFactDuration(schedule);
+
+        verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
+    }
+
+    @Test
     void alignByFactDuration_whenNextJobIsDeviationOrAlignMaintenance_shouldNotAddMaintenance() {
         Job job = createPlanJob("J1", LocalDateTime.of(2025, 1, 15, 10, 0), 60, 90);
         Job maintenanceNext = new Job();
