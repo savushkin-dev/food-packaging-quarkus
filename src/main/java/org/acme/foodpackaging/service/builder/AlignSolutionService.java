@@ -139,13 +139,12 @@ public class AlignSolutionService {
         List<Job> factJobs = collectFactJobs(jobs);
         if (factJobs.isEmpty()) return;
 
-        Map<String, List<List<Job>>> chainsByProduct = buildChainsByProduct(factJobs);
+        Map<String, List<Job>> chainsByProduct = buildLastChainsByProduct(factJobs);
         if (chainsByProduct.isEmpty()) return;
 
         // Возьмем последнюю цепочку последнего продукта по факту
-        List<List<Job>> factLists = chainsByProduct.get(factJobs.getLast().getProduct().getId());
-        if (factLists == null || factLists.isEmpty()) return;
-        List<Job> factChain = factLists.getLast();
+        List<Job> factChain = chainsByProduct.get(factJobs.getLast().getProduct().getId());
+        if ( factChain == null ||  factChain.isEmpty()) return;
         String productId = factChain.getLast().getProduct().getId();
 
         List<Job> planJobs = findPlanJobsByProduct(jobs, productId);
@@ -191,26 +190,32 @@ public class AlignSolutionService {
                 .toList();
     }
 
-    private Map<String, List<List<Job>>> buildChainsByProduct(List<Job> factJobs) {
-        Map<String, List<List<Job>>> chainsByProduct = new LinkedHashMap<>();
-        int i = factJobs.size() - 1;
-        while (i >= 0 && chainsByProduct.size() < 3) {
-            Job last = factJobs.get(i);
-            String productId = last.getProduct().getId();
-            List<Job> chain = new ArrayList<>();
-            chain.add(last);
-            int j = i - 1;
-            while (j >= 0) {
-                Job current = factJobs.get(j);
-                if (!productId.equals(current.getProduct().getId())) break;
-                chain.add(current);
-                j--;
+    private Map<String, List<Job>> buildLastChainsByProduct(List<Job> factJobs) {
+
+        Map<String, List<Job>> result = new LinkedHashMap<>();
+
+        for (int i = factJobs.size() - 1; i >= 0; ) {
+
+            String productId = factJobs.get(i).getProduct().getId();
+
+            if (result.containsKey(productId)) {
+                i--;
+                continue;
             }
-            chain.sort(Comparator.comparing(Job::getCameraStart));
-            chainsByProduct.computeIfAbsent(productId, k -> new ArrayList<>()).add(chain);
-            i = j;
+
+            int end = i;
+
+            while (i >= 0 &&
+                    productId.equals(factJobs.get(i).getProduct().getId())) {
+                i--;
+            }
+
+            int start = i + 1;
+            result.put(productId,
+                    new ArrayList<>(factJobs.subList(start, end + 1)));
         }
-        return chainsByProduct;
+
+        return result;
     }
 
     private List<Job> findPlanJobsByProduct(List<Job> jobs, String productId) {
@@ -253,8 +258,14 @@ public class AlignSolutionService {
         LocalDateTime alignStart = previousJob.getStartProductionDateTime();
 
         long newDuration = Duration.between(alignStart, factStart).toMinutes();
-        if (newDuration <= 0) return true;
 
+        if (newDuration < 0) {
+            newDuration = 0;
+        }
+
+        if (previousJob.getDuration().toMinutes() == newDuration) {
+            return true;
+        }
         MaintenanceRequest updateRequest = new MaintenanceRequest();
         updateRequest.setLineId(line.getId());
         updateRequest.setUpdateIndex(jobs.indexOf(previousJob));
