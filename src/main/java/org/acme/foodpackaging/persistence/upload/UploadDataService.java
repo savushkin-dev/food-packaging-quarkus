@@ -14,7 +14,6 @@ import java.sql.*;
 import java.util.List;
 
 import static io.smallrye.config._private.ConfigLogging.log;
-import static org.acme.foodpackaging.sql.SqlQueries.*;
 
 @ApplicationScoped
 public class UploadDataService {
@@ -28,8 +27,13 @@ public class UploadDataService {
     @ConfigProperty(name = "krca")
     String krca;
 
+    private final SqlQueries queries;
+
     @Inject
-    SqlQueries queries;
+    public UploadDataService(SqlQueries queries) {
+        this.queries = queries;
+    }
+
     /**
      * Отправляет задачи в работу (UPDATE_WORK + процедура)
      */
@@ -60,14 +64,7 @@ public class UploadDataService {
                 }
                 ps.executeBatch();
 
-                try (PreparedStatement proc = conn.prepareStatement(queries.refreshFasp())) {
-                    proc.setString(1, krca);
-                    proc.setString(2, ksk);
-                    proc.execute();
-                } catch (SQLException e) {
-                    e.fillInStackTrace();
-                    throw e;
-                }
+                executeRefreshFasp(conn);
 
                 conn.commit(); // фиксируем транзакцию
                 log.info("Successfully UPDATE_WORK");
@@ -92,6 +89,17 @@ public class UploadDataService {
                     log.error("Error close connection UPDATE_WORK", closeEx);
                 }
             }
+        }
+    }
+
+    private void executeRefreshFasp(Connection conn) throws SQLException {
+        try (PreparedStatement proc = conn.prepareStatement(queries.refreshFasp())) {
+            proc.setString(1, krca);
+            proc.setString(2, ksk);
+            proc.execute();
+        } catch (SQLException e) {
+            e.fillInStackTrace();
+            throw e;
         }
     }
       /**

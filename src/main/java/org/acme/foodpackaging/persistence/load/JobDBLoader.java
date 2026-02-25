@@ -22,15 +22,17 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.acme.foodpackaging.sql.SqlQueries.*;
-
 @ApplicationScoped
 public class JobDBLoader {
 
+    private final EntityManager em;
+    private final SqlQueries queries;
+
     @Inject
-    EntityManager em;
-    @Inject
-    SqlQueries queries;
+    public JobDBLoader(EntityManager em, SqlQueries queries) {
+        this.em = em;
+        this.queries = queries;
+    }
 
     @SuppressWarnings("unchecked")
     public Map<Long, DbJobRow> loadJobRowMap(
