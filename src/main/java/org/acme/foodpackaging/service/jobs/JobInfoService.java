@@ -23,7 +23,7 @@ public class JobInfoService {
 
     public PackagingSchedule findFactPlace(PackagingSchedule solution, long snpz){
 
-        Job job = solution.getJobIdMap().get(snpz);
+        Job job = solution.getAllJobsById().get(snpz);
 
         String idBatch = generateIdBatch(solution, snpz);
 
@@ -39,7 +39,7 @@ public class JobInfoService {
                 countBoxes, countPieces, batchWeight
         );
 
-        solution.getJobIdMap().get(snpz).setPlaceFactInfo(resultInfo);
+        solution.getAllJobsById().get(snpz).setPlaceFactInfo(resultInfo);
 
         return solution;
     }
@@ -55,18 +55,18 @@ public class JobInfoService {
         LocalDateTime end = cameraFact.cameraEnd() != null ?
                 cameraFact.cameraEnd().toLocalDateTime() : null;
 
-        solution.getJobIdMap().get(snpz).setCameraStart(start);
-        solution.getJobIdMap().get(snpz).setCameraEnd(end);
+        solution.getAllJobsById().get(snpz).setCameraStart(start);
+        solution.getAllJobsById().get(snpz).setCameraEnd(end);
 
         return solution;
     }
 
     public String generateIdBatch(PackagingSchedule solution, long snpz){
-        Job job = solution.getJobIdMap().get(snpz);
+        Job job = solution.getAllJobsById().get(snpz);
         String ean13 = job.getProduct().getEan13().substring(0, 12) + "0";
         String formattedNp = String.format("%09d", job.getNp());
 
-        String dateToIdBatch = solution.getDbJobRowMap().get(snpz).dti().toLocalDateTime()
+        String dateToIdBatch = solution.getAllJobsById().get(snpz).getDti()
                 .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         return ean13 + dateToIdBatch + formattedNp;

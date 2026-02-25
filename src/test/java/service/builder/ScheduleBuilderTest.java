@@ -3,14 +3,12 @@ package service.builder;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
-import org.acme.foodpackaging.service.lines.LineSchedulingService;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +24,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,8 +39,6 @@ class ScheduleBuilderTest {
     @Mock
     LineService lineService;
     @Mock
-    LineSchedulingService lineSchedulingService;
-    @Mock
     ProductService productService;
     @Mock
     JobRefreshService jobRefreshService;
@@ -52,26 +46,6 @@ class ScheduleBuilderTest {
     @Test
     void buildSchedule() {
         LocalDate date = LocalDate.of(2025, 12, 24);
-
-        Map<Long, DbJobRow> jobRows = Map.of(
-                1L, new DbJobRow(
-                        new Timestamp(System.currentTimeMillis()),
-                        "KMC1", 10, 5, 2.0,
-                        new Timestamp(System.currentTimeMillis()),
-                        new Timestamp(System.currentTimeMillis()),
-                        5, 123L, 1, null, "Vanilla", 18
-                )
-        );
-
-        Map<Long, DbMaintenanceRow> maintenanceRows = Map.of(
-                1L, new DbMaintenanceRow(
-                        1L, (short) 1,
-                        "Line1",
-                        new Timestamp(System.currentTimeMillis()),
-                        new Timestamp(System.currentTimeMillis()),
-                        2, 123L, 1, "Maintenance Note"
-                )
-        );
 
         List<Line> lines = List.of(new Line(), new Line());
         List<Product> products = List.of(new Product("VAN", "Vanilla"));
@@ -81,41 +55,34 @@ class ScheduleBuilderTest {
             return null;
         }).when(jobService).initSolutionJobList(any());
 
-        when(jobRepository.getDbJobRowMap(any(), any())).thenReturn(jobRows);
-        when(jobRepository.getDbMaintenanceRowMap(any(), any())).thenReturn(maintenanceRows);
         when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
         when(lineService.getLines()).thenReturn(lines);
-        doNothing().when(lineSchedulingService).initJobListOnLine(any());
+        doNothing().when(lineService).initLineStartEnd(any());
         when(productService.getProductList(any())).thenReturn(products);
 
-        PackagingSchedule schedule = builder.buildSchedule(date);
+        InitData initData = builder.buildSchedule(date);
 
-        assertEquals(jobRows, schedule.getDbJobRowMap());
-        assertEquals(maintenanceRows, schedule.getDbMaintenanceRowMap());
+        PackagingSchedule schedule = initData.schedule();
         assertEquals(lines, schedule.getLines());
         assertEquals(products, schedule.getProducts());
         assertEquals(date, schedule.getWorkCalendar().getFromDate());
 
-        verify(jobRepository).getDbJobRowMap(any(), any());
-        verify(jobRepository).getDbMaintenanceRowMap(any(), any());
         verify(jobService).initSolutionJobList(schedule);
-        verify(jobService).initFactProductionData(eq(schedule), any());
-        verify(jobService).enrichCameraFactsFromPmLog(schedule);
         verify(lineService).getLines();
-        verify(lineSchedulingService).initJobListOnLine(schedule);
+        verify(lineService).initLineStartEnd(schedule);
         verify(productService).getProductList(schedule);
     }
 
-@Test
-void updateProductList() {
-    PackagingSchedule schedule = new PackagingSchedule();
-    List<Product> newProducts = List.of(new Product("VAN", "Vanilla"));
-    when(productService.getProductList(schedule)).thenReturn(newProducts);
+    @Test
+    void updateProductList() {
+        PackagingSchedule schedule = new PackagingSchedule();
+        List<Product> newProducts = List.of(new Product("VAN", "Vanilla"));
+        when(productService.getProductList(schedule)).thenReturn(newProducts);
 
-    PackagingSchedule updated = builder.updateProductList(schedule);
+        PackagingSchedule updated = builder.updateProductList(schedule);
 
-    assertSame(schedule, updated);
-    assertEquals(newProducts, schedule.getProducts());
-    verify(productService).getProductList(schedule);
-}
+        assertSame(schedule, updated);
+        assertEquals(newProducts, schedule.getProducts());
+        verify(productService).getProductList(schedule);
+    }
 }

@@ -8,7 +8,6 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
@@ -27,16 +26,13 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixL
 public class JobRefreshService {
 
     @Inject
-    public JobRefreshService(JobRepository jobRepository, JobService jobService, 
-        ProductService productService, UploadDataService uploadDataService) {
+    public JobRefreshService(JobRepository jobRepository, ProductService productService, UploadDataService uploadDataService) {
         this.jobRepository = jobRepository;
-        this.jobService = jobService;
         this.productService = productService;
         this.uploadDataService = uploadDataService;
     }
 
     private final JobRepository jobRepository;
-    private final JobService jobService;
     private final ProductService productService;
     private final UploadDataService uploadDataService;
 
@@ -48,49 +44,54 @@ public class JobRefreshService {
                 removeJobFromSolution(snpz, solution);
             }
         });
-        rebuildId(solution);
         solution.setProducts(productService.getProductList(solution));
         return solution;
     }
 
     private void addJobIfAbsent(Long snpz, boolean isHandPackaging, PackagingSchedule solution) {
-        if (solution.getJobIdMap().containsKey(snpz)) {
-            return;
-        }
-        DbJobRow row = solution.getDbJobRowMap().get(snpz);
-        if (row == null) {
-            return;
-        }
-        Job job = jobService.createJobById(row.snpz(), false, solution);
-        job.setHandPackaging(isHandPackaging);
-        solution.getJobs().add(job);
-        solution.getJobIdMap().put(snpz, job);
-    }
 
-    private void removeJobFromSolution(Long snpz, PackagingSchedule solution) {
-        Job job = solution.getJobIdMap().remove(snpz);
+        Job job = solution.getAllJobsById().get(snpz);
+
         if (job == null) {
             return;
         }
+    
+        if (solution.getJobs().contains(job)) {
+            return;
+        }
+    
+        job.setHandPackaging(isHandPackaging);
+        job.setMinStartTime(solution.getWorkCalendar().getMinStartDateTime());
+    
+        solution.getJobs().add(job);
+    }
+
+    private void removeJobFromSolution(Long snpz, PackagingSchedule solution) {
+
+        Job job = solution.getAllJobsById().get(snpz);
+    
+        if (job == null) {
+            return;
+        }
+    
+        if (!solution.getJobs().contains(job)) {
+            return;
+        }
+    
         solution.getJobs().remove(job);
+    
         Line line = job.getLine();
         if (line != null) {
             line.getJobs().remove(job);
             job.setLine(null);
+    
             fixLineJobs(line);
+    
             if (line.getFirstUnpinnedIndex() > line.getJobs().size()) {
                 line.setFirstUnpinnedIndex(line.getJobs().size());
             }
         }
     }
-
-    private void rebuildId(PackagingSchedule solution) {
-        solution.getJobIdMap().clear();
-        solution.getJobs().stream()
-                .filter(j -> !j.isMaintenance())
-                .forEach(j -> solution.getJobIdMap().put(j.getSnpz(), j));
-    }
-
     /**
      * Обновляет данные по камере в MS_LOG для партий со времени старта которых прошло меньше 12 часов.
      *
