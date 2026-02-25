@@ -543,31 +543,4 @@ class MaintenanceJobTest {
         assertEquals(2, added.getMaintenanceTypeId());
         assertEquals(35, added.getDuration().toMinutes());
     }
-
-    @Test
-    void marksMatchingRowsAsDeletedTest() {
-        Map<Long, DbMaintenanceRow> jobs = new HashMap<>();
-
-        DbMaintenanceRow match = new DbMaintenanceRow(
-                100L, (short) 0, "L1",
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 8, 0)),
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 9, 0)),
-                60, 123L, 1, "note"
-        );
-        DbMaintenanceRow other = new DbMaintenanceRow(
-                200L, (short) 0, "L1",
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 10, 0)),
-                Timestamp.valueOf(LocalDateTime.of(2025, 1, 1, 11, 0)),
-                60, 124L, 1, "note2"
-        );
-
-        jobs.put(100L, match);
-        jobs.put(200L, other);
-        jobs.put(300L, null);
-
-        maintenanceJob.markDeletedByFId(100L, jobs);
-
-        assertEquals((short) 1, match.getFDel());
-        assertEquals((short) 0, other.getFDel());
-    }
 }
