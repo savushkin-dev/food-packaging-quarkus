@@ -10,6 +10,8 @@ import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.sql.SqlQueries;
+
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +29,8 @@ public class JobDBLoader {
 
     @Inject
     EntityManager em;
+    @Inject
+    SqlQueries queries;
 
     @SuppressWarnings("unchecked")
     public Map<Long, DbJobRow> loadJobRowMap(
@@ -36,7 +40,7 @@ public class JobDBLoader {
     ) {
 
         List<DbJobRow> rows = em
-                .createNativeQuery(LOAD_JOBS_DB, "DbJobRowMapping")
+                .createNativeQuery(queries.loadJobs(), "DbJobRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .setParameter(3, ksk)
@@ -62,7 +66,7 @@ public class JobDBLoader {
     ) {
 
         return   em
-                .createNativeQuery(LOAD_MAINTENANCE_DB, "DbMaintenanceRowMapping")
+                .createNativeQuery(queries.loadMaintenance(), "DbMaintenanceRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .setParameter(3, Timestamp.valueOf(from))
@@ -74,7 +78,7 @@ public class JobDBLoader {
     public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
 
         List<FactProductionRow> rows = em
-                .createNativeQuery(LOAD_FACT_DB, "FactProductionRowMapping")
+                .createNativeQuery(queries.loadFact(), "FactProductionRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .getResultList();
@@ -98,7 +102,7 @@ public class JobDBLoader {
             if (idBatch != null && !processedBatches.contains(idBatch)) {
                 processedBatches.add(idBatch);
                 List<CameraFactRow> rows = em
-                        .createNativeQuery(LOAD_CAMERA_FACT, "CameraFactRowMapping")
+                        .createNativeQuery(queries.loadCameraFact(), "CameraFactRowMapping")
                         .setParameter(1, idBatch)
                         .getResultList();
                 if (!rows.isEmpty()) {

@@ -1,9 +1,11 @@
 package org.acme.foodpackaging.persistence.upload;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.exception.service.DataUploadException;
 import org.acme.foodpackaging.rest.ApiFields;
+import org.acme.foodpackaging.sql.SqlQueries;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.acme.foodpackaging.dto.MsLogInsertRow;
 import jakarta.transaction.Transactional;
@@ -25,6 +27,9 @@ public class UploadDataService {
 
     @ConfigProperty(name = "krca")
     String krca;
+
+    @Inject
+    SqlQueries queries;
     /**
      * Отправляет задачи в работу (UPDATE_WORK + процедура)
      */
@@ -44,7 +49,7 @@ public class UploadDataService {
             conn = DriverManager.getConnection(dbUrl);
             conn.setAutoCommit(false); // ручное управление транзакцией для атомарности
 
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE_WORK)) {
+            try (PreparedStatement ps = conn.prepareStatement(queries.updateWork())) {
                 for (Job job : jobsToProcess) {
                     ps.setString(1, job.getLine().getId());
                     ps.setObject(2, job.getStartProductionDateTime());
@@ -55,7 +60,7 @@ public class UploadDataService {
                 }
                 ps.executeBatch();
 
-                try (PreparedStatement proc = conn.prepareStatement(REFRESH_FASP)) {
+                try (PreparedStatement proc = conn.prepareStatement(queries.refreshFasp())) {
                     proc.setString(1, krca);
                     proc.setString(2, ksk);
                     proc.execute();
@@ -99,7 +104,7 @@ public class UploadDataService {
     if (rows.isEmpty()) return;
 
     try (Connection conn = DriverManager.getConnection(dbUrl);
-            PreparedStatement ps = conn.prepareStatement(INSERT_CAMERA_EVENT)) {
+            PreparedStatement ps = conn.prepareStatement(queries.insertCameraEvent())) {
 
         for (MsLogInsertRow row : rows) {
             ps.setString(1, row.getIdBatch());
@@ -129,7 +134,7 @@ public class UploadDataService {
         if (rows.isEmpty()) return;
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
-             PreparedStatement ps = conn.prepareStatement(UPDATE_CAMERA_END_EVENT)) {
+             PreparedStatement ps = conn.prepareStatement(queries.updateCameraEndEvent())) {
 
             for (MsLogInsertRow row : rows) {
                 ps.setTimestamp(1, row.getEventTime());
