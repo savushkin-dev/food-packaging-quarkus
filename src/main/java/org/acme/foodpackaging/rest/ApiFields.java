@@ -12,6 +12,7 @@ public final class ApiFields {
     public static final String PATH = "path";
     public static final String EXCEPTION = "exception";
     public static final String ROOT_CAUSE = "rootCause";
+    public static final String REFRESH_OK = "Schedule refreshed";
     // Messages
     public static final String NO_SCHEDULE_LOADED = "No schedule loaded";
     public static final String NO_DATA_LOADED = "No data loaded";

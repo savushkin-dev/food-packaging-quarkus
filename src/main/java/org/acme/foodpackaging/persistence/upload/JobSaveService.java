@@ -5,7 +5,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;

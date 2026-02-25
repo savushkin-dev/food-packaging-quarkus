@@ -3,7 +3,6 @@ package org.acme.foodpackaging.scheduleoperations;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
@@ -12,7 +11,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.UUID;
 
@@ -99,7 +97,12 @@ public class MaintenanceJob {
 
         schedule.getJobs().add(maintenanceJob);
 
-        maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
+        int packagingType = 7;
+        int alignType = 8;
+
+        if (!(typeKey == packagingType || typeKey == alignType)) {
+            maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
+        }   
 
         return schedule;
     }
