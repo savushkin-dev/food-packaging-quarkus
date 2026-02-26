@@ -12,26 +12,18 @@ import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSo
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.LoadRequest;
-import org.acme.foodpackaging.dto.MoveJobsRequest;
-import org.acme.foodpackaging.dto.PinRequest;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
-import org.acme.foodpackaging.persistence.upload.JobSaveService;
-import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.FrontendDataWrapper;
+import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.record.JobSelection;
-import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
-import org.acme.foodpackaging.scheduleoperations.MoveJobsService;
-import org.acme.foodpackaging.scheduleoperations.PinService;
-import org.acme.foodpackaging.scheduleoperations.SortByNpService;
-import org.acme.foodpackaging.service.builder.ScheduleBuilder;
+import org.acme.foodpackaging.scheduleoperations.*;
+import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.service.jobs.JobRefreshService;
-import org.acme.foodpackaging.service.jobs.JobInfoService;
+import org.acme.foodpackaging.service.jobs.*;
 
 import java.util.*;
-
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @Path("schedule")
@@ -51,6 +43,7 @@ public class PackagingScheduleResource {
     private final JobRefreshService jobRefreshService;
     private final JobSaveService jobSaveService;
     private final JobInfoService jobInfoService;
+    private final AlignSolutionService alignSolutionService;
 
     @Inject
     public PackagingScheduleResource(
@@ -65,7 +58,7 @@ public class PackagingScheduleResource {
             LoadDataService loadDataService,
             UploadDataService uploadDataService,
             JobRefreshService jobRefreshService,
-            JobSaveService jobSaveService, JobInfoService jobInfoService
+            JobSaveService jobSaveService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -80,6 +73,7 @@ public class PackagingScheduleResource {
         this.jobRefreshService = jobRefreshService;
         this.jobSaveService = jobSaveService;
         this.jobInfoService = jobInfoService;
+        this.alignSolutionService = alignSolutionService;
     }
 
     @GET
@@ -171,6 +165,27 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("alignPlan")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response alignPlan(@HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+        alignSolutionService.alignByFactDuration(schedule);
+        alignSolutionService.alignLineStartByFact(schedule);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK
+        )).build();
+    }
+
+    @POST
     @Path("work")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -193,15 +208,16 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-            PackagingSchedule schedule = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
-            solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-            repository.writeForSession(sessionId, schedule);
+        InitData data =  scheduleBuilder.buildSchedule(loadDTO.getStartDate());
+        PackagingSchedule schedule = data.schedule();
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
 
-            if (loadDataService == null) {
+        if (loadDataService == null) {
                 throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
             }
 
-            return Response.ok(getDbJobRowList(schedule.getDbJobRowMap())).build();
+            return Response.ok(data.jobsFromDbRow()).build();
     }
 
     @POST
