@@ -327,6 +327,27 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("sortRange")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response sortRangeByNp(SortRangeRequest request, @HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+
+        sortByNpService.sortRangeByNp(schedule, request);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs sorted successfully")).build();
+    }
+
+    @POST
     @Path("solve")
     @Produces(MediaType.APPLICATION_JSON)
     public Response solve(@HeaderParam("X-Session-Id") String sessionId) {

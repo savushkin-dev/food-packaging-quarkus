@@ -4,11 +4,13 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.SortRangeRequest;
 import org.acme.foodpackaging.scheduleoperations.SortByNpService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
@@ -221,5 +223,85 @@ class SortByNpServiceTest {
         // Проверим конкретно NP последовательность, assigned задачи остаются на месте
         assertEquals(List.of(10,3,54,53),
                 line2.getJobs().stream().map(Job::getNp).toList());
+    }
+
+    // --- sortRangeByNp ---
+
+    private SortRangeRequest sortRangeRequest(String lineId, int fromIndex, int sortCount, boolean sortUp) {
+        SortRangeRequest req = new SortRangeRequest();
+        req.setLineId(lineId);
+        req.setFromIndex(fromIndex);
+        req.setSortCount(sortCount);
+        req.setSortUp(sortUp);
+        return req;
+    }
+
+    @Test
+    void sortRangeByNp_sortUp_sortsRangeAscendingByNp() {
+        Job j1 = job("J1", 30, vanilla);
+        Job j2 = job("J2", 10, vanilla);
+        Job j3 = job("J3", 20, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
+        schedule.setJobs(List.of(j1, j2, j3));
+
+        service.sortRangeByNp(schedule, sortRangeRequest("L1", 0, 3, true));
+
+        assertEquals(List.of(10, 20, 30), line1.getJobs().stream().map(Job::getNp).toList());
+    }
+
+    @Test
+    void sortRangeByNp_sortDown_sortsRangeDescendingByNp() {
+        Job j1 = job("J1", 10, vanilla);
+        Job j2 = job("J2", 30, vanilla);
+        Job j3 = job("J3", 20, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
+        schedule.setJobs(List.of(j1, j2, j3));
+
+        service.sortRangeByNp(schedule, sortRangeRequest("L1", 0, 3, false));
+
+        assertEquals(List.of(30, 20, 10), line1.getJobs().stream().map(Job::getNp).toList());
+    }
+
+    @Test
+    void sortRangeByNp_partialRange_sortsOnlySpecifiedSublist() {
+        Job j1 = job("J1", 1, vanilla);
+        Job j2 = job("J2", 50, vanilla);
+        Job j3 = job("J3", 20, vanilla);
+        Job j4 = job("J4", 5, vanilla);
+        Job j5 = job("J5", 9, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3, j4, j5)));
+        schedule.setJobs(List.of(j1, j2, j3, j4, j5));
+
+        service.sortRangeByNp(schedule, sortRangeRequest("L1", 1, 3, true));
+
+        // indices 1..3 (j2, j3, j4) sorted ascending: 5, 20, 50; first and last unchanged
+        assertEquals(List.of(1, 5, 20, 50, 9), line1.getJobs().stream().map(Job::getNp).toList());
+    }
+
+    @Test
+    void sortRangeByNp_otherLinesUnaffected() {
+        Job a1 = job("A1", 3, vanilla);
+        Job a2 = job("A2", 1, vanilla);
+        Job a3 = job("A3", 2, vanilla);
+        Job b1 = job("B1", 9, vanilla);
+        Job b2 = job("B2", 7, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(a1, a2, a3)));
+        line2.setJobs(new ArrayList<>(List.of(b1, b2)));
+        schedule.setJobs(List.of(a1, a2, a3, b1, b2));
+
+        service.sortRangeByNp(schedule, sortRangeRequest("L1", 0, 3, true));
+
+        assertEquals(List.of(1, 2, 3), line1.getJobs().stream().map(Job::getNp).toList());
+        assertEquals(List.of(9, 7), line2.getJobs().stream().map(Job::getNp).toList());
+    }
+
+    @Test
+    void sortRangeByNp_throwsWhenLineNotFound() {
+        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
+        schedule.setJobs(List.of(line1.getJobs().get(0)));
+
+        SortRangeRequest request = sortRangeRequest("NONEXISTENT", 0, 1, true);
+
+        assertThrows(IllegalArgumentException.class, () -> service.sortRangeByNp(schedule, request));
     }
 }

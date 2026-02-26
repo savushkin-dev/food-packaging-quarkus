@@ -5,6 +5,8 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.SortRangeRequest;
+
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 import java.util.*;
@@ -272,5 +274,21 @@ public class SortByNpService {
             combined.addAll(line.getJobs());
         }
         schedule.setJobs(combined);
+    }
+    /**
+     * Сортирует дипозон задач на линии по партиям в прямом/обратном в зависимости от флага sortUp
+     */
+    public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request){
+        Line line = findLineById(schedule, request.getLineId());
+        int from = request.getFromIndex();
+        int to = from + request.getSortCount();
+        if(request.isSortUp()) {
+            line.getJobs().subList(from, to)
+                    .sort(Comparator.comparing(Job::getNp));
+        }
+        else {
+            line.getJobs().subList(from, to)
+                    .sort(Comparator.comparing(Job::getNp).reversed());
+        }
     }
 }
