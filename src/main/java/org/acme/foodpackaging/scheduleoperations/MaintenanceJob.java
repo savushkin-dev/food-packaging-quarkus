@@ -55,18 +55,39 @@ public class MaintenanceJob {
         maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
         int insertedIndex;
-        if (request.isEmptyLineMode()) {
+
+        if (lineJobs.isEmpty()) {
+
             line.setStartDateTime(request.getStartProductionDateTime());
+
             LocalDateTime startTime = request.getStartProductionDateTime();
             maintenanceJob.setStartCleaningDateTime(startTime);
             maintenanceJob.setStartProductionDateTime(startTime);
+
             lineJobs.add(maintenanceJob);
-            insertedIndex = lineJobs.size() - 1;
+            insertedIndex = 0;
         } else {
-            int insertIndex = request.getInsertIndex();
+
+            Integer insertIndex = request.getInsertIndex();
+        
+            if (insertIndex == null) {
+                insertIndex = findInsertIndexByTime(
+                        lineJobs,
+                        request.getStartProductionDateTime()
+                );
+            }
+        
             if (insertIndex < 0 || insertIndex > lineJobs.size()) {
                 throw new IllegalArgumentException("Invalid insertIndex: " + insertIndex);
             }
+        
+            LocalDateTime startTime = request.getStartProductionDateTime();
+        
+            if (startTime != null) {
+                maintenanceJob.setStartCleaningDateTime(startTime);
+                maintenanceJob.setStartProductionDateTime(startTime);
+            }
+        
             lineJobs.add(insertIndex, maintenanceJob);
             insertedIndex = insertIndex;
         }
@@ -201,5 +222,79 @@ public class MaintenanceJob {
         fixPinnedJobs(line);
 
         return schedule;
+    }
+
+    public void addDailyFullCleaning(PackagingSchedule schedule) {
+        for (Line line : schedule.getLines()) {
+
+            Duration requiredDuration = Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
+            long requiredMinutes = requiredDuration.toMinutes();
+            LocalDateTime dailyCleaningStart = getDailyCleaningStart(line, requiredMinutes);
+            if(dailyCleaningStart== null || dailyCleaningStart.isAfter(line.getJobs().getLast().getEndDateTime())) continue;
+
+            int minutesInt = Math.toIntExact(requiredDuration.toMinutes());
+            createDailyCleaningJob(schedule, line, dailyCleaningStart, minutesInt);
+            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
+        }
+    }
+
+    private LocalDateTime getDailyCleaningStart(
+            Line line, long requiredMinutes
+    ) {
+
+        LocalDateTime dailyCleaningStart= null;
+
+        List<Job> lineJobs = line.getJobs();
+
+        if (lineJobs == null || lineJobs.isEmpty()) {
+            return dailyCleaningStart;
+        }
+
+        for (Job job : lineJobs.reversed()) {
+            if (job.isMaintenance() && job.getMaintenanceTypeId() == 2
+                    && job.getDuration().toMinutes()>=requiredMinutes) {
+                dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
+            } else {
+                Duration cleaningDuration = Duration.between( job.getStartCleaningDateTime(), job.getStartProductionDateTime());
+                long cleaningMinutes = cleaningDuration.toMinutes();
+                if (cleaningMinutes>=requiredMinutes) {
+                    dailyCleaningStart = job.getStartCleaningDateTime().plusHours(24);
+                }
+            }
+            if (dailyCleaningStart != null) {
+                break;
+            }
+        }
+        return dailyCleaningStart;
+    }
+
+    private void createDailyCleaningJob(
+            PackagingSchedule schedule,
+            Line line,
+            LocalDateTime startTime,
+            int durationMinutes
+    ) {
+        MaintenanceRequest request = new MaintenanceRequest();
+        request.setLineId(line.getId());
+        request.setMaintenanceTypeId(2);
+        request.setDurationMinutes(durationMinutes);
+        request.setStartProductionDateTime(startTime);
+
+        addMaintenanceJob(schedule, request);
+    }
+
+    private int findInsertIndexByTime(
+            List<Job> jobs,
+            LocalDateTime insertTime
+    ) {
+        for (int i = 0; i < jobs.size(); i++) {
+            Job j = jobs.get(i);
+
+            LocalDateTime jStart = j.getStartProductionDateTime();
+            if (jStart != null && insertTime.isBefore(jStart)) {
+                return i;
+            }
+        }
+        return jobs.size();
     }
 }
