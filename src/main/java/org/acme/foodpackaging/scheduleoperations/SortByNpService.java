@@ -311,7 +311,6 @@ public class SortByNpService {
             throw new IllegalArgumentException("Requested sort range [" + from + ", " + toLong + ") exceeds jobs list size " + jobCount);
         }
 
-        int to = (int) toLong;
-        return to;
+        return (int) toLong;
     }
 }
