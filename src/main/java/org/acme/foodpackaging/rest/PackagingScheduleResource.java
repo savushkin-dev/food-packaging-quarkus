@@ -397,6 +397,29 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully")).build();
     }
     /**
+     * Суточная мойка линий
+     */
+    @POST
+    @Path("dailyCleaning")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response dailyCleaning(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+        maintenanceJob.addDailyFullCleaning(schedule);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Cleanings added successfully").build();
+    }
+
+    /**
      * Операции для сервисной работы на линии
      */
     @POST

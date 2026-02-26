@@ -76,7 +76,7 @@ public class SqlQueries {
                 v.IDBATCH, v.DTV, v.KMC, v.NP, v.KRC, v.DT, v.EVENT
             FROM [%s].[dbo].[MS_LOG] v
             WHERE
-                v.DTV > ?1
+                v.DTV >= ?1
                 AND v.DTV <= ?2
                 AND v.EVENT <= 3
             ORDER BY
