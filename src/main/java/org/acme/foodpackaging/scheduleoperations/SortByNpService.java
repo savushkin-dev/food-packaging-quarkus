@@ -284,6 +284,19 @@ public class SortByNpService {
         int jobCount = jobs.size();
 
         int from = request.getFromIndex();
+        int to = getAnInt(request, from, jobCount);
+
+        if(request.isSortUp()) {
+            jobs.subList(from, to)
+                    .sort(Comparator.comparing(Job::getNp));
+        }
+        else {
+            jobs.subList(from, to)
+                    .sort(Comparator.comparing(Job::getNp).reversed());
+        }
+    }
+
+    private static int getAnInt(SortRangeRequest request, int from, int jobCount) {
         int sortCount = request.getSortCount();
 
         if (from < 0) {
@@ -299,14 +312,6 @@ public class SortByNpService {
         }
 
         int to = (int) toLong;
-
-        if(request.isSortUp()) {
-            jobs.subList(from, to)
-                    .sort(Comparator.comparing(Job::getNp));
-        }
-        else {
-            jobs.subList(from, to)
-                    .sort(Comparator.comparing(Job::getNp).reversed());
-        }
+        return to;
     }
 }
