@@ -340,9 +340,9 @@ class MaintenanceJobTest {
         Product normalProduct = schedule.getProducts().get(1);
         LocalDateTime day1At10 = LocalDateTime.of(2025, 1, 15, 10, 0);
         LocalDateTime day2At15 = LocalDateTime.of(2025, 1, 16, 15, 0);
-        LocalDateTime day2_0920 = LocalDateTime.of(2025, 1, 16, 9, 20);
+        LocalDateTime dayAt0920 = LocalDateTime.of(2025, 1, 16, 9, 20);
 
-        line.setStartDateTime(day2_0920); // so fixLineJobs (after add) places all jobs on Jan 16
+        line.setStartDateTime(dayAt0920); // so fixLineJobs (after add) places all jobs on Jan 16
         Job maint = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
                         Timestamp.valueOf(day1At10.minusMinutes(40)),

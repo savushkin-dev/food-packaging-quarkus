@@ -248,20 +248,19 @@ public class MaintenanceJob {
             return dailyCleaningStart;
         }
 
-        for(Job job : lineJobs.reversed()){
-            if(job.isMaintenance() && job.getMaintenanceTypeId()==2
-                    && job.getDuration().compareTo(requiredDuration)>=0){
-               dailyCleaningStart = job.getEndDateTime().plusHours(24);
-               break;
+        for (Job job : lineJobs.reversed()) {
+            if (job.isMaintenance() && job.getMaintenanceTypeId() == 2
+                    && job.getDuration().compareTo(requiredDuration) >= 0) {
+                dailyCleaningStart = job.getEndDateTime().plusHours(24);
+            } else {
+                Duration cleaningDuration = Duration.between(job.getStartProductionDateTime(), job.getStartCleaningDateTime());
+                if (cleaningDuration.compareTo(requiredDuration) >= 0) {
+                    dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
+                }
             }
-
-            Duration cleaningDuration = Duration.between(job.getStartProductionDateTime(), job.getStartCleaningDateTime());
-
-            if(cleaningDuration.compareTo(requiredDuration)>=0){
-               dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
-               break;
+            if (dailyCleaningStart != null) {
+                break;
             }
-
         }
         return dailyCleaningStart;
     }
