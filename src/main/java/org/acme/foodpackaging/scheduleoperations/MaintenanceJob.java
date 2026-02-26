@@ -226,101 +226,44 @@ public class MaintenanceJob {
 
     public void addDailyFullCleaning(PackagingSchedule schedule) {
         for (Line line : schedule.getLines()) {
-            addDailyFullCleaningForLine(schedule, line);
+
+            Duration required_duration = Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
+            LocalDateTime dailyCleaningStart = getDailyCleaningStart(line, required_duration);
+            if(dailyCleaningStart== null || dailyCleaningStart.isAfter(line.getJobs().getLast().getEndDateTime())) continue;
+
+            int minutesInt = Math.toIntExact(required_duration.toMinutes());
+            createDailyCleaningJob(schedule, line, dailyCleaningStart, minutesInt);
         }
     }
 
-    private void addDailyFullCleaningForLine(PackagingSchedule schedule, Line line) {
+    private LocalDateTime getDailyCleaningStart(
+            Line line, Duration required_duration
+    ) {
+
+        LocalDateTime dailyCleaningStart= null;
 
         List<Job> lineJobs = line.getJobs();
+
         if (lineJobs == null || lineJobs.isEmpty()) {
-            return;
+            return dailyCleaningStart;
         }
 
-        Integer cleaningDurationMinutes = getDailyCleaningDurationMinutes(line);
-        if (cleaningDurationMinutes == null) {
-            return;
-        }
-
-        CleaningAnchor anchor = findDailyCleaningAnchor(lineJobs);
-        if (anchor.anchorJob() == null) {
-            return;
-        }
-
-        LocalDateTime anchorEndTime = anchor.anchorJob().getEndDateTime();
-        if (anchorEndTime == null) {
-            return;
-        }
-
-        LocalDateTime dailyCleaningStartTime = anchorEndTime.plusHours(24);
-
-        createDailyCleaningJob(
-                schedule,
-                line,
-                dailyCleaningStartTime,
-                cleaningDurationMinutes
-        );
-    }
-
-    private CleaningAnchor findDailyCleaningAnchor(List<Job> jobs) {
-
-        Job longestWashJob = null;
-        Duration longestWashDuration = Duration.ZERO;
-
-        Job longestMaintenanceJob = null;
-        Duration longestMaintenanceDuration = Duration.ZERO;
-
-        for (Job job : jobs) {
-
-            Duration washDuration = calculateWashDuration(job);
-            if (washDuration == null || washDuration.isZero() || washDuration.isNegative()) {
-                continue;
+        for(Job job : lineJobs.reversed()){
+            if(job.isMaintenance() && job.getMaintenanceTypeId()==2
+                    && job.getDuration().compareTo(required_duration)>=0){
+               dailyCleaningStart = job.getEndDateTime().plusHours(24);
+               break;
             }
 
-            if (washDuration.compareTo(longestWashDuration) >= 0) {
-                longestWashDuration = washDuration;
-                longestWashJob = job;
+            Duration cleaningDuration = Duration.between(job.getStartProductionDateTime(), job.getStartCleaningDateTime());
+
+            if(cleaningDuration.compareTo(required_duration)>=0){
+               dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
+               break;
             }
 
-            if (isMaintenanceType2(job)
-                    && washDuration.compareTo(longestMaintenanceDuration) >= 0) {
-                longestMaintenanceDuration = washDuration;
-                longestMaintenanceJob = job;
-            }
         }
-
-
-        Job anchorJob = chooseLongerJob(
-                longestWashJob, longestWashDuration,
-                longestMaintenanceJob, longestMaintenanceDuration
-        );
-
-        return new CleaningAnchor(anchorJob, longestWashDuration, longestMaintenanceDuration);
-    }
-
-    private Job chooseLongerJob(
-            Job washJob, Duration washDuration,
-            Job maintenanceJob, Duration maintenanceDuration
-    ) {
-        if (maintenanceJob == null) {
-            return washJob;
-        }
-        if (washJob == null) {
-            return maintenanceJob;
-        }
-        return maintenanceDuration.compareTo(washDuration) >= 0
-                ? maintenanceJob
-                : washJob;
-    }
-    private Duration calculateWashDuration(Job job) {
-        LocalDateTime cleaningStart = job.getStartCleaningDateTime();
-        LocalDateTime productionStart = job.getStartProductionDateTime();
-
-        if (cleaningStart == null || productionStart == null) {
-            return null;
-        }
-
-        return Duration.between(cleaningStart, productionStart);
+        return dailyCleaningStart;
     }
 
     private void createDailyCleaningJob(
@@ -337,22 +280,6 @@ public class MaintenanceJob {
 
         addMaintenanceJob(schedule, request);
     }
-
-    private boolean isMaintenanceType2(Job job) {
-        return job.isMaintenance()
-                && Integer.valueOf(2).equals(job.getMaintenanceTypeId());
-    }
-
-    private Integer getDailyCleaningDurationMinutes(Line line) {
-        Map<String, Integer> cleanings = CleaningDurationUtils.getLinesCleaning();
-        return cleanings != null ? cleanings.get(line.getId()) : null;
-    }
-
-    private record CleaningAnchor(
-            Job anchorJob,
-            Duration longestWashDuration,
-            Duration longestMaintenanceDuration
-    ) {}
 
     private int findInsertIndexByTime(
             List<Job> jobs,

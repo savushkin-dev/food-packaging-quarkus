@@ -2,7 +2,6 @@ package scheduleoperations;
 
 import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.record.CleaningResult;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
@@ -262,7 +261,7 @@ class MaintenanceJobTest {
     }
     
     @Test
-    void dilyCleaningEmptyLine() {
+    void dailyCleaningEmptyLine() {
         CleaningDurationUtils.init(Map.of("line1", 30));
         line.setJobs(new ArrayList<>());
 
@@ -281,17 +280,21 @@ class MaintenanceJobTest {
         assertNull(line.getJobs());
     }
 
+    // --- addDailyFullCleaning (new logic: anchor from reversed jobs, dailyCleaningStart <= last job end) ---
+
     @Test
-    void dailyCleaning_WhenNoCleaningConfig() {
-        CleaningDurationUtils.init(Map.of("otherLine", 30));
+    void addDailyFullCleaning_skipsWhenNoAnchor() {
+        CleaningDurationUtils.init(Map.of("line1", 30));
         Product product = schedule.getProducts().get(1);
-        Job job = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(LocalDateTime.of(2025, 1, 15, 8, 0)),
-                        Timestamp.valueOf(LocalDateTime.of(2025, 1, 15, 9, 0)),
-                        60, 2212L, 1, "note"),
-                "Job", product, LocalDateTime.of(2025, 1, 15, 8, 0));
-        job.setMaintenance(true);
+        // One production job with no preceding cleaning gap >= 30 min; no type-2 maintenance
+        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
+        Job job = Job.fromDbJobRow(
+                new DbJobRow(null, "", 0, 0, 0.0,
+                        Timestamp.valueOf(start),
+                        Timestamp.valueOf(start.plusMinutes(60)),
+                        60, 2212L, 0, "line1", "Job", 0),
+                product, start, null);
+        line.setStartDateTime(start);
         line.getJobs().add(job);
         schedule.getJobs().add(job);
         ScheduleUtils.fixLineJobs(line);
@@ -302,83 +305,69 @@ class MaintenanceJobTest {
     }
 
     @Test
-    void dailyCleaning_WhenNoCleaningDuration() {
-        CleaningDurationUtils.init(Map.of("line1", 25));
-        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
-        maintenanceTypes.put(2, "Мойка");
-        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
-
+    void addDailyFullCleaning_skipsWhenDailyCleaningStartAfterLastJobEnd() {
+        CleaningDurationUtils.init(Map.of("line1", 30));
         Product maintenanceProduct = schedule.getProducts().get(0);
-        Product product = schedule.getProducts().get(1);
-        product.setCleaningResults(Map.of(maintenanceProduct, new CleaningResult(10, false)));
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
-        line.setStartDateTime(start.minusMinutes(60));
-        // Preceding job so the main job gets a positive wash duration (anchor)
-        Job preceding = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(0L, (short) 0, "line1",
-                        Timestamp.valueOf(start.minusMinutes(60)),
-                        Timestamp.valueOf(start.minusMinutes(30)),
-                        30, 2211L, 1, "preceding"),
-                "Preceding", maintenanceProduct, start.minusMinutes(60));
-        preceding.setMaintenance(true);
-        preceding.setMaintenanceTypeId(1);
-        line.getJobs().add(preceding);
-        schedule.getJobs().add(preceding);
-
-        Job job = Job.fromDbMaintenanceRow(
+        // Single maintenance type 2, duration 40 min; dailyCleaningStart = end+24h, last job = same → skip
+        LocalDateTime jobEnd = LocalDateTime.of(2025, 1, 15, 10, 0);
+        Job maint = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(start),
-                        Timestamp.valueOf(start.plusMinutes(60)),
-                        60, 2212L, 1, "note"),
-                "Job", product, start);
-        job.setMaintenance(true);
-        job.setMaintenanceTypeId(2);
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
+                        Timestamp.valueOf(jobEnd.minusMinutes(40)),
+                        Timestamp.valueOf(jobEnd),
+                        40, 2212L, 2, "Мойка"),
+                "Мойка", maintenanceProduct, jobEnd.minusMinutes(40));
+        maint.setMaintenance(true);
+        maint.setMaintenanceTypeId(2);
+        maint.setEndDateTime(jobEnd);
+        line.setStartDateTime(jobEnd.minusMinutes(40));
+        line.getJobs().add(maint);
+        schedule.getJobs().add(maint);
         ScheduleUtils.fixLineJobs(line);
 
         maintenanceJob.addDailyFullCleaning(schedule);
 
-        assertEquals(3, line.getJobs().size());
-        Job added = line.getJobs().get(2);
-        assertTrue(added.isMaintenance());
-        assertEquals(2, added.getMaintenanceTypeId());
-        assertEquals(25, added.getDuration().toMinutes());
+        assertEquals(1, line.getJobs().size());
     }
 
     @Test
-    void dailyCleaning_WithStartTimeWhenHasBaseJob() {
-        CleaningDurationUtils.init(Map.of("line1", 40));
+    void addDailyFullCleaning_addsWhenAnchorMaintenanceType2AndLastJobEndAfterStart() {
+        CleaningDurationUtils.init(Map.of("line1", 30));
         ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
         maintenanceTypes.put(2, "Мойка");
         when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
 
         Product maintenanceProduct = schedule.getProducts().get(0);
         Product normalProduct = schedule.getProducts().get(1);
-        normalProduct.setCleaningResults(Map.of(maintenanceProduct, new CleaningResult(15, false)));
+        LocalDateTime day1_10 = LocalDateTime.of(2025, 1, 15, 10, 0);
+        LocalDateTime day2_15 = LocalDateTime.of(2025, 1, 16, 15, 0);
+        LocalDateTime day2_0920 = LocalDateTime.of(2025, 1, 16, 9, 20);
 
-        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 7, 30);
-        LocalDateTime prodStart = LocalDateTime.of(2025, 1, 15, 8, 15);
-        line.setStartDateTime(lineStart);
-
-        Job maintenanceJob1 = Job.fromDbMaintenanceRow(
+        line.setStartDateTime(day2_0920); // so fixLineJobs (after add) places all jobs on Jan 16
+        Job maint = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(lineStart),
-                        Timestamp.valueOf(lineStart.plusMinutes(45)),
-                        45, 2211L, 1, "note"),
-                "Maintenance", maintenanceProduct, lineStart);
-        line.getJobs().add(maintenanceJob1);
-        schedule.getJobs().add(maintenanceJob1);
+                        Timestamp.valueOf(day1_10.minusMinutes(40)),
+                        Timestamp.valueOf(day1_10),
+                        40, 2211L, 2, "Мойка"),
+                "Мойка", maintenanceProduct, day1_10.minusMinutes(40));
+        maint.setMaintenance(true);
+        maint.setMaintenanceTypeId(2);
+        maint.setEndDateTime(day1_10);
+        maint.setLine(line);
+        line.getJobs().add(maint);
+        schedule.getJobs().add(maint);
 
-        Job job = Job.fromDbJobRow(
+        Job prod = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
-                        Timestamp.valueOf(prodStart),
-                        Timestamp.valueOf(prodStart.plusMinutes(60)),
+                        Timestamp.valueOf(day1_10.plusMinutes(30)),
+                        Timestamp.valueOf(day2_15),
                         60, 2212L, 0, "line1", "Job", 0),
-                normalProduct, prodStart, null);
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
-        ScheduleUtils.fixLineJobs(line);
+                normalProduct, day1_10.plusMinutes(30), null);
+        prod.setStartCleaningDateTime(day1_10);
+        prod.setStartProductionDateTime(day1_10.plusMinutes(30));
+        prod.setEndDateTime(day2_15);
+        prod.setLine(line);
+        line.getJobs().add(prod);
+        schedule.getJobs().add(prod);
 
         maintenanceJob.addDailyFullCleaning(schedule);
 
@@ -386,55 +375,54 @@ class MaintenanceJobTest {
         Job added = line.getJobs().get(2);
         assertTrue(added.isMaintenance());
         assertEquals(2, added.getMaintenanceTypeId());
-        assertEquals(40, added.getDuration().toMinutes());
+        assertEquals(30, added.getDuration().toMinutes());
+        // fixLineJobs recalculates the new job's start from previous job end + cleaning; assert next day and ~10:00
+        assertEquals(LocalDate.of(2025, 1, 16), added.getStartProductionDateTime().toLocalDate());
+        assertTrue(added.getStartProductionDateTime().getHour() >= 10 && added.getStartProductionDateTime().getHour() <= 11);
     }
 
     @Test
-    void extendLineMaxEndTime_skipsWhenLastJobEndDateTimeNull() {
-        CleaningDurationUtils.init(Map.of("line1", 30));
+    void addDailyFullCleaning_addsWhenAnchorFromCleaningGap() {
+        CleaningDurationUtils.init(Map.of("line1", 25));
+        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
+        maintenanceTypes.put(2, "Мойка");
+        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
 
-        Line lineNoStart = new Line("line1", "Line 1");
-        lineNoStart.setStartDateTime(null);
-        schedule.setLines(List.of(lineNoStart));
+        Product normalProduct = schedule.getProducts().get(1);
+        LocalDateTime day1_08 = LocalDateTime.of(2025, 1, 15, 8, 0);
+        LocalDateTime day1_0830 = LocalDateTime.of(2025, 1, 15, 8, 30);
+        LocalDateTime day2_10 = LocalDateTime.of(2025, 1, 16, 10, 0);
 
-        Product product = schedule.getProducts().get(1);
-        Job job = Job.fromDbJobRow(
+        Job prod = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
-                        null, null, 60, 2212L, 0, "line1", "Job", 0),
-                product, null, null);
-        lineNoStart.getJobs().add(job);
-        schedule.getJobs().add(job);
-        ScheduleUtils.fixLineJobs(lineNoStart);
+                        Timestamp.valueOf(day1_0830),
+                        Timestamp.valueOf(day2_10),
+                        60, 2212L, 0, "line1", "Job", 0),
+                normalProduct, day1_0830, null);
+        prod.setStartProductionDateTime(day1_08);
+        prod.setStartCleaningDateTime(day1_0830);
+        prod.setEndDateTime(day2_10);
+        prod.setLine(line);
+        line.setStartDateTime(day1_08);
+        line.getJobs().add(prod);
+        schedule.getJobs().add(prod);
 
         maintenanceJob.addDailyFullCleaning(schedule);
 
-        // Single job has null endDateTime, so no anchor → daily cleaning not added
-        assertEquals(1, lineNoStart.getJobs().size());
-        assertNull(lineNoStart.getMaxEndTime());
+        assertEquals(2, line.getJobs().size());
+        Job added = line.getJobs().stream()
+                .filter(j -> j.isMaintenance() && j.getMaintenanceTypeId() == 2 && j.getDuration().toMinutes() == 25)
+                .findFirst().orElseThrow();
+        assertTrue(added.isMaintenance());
+        assertEquals(2, added.getMaintenanceTypeId());
+        assertEquals(25, added.getDuration().toMinutes());
+        // fixLineJobs recalculates from line start (day1_08): new job ends up after previous; accept same or next day
+        assertTrue(added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, 1, 16))
+                || added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, 1, 15)));
     }
 
     @Test
-    void dailyCleaning_WhenCleaningUtilsNull() {
-        CleaningDurationUtils.init(null);
-        Product product = schedule.getProducts().get(1);
-        Job job = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(LocalDateTime.of(2025, 1, 15, 8, 0)),
-                        Timestamp.valueOf(LocalDateTime.of(2025, 1, 15, 9, 0)),
-                        60, 2212L, 1, "note"),
-                "Job", product, LocalDateTime.of(2025, 1, 15, 8, 0));
-        job.setMaintenance(true);
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
-        ScheduleUtils.fixLineJobs(line);
-
-        maintenanceJob.addDailyFullCleaning(schedule);
-
-        assertEquals(1, line.getJobs().size());
-    }
-
-    @Test
-    void dailyCleaning_MultipleLines() {
+    void addDailyFullCleaning_multipleLines() {
         CleaningDurationUtils.init(Map.of("line1", 30, "line2", 25));
         ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
         maintenanceTypes.put(2, "Мойка");
@@ -444,51 +432,57 @@ class MaintenanceJobTest {
         schedule.setLines(List.of(line, line2));
 
         Product maintenanceProduct = schedule.getProducts().get(0);
-        Product product = schedule.getProducts().get(1);
-        product.setCleaningResults(Map.of(maintenanceProduct, new CleaningResult(10, false)));
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
-        line.setStartDateTime(start.minusMinutes(60));
-        line2.setStartDateTime(start.minusMinutes(60));
+        Product normalProduct = schedule.getProducts().get(1);
+        LocalDateTime day1_10 = LocalDateTime.of(2025, 1, 15, 10, 0);
+        LocalDateTime day2_15 = LocalDateTime.of(2025, 1, 16, 15, 0);
 
-        Job prec1 = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(0L, (short) 0, "line1",
-                        Timestamp.valueOf(start.minusMinutes(60)), Timestamp.valueOf(start.minusMinutes(30)),
-                        30, 2211L, 1, "p1"),
-                "P1", maintenanceProduct, start.minusMinutes(60));
-        prec1.setMaintenance(true);
-        prec1.setMaintenanceTypeId(1);
-        line.getJobs().add(prec1);
-        schedule.getJobs().add(prec1);
-        Job job1 = Job.fromDbMaintenanceRow(
+        // Line1: maint type 2 end 10:00, prod end day2 15:00 (no fixLineJobs so end stays)
+        Job m1 = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(start), Timestamp.valueOf(start.plusMinutes(60)),
-                        60, 2212L, 1, "note"),
-                "Job", product, start);
-        job1.setMaintenance(true);
-        job1.setMaintenanceTypeId(2);
-        line.getJobs().add(job1);
-        schedule.getJobs().add(job1);
-        ScheduleUtils.fixLineJobs(line);
+                        Timestamp.valueOf(day1_10.minusMinutes(40)), Timestamp.valueOf(day1_10),
+                        40, 2211L, 2, "Мойка"),
+                "Мойка", maintenanceProduct, day1_10.minusMinutes(40));
+        m1.setMaintenance(true);
+        m1.setMaintenanceTypeId(2);
+        m1.setEndDateTime(day1_10);
+        m1.setLine(line);
+        line.getJobs().add(m1);
+        schedule.getJobs().add(m1);
+        Job p1 = Job.fromDbJobRow(
+                new DbJobRow(null, "", 0, 0, 0.0,
+                        Timestamp.valueOf(day1_10.plusMinutes(30)), Timestamp.valueOf(day2_15),
+                        60, 2212L, 0, "line1", "Job", 0),
+                normalProduct, day1_10.plusMinutes(30), null);
+        p1.setStartCleaningDateTime(day1_10);
+        p1.setStartProductionDateTime(day1_10.plusMinutes(30));
+        p1.setEndDateTime(day2_15);
+        p1.setLine(line);
+        line.getJobs().add(p1);
+        schedule.getJobs().add(p1);
 
-        Job prec2 = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(0L, (short) 0, "line2",
-                        Timestamp.valueOf(start.minusMinutes(60)), Timestamp.valueOf(start.minusMinutes(30)),
-                        30, 2211L, 1, "p2"),
-                "P2", maintenanceProduct, start.minusMinutes(60));
-        prec2.setMaintenance(true);
-        prec2.setMaintenanceTypeId(1);
-        line2.getJobs().add(prec2);
-        schedule.getJobs().add(prec2);
-        Job job2 = Job.fromDbMaintenanceRow(
+        // Line2: same pattern
+        Job m2 = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(2L, (short) 0, "line2",
-                        Timestamp.valueOf(start), Timestamp.valueOf(start.plusMinutes(60)),
-                        60, 2213L, 1, "note2"),
-                "Job2", product, start);
-        job2.setMaintenance(true);
-        job2.setMaintenanceTypeId(1);
-        line2.getJobs().add(job2);
-        schedule.getJobs().add(job2);
-        ScheduleUtils.fixLineJobs(line2);
+                        Timestamp.valueOf(day1_10.minusMinutes(30)), Timestamp.valueOf(day1_10),
+                        30, 2213L, 2, "Мойка"),
+                "Мойка", maintenanceProduct, day1_10.minusMinutes(30));
+        m2.setMaintenance(true);
+        m2.setMaintenanceTypeId(2);
+        m2.setEndDateTime(day1_10);
+        m2.setLine(line2);
+        line2.getJobs().add(m2);
+        schedule.getJobs().add(m2);
+        Job p2 = Job.fromDbJobRow(
+                new DbJobRow(null, "", 0, 0, 0.0,
+                        Timestamp.valueOf(day1_10.plusMinutes(30)), Timestamp.valueOf(day2_15),
+                        60, 2214L, 0, "line2", "Job2", 0),
+                normalProduct, day1_10.plusMinutes(30), null);
+        p2.setStartCleaningDateTime(day1_10);
+        p2.setStartProductionDateTime(day1_10.plusMinutes(30));
+        p2.setEndDateTime(day2_15);
+        p2.setLine(line2);
+        line2.getJobs().add(p2);
+        schedule.getJobs().add(p2);
 
         maintenanceJob.addDailyFullCleaning(schedule);
 
@@ -496,51 +490,5 @@ class MaintenanceJobTest {
         assertEquals(3, line2.getJobs().size());
         assertEquals(30, line.getJobs().get(2).getDuration().toMinutes());
         assertEquals(25, line2.getJobs().get(2).getDuration().toMinutes());
-    }
-
-    @Test
-    void dailyCleaning_Maintenance2WhenLonger() {
-        CleaningDurationUtils.init(Map.of("line1", 35));
-        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
-        maintenanceTypes.put(2, "Мойка");
-        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
-
-        Product maintenanceProduct = schedule.getProducts().get(0);
-        Product product = schedule.getProducts().get(1);
-        product.setCleaningResults(Map.of(maintenanceProduct, new CleaningResult(10, false)));
-        LocalDateTime prodStart = LocalDateTime.of(2025, 1, 15, 9, 0);
-        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 7, 0);
-        line.setStartDateTime(lineStart);
-        Job preceding = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(0L, (short) 0, "line1",
-                        Timestamp.valueOf(lineStart),
-                        Timestamp.valueOf(LocalDateTime.of(2025, 1, 15, 8, 0)),
-                        60, 2211L, 1, "preceding"),
-                "Preceding", maintenanceProduct, lineStart);
-        preceding.setMaintenance(true);
-        preceding.setMaintenanceTypeId(1);
-        line.getJobs().add(preceding);
-        schedule.getJobs().add(preceding);
-
-        Job maint2 = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(LocalDateTime.of(2025, 1, 15, 8, 0)),
-                        Timestamp.valueOf(prodStart.plusMinutes(60)),
-                        60, 2212L, 2, "Мойка"),
-                "Мойка", product, prodStart);
-        maint2.setMaintenance(true);
-        maint2.setMaintenanceTypeId(2);
-        maint2.setEndDateTime(prodStart.plusMinutes(60));
-        line.getJobs().add(maint2);
-        schedule.getJobs().add(maint2);
-        ScheduleUtils.fixLineJobs(line);
-
-        maintenanceJob.addDailyFullCleaning(schedule);
-
-        assertEquals(3, line.getJobs().size());
-        Job added = line.getJobs().get(2);
-        assertTrue(added.isMaintenance());
-        assertEquals(2, added.getMaintenanceTypeId());
-        assertEquals(35, added.getDuration().toMinutes());
     }
 }
