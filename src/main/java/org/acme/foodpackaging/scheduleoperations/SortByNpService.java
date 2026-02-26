@@ -5,6 +5,8 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.SortRangeRequest;
+
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 import java.util.*;
@@ -272,5 +274,43 @@ public class SortByNpService {
             combined.addAll(line.getJobs());
         }
         schedule.setJobs(combined);
+    }
+    /**
+     * Сортирует дипозон задач на линии по партиям в прямом/обратном в зависимости от флага sortUp
+     */
+    public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request){
+        Line line = findLineById(schedule, request.getLineId());
+        List<Job> jobs = line.getJobs();
+        int jobCount = jobs.size();
+
+        int from = request.getFromIndex();
+        int to = getAnInt(request, from, jobCount);
+
+        if(request.isSortUp()) {
+            jobs.subList(from, to)
+                    .sort(Comparator.comparing(Job::getNp));
+        }
+        else {
+            jobs.subList(from, to)
+                    .sort(Comparator.comparing(Job::getNp).reversed());
+        }
+    }
+
+    private static int getAnInt(SortRangeRequest request, int from, int jobCount) {
+        int sortCount = request.getSortCount();
+
+        if (from < 0) {
+            throw new IllegalArgumentException("fromIndex must be non-negative");
+        }
+        if (sortCount <= 0) {
+            throw new IllegalArgumentException("sortCount must be positive");
+        }
+
+        long toLong = (long) from + (long) sortCount;
+        if (toLong > jobCount) {
+            throw new IllegalArgumentException("Requested sort range [" + from + ", " + toLong + ") exceeds jobs list size " + jobCount);
+        }
+
+        return (int) toLong;
     }
 }
