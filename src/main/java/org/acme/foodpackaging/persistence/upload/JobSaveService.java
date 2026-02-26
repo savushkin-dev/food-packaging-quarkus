@@ -11,14 +11,10 @@ import org.acme.foodpackaging.repository.jobs.OeePevRepository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @ApplicationScoped
 public class JobSaveService {
 
-    
-    private static final String MAINTENANCE_PREFIX = "MAINTENANCE";
     private static final String CLEANING_NOTE = "Мойка, переналадка";
     private static final short DELETED_FLAG = 1;
 
@@ -34,24 +30,16 @@ public class JobSaveService {
 
     @Transactional
     public void saveJobsByType(PackagingSchedule schedule) {
+
         markDeletedMaintenanceJobs(schedule);
-        
-        List<Job> updatedJobs = new ArrayList<>(schedule.getJobs());
-        
-        for (int i = 0; i < schedule.getJobs().size(); i++) {
-            Job job = schedule.getJobs().get(i);
-            
+
+        for (Job job : schedule.getJobs()) {
             if (job.isMaintenance()) {
-                Job updatedJob = saveMaintenanceJob(job);
-                if (updatedJob != null) {
-                    updatedJobs.set(i, updatedJob);
-                }
+                saveMaintenanceJob(job);
             } else {
                 saveRegularJob(job);
             }
         }
-        
-        schedule.setJobs(updatedJobs);
     }
 
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
@@ -66,29 +54,22 @@ public class JobSaveService {
         }
     }
 
-    private Job saveMaintenanceJob(Job job) {
-        if (isNewMaintenanceJob(job)) {
-            return saveNewMaintenanceJob(job);
+    private void saveMaintenanceJob(Job job) {
+        if (job.isMaintenance() && job.getFId()==null) {
+             saveNewMaintenanceJob(job);
         } else {
             updateExistingMaintenanceJob(job);
-            return null;
         }
     }
 
-    private boolean isNewMaintenanceJob(Job job) {
-        return job.getId() != null && job.getId().startsWith(MAINTENANCE_PREFIX);
-    }
-
-    private Job saveNewMaintenanceJob(Job job) {
+    private void  saveNewMaintenanceJob(Job job) {
         OeePev entity = buildMaintenanceOeePev(job);
         oeePevRepository.persist(entity);
-        
+
         // After saving, get the assigned fId and assign it to the session plan
         long fId = entity.getFId();
         job.setId(String.valueOf(fId));
         job.setFId(fId);
-        
-        return job;
     }
 
     private void updateExistingMaintenanceJob(Job job) {
@@ -128,38 +109,39 @@ public class JobSaveService {
     }
 
     private void saveRegularJob(Job job) {
+
+        OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
+
         if (hasCleaningOperation(job)) {
-            saveCleaningOperation(job);
+
+            if (existing != null) {
+                updateCleaningOeePev(existing, job);
+            } else {
+                oeePevRepository.persist(buildCleaningOeePev(job));
+            }
+
+        } else {
+            if (existing != null) {
+                oeePevRepository.delete(existing);
+            }
         }
-        
+
         updateProductionJob(job);
     }
 
     private boolean hasCleaningOperation(Job job) {
         LocalDateTime startCleaning = job.getStartCleaningDateTime();
         LocalDateTime startProduction = job.getStartProductionDateTime();
-        
-        return startCleaning != null 
-                && startProduction != null 
-                && !startCleaning.isEqual(startProduction);
-    }
 
-    private void saveCleaningOperation(Job job) {
-        OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
-        
-        if (existing != null) {
-            updateCleaningOeePev(existing, job);
-            oeePevRepository.persist(existing);
-        } else {
-            OeePev entity = buildCleaningOeePev(job);
-            oeePevRepository.persist(entity);
-        }
+        return startCleaning != null
+                && startProduction != null
+                && !startCleaning.isEqual(startProduction);
     }
 
     private OeePev buildCleaningOeePev(Job job) {
         LocalDateTime startCleaning = job.getStartCleaningDateTime();
         LocalDateTime startProduction = job.getStartProductionDateTime();
-        
+
         return OeePev.builder()
                 .lineId(job.getLine().getId())
                 .startProductionDateTime(startCleaning)
@@ -175,7 +157,7 @@ public class JobSaveService {
     private void updateCleaningOeePev(OeePev existing, Job job) {
         LocalDateTime startCleaning = job.getStartCleaningDateTime();
         LocalDateTime startProduction = job.getStartProductionDateTime();
-        
+
         existing.setLineId(job.getLine().getId());
         existing.setStartProductionDateTime(startCleaning);
         existing.setEndDateTime(startProduction);
@@ -188,7 +170,7 @@ public class JobSaveService {
     private void updateProductionJob(Job job) {
         LocalDateTime startProduction = job.getStartProductionDateTime();
         LocalDateTime endDateTime = job.getEndDateTime();
-        
+
         bdVpmcRepository.updateBySnpz(
                 job.getSnpz(),
                 startProduction,

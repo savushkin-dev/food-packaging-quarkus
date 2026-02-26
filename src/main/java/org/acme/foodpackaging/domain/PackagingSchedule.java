@@ -56,7 +56,7 @@ public class PackagingSchedule {
         return jobs == null || jobs.isEmpty();
     }
 
-    public void setDateForEmptySolution(LocalDate startDate ) {
+    public void setDateForEmptySolution(LocalDate startDate) {
         if (isEmptySolution()) {
             workCalendar.setFromDate(startDate);
             workCalendar.setToDate(startDate.plusDays(1));
