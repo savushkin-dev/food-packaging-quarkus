@@ -228,16 +228,18 @@ public class MaintenanceJob {
         for (Line line : schedule.getLines()) {
 
             Duration requiredDuration = Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
-            LocalDateTime dailyCleaningStart = getDailyCleaningStart(line, requiredDuration);
+            long requiredMinutes = requiredDuration.toMinutes();
+            LocalDateTime dailyCleaningStart = getDailyCleaningStart(line, requiredMinutes);
             if(dailyCleaningStart== null || dailyCleaningStart.isAfter(line.getJobs().getLast().getEndDateTime())) continue;
 
             int minutesInt = Math.toIntExact(requiredDuration.toMinutes());
             createDailyCleaningJob(schedule, line, dailyCleaningStart, minutesInt);
+            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
         }
     }
 
     private LocalDateTime getDailyCleaningStart(
-            Line line, Duration requiredDuration
+            Line line, long requiredMinutes
     ) {
 
         LocalDateTime dailyCleaningStart= null;
@@ -250,11 +252,12 @@ public class MaintenanceJob {
 
         for (Job job : lineJobs.reversed()) {
             if (job.isMaintenance() && job.getMaintenanceTypeId() == 2
-                    && job.getDuration().compareTo(requiredDuration) >= 0) {
+                    && job.getDuration().toMinutes()>=requiredMinutes) {
                 dailyCleaningStart = job.getEndDateTime().plusHours(24);
             } else {
-                Duration cleaningDuration = Duration.between(job.getStartProductionDateTime(), job.getStartCleaningDateTime());
-                if (cleaningDuration.compareTo(requiredDuration) >= 0) {
+                Duration cleaningDuration = Duration.between( job.getStartCleaningDateTime(), job.getStartProductionDateTime());
+                long cleaningMinutes = cleaningDuration.toMinutes();
+                if (cleaningMinutes>=requiredMinutes) {
                     dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
                 }
             }

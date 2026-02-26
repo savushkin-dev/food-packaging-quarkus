@@ -379,6 +379,9 @@ class MaintenanceJobTest {
         // fixLineJobs recalculates the new job's start from previous job end + cleaning; assert next day and ~10:00
         assertEquals(LocalDate.of(2025, 1, 16), added.getStartProductionDateTime().toLocalDate());
         assertTrue(added.getStartProductionDateTime().getHour() >= 10 && added.getStartProductionDateTime().getHour() <= 11);
+        // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly added job)
+        assertNotNull(line.getMaxEndTime());
+        assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
     }
 
     @Test
@@ -399,8 +402,9 @@ class MaintenanceJobTest {
                         Timestamp.valueOf(day2At10),
                         60, 2212L, 0, "line1", "Job", 0),
                 normalProduct, day1At830, null);
-        prod.setStartProductionDateTime(day1At8);
-        prod.setStartCleaningDateTime(day1At830);
+        // New logic: cleaning duration = between(startCleaning, startProduction); need startCleaning < startProduction for positive gap
+        prod.setStartCleaningDateTime(day1At8);
+        prod.setStartProductionDateTime(day1At830);
         prod.setEndDateTime(day2At10);
         prod.setLine(line);
         line.setStartDateTime(day1At8);
@@ -419,6 +423,9 @@ class MaintenanceJobTest {
         // fixLineJobs recalculates from line start (day1At8): new job ends up after previous; accept same or next day
         assertTrue(added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, 1, 16))
                 || added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, 1, 15)));
+        // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly added job)
+        assertNotNull(line.getMaxEndTime());
+        assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
     }
 
     @Test
@@ -490,5 +497,10 @@ class MaintenanceJobTest {
         assertEquals(3, line2.getJobs().size());
         assertEquals(30, line.getJobs().get(2).getDuration().toMinutes());
         assertEquals(25, line2.getJobs().get(2).getDuration().toMinutes());
+        // addDailyFullCleaning sets maxEndTime = last job end + 20h on each line (last = newly added job)
+        assertNotNull(line.getMaxEndTime());
+        assertNotNull(line2.getMaxEndTime());
+        assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
+        assertEquals(line2.getJobs().getLast().getEndDateTime().plusHours(20), line2.getMaxEndTime());
     }
 }
