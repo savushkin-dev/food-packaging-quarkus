@@ -227,17 +227,17 @@ public class MaintenanceJob {
     public void addDailyFullCleaning(PackagingSchedule schedule) {
         for (Line line : schedule.getLines()) {
 
-            Duration required_duration = Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
-            LocalDateTime dailyCleaningStart = getDailyCleaningStart(line, required_duration);
+            Duration requiredDuration = Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
+            LocalDateTime dailyCleaningStart = getDailyCleaningStart(line, requiredDuration);
             if(dailyCleaningStart== null || dailyCleaningStart.isAfter(line.getJobs().getLast().getEndDateTime())) continue;
 
-            int minutesInt = Math.toIntExact(required_duration.toMinutes());
+            int minutesInt = Math.toIntExact(requiredDuration.toMinutes());
             createDailyCleaningJob(schedule, line, dailyCleaningStart, minutesInt);
         }
     }
 
     private LocalDateTime getDailyCleaningStart(
-            Line line, Duration required_duration
+            Line line, Duration requiredDuration
     ) {
 
         LocalDateTime dailyCleaningStart= null;
@@ -250,14 +250,14 @@ public class MaintenanceJob {
 
         for(Job job : lineJobs.reversed()){
             if(job.isMaintenance() && job.getMaintenanceTypeId()==2
-                    && job.getDuration().compareTo(required_duration)>=0){
+                    && job.getDuration().compareTo(requiredDuration)>=0){
                dailyCleaningStart = job.getEndDateTime().plusHours(24);
                break;
             }
 
             Duration cleaningDuration = Duration.between(job.getStartProductionDateTime(), job.getStartCleaningDateTime());
 
-            if(cleaningDuration.compareTo(required_duration)>=0){
+            if(cleaningDuration.compareTo(requiredDuration)>=0){
                dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
                break;
             }
