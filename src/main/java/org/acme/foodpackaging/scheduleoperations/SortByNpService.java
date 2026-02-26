@@ -280,14 +280,32 @@ public class SortByNpService {
      */
     public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request){
         Line line = findLineById(schedule, request.getLineId());
+        List<Job> jobs = line.getJobs();
+        int jobCount = jobs.size();
+
         int from = request.getFromIndex();
-        int to = from + request.getSortCount();
+        int sortCount = request.getSortCount();
+
+        if (from < 0) {
+            throw new IllegalArgumentException("fromIndex must be non-negative");
+        }
+        if (sortCount <= 0) {
+            throw new IllegalArgumentException("sortCount must be positive");
+        }
+
+        long toLong = (long) from + (long) sortCount;
+        if (toLong > jobCount) {
+            throw new IllegalArgumentException("Requested sort range [" + from + ", " + toLong + ") exceeds jobs list size " + jobCount);
+        }
+
+        int to = (int) toLong;
+
         if(request.isSortUp()) {
-            line.getJobs().subList(from, to)
+            jobs.subList(from, to)
                     .sort(Comparator.comparing(Job::getNp));
         }
         else {
-            line.getJobs().subList(from, to)
+            jobs.subList(from, to)
                     .sort(Comparator.comparing(Job::getNp).reversed());
         }
     }
