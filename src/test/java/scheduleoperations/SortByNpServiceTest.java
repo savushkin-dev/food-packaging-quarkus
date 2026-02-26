@@ -304,4 +304,92 @@ class SortByNpServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> service.sortRangeByNp(schedule, request));
     }
+
+    @Test
+    void sortRangeByNp_throwsWhenFromIndexNegative() {
+        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
+        schedule.setJobs(List.of(line1.getJobs().get(0)));
+
+        SortRangeRequest request = sortRangeRequest("L1", -1, 1, true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.sortRangeByNp(schedule, request));
+        assertEquals("fromIndex must be non-negative", ex.getMessage());
+    }
+
+    @Test
+    void sortRangeByNp_throwsWhenSortCountZero() {
+        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
+        schedule.setJobs(List.of(line1.getJobs().get(0)));
+
+        SortRangeRequest request = sortRangeRequest("L1", 0, 0, true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.sortRangeByNp(schedule, request));
+        assertEquals("sortCount must be positive", ex.getMessage());
+    }
+
+    @Test
+    void sortRangeByNp_throwsWhenSortCountNegative() {
+        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
+        schedule.setJobs(List.of(line1.getJobs().get(0)));
+
+        SortRangeRequest request = sortRangeRequest("L1", 0, -2, true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.sortRangeByNp(schedule, request));
+        assertEquals("sortCount must be positive", ex.getMessage());
+    }
+
+    @Test
+    void sortRangeByNp_throwsWhenRangeExceedsListSize() {
+        Job j1 = job("J1", 1, vanilla);
+        Job j2 = job("J2", 2, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(j1, j2)));
+        schedule.setJobs(List.of(j1, j2));
+
+        SortRangeRequest request = sortRangeRequest("L1", 0, 5, true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.sortRangeByNp(schedule, request));
+        assertTrue(ex.getMessage().contains("Requested sort range [0, 5) exceeds jobs list size 2"));
+    }
+
+    @Test
+    void sortRangeByNp_throwsWhenRangeEndPastListSize() {
+        Job j1 = job("J1", 1, vanilla);
+        Job j2 = job("J2", 2, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(j1, j2)));
+        schedule.setJobs(List.of(j1, j2));
+
+        SortRangeRequest request = sortRangeRequest("L1", 1, 2, true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.sortRangeByNp(schedule, request));
+        assertTrue(ex.getMessage().contains("exceeds jobs list size 2"));
+    }
+
+    @Test
+    void sortRangeByNp_singleElementRange_unchanged() {
+        Job j1 = job("J1", 42, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+        schedule.setJobs(List.of(j1));
+
+        service.sortRangeByNp(schedule, sortRangeRequest("L1", 0, 1, true));
+
+        assertEquals(List.of(42), line1.getJobs().stream().map(Job::getNp).toList());
+    }
+
+    @Test
+    void sortRangeByNp_fullRangeSortDown() {
+        Job j1 = job("J1", 5, vanilla);
+        Job j2 = job("J2", 2, vanilla);
+        Job j3 = job("J3", 8, vanilla);
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
+        schedule.setJobs(List.of(j1, j2, j3));
+
+        service.sortRangeByNp(schedule, sortRangeRequest("L1", 0, 3, false));
+
+        assertEquals(List.of(8, 5, 2), line1.getJobs().stream().map(Job::getNp).toList());
+    }
 }
