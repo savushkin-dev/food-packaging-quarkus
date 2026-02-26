@@ -253,12 +253,12 @@ public class MaintenanceJob {
         for (Job job : lineJobs.reversed()) {
             if (job.isMaintenance() && job.getMaintenanceTypeId() == 2
                     && job.getDuration().toMinutes()>=requiredMinutes) {
-                dailyCleaningStart = job.getEndDateTime().plusHours(24);
+                dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
             } else {
                 Duration cleaningDuration = Duration.between( job.getStartCleaningDateTime(), job.getStartProductionDateTime());
                 long cleaningMinutes = cleaningDuration.toMinutes();
                 if (cleaningMinutes>=requiredMinutes) {
-                    dailyCleaningStart = job.getStartProductionDateTime().plusHours(24);
+                    dailyCleaningStart = job.getStartCleaningDateTime().plusHours(24);
                 }
             }
             if (dailyCleaningStart != null) {
