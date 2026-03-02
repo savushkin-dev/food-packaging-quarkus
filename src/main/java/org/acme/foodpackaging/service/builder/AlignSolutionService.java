@@ -147,7 +147,7 @@ public class AlignSolutionService {
 
         Job firstFact = factChain.getFirst();
         LocalDateTime factStart = firstFact.getCameraStart();
-        LocalDateTime planStart = target.job().getStartProductionDateTime();
+        LocalDateTime planStart = target.job().getStartCleaningDateTime();
         if (planStart == null) return;
 
         if (tryUpdateExistingAlignMaintenance(schedule, line, jobs, target.job(), factStart)) {
@@ -157,6 +157,12 @@ public class AlignSolutionService {
         if (!planStart.isBefore(factStart)) return;
 
         long diffMinutes = ceilMinutes(Duration.between(planStart, factStart));
+        Integer extraMinutes = null;
+        if(target.job.getStartProductionDateTime()!=target.job.getStartCleaningDateTime()){
+            long cleaningMinutes = ceilMinutes(Duration.between(planStart, target.job.getStartProductionDateTime()));
+            diffMinutes -= cleaningMinutes;
+            extraMinutes = (int) cleaningMinutes;
+        }
         if (diffMinutes <= 0) return;
 
         MaintenanceRequest request = new MaintenanceRequest();
@@ -164,6 +170,7 @@ public class AlignSolutionService {
         request.setInsertIndex(target.index());
         request.setDurationMinutes((int) diffMinutes);
         request.setMaintenanceTypeId(8);
+        request.setAlignExtraCleaning(extraMinutes);
         request.setMaintenanceNote("Выравнивание последней фактической цепочки продукта " + productId);
 
         maintenanceJob.addMaintenanceJob(schedule, request);
@@ -193,13 +200,12 @@ public class AlignSolutionService {
         if (result.containsKey(productId)) {
             return idx - 1;
         }
-        int end = idx;
         int pos = idx;
         while (pos >= 0 && productId.equals(factJobs.get(pos).getProduct().getId())) {
             pos--;
         }
         int start = pos + 1;
-        result.put(productId, new ArrayList<>(factJobs.subList(start, end + 1)));
+        result.put(productId, new ArrayList<>(factJobs.subList(start, idx + 1)));
         return pos;
     }
 

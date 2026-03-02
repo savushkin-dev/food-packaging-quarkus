@@ -34,17 +34,70 @@ public class MaintenanceJob {
                                                MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.getLineId());
-        int typeKey = request.getMaintenanceTypeId() != null ? request.getMaintenanceTypeId(): 1;
-        List<Job> lineJobs = line.getJobs();
+        int typeKey = request.getMaintenanceTypeId() != null ? request.getMaintenanceTypeId() : 1;
 
+        String maintenanceTypeName = resolveMaintenanceTypeName(typeKey);
+        Job maintenanceJob = buildMaintenanceJob(schedule, request, line, maintenanceTypeName);
+
+        int insertedIndex = insertMaintenanceJob(line, maintenanceJob, request);
+
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+
+        schedule.getJobs().add(maintenanceJob);
+        Integer alignExtraCleaning = request.getAlignExtraCleaning();
+        if(alignExtraCleaning!=null){
+            maybeAddExtraMaintenance(schedule, line, request, alignExtraCleaning, insertedIndex);
+        }
+
+        ExtraMaintenance extraMaintenance = getExtraMaintenanceData(request);
+
+         if(extraMaintenance.isNeed){
+             maybeAddExtraMaintenance(schedule, line, request, extraMaintenance.extraMinutes, insertedIndex);
+         }
+
+        return schedule;
+    }
+
+    private ExtraMaintenance getExtraMaintenanceData(MaintenanceRequest request){
+        int packagingType = 7;
+        int alignType = 8;
+        int maintenanceType = request.getMaintenanceTypeId();
+
+        if(isMoreSixHours(request.getDurationMinutes()) && maintenanceType!=alignType && maintenanceType!=packagingType) {
+            Map<String, Integer> cleanings = CleaningDurationUtils.getLinesCleaning();
+            if (cleanings != null) {
+                Integer extraMinutes = cleanings.get(request.getLineId());
+
+                if (!(extraMinutes == null || extraMinutes <= 0)) {
+                    return new ExtraMaintenance(true, extraMinutes);
+                }
+            }
+        }
+        return new ExtraMaintenance(false, null);
+    }
+
+    private boolean isMoreSixHours(Integer reqMinutes) {
+        return reqMinutes == null || reqMinutes < 6 * 60;
+    }
+
+    private record ExtraMaintenance( boolean isNeed, Integer extraMinutes ){}
+
+    private String resolveMaintenanceTypeName(int typeKey) {
         ConcurrentMap<Integer, String> maintenanceTypes =
                 loadDataService != null ? loadDataService.getMaintenanceTypes() : null;
-        String maintenanceTypeName = maintenanceTypes != null
+        return maintenanceTypes != null
                 ? maintenanceTypes.getOrDefault(typeKey, "Обслуживание")
                 : "Обслуживание";
+    }
 
+    private Job buildMaintenanceJob(PackagingSchedule schedule,
+                                    MaintenanceRequest request,
+                                    Line line,
+                                    String maintenanceTypeName) {
         Job maintenanceJob = Job.createMaintenanceJob(
-                "MAINTENANCE-" + UUID.randomUUID(), null,
+                "MAINTENANCE-" + UUID.randomUUID(),
+                null,
                 request.getMaintenanceTypeId(),
                 maintenanceTypeName,
                 request.getMaintenanceNote(),
@@ -53,91 +106,58 @@ public class MaintenanceJob {
         );
         maintenanceJob.setLine(line);
         maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        return maintenanceJob;
+    }
 
-        int insertedIndex;
+    private int insertMaintenanceJob(Line line,
+                                     Job maintenanceJob,
+                                     MaintenanceRequest request) {
+        List<Job> lineJobs = line.getJobs();
+        LocalDateTime startTime = request.getStartProductionDateTime();
 
         if (lineJobs.isEmpty()) {
-
-            line.setStartDateTime(request.getStartProductionDateTime());
-
-            LocalDateTime startTime = request.getStartProductionDateTime();
+            line.setStartDateTime(startTime);
             maintenanceJob.setStartCleaningDateTime(startTime);
             maintenanceJob.setStartProductionDateTime(startTime);
-
             lineJobs.add(maintenanceJob);
-            insertedIndex = 0;
-        } else {
-
-            Integer insertIndex = request.getInsertIndex();
-        
-            if (insertIndex == null) {
-                insertIndex = findInsertIndexByTime(
-                        lineJobs,
-                        request.getStartProductionDateTime()
-                );
-            }
-        
-            if (insertIndex < 0 || insertIndex > lineJobs.size()) {
-                throw new IllegalArgumentException("Invalid insertIndex: " + insertIndex);
-            }
-        
-            LocalDateTime startTime = request.getStartProductionDateTime();
-        
-            if (startTime != null) {
-                maintenanceJob.setStartCleaningDateTime(startTime);
-                maintenanceJob.setStartProductionDateTime(startTime);
-            }
-        
-            lineJobs.add(insertIndex, maintenanceJob);
-            insertedIndex = insertIndex;
+            return 0;
         }
 
-        fixLineJobs(line);
-        fixPinnedJobs(line);
+        Integer insertIndex = request.getInsertIndex();
+        if (insertIndex == null) {
+            insertIndex = findInsertIndexByTime(lineJobs, startTime);
+        }
 
-        schedule.getJobs().add(maintenanceJob);
+        if (insertIndex < 0 || insertIndex > lineJobs.size()) {
+            throw new IllegalArgumentException("Invalid insertIndex: " + insertIndex);
+        }
 
-        int packagingType = 7;
-        int alignType = 8;
+        if (startTime != null) {
+            maintenanceJob.setStartCleaningDateTime(startTime);
+            maintenanceJob.setStartProductionDateTime(startTime);
+        }
 
-        if (!(typeKey == packagingType || typeKey == alignType)) {
-            maybeAddExtraMaintenance(schedule, line, lineJobs, maintenanceJob, request, insertedIndex);
-        }   
-
-        return schedule;
+        lineJobs.add(insertIndex, maintenanceJob);
+        return insertIndex;
     }
 
     private void maybeAddExtraMaintenance(PackagingSchedule schedule,
-                                          Line line,
-                                          List<Job> lineJobs,
-                                          Job primaryJob,
-                                          MaintenanceRequest request,
-                                          int insertedIndex) {
-        Integer reqMinutes = request.getDurationMinutes();
-        if (reqMinutes == null || reqMinutes < 6 * 60) return;
+                                          Line line, MaintenanceRequest request,
+                                          int extraMinutes, int insertedIndex) {
 
-        Map<String, Integer> cleanings = CleaningDurationUtils.getLinesCleaning();
-        if (cleanings == null) return;
-        Integer extraMinutes = cleanings.get(request.getLineId());
-        if (extraMinutes == null || extraMinutes <= 0) return;
-
-        Job extraJob = Job.createMaintenanceJob(
-                "MAINTENANCE-" + UUID.randomUUID(),
-                null,
-                2,
-                "Мойка",
-                "Auto extra maintenance",
-                schedule.getMaintenanceProduct(),
-                extraMinutes
+        Job extraJob = createExtraCleaning(
+                schedule.getMaintenanceProduct(), extraMinutes
         );
+
         extraJob.setLine(line);
         extraJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
         if (request.isEmptyLineMode()) {
+            Job primaryJob = line.getJobs().get(insertedIndex);
             extraJob.setStartCleaningDateTime(primaryJob.getStartCleaningDateTime());
             extraJob.setStartProductionDateTime(primaryJob.getStartProductionDateTime());
         }
-        int idx = Math.min(insertedIndex + 1, lineJobs.size());
-        lineJobs.add(idx, extraJob);
+        int idx = Math.min(insertedIndex + 1, line.getJobs().size());
+        line.getJobs().add(idx, extraJob);
         schedule.getJobs().add(extraJob);
         fixLineJobs(line);
         fixPinnedJobs(line);
@@ -145,6 +165,18 @@ public class MaintenanceJob {
 
     public static Product createMaintenanceProduct() {
        return new Product("Maintenance Product", "MAINTENANCE", "", "", "", "", "");
+    }
+
+    private Job createExtraCleaning(Product maintenanceProduct, int duration){
+        return Job.createMaintenanceJob(
+                "MAINTENANCE-" + UUID.randomUUID(),
+                null,
+                2,
+                "Мойка",
+                "Auto extra maintenance",
+                maintenanceProduct,
+                duration
+        );
     }
 
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
