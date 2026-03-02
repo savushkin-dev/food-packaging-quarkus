@@ -219,6 +219,58 @@ class AlignSolutionServiceTest {
         verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
     }
 
+    @Test
+    void alignLineStartByFact_whenAlignMaintenanceDurationDiffers_shouldUpdate() {
+
+        Product product = createProduct("P1");
+
+        Job align = new Job();
+        align.setMaintenance(true);
+        align.setMaintenanceTypeId(8);
+        align.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 9, 0));
+        align.setDuration(Duration.ofMinutes(10)); // старая длительность
+
+        Job j1 = createChainJob("J1", product, 1,
+                LocalDateTime.of(2025, 1, 15, 9, 30), 0);
+
+        j1.setPreviousJob(align);
+
+        Job j2 = createChainJob("J2", product, 2,
+                LocalDateTime.of(2025, 1, 15, 10, 30), 0);
+
+        line.getJobs().addAll(List.of(align, j1, j2));
+        schedule.getJobs().addAll(List.of(align, j1, j2));
+
+        alignSolutionService.alignLineStartByFact(schedule);
+
+        verify(maintenanceJob).updateDuration(eq(schedule), any());
+    }
+
+    @Test
+    void alignLineStartByFact_whenPlanBeforeFact_shouldAddAlignMaintenance() {
+
+        Product product = createProduct("P1");
+
+        Job j1 = createChainJob("J1", product, 1,
+                LocalDateTime.of(2025, 1, 15, 9, 0), 30); // факт сдвинут на 30 мин
+
+        Job j2 = createChainJob("J2", product, 2,
+                LocalDateTime.of(2025, 1, 15, 10, 0), 30);
+
+        line.getJobs().addAll(List.of(j1, j2));
+        schedule.getJobs().addAll(List.of(j1, j2));
+
+        alignSolutionService.alignLineStartByFact(schedule);
+
+        ArgumentCaptor<MaintenanceRequest> captor =
+                ArgumentCaptor.forClass(MaintenanceRequest.class);
+
+        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
+
+        MaintenanceRequest request = captor.getValue();
+        assertEquals(8, request.getMaintenanceTypeId());
+        assertTrue(request.getDurationMinutes() > 0);
+    }
     // ============================================================
     // helpers
     // ============================================================
@@ -254,7 +306,9 @@ class AlignSolutionServiceTest {
         job.setProduct(product);
         job.setNp(np);
 
+        job.setStartCleaningDateTime(planStart);   // ВАЖНО
         job.setStartProductionDateTime(planStart);
+
         job.setEndDateTime(planStart.plusMinutes(60));
 
         job.setCameraStart(planStart.plusMinutes(factShiftMinutes));
