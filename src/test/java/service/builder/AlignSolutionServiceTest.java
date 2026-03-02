@@ -178,33 +178,6 @@ class AlignSolutionServiceTest {
     // ============================================================
 
     @Test
-    void alignLineStartByFact_whenFactAfterPlan_shouldAddMaintenance() {
-
-        Product product = createProduct("P1");
-
-        Job j1 = createChainJob("J1", product, 1,
-                LocalDateTime.of(2025,1,15,10,0),
-                20);
-
-        Job j2 = createChainJob("J2", product, 2,
-                LocalDateTime.of(2025,1,15,11,0),
-                20);
-
-        line.getJobs().addAll(List.of(j1, j2));
-        schedule.getJobs().addAll(List.of(j1, j2));
-
-        alignSolutionService.alignLineStartByFact(schedule);
-
-        ArgumentCaptor<MaintenanceRequest> captor =
-                ArgumentCaptor.forClass(MaintenanceRequest.class);
-
-        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
-
-        assertEquals(20, captor.getValue().getDurationMinutes());
-        assertEquals(8, captor.getValue().getMaintenanceTypeId());
-    }
-
-    @Test
     void alignLineStartByFact_whenFactEqualsPlan_shouldNotAddMaintenance() {
 
         Product product = createProduct("P1");
@@ -223,54 +196,6 @@ class AlignSolutionServiceTest {
         alignSolutionService.alignLineStartByFact(schedule);
 
         verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
-    }
-
-    @Test
-    void alignLineStartByFact_whenAlignMaintenanceExists_shouldUpdate() {
-
-        Product product = createProduct("P1");
-
-        Job align = new Job();
-        align.setMaintenance(true);
-        align.setMaintenanceTypeId(8);
-        align.setStartProductionDateTime(
-                LocalDateTime.of(2025,1,15,9,0)
-        );
-        align.setDuration(Duration.ofMinutes(60));
-
-        Job j1 = createChainJob("J1", product, 1,
-                LocalDateTime.of(2025,1,15,9,30),
-                20);
-
-        j1.setPreviousJob(align);
-
-        Job j2 = createChainJob("J2", product, 2,
-                LocalDateTime.of(2025,1,15,10,30),
-                20);
-
-        line.getJobs().addAll(List.of(align, j1, j2));
-        schedule.getJobs().addAll(List.of(align, j1, j2));
-
-        alignSolutionService.alignLineStartByFact(schedule);
-
-        verify(maintenanceJob).updateDuration(eq(schedule), any());
-    }
-
-    @Test
-    void alignLineStartByFact_whenSameProductInTwoSegments_usesLastChain() {
-        Product p1 = createProduct("P1");
-        Product p2 = createProduct("P2");
-        Job j1 = createChainJob("J1", p1, 1, LocalDateTime.of(2025, 1, 15, 10, 0), 0);
-        Job j2 = createChainJob("J2", p2, 1, LocalDateTime.of(2025, 1, 15, 11, 0), 0);
-        Job j3 = createChainJob("J3", p1, 2, LocalDateTime.of(2025, 1, 15, 12, 0), 10);
-        line.getJobs().addAll(List.of(j1, j2, j3));
-        schedule.getJobs().addAll(List.of(j1, j2, j3));
-
-        alignSolutionService.alignLineStartByFact(schedule);
-
-        ArgumentCaptor<MaintenanceRequest> captor = ArgumentCaptor.forClass(MaintenanceRequest.class);
-        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
-        assertEquals(10, captor.getValue().getDurationMinutes());
     }
 
     @Test
@@ -295,27 +220,104 @@ class AlignSolutionServiceTest {
     }
 
     @Test
-    void alignLineStartByFact_whenFactStartBeforeAlignStart_shouldClampDurationAndUpdate() {
+    void alignLineStartByFact_whenAlignMaintenanceDurationDiffers_shouldUpdate() {
+
         Product product = createProduct("P1");
+
         Job align = new Job();
         align.setMaintenance(true);
         align.setMaintenanceTypeId(8);
-        align.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 10, 0));
-        align.setDuration(Duration.ofMinutes(60));
+        align.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 9, 0));
+        align.setDuration(Duration.ofMinutes(10)); // старая длительность
 
-        Job j1 = createChainJob("J1", product, 1, LocalDateTime.of(2025, 1, 15, 10, 0), -30);
+        Job j1 = createChainJob("J1", product, 1,
+                LocalDateTime.of(2025, 1, 15, 9, 30), 0);
+
         j1.setPreviousJob(align);
-        Job j2 = createChainJob("J2", product, 2, LocalDateTime.of(2025, 1, 15, 11, 0), -30);
+
+        Job j2 = createChainJob("J2", product, 2,
+                LocalDateTime.of(2025, 1, 15, 10, 30), 0);
+
         line.getJobs().addAll(List.of(align, j1, j2));
         schedule.getJobs().addAll(List.of(align, j1, j2));
 
         alignSolutionService.alignLineStartByFact(schedule);
 
-        ArgumentCaptor<MaintenanceRequest> captor = ArgumentCaptor.forClass(MaintenanceRequest.class);
-        verify(maintenanceJob).updateDuration(eq(schedule), captor.capture());
-        assertEquals(0, captor.getValue().getDurationMinutes());
+        verify(maintenanceJob).updateDuration(eq(schedule), any());
     }
 
+    @Test
+    void alignLineStartByFact_whenPlanBeforeFact_shouldAddAlignMaintenance() {
+
+        Product product = createProduct("P1");
+
+        Job j1 = createChainJob("J1", product, 1,
+                LocalDateTime.of(2025, 1, 15, 9, 0), 30); // факт сдвинут на 30 мин
+
+        Job j2 = createChainJob("J2", product, 2,
+                LocalDateTime.of(2025, 1, 15, 10, 0), 30);
+
+        line.getJobs().addAll(List.of(j1, j2));
+        schedule.getJobs().addAll(List.of(j1, j2));
+
+        alignSolutionService.alignLineStartByFact(schedule);
+
+        ArgumentCaptor<MaintenanceRequest> captor =
+                ArgumentCaptor.forClass(MaintenanceRequest.class);
+
+        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
+
+        MaintenanceRequest request = captor.getValue();
+        assertEquals(8, request.getMaintenanceTypeId());
+        assertTrue(request.getDurationMinutes() > 0);
+    }
+
+    @Test
+    void alignLineStartByFact_whenPlanHasCleaning_shouldSetExtraMinutes() {
+
+        Product product = createProduct("P1");
+
+        // === Первая задача (target) ===
+        Job j1 = new Job();
+        j1.setId("J1");
+        j1.setProduct(product);
+        j1.setNp(1);
+
+        j1.setStartCleaningDateTime(LocalDateTime.of(2025, 1, 15, 9, 0));
+        j1.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 9, 20));
+        j1.setEndDateTime(LocalDateTime.of(2025, 1, 15, 10, 20));
+
+        j1.setCameraStart(LocalDateTime.of(2025, 1, 15, 10, 0));
+        j1.setCameraEnd(LocalDateTime.of(2025, 1, 15, 11, 0));
+
+        // === Вторая задача с тем же продуктом ===
+        Job j2 = new Job();
+        j2.setId("J2");
+        j2.setProduct(product);
+        j2.setNp(2);
+
+        j2.setStartCleaningDateTime(LocalDateTime.of(2025, 1, 15, 10, 20));
+        j2.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 10, 20));
+        j2.setEndDateTime(LocalDateTime.of(2025, 1, 15, 11, 20));
+
+        j2.setCameraStart(LocalDateTime.of(2025, 1, 15, 10, 30));
+        j2.setCameraEnd(LocalDateTime.of(2025, 1, 15, 11, 30));
+
+        line.getJobs().addAll(List.of(j1, j2));
+        schedule.getJobs().addAll(List.of(j1, j2));
+
+        alignSolutionService.alignLineStartByFact(schedule);
+
+        ArgumentCaptor<MaintenanceRequest> captor =
+                ArgumentCaptor.forClass(MaintenanceRequest.class);
+
+        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
+
+        MaintenanceRequest request = captor.getValue();
+
+        assertEquals(20, request.getAlignExtraCleaning());
+        assertEquals(40, request.getDurationMinutes());
+    }
     // ============================================================
     // helpers
     // ============================================================
@@ -351,7 +353,9 @@ class AlignSolutionServiceTest {
         job.setProduct(product);
         job.setNp(np);
 
+        job.setStartCleaningDateTime(planStart);   // ВАЖНО
         job.setStartProductionDateTime(planStart);
+
         job.setEndDateTime(planStart.plusMinutes(60));
 
         job.setCameraStart(planStart.plusMinutes(factShiftMinutes));

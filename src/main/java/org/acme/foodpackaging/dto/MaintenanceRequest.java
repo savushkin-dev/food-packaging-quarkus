@@ -17,6 +17,7 @@ public class MaintenanceRequest {
     private Integer insertIndex;
     private Integer updateIndex;
     private Integer removeIndex;
+    private Integer alignExtraCleaning;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm[:ss]")
     private LocalDateTime startProductionDateTime;
