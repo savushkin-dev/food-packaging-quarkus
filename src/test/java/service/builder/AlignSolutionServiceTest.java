@@ -271,6 +271,53 @@ class AlignSolutionServiceTest {
         assertEquals(8, request.getMaintenanceTypeId());
         assertTrue(request.getDurationMinutes() > 0);
     }
+
+    @Test
+    void alignLineStartByFact_whenPlanHasCleaning_shouldSetExtraMinutes() {
+
+        Product product = createProduct("P1");
+
+        // === Первая задача (target) ===
+        Job j1 = new Job();
+        j1.setId("J1");
+        j1.setProduct(product);
+        j1.setNp(1);
+
+        j1.setStartCleaningDateTime(LocalDateTime.of(2025, 1, 15, 9, 0));
+        j1.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 9, 20));
+        j1.setEndDateTime(LocalDateTime.of(2025, 1, 15, 10, 20));
+
+        j1.setCameraStart(LocalDateTime.of(2025, 1, 15, 10, 0));
+        j1.setCameraEnd(LocalDateTime.of(2025, 1, 15, 11, 0));
+
+        // === Вторая задача с тем же продуктом ===
+        Job j2 = new Job();
+        j2.setId("J2");
+        j2.setProduct(product);
+        j2.setNp(2);
+
+        j2.setStartCleaningDateTime(LocalDateTime.of(2025, 1, 15, 10, 20));
+        j2.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 10, 20));
+        j2.setEndDateTime(LocalDateTime.of(2025, 1, 15, 11, 20));
+
+        j2.setCameraStart(LocalDateTime.of(2025, 1, 15, 10, 30));
+        j2.setCameraEnd(LocalDateTime.of(2025, 1, 15, 11, 30));
+
+        line.getJobs().addAll(List.of(j1, j2));
+        schedule.getJobs().addAll(List.of(j1, j2));
+
+        alignSolutionService.alignLineStartByFact(schedule);
+
+        ArgumentCaptor<MaintenanceRequest> captor =
+                ArgumentCaptor.forClass(MaintenanceRequest.class);
+
+        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
+
+        MaintenanceRequest request = captor.getValue();
+
+        assertEquals(20, request.getAlignExtraCleaning());
+        assertEquals(40, request.getDurationMinutes());
+    }
     // ============================================================
     // helpers
     // ============================================================
