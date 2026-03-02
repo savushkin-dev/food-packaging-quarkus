@@ -81,6 +81,7 @@ class MaintenanceJobTest {
         request.setDurationMinutes(30);
 
         request.setStartProductionDateTime(LocalDateTime.now());
+        request.setMaintenanceTypeId(4);
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
@@ -216,12 +217,14 @@ class MaintenanceJobTest {
         seed.setLineId("line1");
         seed.setDurationMinutes(20);
         seed.setInsertIndex(0);
+        seed.setMaintenanceTypeId(2);
         maintenanceJob.addMaintenanceJob(schedule, seed);
 
         MaintenanceRequest req = new MaintenanceRequest();
         req.setLineId("line1");
         req.setDurationMinutes(360);
         req.setInsertIndex(1); // insert after seed
+        req.setMaintenanceTypeId(2);
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
 
@@ -244,6 +247,7 @@ class MaintenanceJobTest {
         MaintenanceRequest req = new MaintenanceRequest();
         req.setLineId("line1");
         req.setDurationMinutes(400);
+        req.setMaintenanceTypeId(4);
         req.setStartProductionDateTime(start);
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
