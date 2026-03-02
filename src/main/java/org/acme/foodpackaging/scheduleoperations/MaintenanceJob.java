@@ -78,7 +78,7 @@ public class MaintenanceJob {
     }
 
     private boolean isMoreSixHours(Integer reqMinutes) {
-        return reqMinutes == null || reqMinutes < 6 * 60;
+        return reqMinutes != null && reqMinutes >= 6 * 60;
     }
 
     private record ExtraMaintenance( boolean isNeed, Integer extraMinutes ){}
