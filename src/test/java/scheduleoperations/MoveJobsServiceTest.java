@@ -131,6 +131,70 @@ class MoveJobsServiceTest {
         assertEquals("J1", line2.getJobs().getFirst().getName());
     }
 
+@Test
+void movingBetweenLines_removesPackagingExtensions() {
+    Job j1 = job("1", "J1", productA); 
+    Job pack7 = job("2", "Pack1", productA);
+    pack7.setMaintenance(true);
+    pack7.setMaintenanceTypeId(7);
+    Job pack8 = job("3", "Pack2", productA);
+    pack8.setMaintenance(true);
+    pack8.setMaintenanceTypeId(8);
+
+    line1.setJobs(new ArrayList<>(List.of(j1, pack7, pack8)));
+    line2.setJobs(new ArrayList<>());
+
+    MoveJobsRequest request = new MoveJobsRequest();
+    request.setFromLineId("line1");
+    request.setToLineId("line2");
+    request.setFromIndex(0);
+    request.setCount(3);
+    request.setInsertIndex(0);
+
+    service.moveJobs(schedule, request);
+
+    // В line1 остались только задачи вне диапазона (если бы были)
+    assertTrue(line1.getJobs().isEmpty());
+
+    // В line2 остались только реальные задачи
+    assertEquals(1, line2.getJobs().size());
+    assertEquals("J1", line2.getJobs().get(0).getName());
+}
+
+@Test
+void movingWithinSameLine_removesExtensions() {
+    // обычные задачи
+    Job j1 = job("1", "J1", productA);
+    Job j2 = job("2", "J2", productA);
+
+    // extension/packaging jobs
+    Job pack7 = job("3", "Pack7", productA);
+    pack7.setMaintenance(true);
+    pack7.setMaintenanceTypeId(7);
+    Job pack8 = job("4", "Pack8", productA);
+    pack8.setMaintenance(true);
+    pack8.setMaintenanceTypeId(8);
+
+    // исходная линия
+    line1.setJobs(new ArrayList<>(List.of(j1, pack7, j2, pack8)));
+
+    MoveJobsRequest request = new MoveJobsRequest();
+    request.setFromLineId("line1");
+    request.setToLineId("line1");  
+    request.setFromIndex(0);
+    request.setCount(4);
+    request.setInsertIndex(1);
+
+    service.moveJobs(schedule, request);
+
+    // line1 после перемещения и очистки
+    List<Job> jobs = line1.getJobs();
+
+    // должны остаться только реальные задачи, extension удалены
+    assertEquals(2, jobs.size());
+    assertEquals("J1", jobs.get(0).getName());
+    assertEquals("J2", jobs.get(1).getName());
+}
     @Test
     void sanityCheck() {
         assertNotNull(service);

@@ -7,10 +7,6 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.MoveJobsRequest;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -120,6 +116,7 @@ public class MoveJobsService {
             List<Job> moved = new ArrayList<>(jobs.subList(fromIndex, fromEnd));
             jobs.subList(fromIndex, fromEnd).clear();
 
+            removePackagingExtension(moved);
             insertIndex = Math.clamp(insertIndex, 0, jobs.size());
             jobs.addAll(insertIndex, moved);
 
@@ -136,6 +133,7 @@ public class MoveJobsService {
         List<Job> jobsToMove = new ArrayList<>(fromJobs.subList(fromIndex, fromEnd));
         fromJobs.subList(fromIndex, fromEnd).clear();
 
+        removePackagingExtension(jobsToMove);
         insertIndex = Math.clamp(insertIndex, 0, toJobs.size());
         toJobs.addAll(insertIndex, jobsToMove);
 
@@ -143,6 +141,11 @@ public class MoveJobsService {
         toLine.setJobs(toJobs);
 
         return jobsToMove;
+    }
+
+    private void removePackagingExtension(List<Job> jobs) {
+        jobs.removeIf(job -> job.isMaintenance() && 
+            (job.getMaintenanceTypeId() == 7 || job.getMaintenanceTypeId()==8));
     }
 }
 
