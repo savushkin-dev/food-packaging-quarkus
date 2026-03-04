@@ -285,10 +285,23 @@ public class SortByNpService {
         int from = request.getFromIndex();
         int sortCount = request.getSortCount();
 
-        if (from < 0) throw new IllegalArgumentException("fromIndex must be non-negative");
-        if (sortCount <= 0) throw new IllegalArgumentException("sortCount must be positive");
-
-        int to = Math.min(from + sortCount, jobs.size());
+        if (from < 0) {
+            throw new IllegalArgumentException("fromIndex must be non-negative");
+        }
+        if (sortCount <= 0) {
+            throw new IllegalArgumentException("sortCount must be positive");
+        }
+        // Ensure that from is within the bounds of the jobs list
+        if (from > jobs.size()) {
+            throw new IllegalArgumentException("fromIndex must not be greater than jobs size");
+        }
+        // Ensure that sortCount does not cause from + sortCount to overflow
+        // and does not go beyond the end of the jobs list
+        int maxSortable = jobs.size() - from;
+        if (sortCount > maxSortable) {
+            sortCount = maxSortable;
+        }
+        int to = from + sortCount;
 
         List<Job> sublist = new ArrayList<>(jobs.subList(from, to));
         removePackagingExtension(sublist);
