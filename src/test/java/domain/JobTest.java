@@ -83,6 +83,8 @@ class JobTest {
         assertEquals(1, job.getPriority());
         assertEquals(startProductionDateTime, job.getStartProductionDateTime());
         assertEquals(startProductionDateTime.plus(duration), job.getEndDateTime());
+        assertEquals(18, job.getEmk());
+        assertEquals(100, job.getPlacePlan());
     }
 
     // --- getDuration, getSpeed, getHandPackagingSpeed tests ---
