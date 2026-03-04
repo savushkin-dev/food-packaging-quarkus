@@ -87,6 +87,39 @@ class JobTest {
         assertEquals(row.placePlan(), job.getPlacePlan());
     }
 
+    @Test
+    void testFromDbJobRowWithNullDuration() {
+        LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
+        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
+        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
+        Product product = new Product("12", "Vanilla");
+        DbJobRow row = new DbJobRow(
+                Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
+                Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
+                null,
+                3L, 0, "17000234", "Strawberry", 18, 100
+        );
+        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
+        assertEquals(Duration.ZERO, job.getDuration());
+    }
+
+    @Test
+    void testFromDbJobRowWithNullEmk() {
+        LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
+        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
+        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
+        Product product = new Product("12", "Vanilla");
+        DbJobRow row = new DbJobRow(
+                Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
+                Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
+                20, 3L, 0, "17000234", "Strawberry",
+                null,  // emk = null
+                100
+        );
+        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
+        assertEquals(0, job.getEmk());
+    }
+
     // --- getDuration, getSpeed, getHandPackagingSpeed tests ---
 
     @Test
