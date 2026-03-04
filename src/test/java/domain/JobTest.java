@@ -85,6 +85,14 @@ class JobTest {
         assertEquals(startProductionDateTime.plus(duration), job.getEndDateTime());
         assertEquals(row.emk(), job.getEmk());
         assertEquals(row.placePlan(), job.getPlacePlan());
+
+        DbJobRow rowWithEmkNull = new DbJobRow(
+                Timestamp.valueOf(dti),"1623", 34,5600,1600.23,
+                Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime),
+                20,3L, 0, "17000234", "Strawberry", null, 100);
+
+        assertEquals(rowWithEmkNull.emk(), 0);
+        assertNotNull(rowWithEmkNull.emk());
     }
 
     // --- getDuration, getSpeed, getHandPackagingSpeed tests ---
