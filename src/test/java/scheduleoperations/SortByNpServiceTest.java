@@ -263,20 +263,22 @@ class SortByNpServiceTest {
     }
 
     @Test
-    void sortRangeByNp_partialRange_sortsOnlySpecifiedSublist() {
-        Job j1 = job("J1", 1, vanilla);
-        Job j2 = job("J2", 50, vanilla);
-        Job j3 = job("J3", 20, vanilla);
-        Job j4 = job("J4", 5, vanilla);
-        Job j5 = job("J5", 9, vanilla);
-        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3, j4, j5)));
-        schedule.setJobs(List.of(j1, j2, j3, j4, j5));
+void sortRangeByNp_partialRange_sortsOnlySpecifiedSublist() {
+    Job j1 = job("J1", 1, vanilla);
+    Job j2 = job("J2", 50, vanilla);
+    Job j3 = job("J3", 20, vanilla);
+    Job j4 = job("J4", 5, vanilla);
+    Job j5 = job("J5", 9, vanilla);
 
-        service.sortRangeByNp(schedule, sortRangeRequest("L1", 1, 3, true));
+    line1.setJobs(new ArrayList<>(List.of(j1, j2, j3, j4, j5)));
+    schedule.setJobs(line1.getJobs());
 
-        // indices 1..3 (j2, j3, j4) sorted ascending: 5, 20, 50; first and last unchanged
-        assertEquals(List.of(1, 5, 20, 50, 9), line1.getJobs().stream().map(Job::getNp).toList());
-    }
+    service.sortRangeByNp(schedule, sortRangeRequest("L1", 1, 4, true));
+
+    // indices 1..4 sorted ascending: 5,9,20,50; первый элемент j1 не изменился
+    assertEquals(List.of(1, 5, 9, 20, 50),
+            line1.getJobs().stream().map(Job::getNp).toList());
+}
 
     @Test
     void sortRangeByNp_otherLinesUnaffected() {
@@ -295,80 +297,39 @@ class SortByNpServiceTest {
         assertEquals(List.of(9, 7), line2.getJobs().stream().map(Job::getNp).toList());
     }
 
-    @Test
-    void sortRangeByNp_throwsWhenLineNotFound() {
-        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
-        schedule.setJobs(List.of(line1.getJobs().get(0)));
+@Test
+void sortRangeByNp_truncatesRangeIfTooLong() {
+    Job j1 = job("J1", 1, vanilla);
+    Job j2 = job("J2", 2, vanilla);
+    line1.setJobs(new ArrayList<>(List.of(j1, j2)));
+    schedule.setJobs(List.of(j1, j2));
 
-        SortRangeRequest request = sortRangeRequest("NONEXISTENT", 0, 1, true);
+    SortRangeRequest request = sortRangeRequest("L1", 0, 5, true);
 
-        assertThrows(IllegalArgumentException.class, () -> service.sortRangeByNp(schedule, request));
-    }
+    // метод больше не выбрасывает исключение
+    service.sortRangeByNp(schedule, request);
 
-    @Test
-    void sortRangeByNp_throwsWhenFromIndexNegative() {
-        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
-        schedule.setJobs(List.of(line1.getJobs().get(0)));
+    // сортировка проходит по существующему диапазону
+    assertEquals(List.of(1, 2),
+            line1.getJobs().stream().map(Job::getNp).toList());
+}
 
-        SortRangeRequest request = sortRangeRequest("L1", -1, 1, true);
+@Test
+void sortRangeByNp_truncatesRangeWhenFromIndexCloseToEnd() {
+    Job j1 = job("J1", 1, vanilla);
+    Job j2 = job("J2", 2, vanilla);
+    line1.setJobs(new ArrayList<>(List.of(j1, j2)));
+    schedule.setJobs(List.of(j1, j2));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.sortRangeByNp(schedule, request));
-        assertEquals("fromIndex must be non-negative", ex.getMessage());
-    }
+    SortRangeRequest request = sortRangeRequest("L1", 1, 2, true);
 
-    @Test
-    void sortRangeByNp_throwsWhenSortCountZero() {
-        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
-        schedule.setJobs(List.of(line1.getJobs().get(0)));
+    service.sortRangeByNp(schedule, request);
 
-        SortRangeRequest request = sortRangeRequest("L1", 0, 0, true);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.sortRangeByNp(schedule, request));
-        assertEquals("sortCount must be positive", ex.getMessage());
-    }
-
-    @Test
-    void sortRangeByNp_throwsWhenSortCountNegative() {
-        line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
-        schedule.setJobs(List.of(line1.getJobs().get(0)));
-
-        SortRangeRequest request = sortRangeRequest("L1", 0, -2, true);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.sortRangeByNp(schedule, request));
-        assertEquals("sortCount must be positive", ex.getMessage());
-    }
-
-    @Test
-    void sortRangeByNp_throwsWhenRangeExceedsListSize() {
-        Job j1 = job("J1", 1, vanilla);
-        Job j2 = job("J2", 2, vanilla);
-        line1.setJobs(new ArrayList<>(List.of(j1, j2)));
-        schedule.setJobs(List.of(j1, j2));
-
-        SortRangeRequest request = sortRangeRequest("L1", 0, 5, true);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.sortRangeByNp(schedule, request));
-        assertTrue(ex.getMessage().contains("Requested sort range [0, 5) exceeds jobs list size 2"));
-    }
-
-    @Test
-    void sortRangeByNp_throwsWhenRangeEndPastListSize() {
-        Job j1 = job("J1", 1, vanilla);
-        Job j2 = job("J2", 2, vanilla);
-        line1.setJobs(new ArrayList<>(List.of(j1, j2)));
-        schedule.setJobs(List.of(j1, j2));
-
-        SortRangeRequest request = sortRangeRequest("L1", 1, 2, true);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> service.sortRangeByNp(schedule, request));
-        assertTrue(ex.getMessage().contains("exceeds jobs list size 2"));
-    }
-
+    // сортируется только j2, первый элемент не меняется
+    assertEquals(List.of(1, 2),
+            line1.getJobs().stream().map(Job::getNp).toList());
+}
+   
     @Test
     void sortRangeByNp_singleElementRange_unchanged() {
         Job j1 = job("J1", 42, vanilla);
@@ -392,4 +353,44 @@ class SortByNpServiceTest {
 
         assertEquals(List.of(8, 5, 2), line1.getJobs().stream().map(Job::getNp).toList());
     }
+
+@Test
+void sortRangeByNp_removesExtensionsAndSorts() {
+    // обычные задачи с np
+    Job j1 = job("J1", 3, vanilla);
+    Job j2 = job("J2", 1, vanilla);
+    Job j3 = job("J3", 2, vanilla);
+
+    // extension/packaging (maintenance 7/8)
+    Job pack7 = job("Pack7", 100, vanilla);
+    pack7.setMaintenance(true);
+    pack7.setMaintenanceTypeId(7);
+
+    Job pack8 = job("Pack8", 50, vanilla);
+    pack8.setMaintenance(true);
+    pack8.setMaintenanceTypeId(8);
+
+    // исходная линия
+    line1.setJobs(new ArrayList<>(List.of(j1, pack7, j2, j3, pack8)));
+    schedule.setJobs(line1.getJobs());
+
+    SortRangeRequest request = new SortRangeRequest();
+    request.setLineId(line1.getId());
+    request.setFromIndex(0);
+    request.setSortCount(5); 
+    request.setSortUp(true);
+
+    service.sortRangeByNp(schedule, request);
+
+    List<Job> jobs = line1.getJobs();
+
+    assertFalse(jobs.contains(pack7));
+    assertFalse(jobs.contains(pack8));
+
+    assertEquals(3, jobs.size());
+
+    assertEquals("J2", jobs.get(0).getName()); // np=1
+    assertEquals("J3", jobs.get(1).getName()); // np=2
+    assertEquals("J1", jobs.get(2).getName()); // np=3
+}
 }

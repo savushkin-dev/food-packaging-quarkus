@@ -142,10 +142,5 @@ public class MoveJobsService {
 
         return jobsToMove;
     }
-
-    private void removePackagingExtension(List<Job> jobs) {
-        jobs.removeIf(job -> job.isMaintenance() && 
-            (job.getMaintenanceTypeId() == 7 || job.getMaintenanceTypeId()==8));
-    }
 }
 

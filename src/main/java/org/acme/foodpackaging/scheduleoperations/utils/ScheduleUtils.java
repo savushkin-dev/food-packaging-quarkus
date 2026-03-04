@@ -148,4 +148,9 @@ public class ScheduleUtils {
         }
         return new ArrayList<>(rows.values());
     }
+    
+     public static void removePackagingExtension(List<Job> jobs) {
+        jobs.removeIf(job -> job.isMaintenance() && 
+            (job.getMaintenanceTypeId() == 7 || job.getMaintenanceTypeId()==8));
+    }
 }

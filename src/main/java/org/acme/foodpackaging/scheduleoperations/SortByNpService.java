@@ -278,39 +278,36 @@ public class SortByNpService {
     /**
      * Сортирует дипозон задач на линии по партиям в прямом/обратном в зависимости от флага sortUp
      */
-    public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request){
+    public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request) {
         Line line = findLineById(schedule, request.getLineId());
-        List<Job> jobs = line.getJobs();
-        int jobCount = jobs.size();
+        List<Job> jobs = Optional.ofNullable(line.getJobs()).orElse(Collections.emptyList());
 
         int from = request.getFromIndex();
-        int to = getAnInt(request, from, jobCount);
-
-        if(request.isSortUp()) {
-            jobs.subList(from, to)
-                    .sort(Comparator.comparing(Job::getNp));
-        }
-        else {
-            jobs.subList(from, to)
-                    .sort(Comparator.comparing(Job::getNp).reversed());
-        }
-    }
-
-    private static int getAnInt(SortRangeRequest request, int from, int jobCount) {
         int sortCount = request.getSortCount();
 
-        if (from < 0) {
-            throw new IllegalArgumentException("fromIndex must be non-negative");
-        }
-        if (sortCount <= 0) {
-            throw new IllegalArgumentException("sortCount must be positive");
-        }
+        if (from < 0) throw new IllegalArgumentException("fromIndex must be non-negative");
+        if (sortCount <= 0) throw new IllegalArgumentException("sortCount must be positive");
 
-        long toLong = (long) from + (long) sortCount;
-        if (toLong > jobCount) {
-            throw new IllegalArgumentException("Requested sort range [" + from + ", " + toLong + ") exceeds jobs list size " + jobCount);
-        }
+        int to = Math.min(from + sortCount, jobs.size());
 
-        return (int) toLong;
+        List<Job> sublist = new ArrayList<>(jobs.subList(from, to));
+        removePackagingExtension(sublist);
+
+        if (request.isSortUp()) {
+            sublist.sort(Comparator.comparing(Job::getNp));
+        } else {
+        sublist.sort(Comparator.comparing(Job::getNp).reversed());
     }
+
+        // заменяем подсписок в исходной линии на отсортированный и очищенный
+        for (int i = 0; i < sublist.size(); i++) {
+            jobs.set(from + i, sublist.get(i));
+        }
+
+        while (jobs.size() > from + sublist.size()) {
+            jobs.remove(from + sublist.size());
+        }
+
+    line.setJobs(jobs);
+}
 }
