@@ -85,6 +85,8 @@ class JobTest {
         assertEquals(startProductionDateTime.plus(duration), job.getEndDateTime());
         assertEquals(row.emk(), job.getEmk());
         assertEquals(row.placePlan(), job.getPlacePlan());
+        assertNotNull(job.getEmk());
+        assertNotNull(job.getPlacePlan());
     }
 
     // --- getDuration, getSpeed, getHandPackagingSpeed tests ---
