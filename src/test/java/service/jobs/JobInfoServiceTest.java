@@ -48,7 +48,7 @@ class JobInfoServiceTest {
         DbJobRow dbJobRow = new DbJobRow(
                 timestamp, "KMC001", 111, 100, 2.5,
                 timestamp, timestamp, 60, SNPZ, 1,
-                "L1", "Product Name", 19
+                "L1", "Product Name", 19, 100
         );
 
         job = Job.fromDbJobRow(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);

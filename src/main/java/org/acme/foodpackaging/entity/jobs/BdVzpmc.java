@@ -34,6 +34,7 @@ import java.util.UUID;
                         @ColumnResult(name = "KRC", type = String.class),
                         @ColumnResult(name = "SNM", type = String.class),
                         @ColumnResult(name = "EMK", type = Integer.class),
+                        @ColumnResult(name = "KOLMP", type = Integer.class),
                 }
         )
 )
@@ -81,6 +82,9 @@ public class BdVzpmc extends PanacheEntityBase {
 
     @Column(name = "EMK")
     private Integer emk;
+
+    @Column(name = "KOLMP")
+    private Integer placePlan;
 
     @Override
     public String toString() {

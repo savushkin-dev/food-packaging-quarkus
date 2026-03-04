@@ -71,7 +71,7 @@ class JobTest {
         DbJobRow row = new DbJobRow(
                 Timestamp.valueOf(dti),"1623", 34,5600,1600.23,
                 Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime),
-                20,3L, 0, "17000234", "Strawberry", 18);
+                20,3L, 0, "17000234", "Strawberry", 18, 100);
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
 
         assertEquals("3", job.getId());

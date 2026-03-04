@@ -89,7 +89,8 @@ class JobServiceTest {
                 1,                // priority
                 lineId,           // lineId
                 "Test Job",       // shortName
-                18                // emk
+                18,                // emk
+                100                //placePlan
         );
     }
     
@@ -165,7 +166,7 @@ void initSolutionJobList_shouldSkipJobsWithoutLineId() {
             jobRow.mass(), jobRow.startProductionDateTime(),
             jobRow.endDateTime(), jobRow.duration(),
             jobRow.snpz(), jobRow.priority(),
-            null, jobRow.shortName(), 18
+            null, jobRow.shortName(), 18, 100
     );
 
     Product product = new Product(
