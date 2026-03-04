@@ -23,7 +23,7 @@ public class SqlQueries {
         return """
             SELECT
                 v.DTI, v.KMC, v.NP, v.KOLEV, v.MASSA, v.PDTN,
-                v.PDTO, v.PDUR, v.SNPZ, v.UX, v.KRC, m.SNM, v.EMK
+                v.PDTO, v.PDUR, v.SNPZ, v.UX, v.KRC, m.SNM, v.EMK, v.KOLMP
             FROM [%s].[dbo].[BD_VZPMC] AS v
             JOIN [%s].[dbo].[NS_MC] AS m
                 ON v.KMC = m.KMC

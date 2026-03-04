@@ -20,5 +20,6 @@ public record ProductionJobParams(
         Product product,
         Duration duration,
         LocalDateTime startProductionDateTime,
-        int emk
+        int emk,
+        int placePlan
 ) {}

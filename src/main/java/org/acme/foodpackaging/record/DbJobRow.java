@@ -20,5 +20,6 @@ public record DbJobRow(
         Integer priority,                    // UX
         String lineId,                      // krc
         String shortName,                // SNM
-        Integer emk
+        Integer emk,
+        Integer placePlan
 ) {}
