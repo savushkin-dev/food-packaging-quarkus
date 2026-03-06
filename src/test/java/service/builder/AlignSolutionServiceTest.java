@@ -102,6 +102,57 @@ class AlignSolutionServiceTest {
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 50), solution.getJobs().getFirst().getEndDateTime());
         assertTrue(solution.getJobs().getFirst().isFinalDuration());
     }
+
+    @Test
+    void alignByFactDuration_NullCameraData(){
+        Job j1 = new Job();
+        Line line = new Line();
+        line.setId("line1");
+        j1.setStartCleaningDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
+        j1.setStartProductionDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
+        j1.setEndDateTime(LocalDateTime.of(2026,3, 6, 10, 33));
+        j1.setLine(line);
+        j1.setQuantity(2900);
+        Product product = new Product();
+        product.setType("CLASSIC");
+        j1.setProduct(product);
+
+        Job j2 = new Job();
+        j2.setMaintenance(true);
+        j2.setMaintenanceTypeId(7);
+
+        List<Job> jobs = new ArrayList<>(List.of(j1, j2));
+
+        line.setJobs(jobs);
+        line.setStartDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(jobs);
+        solution.setLines(new ArrayList<>(List.of(line)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals(1, solution.getJobs().size());
+        assertEquals(1, solution.getLines().getFirst().getJobs().size());
+        assertEquals(33, solution.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getEndDateTime());
+        assertNull(solution.getJobs().getFirst().getDelayDuration());
+        assertNull(solution.getJobs().getFirst().getPlanEndDateTime());
+        assertFalse(solution.getJobs().getFirst().isFinalDuration());
+    }
+    
+    @Test
+    void alignByFactDuration_emptyJobs(){
+        schedule.getJobs().clear();
+        alignSolutionService.alignByFactDuration(schedule);
+        assertTrue(schedule.getJobs().isEmpty());
+    }
+
+    @Test
+    void alignByFactDuration_NullJobs(){
+       PackagingSchedule solution = new PackagingSchedule();
+       alignSolutionService.alignByFactDuration(solution);
+       assertNull(solution.getJobs());
+    }
     // ============================================================
     // alignLineStartByFact
     // ============================================================
