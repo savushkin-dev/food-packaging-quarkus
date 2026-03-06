@@ -133,7 +133,6 @@ class AlignSolutionServiceTest {
 
         line.setJobs(jobs);
         line.setStartDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-        PackagingSchedule solution = new PackagingSchedule();
         solution.setJobs(jobs);
         solution.setLines(new ArrayList<>(List.of(line)));
 
@@ -157,7 +156,7 @@ class AlignSolutionServiceTest {
 
     @Test
     void alignByFactDuration_NullJobs(){
-       PackagingSchedule solution = new PackagingSchedule();
+       solution = new PackagingSchedule();
        alignSolutionService.alignByFactDuration(solution);
        assertNull(solution.getJobs());
     }
