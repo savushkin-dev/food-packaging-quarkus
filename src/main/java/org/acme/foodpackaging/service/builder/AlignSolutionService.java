@@ -11,6 +11,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixPinnedJobs;
+
 @ApplicationScoped
 public class AlignSolutionService {
 
@@ -21,63 +24,53 @@ public class AlignSolutionService {
     }
 
     public void alignByFactDuration(PackagingSchedule schedule) {
+       removePackagingMaintenance(schedule);
         for (Line line : schedule.getLines()) {
             List<Job> jobs = line.getJobs();
             if (jobs == null || jobs.isEmpty()) {
                 continue;
             }
-            List<MaintenanceToInsert> toInsert = collectMaintenanceToInsert(jobs);
-            insertMaintenanceItems(schedule, line, toInsert);
+            fixDurationByFact(line);
         }
     }
 
-    private List<MaintenanceToInsert> collectMaintenanceToInsert(List<Job> jobs) {
-        List<MaintenanceToInsert> toInsert = new ArrayList<>();
-        int acceptableDiff = 5;
-        for (Job job : jobs) {
+    private void removePackagingMaintenance(PackagingSchedule schedule){
+        List<Job> jobs = schedule.getJobs();
+        if (schedule.getJobs() == null || schedule.getJobs().isEmpty()) {
+            return;
+        }
+        jobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId() == 7);
+        for(Line line : schedule.getLines()){
+            if(line==null) continue;
+            List<Job> lineJobs = line.getJobs();
+            if (lineJobs == null || lineJobs.isEmpty()) {
+                continue;
+            }
+            lineJobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId() == 7);
+            fixLineJobs(line);
+            fixPinnedJobs(line);
+        }
+    }
+
+    private void  fixDurationByFact(Line line) {
+
+        for (Job job : line.getJobs()) {
             Long factMinutes = calculateFactMinutes(job);
             if (factMinutes == null) {
                 continue;
             }
             long planMinutes = calculatePlanMinutes(job);
             long diff = factMinutes - planMinutes;
-
-            if (diff > acceptableDiff && !hasDeviationMaintenance(job)) {
-                toInsert.add(new MaintenanceToInsert(job, diff));
+            if(diff>0){
+                job.setPlanEndDateTime(job.getEndDateTime());
+                job.setEndDateTime(job.getPlanEndDateTime().plusMinutes(diff));
+                job.setDelayDuration(Duration.ofMinutes(diff));
+                job.setDuration(Duration.ofMinutes(factMinutes));
+                job.setFinalDuration(true);
+                fixLineJobs(line);
+                fixPinnedJobs(line);
             }
-        }
-        return toInsert;
-    }
 
-    private boolean hasDeviationMaintenance(Job job) {
-
-        Job next = job.getNextJob();
-        if (next == null) {
-            return false;
-        }
-
-        return next.isMaintenance()
-                && (next.getMaintenanceTypeId() == 7
-                || next.getMaintenanceTypeId() == 8);
-    }
-
-    private void insertMaintenanceItems(PackagingSchedule schedule, Line line,
-                                        List<MaintenanceToInsert> toInsert) {
-        for (int i = toInsert.size() - 1; i >= 0; i--) {
-            MaintenanceToInsert item = toInsert.get(i);
-            int index = line.getJobs().indexOf(item.job);
-            if (index < 0) {
-                continue;
-            }
-            MaintenanceRequest request = new MaintenanceRequest();
-            request.setLineId(line.getId());
-            request.setInsertIndex(index + 1);
-            request.setDurationMinutes((int) item.diffMinutes);
-            request.setMaintenanceTypeId(7);
-            request.setMaintenanceNote(
-                    "Отклонение факт > план. Job id=" + item.job.getId()
-            );
-            maintenanceJob.addMaintenanceJob(schedule, request);
         }
     }
 
@@ -110,9 +103,6 @@ public class AlignSolutionService {
             return 0;
         }
         return (duration.toSeconds() + 59) / 60;
-    }
-
-    private record MaintenanceToInsert(Job job, long diffMinutes) {
     }
 
     public void alignLineStartByFact(PackagingSchedule schedule) {
