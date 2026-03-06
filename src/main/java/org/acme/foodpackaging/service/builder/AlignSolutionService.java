@@ -25,13 +25,14 @@ public class AlignSolutionService {
 
     public void alignByFactDuration(PackagingSchedule schedule) {
        removePackagingMaintenance(schedule);
-        for (Line line : schedule.getLines()) {
-            List<Job> jobs = line.getJobs();
-            if (jobs == null || jobs.isEmpty()) {
-                continue;
-            }
-            fixDurationByFact(line);
-        }
+       if(schedule.getLines()==null) return;
+       for (Line line : schedule.getLines()) {
+           List<Job> jobs = line.getJobs();
+           if (jobs == null || jobs.isEmpty()) {
+               continue;
+           }
+           fixDurationByFact(line);
+           }
     }
 
     private void removePackagingMaintenance(PackagingSchedule schedule){
