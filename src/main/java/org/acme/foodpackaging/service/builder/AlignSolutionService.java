@@ -42,11 +42,12 @@ public class AlignSolutionService {
         }
         jobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId() == 7);
         for(Line line : schedule.getLines()){
-            if(line==null) continue;
-            List<Job> lineJobs = line.getJobs();
-            if (lineJobs == null || lineJobs.isEmpty()) {
+
+            if (line == null || line.getJobs() == null || line.getJobs().isEmpty()) {
                 continue;
             }
+            List<Job> lineJobs = line.getJobs();
+
             lineJobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId() == 7);
             fixLineJobs(line);
             fixPinnedJobs(line);

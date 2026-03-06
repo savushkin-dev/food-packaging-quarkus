@@ -35,13 +35,13 @@ class AlignSolutionServiceTest {
     @Mock
     MaintenanceJob maintenanceJob;
 
-    private PackagingSchedule schedule;
+    private PackagingSchedule solution;
     private Line line;
 
     @BeforeEach
     void setUp() {
-        schedule = new PackagingSchedule();
-        schedule.setJobs(new ArrayList<>());
+        solution = new PackagingSchedule();
+        solution.setJobs(new ArrayList<>());
 
         line = new Line("line1", "Line 1");
         line.setJobs(new ArrayList<>());
@@ -56,7 +56,26 @@ class AlignSolutionServiceTest {
 
         SpeedCacheUtils.init(speeds);
 
-        schedule.setLines(List.of(line));
+        solution.setLines(new ArrayList<>(List.of(line)));
+    }
+
+    private Job getPackagingMaintenance(){
+        Job job = new Job();
+        job.setMaintenance(true);
+        job.setMaintenanceTypeId(7);
+        return job;
+    }
+
+    private Job getJob() {
+        Job j1 = new Job();
+
+        j1.setLine(line);
+        j1.setQuantity(2900);
+        Product product = new Product();
+        product.setType("CLASSIC");
+        j1.setProduct(product);
+
+        return j1;
     }
 
     // ============================================================
@@ -65,32 +84,26 @@ class AlignSolutionServiceTest {
 
     @Test
     void alignByFactDuration(){
-        Job j1 = new Job();
-        Line line = new Line();
-        line.setId("line1");
+        Job j1 = getJob();
+        Line line1 = new Line();
+        Line line2 = new Line();
+        line1.setJobs(new ArrayList<>());
         j1.setStartCleaningDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
         j1.setStartProductionDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
         j1.setEndDateTime(LocalDateTime.of(2026,3, 6, 10, 33));
-        j1.setLine(line);
-        j1.setQuantity(2900);
-        Product product = new Product();
-        product.setType("CLASSIC");
-        j1.setProduct(product);
 
         j1.setCameraStart(LocalDateTime.of(2026,3, 6, 11, 0));
         j1.setCameraEnd(LocalDateTime.of(2026,3, 6, 11, 50));
 
-        Job j2 = new Job();
-        j2.setMaintenance(true);
-        j2.setMaintenanceTypeId(7);
+        Job j2 = getPackagingMaintenance();
 
         List<Job> jobs = new ArrayList<>(List.of(j1, j2));
 
         line.setJobs(jobs);
         line.setStartDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-        PackagingSchedule solution = new PackagingSchedule();
+
         solution.setJobs(jobs);
-        solution.setLines(new ArrayList<>(List.of(line)));
+        solution.setLines(new ArrayList<>(List.of(line, line1, line2)));
 
         alignSolutionService.alignByFactDuration(solution);
 
@@ -100,26 +113,21 @@ class AlignSolutionServiceTest {
         assertEquals(17, solution.getJobs().getFirst().getDelayDuration().toMinutes());
         assertEquals(LocalDateTime.of(2026,3, 6, 10, 33), solution.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 50), solution.getJobs().getFirst().getEndDateTime());
+
         assertTrue(solution.getJobs().getFirst().isFinalDuration());
+        assertTrue(solution.getLines().get(1).getJobs().isEmpty());
+
+        assertNull(solution.getLines().get(2).getJobs());
     }
 
     @Test
     void alignByFactDuration_NullCameraData(){
-        Job j1 = new Job();
-        Line line = new Line();
-        line.setId("line1");
+        Job j1 = getJob();
         j1.setStartCleaningDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
         j1.setStartProductionDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
         j1.setEndDateTime(LocalDateTime.of(2026,3, 6, 10, 33));
-        j1.setLine(line);
-        j1.setQuantity(2900);
-        Product product = new Product();
-        product.setType("CLASSIC");
-        j1.setProduct(product);
 
-        Job j2 = new Job();
-        j2.setMaintenance(true);
-        j2.setMaintenanceTypeId(7);
+        Job j2 = getPackagingMaintenance();
 
         List<Job> jobs = new ArrayList<>(List.of(j1, j2));
 
@@ -139,12 +147,12 @@ class AlignSolutionServiceTest {
         assertNull(solution.getJobs().getFirst().getPlanEndDateTime());
         assertFalse(solution.getJobs().getFirst().isFinalDuration());
     }
-    
+
     @Test
     void alignByFactDuration_emptyJobs(){
-        schedule.getJobs().clear();
-        alignSolutionService.alignByFactDuration(schedule);
-        assertTrue(schedule.getJobs().isEmpty());
+        solution.getJobs().clear();
+        alignSolutionService.alignByFactDuration(solution);
+        assertTrue(solution.getJobs().isEmpty());
     }
 
     @Test
@@ -160,7 +168,7 @@ class AlignSolutionServiceTest {
     @Test
     void alignLineStartByFact_whenFactEqualsPlan_shouldNotAddMaintenance() {
 
-        Product product = createProduct("P1");
+        Product product = createProduct();
 
         Job j1 = createChainJob("J1", product, 1,
                 LocalDateTime.of(2025,1,15,10,0),
@@ -169,18 +177,19 @@ class AlignSolutionServiceTest {
         Job j2 = createChainJob("J2", product, 2,
                 LocalDateTime.of(2025,1,15,11,0),
                 0);
-
+        line.getJobs().clear();
+        solution.getJobs().clear();
         line.getJobs().addAll(List.of(j1, j2));
-        schedule.getJobs().addAll(List.of(j1, j2));
+        solution.getJobs().addAll(List.of(j1, j2));
 
-        alignSolutionService.alignLineStartByFact(schedule);
+        alignSolutionService.alignLineStartByFact(solution);
 
         verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
     }
 
     @Test
     void alignLineStartByFact_whenAlignMaintenanceDurationAlreadyMatches_shouldNotUpdate() {
-        Product product = createProduct("P1");
+        Product product = createProduct();
         Job align = new Job();
         align.setMaintenance(true);
         align.setMaintenanceTypeId(8);
@@ -190,10 +199,12 @@ class AlignSolutionServiceTest {
         Job j1 = createChainJob("J1", product, 1, LocalDateTime.of(2025, 1, 15, 9, 30), 0);
         j1.setPreviousJob(align);
         Job j2 = createChainJob("J2", product, 2, LocalDateTime.of(2025, 1, 15, 10, 30), 0);
+        line.getJobs().clear();
+        solution.getJobs().clear();
         line.getJobs().addAll(List.of(align, j1, j2));
-        schedule.getJobs().addAll(List.of(align, j1, j2));
+        solution.getJobs().addAll(List.of(align, j1, j2));
 
-        alignSolutionService.alignLineStartByFact(schedule);
+        alignSolutionService.alignLineStartByFact(solution);
 
         verify(maintenanceJob, never()).updateDuration(any(), any());
         verify(maintenanceJob, never()).addMaintenanceJob(any(), any());
@@ -202,7 +213,7 @@ class AlignSolutionServiceTest {
     @Test
     void alignLineStartByFact_whenAlignMaintenanceDurationDiffers_shouldUpdate() {
 
-        Product product = createProduct("P1");
+        Product product = createProduct();
 
         Job align = new Job();
         align.setMaintenance(true);
@@ -218,18 +229,20 @@ class AlignSolutionServiceTest {
         Job j2 = createChainJob("J2", product, 2,
                 LocalDateTime.of(2025, 1, 15, 10, 30), 0);
 
+        line.getJobs().clear();
+        solution.getJobs().clear();
         line.getJobs().addAll(List.of(align, j1, j2));
-        schedule.getJobs().addAll(List.of(align, j1, j2));
+        solution.getJobs().addAll(List.of(align, j1, j2));
 
-        alignSolutionService.alignLineStartByFact(schedule);
+        alignSolutionService.alignLineStartByFact(solution);
 
-        verify(maintenanceJob).updateDuration(eq(schedule), any());
+        verify(maintenanceJob).updateDuration(eq(solution), any());
     }
 
     @Test
     void alignLineStartByFact_whenPlanBeforeFact_shouldAddAlignMaintenance() {
 
-        Product product = createProduct("P1");
+        Product product = createProduct();
 
         Job j1 = createChainJob("J1", product, 1,
                 LocalDateTime.of(2025, 1, 15, 9, 0), 30); // факт сдвинут на 30 мин
@@ -238,14 +251,14 @@ class AlignSolutionServiceTest {
                 LocalDateTime.of(2025, 1, 15, 10, 0), 30);
 
         line.getJobs().addAll(List.of(j1, j2));
-        schedule.getJobs().addAll(List.of(j1, j2));
+        solution.getJobs().addAll(List.of(j1, j2));
 
-        alignSolutionService.alignLineStartByFact(schedule);
+        alignSolutionService.alignLineStartByFact(solution);
 
         ArgumentCaptor<MaintenanceRequest> captor =
                 ArgumentCaptor.forClass(MaintenanceRequest.class);
 
-        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
+        verify(maintenanceJob).addMaintenanceJob(eq(solution), captor.capture());
 
         MaintenanceRequest request = captor.getValue();
         assertEquals(8, request.getMaintenanceTypeId());
@@ -255,7 +268,7 @@ class AlignSolutionServiceTest {
     @Test
     void alignLineStartByFact_whenPlanHasCleaning_shouldSetExtraMinutes() {
 
-        Product product = createProduct("P1");
+        Product product = createProduct();
 
         // === Первая задача (target) ===
         Job j1 = new Job();
@@ -283,15 +296,17 @@ class AlignSolutionServiceTest {
         j2.setCameraStart(LocalDateTime.of(2025, 1, 15, 10, 30));
         j2.setCameraEnd(LocalDateTime.of(2025, 1, 15, 11, 30));
 
+        line.getJobs().clear();
+        solution.getJobs().clear();
         line.getJobs().addAll(List.of(j1, j2));
-        schedule.getJobs().addAll(List.of(j1, j2));
+        solution.getJobs().addAll(List.of(j1, j2));
 
-        alignSolutionService.alignLineStartByFact(schedule);
+        alignSolutionService.alignLineStartByFact(solution);
 
         ArgumentCaptor<MaintenanceRequest> captor =
                 ArgumentCaptor.forClass(MaintenanceRequest.class);
 
-        verify(maintenanceJob).addMaintenanceJob(eq(schedule), captor.capture());
+        verify(maintenanceJob).addMaintenanceJob(eq(solution), captor.capture());
 
         MaintenanceRequest request = captor.getValue();
 
@@ -302,24 +317,10 @@ class AlignSolutionServiceTest {
     // helpers
     // ============================================================
 
-    private Product createProduct(String id) {
+    private Product createProduct() {
         Product p = new Product();
-        p.setId(id); // ⚠ id обязательно для цепочек
+        p.setId("P1"); // ⚠ id обязательно для цепочек
         return p;
-    }
-
-    private Job createPlanJob(LocalDateTime planStart,
-                              long factMinutes) {
-
-        Job job = new Job();
-        job.setId("J1");
-        job.setStartProductionDateTime(planStart);
-        job.setEndDateTime(planStart.plusMinutes(60));
-
-        job.setCameraStart(planStart);
-        job.setCameraEnd(planStart.plusMinutes(factMinutes));
-
-        return job;
     }
 
     private Job createChainJob(String id,
