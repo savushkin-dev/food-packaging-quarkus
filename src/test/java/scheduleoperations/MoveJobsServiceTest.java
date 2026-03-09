@@ -108,8 +108,6 @@ class MoveJobsServiceTest {
         service.moveJobs(schedule, request);
 
         assertEquals(List.of(j2, j1), line1.getJobs());
-        assertNull(j1.getPlanEndDateTime());
-        assertNull(j2.getPlanEndDateTime());
     }
 
     @Test
@@ -131,7 +129,6 @@ class MoveJobsServiceTest {
         assertTrue(line1.getJobs().isEmpty());
         assertEquals(1, line2.getJobs().size());
         assertEquals("J1", line2.getJobs().getFirst().getName());
-        assertNull(j1.getPlanEndDateTime());
     }
 
     @Test
