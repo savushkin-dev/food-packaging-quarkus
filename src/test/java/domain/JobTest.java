@@ -392,6 +392,21 @@ class JobTest {
         assertNull(j1.getPlanEndDateTime());
     }
 
+    @Test
+    void updateStartCleaningDateTime_whenDelayNotNull_EndDateTimeIsNull(){
+        Job j1 = new Job();
+        Line line1 = new Line();
+        j1.setLine(line1);
+        j1.setDelayDuration(Duration.ofMinutes(30));
+        j1.updateStartCleaningDateTime();
+
+        assertEquals(30, j1.getDelayDuration().toMinutes());
+        assertNull(j1.getStartCleaningDateTime());
+        assertNull(j1.getStartProductionDateTime());
+        assertNull(j1.getEndDateTime());
+        assertNull(j1.getPlanEndDateTime());
+    }
+
     private Product createProductWithType(String type) {
         Product p = new Product("id", "name");
         p.setType(type);
