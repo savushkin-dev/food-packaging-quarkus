@@ -113,8 +113,7 @@ class ScheduleUtilsTest {
         Line found = ScheduleUtils.findLineById(schedule, "line1");
         assertEquals(line, found);
 
-        assertThrows(IllegalArgumentException.class,
-                () -> ScheduleUtils.findLineById(schedule, "not found"));
+        assertNull(ScheduleUtils.findLineById(schedule, "not found"));
     }
 
     @Test

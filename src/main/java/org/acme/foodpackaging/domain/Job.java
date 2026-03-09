@@ -63,6 +63,7 @@ public class Job {
     private LocalDateTime planEndDateTime;
     private Integer emk;
     private String placeFactInfo;
+    private String delayNote;
     private Integer placePlan;
 
     private int priority;

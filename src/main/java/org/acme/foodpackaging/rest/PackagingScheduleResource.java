@@ -34,6 +34,7 @@ public class PackagingScheduleResource {
     private final SolverManager<PackagingSchedule, String> solverManager;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final MaintenanceJob maintenanceJob;
+    private final JobService jobService;
     private final MoveJobsService moveJobsService;
     private final SortByNpService sortByNpService;
     private final PinService pinService;
@@ -51,6 +52,7 @@ public class PackagingScheduleResource {
             SolverManager<PackagingSchedule, String> solverManager,
             SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager,
             MaintenanceJob maintenanceJob,
+            JobService jobService,
             MoveJobsService moveJobsService,
             SortByNpService sortByNpService,
             PinService pinService,
@@ -64,6 +66,7 @@ public class PackagingScheduleResource {
         this.solverManager = solverManager;
         this.solutionManager = solutionManager;
         this.maintenanceJob = maintenanceJob;
+        this.jobService = jobService;
         this.moveJobsService = moveJobsService;
         this.sortByNpService = sortByNpService;
         this.pinService = pinService;
@@ -162,6 +165,20 @@ public class PackagingScheduleResource {
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.MESSAGE, "Data refreshed successfully from database"
         )).build();
+    }
+
+    @POST
+    @Path("delayNote")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response delayNote(@HeaderParam("X-Session-Id") String sessionId, DelayNoteRequest request) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        jobService.writeDelayNote(request, schedule);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Note is written").build();
     }
 
     @POST

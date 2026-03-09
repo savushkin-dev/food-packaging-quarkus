@@ -1,6 +1,7 @@
 package service.jobs;
 
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.dto.DelayNoteRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
@@ -71,23 +72,23 @@ class JobServiceTest {
         schedule.setLines(List.of(line));
     }
 
-    private DbJobRow createDbJobRow(String kmc, Long snpz, String lineId) {
+    private DbJobRow createDbJobRow() {
         Timestamp now = Timestamp.valueOf(
                 LocalDateTime.of(2025, 1, 15, 9, 0)
         );
     
         return new DbJobRow(
                 now,              // dti
-                kmc,              // kmc
+                "KMC1",              // kmc
                 10,               // np
                 5,                // quantity
                 2.0,              // mass
                 now,              // startProductionDateTime
                 now,              // endDateTime
                 60,               // duration (minutes)
-                snpz,             // snpz
+                123L,             // snpz
                 1,                // priority
-                lineId,           // lineId
+                "L1",           // lineId
                 "Test Job",       // shortName
                 18,                // emk
                 100                //placePlan
@@ -117,7 +118,7 @@ class JobServiceTest {
     
         // --- given ---
     
-        DbJobRow jobRow = createDbJobRow("KMC1", 123L, "L1");
+        DbJobRow jobRow = createDbJobRow();
     
         DbMaintenanceRow maintenanceRow = createDbMaintenanceRow("L1");
     
@@ -158,7 +159,7 @@ class JobServiceTest {
     @Test
 void initSolutionJobList_shouldSkipJobsWithoutLineId() {
 
-    DbJobRow jobRow = createDbJobRow("KMC1", 123L, "L1");
+    DbJobRow jobRow = createDbJobRow();
 
     // принудительно делаем lineId = null
     jobRow = new DbJobRow(
@@ -195,7 +196,7 @@ void initSolutionJobList_shouldSkipJobsWithoutLineId() {
 @Test
 void initSolutionJobList_shouldSetMinStartTime() {
 
-    DbJobRow jobRow = createDbJobRow("KMC1", 123L, "L1");
+    DbJobRow jobRow = createDbJobRow();
 
     Product product = new Product(
             "Product1", "KMC1", "KRKMC1",
@@ -413,5 +414,82 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertEquals(LocalDateTime.of(2025, 1, 1, 9, 0), job.getCameraStart());
         assertEquals(end, job.getCameraEnd());
         verify(uploadDataService).fillMsLogTable(argThat(list -> list.size() == 1));
+    }
+
+    @Test
+    void writeDelayNote(){
+        PackagingSchedule solution = new PackagingSchedule();
+        Job j1 = new Job();
+        Line line1 = new Line("L1", "line1");
+        j1.setLine(line1);
+        line1.setJobs(List.of(j1));
+        solution.setLines(List.of(line1));
+        solution.setJobs(List.of(j1));
+
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note for testing");
+
+        jobService.writeDelayNote(request, solution);
+
+        assertEquals(request.getDelayNote(), solution.getJobs().getFirst().getDelayNote());
+    }
+
+    @Test
+    void writeDelayNote_whenLineNotFound(){
+        PackagingSchedule solution = new PackagingSchedule();
+        Line line2 = new Line("L2", "line1");
+        solution.setLines(List.of(line2));
+        solution.setJobs(List.of(new Job()));
+
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note for testing");
+
+        jobService.writeDelayNote(request, solution);
+
+        assertNull(solution.getJobs().getFirst().getDelayNote());
+    }
+
+    @Test
+    void writeDelayNote_whenLineJobsListNull(){
+        PackagingSchedule solution = new PackagingSchedule();
+
+        Job j1 = new Job();
+        Line line1 = new Line("L1", "line1");
+        line1.setJobs(null);
+        solution.setLines(List.of(line1));
+        solution.setJobs(List.of(j1));
+
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note for testing");
+
+        jobService.writeDelayNote(request, solution);
+
+        assertNull(solution.getJobs().getFirst().getDelayNote());
+    }
+
+    @Test
+    void writeDelayNote_whenLineJobsListIsEmpty(){
+        PackagingSchedule solution = new PackagingSchedule();
+
+        Job j1 = new Job();
+        Line line1 = new Line("L1", "line1");
+        line1.setJobs(new ArrayList<>());
+        solution.setLines(List.of(line1));
+        solution.setJobs(List.of(j1));
+
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note for testing");
+
+        jobService.writeDelayNote(request, solution);
+
+        assertNull(solution.getJobs().getFirst().getDelayNote());
     }
 }
