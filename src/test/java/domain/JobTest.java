@@ -234,6 +234,7 @@ class JobTest {
         assertNull(job.getStartCleaningDateTime());
         assertNull(job.getStartProductionDateTime());
         assertNull(job.getEndDateTime());
+        assertNull(job.getPlanEndDateTime());
     }
 
     @Test
@@ -334,6 +335,76 @@ class JobTest {
         ScheduleUtils.fixLineJobs(line);
 
         assertEquals(lineStart.plusMinutes(60), job2.getStartProductionDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_PlanEndDateTime(){
+        Job j1 = new Job();
+        Line line1 = new Line();
+        LocalDateTime startProductionDateTime = LocalDateTime.of(2026, 3, 9, 15, 0);
+
+        line1.setStartDateTime(startProductionDateTime);
+
+        j1.setStartProductionDateTime(startProductionDateTime);
+        j1.setDuration(Duration.ofMinutes(30));
+        j1.setDelayDuration(Duration.ofMinutes(30));
+        j1.setFinalDuration(true);
+        j1.setLine(line1);
+
+        j1.updateStartCleaningDateTime();
+
+        assertEquals(LocalDateTime.of(2026, 3, 9, 15, 0), j1.getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 15, 30), j1.getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 15, 0), j1.getPlanEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenDelayNull(){
+        Job j1 = new Job();
+        Line line1 = new Line();
+        LocalDateTime startProductionDateTime = LocalDateTime.of(2026, 3, 9, 15, 0);
+
+        line1.setStartDateTime(startProductionDateTime);
+
+        j1.setStartProductionDateTime(startProductionDateTime);
+        j1.setDuration(Duration.ofMinutes(30));
+        j1.setDelayDuration(null);
+        j1.setFinalDuration(true);
+        j1.setLine(line1);
+
+        j1.updateStartCleaningDateTime();
+
+        assertEquals(LocalDateTime.of(2026, 3, 9, 15, 0), j1.getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 15, 30), j1.getEndDateTime());
+        assertNull(j1.getPlanEndDateTime());
+    }
+    @Test
+    void updateStartCleaningDateTime_whenEndDateTimeNull(){
+        Job j1 = new Job();
+        Line line1 = new Line();
+        j1.setLine(line1);
+
+        j1.updateStartCleaningDateTime();
+
+        assertNull(j1.getStartCleaningDateTime());
+        assertNull(j1.getStartProductionDateTime());
+        assertNull(j1.getEndDateTime());
+        assertNull(j1.getPlanEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenDelayNotNull_EndDateTimeIsNull(){
+        Job j1 = new Job();
+        Line line1 = new Line();
+        j1.setLine(line1);
+        j1.setDelayDuration(Duration.ofMinutes(30));
+        j1.updateStartCleaningDateTime();
+
+        assertEquals(30, j1.getDelayDuration().toMinutes());
+        assertNull(j1.getStartCleaningDateTime());
+        assertNull(j1.getStartProductionDateTime());
+        assertNull(j1.getEndDateTime());
+        assertNull(j1.getPlanEndDateTime());
     }
 
     private Product createProductWithType(String type) {

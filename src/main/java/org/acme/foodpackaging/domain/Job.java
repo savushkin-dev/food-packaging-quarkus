@@ -301,6 +301,7 @@ public class Job {
         setStartCleaningDateTime(startCleaning);
         setStartProductionDateTime(startProduction);
         setEndDateTime(startProduction == null ? null : startProduction.plus(getDuration()));
+        setPlanEndDateTime(delayDuration == null || endDateTime == null ? null : endDateTime.minus(delayDuration));
     }
 
     private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
