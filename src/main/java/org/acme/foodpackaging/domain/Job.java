@@ -46,8 +46,10 @@ public class Job {
 
     private Product product;
     private Duration duration;
+    private Duration delayDuration;
     private boolean maintenance;
     private boolean handPackaging;
+    private boolean finalDuration;
     private Integer maintenanceTypeId;
 
     private LocalDateTime cameraStart;
@@ -58,6 +60,7 @@ public class Job {
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
+    private LocalDateTime planEndDateTime;
     private Integer emk;
     private String placeFactInfo;
     private Integer placePlan;
@@ -250,7 +253,7 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if(isMaintenance()) return duration;
+        if(isMaintenance() || isFinalDuration()) return duration;
 
         Integer speed;
         if (isHandPackaging()) {
