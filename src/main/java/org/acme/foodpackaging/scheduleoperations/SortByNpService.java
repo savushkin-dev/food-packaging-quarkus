@@ -280,6 +280,8 @@ public class SortByNpService {
      */
     public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request){
         Line line = findLineById(schedule, request.getLineId());
+        if(line == null || line.getJobs() == null || line.getJobs().isEmpty()) return;
+
         List<Job> jobs = line.getJobs();
         int jobCount = jobs.size();
 

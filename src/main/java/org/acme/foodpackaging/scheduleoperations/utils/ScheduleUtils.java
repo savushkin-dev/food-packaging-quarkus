@@ -72,7 +72,7 @@ public class ScheduleUtils {
         return schedule.getLines().stream()
                 .filter(l -> l.getId().equals(id))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Line not found: " + id));
+                .orElse(null);
     }
     /**
      * Меняет время старта линии

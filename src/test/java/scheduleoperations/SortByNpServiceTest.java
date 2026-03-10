@@ -296,19 +296,35 @@ class SortByNpServiceTest {
     }
 
     @Test
-    void sortRangeByNp_throwsWhenLineNotFound() {
+    void sortRangeByNp_WhenLineNotFound() {
         line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
-        schedule.setJobs(List.of(line1.getJobs().get(0)));
+        schedule.setJobs(List.of(line1.getJobs().getFirst()));
 
         SortRangeRequest request = sortRangeRequest("NONEXISTENT", 0, 1, true);
+        service.sortRangeByNp(schedule, request);
+        assertEquals(1, schedule.getJobs().getFirst().getNp());
+    }
 
-        assertThrows(IllegalArgumentException.class, () -> service.sortRangeByNp(schedule, request));
+    @Test
+    void sortRangeByNp_WhenLineJobsIsNull() {
+        line1.setJobs(null);
+        SortRangeRequest request = sortRangeRequest("L1", 0, 1, true);
+        service.sortRangeByNp(schedule, request);
+        assertNull(line1.getJobs());
+    }
+
+    @Test
+    void sortRangeByNp_WhenLineJobsIsEmpty() {
+        line1.setJobs(new ArrayList<>());
+        SortRangeRequest request = sortRangeRequest("L1", 0, 1, true);
+        service.sortRangeByNp(schedule, request);
+        assertTrue(line1.getJobs().isEmpty());
     }
 
     @Test
     void sortRangeByNp_throwsWhenFromIndexNegative() {
         line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
-        schedule.setJobs(List.of(line1.getJobs().get(0)));
+        schedule.setJobs(List.of(line1.getJobs().getFirst()));
 
         SortRangeRequest request = sortRangeRequest("L1", -1, 1, true);
 
@@ -320,7 +336,7 @@ class SortByNpServiceTest {
     @Test
     void sortRangeByNp_throwsWhenSortCountZero() {
         line1.setJobs(new ArrayList<>(List.of(job("J1", 1, vanilla))));
-        schedule.setJobs(List.of(line1.getJobs().get(0)));
+        schedule.setJobs(List.of(line1.getJobs().getFirst()));
 
         SortRangeRequest request = sortRangeRequest("L1", 0, 0, true);
 
