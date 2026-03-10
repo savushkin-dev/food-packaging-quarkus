@@ -85,17 +85,6 @@ public class JobSaveService {
         }
     }
 
-    private void updateExistingDelayDuration(Job job) {
-        OeePev existing = oeePevRepository.findByFId(job.getFId());
-        if (existing != null) {
-            updateDelayOeePev(existing, job);
-            oeePevRepository.persist(existing);
-        } else {
-            // If not found, create new one
-            OeePev entity = buildDelayOeePev(job);
-            oeePevRepository.persist(entity);
-        }
-    }
     private OeePev buildMaintenanceOeePev(Job job) {
         return OeePev.builder()
                 .lineId(job.getLine().getId())
@@ -131,7 +120,6 @@ public class JobSaveService {
             } else {
                 oeePevRepository.persist(buildCleaningOeePev(job));
             }
-
         } else {
             if (existing != null) {
                 oeePevRepository.delete(existing);
@@ -151,7 +139,6 @@ public class JobSaveService {
             } else {
                 oeePevRepository.persist(buildDelayOeePev(job));
             }
-
         } else {
             if (existing != null) {
                 oeePevRepository.delete(existing);
