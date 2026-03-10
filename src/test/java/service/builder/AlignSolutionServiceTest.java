@@ -315,8 +315,8 @@ class AlignSolutionServiceTest {
 
     @Test
     void findTimeIntersections_whenLineIdFactIsNull(){
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setJobs(null);
+        PackagingSchedule solution1 = new PackagingSchedule();
+        solution1.setJobs(null);
         Line line1 = new Line("L1", "line1");
         Job j1 = new Job();
         LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
@@ -331,8 +331,8 @@ class AlignSolutionServiceTest {
         j1.setLineIdFact(null);
 
         line1.setJobs(List.of(j1));
-        solution.setLines(List.of(line1));
-        alignSolutionService.alignByFactDuration(solution);
+        solution1.setLines(List.of(line1));
+        alignSolutionService.alignByFactDuration(solution1);
 
         assertNull(line1.getJobs().getFirst().getLineIdFact());
         assertNull(line1.getJobs().getFirst().getDelayDuration());
@@ -340,8 +340,8 @@ class AlignSolutionServiceTest {
 
     @Test
     void findTimeIntersections_whenLineJobsListIsNull(){
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setJobs(null);
+        PackagingSchedule solution1 = new PackagingSchedule();
+        solution1.setJobs(null);
         Line line1 = new Line("L1", "line1");
         Job j1 = new Job();
         LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
@@ -356,8 +356,8 @@ class AlignSolutionServiceTest {
 
         line1.setJobs(List.of(j1));
         j1.setLine(line1);
-        solution.setLines(List.of(line1));
-        alignSolutionService.alignByFactDuration(solution);
+        solution1.setLines(List.of(line1));
+        alignSolutionService.alignByFactDuration(solution1);
 
         assertEquals("L2", line1.getJobs().getFirst().getLineIdFact());
         assertEquals("L1", line1.getId());
@@ -366,8 +366,8 @@ class AlignSolutionServiceTest {
 
     @Test
     void findTimeIntersections(){
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setJobs(null);
+        PackagingSchedule solution1 = new PackagingSchedule();
+        solution1.setJobs(null);
         Line line1 = new Line("L1", "line1");
         Job j1 = new Job();
         Job j2 = new Job();
@@ -399,8 +399,8 @@ class AlignSolutionServiceTest {
         line1.setStartDateTime(cameraStart1);
         j1.setLine(line1);
         j2.setLine(line1);
-        solution.setLines(List.of(line1));
-        alignSolutionService.alignByFactDuration(solution);
+        solution1.setLines(List.of(line1));
+        alignSolutionService.alignByFactDuration(solution1);
 
         assertTrue(line1.getJobs().getFirst().isFinalDuration());
         assertEquals(5, line1.getJobs().getFirst().getDelayDuration().toMinutes());
