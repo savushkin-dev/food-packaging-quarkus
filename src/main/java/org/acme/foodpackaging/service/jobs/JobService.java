@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.DelayNoteRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
@@ -247,6 +248,13 @@ public class JobService {
         }
     }
 
+    public void writeDelayNote(DelayNoteRequest request, PackagingSchedule solution){
+        Line line = findLineById(solution, request.getLineId());
+        if(line == null || line.getJobs() == null || line.getJobs().isEmpty()) return;
+
+        Job job = line.getJobs().get(request.getIndex());
+        job.setDelayNote(request.getDelayNote());
+    }
     /**
      * Преобразует Timestamp в LocalDateTime.
      * 
