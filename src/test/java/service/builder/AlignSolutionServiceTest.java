@@ -73,6 +73,7 @@ class AlignSolutionServiceTest {
         j1.setQuantity(2900);
         Product product = new Product();
         product.setType("CLASSIC");
+        product.setCleaningDurations(Map.of(product, Duration.ZERO));
         j1.setProduct(product);
 
         return j1;
@@ -315,9 +316,7 @@ class AlignSolutionServiceTest {
 
     @Test
     void findTimeIntersections_whenLineIdFactIsNull(){
-        PackagingSchedule solution1 = new PackagingSchedule();
-        solution1.setJobs(null);
-        Line line1 = new Line("L1", "line1");
+        solution.setJobs(null);
         Job j1 = new Job();
         LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
         LocalDateTime cameraEnd = LocalDateTime.of(2026, 3, 9, 10, 30);
@@ -330,19 +329,16 @@ class AlignSolutionServiceTest {
 
         j1.setLineIdFact(null);
 
-        line1.setJobs(List.of(j1));
-        solution1.setLines(List.of(line1));
-        alignSolutionService.alignByFactDuration(solution1);
+        line.setJobs(List.of(j1));
+        alignSolutionService.alignByFactDuration(solution);
 
-        assertNull(line1.getJobs().getFirst().getLineIdFact());
-        assertNull(line1.getJobs().getFirst().getDelayDuration());
+        assertNull(line.getJobs().getFirst().getLineIdFact());
+        assertNull(line.getJobs().getFirst().getDelayDuration());
     }
 
     @Test
     void findTimeIntersections_whenLineJobsListIsNull(){
-        PackagingSchedule solution1 = new PackagingSchedule();
-        solution1.setJobs(null);
-        Line line1 = new Line("L1", "line1");
+        solution.setJobs(null);
         Job j1 = new Job();
         LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
         LocalDateTime cameraEnd = LocalDateTime.of(2026, 3, 9, 10, 30);
@@ -354,56 +350,57 @@ class AlignSolutionServiceTest {
         j1.setEndDateTime(cameraEnd);
         j1.setLineIdFact("L2");
 
-        line1.setJobs(List.of(j1));
-        j1.setLine(line1);
-        solution1.setLines(List.of(line1));
-        alignSolutionService.alignByFactDuration(solution1);
+        line.setJobs(List.of(j1));
+        j1.setLine(line);
+        alignSolutionService.alignByFactDuration(solution);
 
-        assertEquals("L2", line1.getJobs().getFirst().getLineIdFact());
-        assertEquals("L1", line1.getId());
-        assertNull(line1.getJobs().getFirst().getDelayDuration());
+        assertEquals("L2", line.getJobs().getFirst().getLineIdFact());
+        assertEquals("line1", line.getId());
+        assertNull(line.getJobs().getFirst().getDelayDuration());
     }
 
     @Test
     void findTimeIntersections(){
-        PackagingSchedule solution1 = new PackagingSchedule();
-        solution1.setJobs(null);
-        Line line1 = new Line("L1", "line1");
-        Job j1 = new Job();
-        Job j2 = new Job();
-        Product product = new Product("P1", "product1");
-        product.setCleaningDurations(Map.of(product, Duration.ZERO));
+        solution.setJobs(null);
+        Job j1 = getJob();
+        Job j2 = getJob();
 
         LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 40);
+        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 50);
 
         LocalDateTime cameraStart2 = LocalDateTime.of(2026, 3, 9, 10, 10);
-        LocalDateTime cameraEnd2 = LocalDateTime.of(2026, 3, 9, 10, 30);
+        LocalDateTime cameraEnd2 = LocalDateTime.of(2026, 3, 9, 10, 40);
 
         j1.setCameraStart(cameraStart1);
         j1.setCameraEnd(cameraEnd1);
-        j1.setProduct(product);
 
         j1.setStartProductionDateTime(cameraStart1);
-        j1.setEndDateTime(cameraEnd1.minusMinutes(25));
-        j1.setLineIdFact("L1");
+        j1.setEndDateTime(cameraEnd1.minusMinutes(35));
+        j1.setLineIdFact("line1");
 
         j2.setCameraStart(cameraStart2);
         j2.setCameraEnd(cameraEnd2);
         j2.setStartProductionDateTime(j2.getCameraStart());
         j2.setEndDateTime(j2.getCameraEnd());
-        j2.setProduct(product);
-        j2.setLineIdFact("L1");
+        j2.setLineIdFact("line1");
 
-        line1.setJobs(List.of(j1, j2));
-        line1.setStartDateTime(cameraStart1);
-        j1.setLine(line1);
-        j2.setLine(line1);
-        solution1.setLines(List.of(line1));
-        alignSolutionService.alignByFactDuration(solution1);
+        line.setJobs(List.of(j1, j2));
+        line.setStartDateTime(cameraStart1);
+        j1.setLine(line);
+        j2.setLine(line);
+        solution.setLines(List.of(line));
+        alignSolutionService.alignByFactDuration(solution);
 
-        assertTrue(line1.getJobs().getFirst().isFinalDuration());
-        assertEquals(5, line1.getJobs().getFirst().getDelayDuration().toMinutes());
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+        assertEquals(5, line.getJobs().getFirst().getDelayDuration().toMinutes());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 20), line.getJobs().getFirst().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 15), line.getJobs().getFirst().getPlanEndDateTime());
+        assertEquals(20, line.getJobs().getFirst().getDuration().toMinutes());
+
+        assertFalse(line.getJobs().getLast().isFinalDuration());
+        assertNull(line.getJobs().getLast().getDelayDuration());
+        assertNull(line.getJobs().getLast().getPlanEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 53), line.getJobs().getLast().getEndDateTime());
     }
     // ============================================================
     // helpers
