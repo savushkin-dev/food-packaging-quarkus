@@ -492,4 +492,5 @@ void initSolutionJobList_shouldSetMinStartTime() {
 
         assertNull(solution.getJobs().getFirst().getDelayNote());
     }
+
 }

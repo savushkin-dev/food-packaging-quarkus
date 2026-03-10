@@ -312,6 +312,99 @@ class AlignSolutionServiceTest {
         assertEquals(20, request.getAlignExtraCleaning());
         assertEquals(40, request.getDurationMinutes());
     }
+
+    @Test
+    void findTimeIntersections_whenLineIdFactIsNull(){
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(null);
+        Line line1 = new Line("L1", "line1");
+        Job j1 = new Job();
+        LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
+        LocalDateTime cameraEnd = LocalDateTime.of(2026, 3, 9, 10, 30);
+
+        j1.setCameraStart(cameraStart);
+        j1.setCameraEnd(cameraEnd);
+
+        j1.setStartProductionDateTime(cameraStart);
+        j1.setEndDateTime(cameraEnd);
+
+        j1.setLineIdFact(null);
+
+        line1.setJobs(List.of(j1));
+        solution.setLines(List.of(line1));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertNull(line1.getJobs().getFirst().getLineIdFact());
+        assertNull(line1.getJobs().getFirst().getDelayDuration());
+    }
+
+    @Test
+    void findTimeIntersections_whenLineJobsListIsNull(){
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(null);
+        Line line1 = new Line("L1", "line1");
+        Job j1 = new Job();
+        LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
+        LocalDateTime cameraEnd = LocalDateTime.of(2026, 3, 9, 10, 30);
+
+        j1.setCameraStart(cameraStart);
+        j1.setCameraEnd(cameraEnd);
+
+        j1.setStartProductionDateTime(cameraStart);
+        j1.setEndDateTime(cameraEnd);
+        j1.setLineIdFact("L2");
+
+        line1.setJobs(List.of(j1));
+        j1.setLine(line1);
+        solution.setLines(List.of(line1));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals("L2", line1.getJobs().getFirst().getLineIdFact());
+        assertEquals("L1", line1.getId());
+        assertNull(line1.getJobs().getFirst().getDelayDuration());
+    }
+
+    @Test
+    void findTimeIntersections(){
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setJobs(null);
+        Line line1 = new Line("L1", "line1");
+        Job j1 = new Job();
+        Job j2 = new Job();
+        Product product = new Product("P1", "product1");
+        product.setCleaningDurations(Map.of(product, Duration.ZERO));
+
+        LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
+        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 40);
+
+        LocalDateTime cameraStart2 = LocalDateTime.of(2026, 3, 9, 10, 10);
+        LocalDateTime cameraEnd2 = LocalDateTime.of(2026, 3, 9, 10, 30);
+
+        j1.setCameraStart(cameraStart1);
+        j1.setCameraEnd(cameraEnd1);
+        j1.setProduct(product);
+
+        j1.setStartProductionDateTime(cameraStart1);
+        j1.setEndDateTime(cameraEnd1.minusMinutes(25));
+        j1.setLineIdFact("L1");
+
+        j2.setCameraStart(cameraStart2);
+        j2.setCameraEnd(cameraEnd2);
+        j2.setStartProductionDateTime(j2.getCameraStart());
+        j2.setEndDateTime(j2.getCameraEnd());
+        j2.setProduct(product);
+        j2.setLineIdFact("L1");
+
+        line1.setJobs(List.of(j1, j2));
+        line1.setStartDateTime(cameraStart1);
+        j1.setLine(line1);
+        j2.setLine(line1);
+        solution.setLines(List.of(line1));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(line1.getJobs().getFirst().isFinalDuration());
+        assertEquals(5, line1.getJobs().getFirst().getDelayDuration().toMinutes());
+    }
     // ============================================================
     // helpers
     // ============================================================
