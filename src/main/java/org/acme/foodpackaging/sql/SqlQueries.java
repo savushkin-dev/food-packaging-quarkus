@@ -51,7 +51,34 @@ public class SqlQueries {
                 v.PDUR, v.SNPZ, v.F_DEL, v.EVTYPE, v.NOTE
             FROM [%s].[dbo].[OEE_PEV] v
             WHERE
-                (v.SNPZ = 0 OR v.SNPZ IS NULL)
+                (v.SNPZ IN (0, 10) OR v.SNPZ IS NULL)
+                AND v.F_DEL = 0
+                AND (
+                    (
+                        v.PDTN >= ?1
+                        AND v.PDTN < ?2
+                    )
+                    OR
+                    (
+                        v.PDTO >= ?3
+                        AND v.PDTO < ?4
+                    )
+                )
+            ORDER BY
+                v.KRC,
+                v.PDTN
+            """.formatted(mesSchema);
+    }
+
+    public String loadDelayDuration() {
+        return """
+            SELECT
+                v.F_ID, v.KRC,
+                v.PDTN, v.PDTO,
+                v.PDUR, v.SNPZ, v.F_DEL, v.EVTYPE, v.NOTE
+            FROM [%s].[dbo].[OEE_PEV] v
+            WHERE
+                v.EVTYPE = 10
                 AND v.F_DEL = 0
                 AND (
                     (

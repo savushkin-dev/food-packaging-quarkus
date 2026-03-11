@@ -42,11 +42,11 @@ public class JobRepository {
     }
 
     /**
-     * Загружает карту задач обслуживания из базы данных за указанный период.
+     * Загружает список задач обслуживания из базы данных за указанный период.
      * 
      * @param from Start date (inclusive)
      * @param to End date (inclusive)
-     * @return Map of maintenance rows by FId
+     * @return List of maintenance rows by FId
      */
     public List<DbMaintenanceRow> getMaintenanceData(LocalDate from, LocalDate to) {
         return jobDBLoader.loadMaintenanceRows(
@@ -54,6 +54,18 @@ public class JobRepository {
         );
     }
 
+    /**
+     * Загружает карту партий с задержкой фасовки по времени.
+     *
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of delay rows by FId
+     */
+    public Map<Long, DbMaintenanceRow> getDelayData(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadDelayDurationRows(
+                from.atStartOfDay(), to.atStartOfDay()
+        );
+    }
     /**
      * Загружает карту фактического производства.
      *

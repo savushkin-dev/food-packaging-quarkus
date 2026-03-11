@@ -17,6 +17,7 @@ import org.acme.foodpackaging.dto.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -56,6 +57,9 @@ public class JobService {
     public List<DbJobRow> initSolutionJobList(PackagingSchedule solution) {
 
         List<DbMaintenanceRow> serviceData = jobRepository.getMaintenanceData(
+                solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
+
+        Map<Long, DbMaintenanceRow> delayDurationMap  = jobRepository.getDelayData(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
 
         Map<Long,DbJobRow> jobsBySnpz = jobRepository.getDbJobRowMap(
@@ -100,7 +104,26 @@ public class JobService {
 
         solution.setAllJobsById(allJobsById);
         solution.setJobs(jobs);
+        initDelayDuration(solution.getJobs(), delayDurationMap);
         return jobsBySnpz.values().stream().toList();
+    }
+
+    private void initDelayDuration(List<Job> jobs, Map<Long, DbMaintenanceRow> delayDurationMap){
+        for(Job job : jobs){
+            if("null".equals(job.getId())) continue;
+            long jobId = Long.parseLong(job.getId());
+            if(delayDurationMap.containsKey(jobId)){
+                DbMaintenanceRow row = delayDurationMap.get(jobId);
+                job.setPlanEndDateTime(row.getStartProductionDateTime().toLocalDateTime());
+                job.setEndDateTime(row.getEndDateTime().toLocalDateTime());
+                job.setDelayDuration(Duration.ofMinutes(row.getDuration()));
+                job.setDelayNote(row.getMaintenanceNote());
+
+                Duration finalDuration = job.getDuration().plus(job.getDelayDuration());
+                job.setDuration(finalDuration);
+                job.setFinalDuration(true);
+            }
+        }
     }
 
     /**

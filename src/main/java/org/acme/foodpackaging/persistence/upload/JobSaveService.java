@@ -88,7 +88,7 @@ public class JobSaveService {
     private OeePev buildMaintenanceOeePev(Job job) {
         return OeePev.builder()
                 .lineId(job.getLine().getId())
-                .startProductionDateTime(job.getPlanEndDateTime())
+                .startProductionDateTime(job.getStartProductionDateTime())
                 .endDateTime(job.getEndDateTime())
                 .duration(calculateDurationMinutes(job.getStartProductionDateTime(), job.getEndDateTime()))
                 .maintenanceTypeId(job.getMaintenanceTypeId())
@@ -134,13 +134,13 @@ public class JobSaveService {
 
         if (hasDelayDuration(job)) {
 
-            if (existing != null) {
+            if (existing != null && Integer.valueOf(10).equals(existing.getMaintenanceTypeId())) {
                 updateDelayOeePev(existing, job);
             } else {
                 oeePevRepository.persist(buildDelayOeePev(job));
             }
         } else {
-            if (existing != null) {
+            if (existing != null && Integer.valueOf(10).equals(existing.getMaintenanceTypeId())) {
                 oeePevRepository.delete(existing);
             }
         }
@@ -157,7 +157,7 @@ public class JobSaveService {
     }
 
     private boolean hasDelayDuration(Job job) {
-        return job.getDelayDuration() != null;
+        return job.getDelayDuration() != null && job.getPlanEndDateTime()!=null;
     }
 
     private OeePev buildCleaningOeePev(Job job) {
@@ -186,7 +186,7 @@ public class JobSaveService {
                 .startProductionDateTime(planEndDateTime)
                 .endDateTime(endDateTime)
                 .duration(delayMinutes)
-                .maintenanceTypeId(4)
+                .maintenanceTypeId(10)
                 .reason(null)
                 .note(job.getDelayNote())
                 .snpz(job.getSnpz())
@@ -216,7 +216,7 @@ public class JobSaveService {
         existing.setStartProductionDateTime(planEndDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setDuration(delayMinutes);
-        existing.setMaintenanceTypeId(null);
+        existing.setMaintenanceTypeId(10);
         existing.setReason(null);
         existing.setNote(job.getDelayNote());
     }
