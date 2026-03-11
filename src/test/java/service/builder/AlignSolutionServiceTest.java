@@ -263,7 +263,7 @@ class AlignSolutionServiceTest {
         assertEquals(8, request.getMaintenanceTypeId());
         assertTrue(request.getDurationMinutes() > 0);
     }
-    
+
     @Test
     void alignLineStartByFact_whenPlanHasCleaning_shouldSetExtraMinutes() {
 

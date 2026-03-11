@@ -45,6 +45,7 @@ public class AlignSolutionService {
         while (it.hasNext()) {
             Job job = it.next();
             if (job.isMaintenance() && job.getMaintenanceTypeId() == 7) {
+                job.setFDel((short)1);
                 schedule.getDeletedMaintenance().add(job);
                 it.remove();
             }
