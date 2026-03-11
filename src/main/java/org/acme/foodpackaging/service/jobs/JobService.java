@@ -111,7 +111,13 @@ public class JobService {
     private void initDelayDuration(List<Job> jobs, Map<Long, DbMaintenanceRow> delayDurationMap){
         for(Job job : jobs){
             if("null".equals(job.getId())) continue;
-            long jobId = Long.parseLong(job.getId());
+            long jobId;
+            try {
+                jobId = Long.parseLong(job.getId());
+            } catch (NumberFormatException e) {
+                // Skip jobs with non-numeric IDs when applying delay durations
+                continue;
+            }
             if(delayDurationMap.containsKey(jobId)){
                 DbMaintenanceRow row = delayDurationMap.get(jobId);
                 job.setPlanEndDateTime(row.getStartProductionDateTime().toLocalDateTime());
