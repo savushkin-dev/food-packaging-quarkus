@@ -270,7 +270,6 @@ class AlignSolutionServiceTest {
 
         Product product = createProduct();
 
-        // === Первая задача (target) ===
         Job j1 = new Job();
         j1.setId("J1");
         j1.setProduct(product);
@@ -408,7 +407,7 @@ class AlignSolutionServiceTest {
 
     private Product createProduct() {
         Product p = new Product();
-        p.setId("P1"); // ⚠ id обязательно для цепочек
+        p.setId("P1");
         return p;
     }
 
@@ -423,7 +422,7 @@ class AlignSolutionServiceTest {
         job.setProduct(product);
         job.setNp(np);
 
-        job.setStartCleaningDateTime(planStart);   // ВАЖНО
+        job.setStartCleaningDateTime(planStart);
         job.setStartProductionDateTime(planStart);
 
         job.setEndDateTime(planStart.plusMinutes(60));

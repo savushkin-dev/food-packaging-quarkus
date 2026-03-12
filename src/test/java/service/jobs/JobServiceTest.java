@@ -9,9 +9,11 @@ import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,10 +48,8 @@ class JobServiceTest {
 
     @Mock
     LoadDataService loadDataService;
-
     @Mock
     JobRepository jobRepository;
-
     @Mock
     UploadDataService uploadDataService;
 
@@ -69,58 +69,89 @@ class JobServiceTest {
         line.setId("L1");
         line.setJobs(new ArrayList<>());
 
+        Map<String, Map<String, Pair<Integer, Integer>>> speeds = new HashMap<>();
+
+        Map<String, Pair<Integer, Integer>> productSpeeds = new HashMap<>();
+        productSpeeds.put("CLASSIC", Pair.of(100, 100));
+
+        speeds.put("L1", productSpeeds);
+
+        SpeedCacheUtils.init(speeds);
+
         schedule.setLines(List.of(line));
     }
 
     private DbJobRow createDbJobRow() {
-        Timestamp now = Timestamp.valueOf(
+        Timestamp start = Timestamp.valueOf(
                 LocalDateTime.of(2025, 1, 15, 9, 0)
         );
-    
+
+        Timestamp end = Timestamp.valueOf(
+                LocalDateTime.of(2025, 1, 15, 9, 34)
+        );
         return new DbJobRow(
-                now,              // dti
-                "KMC1",              // kmc
-                10,               // np
-                5,                // quantity
-                2.0,              // mass
-                now,              // startProductionDateTime
-                now,              // endDateTime
-                60,               // duration (minutes)
-                123L,             // snpz
-                1,                // priority
-                "L1",           // lineId
-                "Test Job",       // shortName
-                18,                // emk
-                100                //placePlan
+                start, "KMC1", 10, 3000, 2.0,
+                start, end, 30, 123L, 1,
+                "L1", "Test Job", 18, 100
         );
     }
-    
-    private DbMaintenanceRow createDbMaintenanceRow(String lineId) {
+
+    private DbJobRow createDbJobRowWithNullId(){
+
+            Timestamp start = Timestamp.valueOf(
+                    LocalDateTime.of(2025, 1, 15, 9, 0)
+            );
+
+            Timestamp end = Timestamp.valueOf(
+                    LocalDateTime.of(2025, 1, 15, 9, 34)
+            );
+            return new DbJobRow(
+                    start, "KMC1",
+                    10, 3000, 2.0,
+                    start, end, 34, null, 1,
+                    "L1", "Test Job", 18, 100
+            );
+        }
+
+    private DbMaintenanceRow createDbMaintenanceRow() {
         Timestamp now = Timestamp.valueOf(
                 LocalDateTime.of(2025, 1, 15, 10, 0)
         );
     
         return new DbMaintenanceRow(
-                1L,          // fId
-                (short) 0,   // fDel
-                lineId,      // lineId
-                now,         // start
-                now,         // end
-                30,          // duration
-                123L,        // snpz
-                1,           // maintenanceTypeId
-                "Note"       // maintenanceNote
+                1L, (short) 0, "L1",
+                now, now, 30, 123L, 1, "Note"
         );
     }
-    
+
+    private DbMaintenanceRow createDelayRow() {
+        Timestamp planEnd= Timestamp.valueOf(
+                LocalDateTime.of(2025, 1, 15, 9, 34)
+        );
+
+        Timestamp end = Timestamp.valueOf(
+                LocalDateTime.of(2025, 1, 15, 9, 40)
+        );
+
+        return new DbMaintenanceRow(
+                2L, (short) 0, "L1",
+                planEnd, end, 6, 123L,
+                10, "Delay Note"
+        );
+    }
+
+    private Product getTestProduct(){
+        return new Product(
+                "Product1", "KMC1", "KRKMC1",
+                "CLASSIC", "Glaze1", "100", "Filling1"
+        );
+    }
+
     @Test
     void initSolutionJobList_shouldLoadJobsAndMaintenance() {
-    
-        // --- given ---
-    
+
         DbJobRow jobRow = createDbJobRow();
-    
-        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow("L1");
+        DbMaintenanceRow maintenanceRow = createDbMaintenanceRow();
     
         Product product = new Product(
                 "Product1", "KMC1", "KRKMC1",
@@ -130,13 +161,10 @@ class JobServiceTest {
         
         when(loadDataService.getProducts())
                 .thenReturn(Map.of("KMC1", product));
-    
         when(jobRepository.getDbJobRowMap(any(), any()))
                 .thenReturn(Map.of(123L, jobRow));
-    
         when(jobRepository.getMaintenanceData(any(), any()))
                 .thenReturn(List.of(maintenanceRow));
-    
         when(loadDataService.getMaintenanceTypes())
                 .thenReturn(new ConcurrentHashMap<>(Map.of(1, "Обслуживание")));
     
@@ -146,13 +174,11 @@ class JobServiceTest {
     
     
         assertEquals(2, schedule.getJobs().size());
-        // production job
         assertTrue(schedule.getJobs().stream()
                 .anyMatch(j -> !j.isMaintenance() && j.getSnpz() == 123L));
-        // maintenance job
+
         assertTrue(schedule.getJobs().stream()
                 .anyMatch(Job::isMaintenance));
-        // attached to line
         Line line = schedule.getLines().getFirst();
         assertEquals(2, line.getJobs().size());
     }
@@ -160,8 +186,6 @@ class JobServiceTest {
 void initSolutionJobList_shouldSkipJobsWithoutLineId() {
 
     DbJobRow jobRow = createDbJobRow();
-
-    // принудительно делаем lineId = null
     jobRow = new DbJobRow(
             jobRow.dti(), jobRow.kmc(), jobRow.np(), jobRow.quantity(),
             jobRow.mass(), jobRow.startProductionDateTime(),
@@ -185,8 +209,6 @@ void initSolutionJobList_shouldSkipJobsWithoutLineId() {
             .thenReturn(Collections.emptyList());
 
     jobService.initSolutionJobList(schedule);
-
-    // production job создан, но к линии не прикреплён
     assertEquals(1, schedule.getJobs().size());
 
     Line line = schedule.getLines().getFirst();
@@ -493,4 +515,59 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertNull(solution.getJobs().getFirst().getDelayNote());
     }
 
+    @Test
+    void  initDelayDuration(){
+        DbJobRow jobRow = createDbJobRow();
+
+        DbMaintenanceRow delayData = createDelayRow();
+
+        when(loadDataService.getProducts())
+                .thenReturn(Map.of("KMC1", getTestProduct()));
+        when(jobRepository.getDbJobRowMap(any(), any()))
+                .thenReturn(Map.of(123L, jobRow));
+        when(jobRepository.getMaintenanceData(any(), any()))
+                .thenReturn(List.of());
+        when(jobRepository.getDelayData(any(), any()))
+                .thenReturn(Map.of(123L, delayData));
+
+        jobService.initSolutionJobList(schedule);
+
+        assertEquals(1, schedule.getJobs().size());
+        assertEquals(delayData.getStartProductionDateTime().toLocalDateTime(), schedule.getJobs().getFirst().getPlanEndDateTime());
+        assertEquals(delayData.getEndDateTime().toLocalDateTime(), schedule.getJobs().getFirst().getEndDateTime());
+        assertEquals(delayData.getMaintenanceNote(), schedule.getJobs().getFirst().getDelayNote());
+
+        assertTrue(schedule.getJobs().getFirst().isFinalDuration());
+        assertEquals(6, schedule.getJobs().getFirst().getDelayDuration().toMinutes());
+        assertEquals(40, schedule.getJobs().getFirst().getDuration().toMinutes());
+    }
+
+    @Test
+    void  initDelayDuration_WhenJobIdIsNull(){
+        DbJobRow jobRow = createDbJobRowWithNullId();
+
+        DbMaintenanceRow delayData = createDelayRow();
+
+        when(loadDataService.getProducts())
+                .thenReturn(Map.of("KMC1", getTestProduct()));
+        when(jobRepository.getDbJobRowMap(any(), any()))
+                .thenReturn(Map.of(123L, jobRow));
+        when(jobRepository.getMaintenanceData(any(), any()))
+                .thenReturn(List.of());
+        when(jobRepository.getDelayData(any(), any()))
+                .thenReturn(Map.of(123L, delayData));
+
+        jobService.initSolutionJobList(schedule);
+
+        assertEquals(1, schedule.getJobs().size());
+        assertEquals(jobRow.endDateTime().toLocalDateTime(), schedule.getJobs().getFirst().getEndDateTime());
+        assertEquals(34, schedule.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals("null", schedule.getJobs().getFirst().getId());
+
+        assertNull(schedule.getJobs().getFirst().getPlanEndDateTime());
+        assertNull(schedule.getJobs().getFirst().getDelayNote());
+        assertNull( schedule.getJobs().getFirst().getDelayDuration());
+
+        assertFalse(schedule.getJobs().getFirst().isFinalDuration());
+    }
 }

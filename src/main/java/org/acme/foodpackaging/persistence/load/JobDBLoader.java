@@ -77,6 +77,28 @@ public class JobDBLoader {
     }
 
     @SuppressWarnings("unchecked")
+    public Map<Long, DbMaintenanceRow> loadDelayDurationRows(
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+
+      List <DbMaintenanceRow> delayDurationList = em
+                .createNativeQuery(queries.loadDelayDuration(), "DbMaintenanceRowMapping")
+                .setParameter(1, Timestamp.valueOf(from))
+                .setParameter(2, Timestamp.valueOf(to))
+                .setParameter(3, Timestamp.valueOf(from))
+                .setParameter(4, Timestamp.valueOf(to))
+                .getResultList();
+
+      return delayDurationList.stream()
+              .collect(Collectors.toMap
+                      (DbMaintenanceRow::getSnpz,
+                              Function.identity(),
+                              (existing, replacement) -> existing)
+              );
+    }
+
+    @SuppressWarnings("unchecked")
     public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
 
         List<FactProductionRow> rows = em

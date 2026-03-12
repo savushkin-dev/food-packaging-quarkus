@@ -408,4 +408,19 @@ class SortByNpServiceTest {
 
         assertEquals(List.of(8, 5, 2), line1.getJobs().stream().map(Job::getNp).toList());
     }
+
+    @Test
+    void sortRangeByNp_ExcludeMaintenance() {
+        Job j1 = job("J1", 5, vanilla);
+        Job j2 = job("J2", 2, vanilla);
+        Job j3 = job("J3", 8, vanilla);
+
+        j2.setMaintenance(true);
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
+        schedule.setJobs(List.of(j1, j2, j3));
+
+        service.sortRangeByNp(schedule, sortRangeRequest("L1", 0, 3, true));
+
+        assertEquals(List.of(5,2,8), line1.getJobs().stream().map(Job::getNp).toList());
+    }
 }

@@ -288,13 +288,26 @@ public class SortByNpService {
         int from = request.getFromIndex();
         int to = getAnInt(request, from, jobCount);
 
-        if(request.isSortUp()) {
-            jobs.subList(from, to)
-                    .sort(Comparator.comparing(Job::getNp));
+        Comparator<Job> comparator = Comparator.comparing(Job::getNp, Comparator.nullsLast(Integer::compareTo));
+
+        if(!request.isSortUp()){
+           comparator = comparator.reversed();
         }
-        else {
-            jobs.subList(from, to)
-                    .sort(Comparator.comparing(Job::getNp).reversed());
+
+        List<Job> sorted = jobs.subList(from, to).stream()
+                .filter(j -> !j.isMaintenance())
+                .sorted(comparator)
+                .toList();
+
+        ListIterator<Job> it = jobs.listIterator(from);
+
+        int idx = 0;
+        while(it.nextIndex() < to){
+            Job job = it.next();
+
+            if(!job.isMaintenance()){
+                it.set(sorted.get(idx++));
+            }
         }
     }
 
