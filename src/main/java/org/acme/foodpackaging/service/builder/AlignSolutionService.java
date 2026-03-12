@@ -40,7 +40,17 @@ public class AlignSolutionService {
         if (schedule.getJobs() == null || schedule.getJobs().isEmpty()) {
             return;
         }
-        jobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId() == 7);
+
+        Iterator<Job> it = jobs.iterator();
+        while (it.hasNext()) {
+            Job job = it.next();
+            if (job.isMaintenance() && job.getMaintenanceTypeId() == 7) {
+                job.setFDel((short)1);
+                schedule.getDeletedMaintenance().add(job);
+                it.remove();
+            }
+        }
+
         for(Line line : schedule.getLines()){
 
             if (line == null || line.getJobs() == null || line.getJobs().isEmpty()) {
