@@ -71,9 +71,12 @@ public class AlignSolutionService {
             if (factMinutes == null) {
                 continue;
             }
+            long extraMinutes = getExtraTime(job, line.getJobs());
+            factMinutes-=extraMinutes;
+
             long planMinutes = calculatePlanMinutes(job);
             long diff = factMinutes - planMinutes;
-            if(diff>0){
+            if(diff > 0){
                 job.setPlanEndDateTime(job.getEndDateTime());
                 job.setEndDateTime(job.getPlanEndDateTime().plusMinutes(diff));
                 job.setDelayDuration(Duration.ofMinutes(diff));
@@ -82,8 +85,39 @@ public class AlignSolutionService {
                 fixLineJobs(line);
                 fixPinnedJobs(line);
             }
-
         }
+    }
+
+    // Поиск партий, которые пересекаются по времени на линиях
+    private List<Job> findTimeIntersections(Job job, List<Job> lineJobs){
+        if( job.getLineIdFact()== null
+                || !job.getLine().getId().equals(job.getLineIdFact())){
+            return List.of();
+        }
+        List<Job> jobsWithFactData = lineJobs.stream()
+                .filter(j -> j.getCameraStart()!=null)
+                .filter(j -> j.getCameraEnd()!=null).toList();
+
+        LocalDateTime cameraStart = job.getCameraStart();
+        LocalDateTime cameraEnd = job.getCameraEnd();
+
+       return jobsWithFactData.stream()
+                .filter(j -> j.getCameraStart().isAfter(cameraStart))
+                .filter(j -> j.getCameraEnd().isBefore(cameraEnd)).toList();
+    }
+
+    // Расчет времени фасовки других партий, в то время как не заверешна предыдущая
+    private long getExtraTime(Job job, List<Job> lineJobs){
+        long extraTime = 0;
+        List<Job> timeIntersectionsJobs = findTimeIntersections(job, lineJobs);
+        if(timeIntersectionsJobs.isEmpty()) return extraTime;
+
+        for(Job intersectionJob : timeIntersectionsJobs){
+            Long cameraDuration = calculateFactMinutes(intersectionJob);
+            if(cameraDuration == null) continue;
+            extraTime+=cameraDuration;
+        }
+        return extraTime;
     }
 
     private long calculatePlanMinutes(Job job) {
