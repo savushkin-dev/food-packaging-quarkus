@@ -1,14 +1,16 @@
-package org.acme.foodpackaging.persistence.excelDataExport;
+package org.acme.foodpackaging.persistence.excel;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.exception.excel.ReportGenerationException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,7 +23,7 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.find
 public class PlanReport {
 
     private static final String SHEET_NAME = "Statistics";
-    private static final String REPORT_PATH = "src/main/resources/reports/solution_statistics.xlsx";
+    private static final String REPORT_PATH = "src/main/target/reports/solution_statistics.xlsx";
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final int MAX_AUTO_SIZE_COLUMN = 9;
 
@@ -72,22 +74,21 @@ public class PlanReport {
 
             for (Line line : solution.getLines()) {
 
-                if (line == null || line.getJobs() == null || line.getJobs().isEmpty()) {
-                    continue;
+                if (line != null && line.getJobs() != null && !line.getJobs().isEmpty()) {
+
+                    FactJobsByLine jobs = collectFactJobs(line.getJobs());
+
+                    if (!jobs.correct().isEmpty() || !jobs.incorrect().isEmpty()) {
+                        rowIndex = writeLineSection(sheet, solution, line, jobs, styles, rowIndex);
+                    }
                 }
-
-                FactJobsByLine jobs = collectFactJobs(line.getJobs());
-
-                if (jobs.correct().isEmpty() && jobs.incorrect().isEmpty()) {
-                    continue;
-                }
-
-                rowIndex = writeLineSection(sheet, solution, line, jobs, styles, rowIndex);
             }
 
             autoSizeColumns(sheet);
             writeWorkbookToFile(workbook);
 
+        } catch (IOException e) {
+            throw new ReportGenerationException("Failed to generate Excel report", e);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

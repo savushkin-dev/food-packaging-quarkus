@@ -14,7 +14,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
-import org.acme.foodpackaging.persistence.excelDataExport.PlanReport;
+import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.FrontendDataWrapper;
 import org.acme.foodpackaging.record.InitData;

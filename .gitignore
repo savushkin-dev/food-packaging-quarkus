@@ -28,4 +28,3 @@ logs/
 
 # Export directories
 src/main/resources/excelExport/
-src/main/resources/reports/

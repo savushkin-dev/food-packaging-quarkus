@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.persistence.excelDataExport;
+package org.acme.foodpackaging.persistence.excel;
 
 import org.acme.foodpackaging.domain.Product;
 import org.apache.poi.ss.usermodel.*;
