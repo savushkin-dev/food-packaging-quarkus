@@ -565,7 +565,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
-        PlanReport report = new PlanReport(schedule);
+        new PlanReport(schedule);
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
