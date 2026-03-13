@@ -3,6 +3,7 @@ package org.acme.foodpackaging.persistence.excel;
 import org.acme.foodpackaging.domain.Product;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jboss.logging.Logger;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,6 +12,8 @@ import java.time.Duration;
 import java.util.List;
 
 public class CleaningTimeToExcel {
+
+    private static final Logger LOG = Logger.getLogger(PlanReport.class);
 
     public CleaningTimeToExcel(List<Product> productList) throws IOException {
         createCleaningTimeExcel(productList);
@@ -77,6 +80,6 @@ public class CleaningTimeToExcel {
             }
         }
 
-        System.out.println("Excel успешно создан: " + exportFile.getAbsolutePath());
+        LOG.infof("Excel успешно создан: %s", exportFile.getAbsolutePath());
      }
     }
