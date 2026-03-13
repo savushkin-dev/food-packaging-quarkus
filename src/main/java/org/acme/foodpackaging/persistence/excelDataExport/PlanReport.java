@@ -5,7 +5,8 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.FileOutputStream;
 import java.time.Duration;
@@ -24,15 +25,47 @@ public class PlanReport {
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final int MAX_AUTO_SIZE_COLUMN = 9;
 
+    private static final String[] CORRECT_HEADERS = {
+            "Название продукта",
+            "Номер партии",
+            "Старт по плану",
+            "План (мин)",
+            "Старт по факту",
+            "Факт (мин)",
+            "Превышение \nдлительности фасовки"
+    };
+
+    private static final String[] INCORRECT_HEADERS = {
+            "Название продукта",
+            "Номер партии",
+            "Старт по плану",
+            "План (мин)",
+            "Старт по факту",
+            "Факт (мин)",
+            "Превышение \nдлительности фасовки",
+            "Линия план",
+            "Линия факт"
+    };
+
+    private static final String[] SERVICE_HEADERS = {
+            "Название",
+            "Время начала",
+            "Длительность",
+            "Время окончания",
+            "Заметка мастера"
+    };
+
     public PlanReport(PackagingSchedule solution) {
         createExcelReport(solution);
     }
 
     private void createExcelReport(PackagingSchedule solution) {
 
-        try (Workbook workbook = new XSSFWorkbook()) {
+        try (SXSSFWorkbook workbook = new SXSSFWorkbook(200)) {
 
-            Sheet sheet = workbook.createSheet(SHEET_NAME);
+            SXSSFSheet sheet = workbook.createSheet(SHEET_NAME);
+            sheet.trackAllColumnsForAutoSizing();
+
             Styles styles = createStyles(workbook);
 
             int rowIndex = 0;
@@ -61,6 +94,7 @@ public class PlanReport {
     }
 
     private Styles createStyles(Workbook workbook) {
+
         CellStyle redStyle = workbook.createCellStyle();
         Font redFont = workbook.createFont();
         redFont.setColor(IndexedColors.RED.getIndex());
@@ -74,28 +108,35 @@ public class PlanReport {
         CellStyle headerStyle = workbook.createCellStyle();
         headerStyle.setFillForegroundColor(IndexedColors.SKY_BLUE.getIndex());
         headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
         Font headerFont = workbook.createFont();
         headerFont.setBold(true);
+
         headerStyle.setFont(headerFont);
         headerStyle.setWrapText(true);
 
         CellStyle incorrectLineStyle = workbook.createCellStyle();
         incorrectLineStyle.setFillForegroundColor(IndexedColors.ROSE.getIndex());
         incorrectLineStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
         Font incorrectFont = workbook.createFont();
         incorrectFont.setBold(true);
+
         incorrectLineStyle.setFont(incorrectFont);
 
         CellStyle serviceOperationStyle = workbook.createCellStyle();
         serviceOperationStyle.setFillForegroundColor(IndexedColors.AQUA.getIndex());
         serviceOperationStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        Font serviceOperationFont = workbook.createFont();
-        serviceOperationFont.setBold(true);
-        serviceOperationStyle.setFont(serviceOperationFont);
+
+        Font serviceFont = workbook.createFont();
+        serviceFont.setBold(true);
+
+        serviceOperationStyle.setFont(serviceFont);
         serviceOperationStyle.setWrapText(true);
 
         return new Styles(redStyle, greenStyle, headerStyle, incorrectLineStyle, serviceOperationStyle);
     }
+
 
     private int writeLineSection(Sheet sheet,
                                  PackagingSchedule solution,
@@ -105,15 +146,14 @@ public class PlanReport {
                                  int rowIndex) {
 
         Row lineRow = sheet.createRow(rowIndex++);
-
         Cell lineCell = lineRow.createCell(0);
         lineCell.setCellValue(line.getName());
         lineCell.setCellStyle(styles.greenStyle());
 
         sheet.addMergedRegion(new CellRangeAddress(rowIndex - 1, rowIndex - 1, 0, 8));
 
-        Row lineRow1 = sheet.createRow(rowIndex++);
-        lineRow1.createCell(0).setCellValue("Фактические задачи на своей линии");
+        Row titleRow = sheet.createRow(rowIndex++);
+        titleRow.createCell(0).setCellValue("Фактические задачи на своей линии");
 
         if (!jobs.correct().isEmpty()) {
             rowIndex = writeCorrectJobsSection(sheet, jobs.correct(), styles.redStyle(), styles.headerStyle(), rowIndex);
@@ -135,22 +175,7 @@ public class PlanReport {
                                         int rowIndex) {
 
         Row header = sheet.createRow(rowIndex++);
-
-        String[] headers = {
-                "Название продукта",
-                "Номер партии",
-                "Старт по плану",
-                "План (мин)",
-                "Старт по факту",
-                "Факт (мин)",
-                "Превышение \nдлительности фасовки"
-        };
-
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = header.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(headerStyle);
-        }
+        createHeader(header, CORRECT_HEADERS, headerStyle);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
 
@@ -162,18 +187,18 @@ public class PlanReport {
             long delay = job.getDelayDuration().toMinutes();
             long plan = fact - delay;
 
-            row.createCell(0).setCellValue(job.getName());
-            row.createCell(1).setCellValue(job.getNp());
-            row.createCell(2).setCellValue(job.getStartProductionDateTime().format(formatter));
-            row.createCell(3).setCellValue(plan);
-            row.createCell(4).setCellValue(job.getCameraStart().format(formatter));
-            row.createCell(5).setCellValue(fact);
-
-            Cell delayCell = row.createCell(6);
-            delayCell.setCellValue(delay);
+            writeRow(row,
+                    job.getName(),
+                    job.getNp(),
+                    format(job.getStartProductionDateTime(), formatter),
+                    plan,
+                    format(job.getCameraStart(), formatter),
+                    fact,
+                    delay
+            );
 
             if (delay > 0) {
-                delayCell.setCellStyle(delayStyle);
+                row.getCell(6).setCellStyle(delayStyle);
             }
         }
 
@@ -191,24 +216,7 @@ public class PlanReport {
         title.createCell(0).setCellValue("Фактические задачи не на своей линии");
 
         Row header = sheet.createRow(rowIndex++);
-
-        String[] headers = {
-                "Название продукта",
-                "Номер партии",
-                "Старт по плану",
-                "План (мин)",
-                "Старт по факту",
-                "Факт (мин)",
-                "Превышение \nдлительности фасовки",
-                "Линия план",
-                "Линия факт"
-        };
-
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = header.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(headerStyle);
-        }
+        createHeader(header, INCORRECT_HEADERS, headerStyle);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
 
@@ -222,75 +230,90 @@ public class PlanReport {
 
             String factLine = findLineById(solution, job.getLineIdFact()).getName();
 
-            row.createCell(0).setCellValue(job.getName());
-            row.createCell(1).setCellValue(job.getNp());
-            row.createCell(2).setCellValue(job.getStartProductionDateTime().format(formatter));
-            row.createCell(3).setCellValue(plan);
-            row.createCell(4).setCellValue(job.getCameraStart().format(formatter));
-            row.createCell(5).setCellValue(fact);
-
-            Cell delayCell = row.createCell(6);
-            delayCell.setCellValue(delay);
+            writeRow(row,
+                    job.getName(),
+                    job.getNp(),
+                    format(job.getStartProductionDateTime(), formatter),
+                    plan,
+                    format(job.getCameraStart(), formatter),
+                    fact,
+                    delay,
+                    job.getLine().getName(),
+                    factLine
+            );
 
             if (delay > 0) {
-                delayCell.setCellStyle(delayStyle);
+                row.getCell(6).setCellStyle(delayStyle);
             }
-
-            row.createCell(7).setCellValue(job.getLine().getName());
-            row.createCell(8).setCellValue(factLine);
         }
 
         return rowIndex + 1;
     }
 
+
     private int writeServiceOperationsSection(Sheet sheet,
                                               Line line,
-                                              CellStyle serviceOperationStyle,
+                                              CellStyle style,
                                               int rowIndex) {
 
         Row title = sheet.createRow(rowIndex++);
         title.createCell(0).setCellValue("Сервисные операции на линии");
 
         Row header = sheet.createRow(rowIndex++);
-
-        String[] headers = {
-                "Название",
-                "Время начала",
-                "Длительность",
-                "Время окончания",
-                "Заметка мастера",
-        };
-
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = header.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(serviceOperationStyle);
-        }
+        createHeader(header, SERVICE_HEADERS, style);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
 
         for (Job job : line.getJobs()) {
-            if (job.isMaintenance()) {
-                Row row = sheet.createRow(rowIndex++);
 
-                row.createCell(0).setCellValue(job.getName());
-                row.createCell(1).setCellValue(job.getStartProductionDateTime().format(formatter));
-                row.createCell(2).setCellValue(job.getDuration().toMinutes());
-                row.createCell(3).setCellValue(job.getEndDateTime().format(formatter));
-
-                if (job.getMaintenanceNote() != null) {
-                    row.createCell(4).setCellValue(job.getMaintenanceNote());
-                }
+            if (!job.isMaintenance()) {
+                continue;
             }
+
+            Row row = sheet.createRow(rowIndex++);
+
+            writeRow(row,
+                    job.getName(),
+                    format(job.getStartProductionDateTime(), formatter),
+                    job.getDuration().toMinutes(),
+                    format(job.getEndDateTime(), formatter),
+                    job.getMaintenanceNote()
+            );
         }
+
         return rowIndex;
     }
 
+    private void createHeader(Row row, String[] headers, CellStyle style) {
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = row.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(style);
+        }
+    }
+
+    private void writeRow(Row row, Object... values) {
+        for (int i = 0; i < values.length; i++) {
+
+            Cell cell = row.createCell(i);
+            Object value = values[i];
+
+            if (value instanceof Number n) {
+                cell.setCellValue(n.doubleValue());
+            } else if (value != null) {
+                cell.setCellValue(value.toString());
+            }
+        }
+    }
+
     private void autoSizeColumns(Sheet sheet) {
+
         for (int i = 0; i < MAX_AUTO_SIZE_COLUMN; i++) {
+
             sheet.autoSizeColumn(i);
 
             int maxWidth = 70 * 256;
+
             if (sheet.getColumnWidth(i) > maxWidth) {
                 sheet.setColumnWidth(i, maxWidth);
             }
@@ -298,9 +321,14 @@ public class PlanReport {
     }
 
     private void writeWorkbookToFile(Workbook workbook) throws Exception {
+
         try (FileOutputStream out = new FileOutputStream(REPORT_PATH)) {
             workbook.write(out);
         }
+    }
+
+    private String format(LocalDateTime time, DateTimeFormatter formatter) {
+        return time == null ? "" : time.format(formatter);
     }
 
     private FactJobsByLine collectFactJobs(List<Job> jobs) {
@@ -310,8 +338,10 @@ public class PlanReport {
 
         for (Job job : jobs) {
 
-            if (job.getDelayDuration() != null && isYesterdayOrToday(job.getCameraStart())
-            && job.getLine().getId().equals(job.getLineIdFact())) {
+            if (job.getDelayDuration() != null
+                    && isYesterdayOrToday(job.getCameraStart())
+                    && job.getLine().getId().equals(job.getLineIdFact())) {
+
                 correct.add(job);
             }
 
@@ -334,6 +364,7 @@ public class PlanReport {
     }
 
     private boolean isYesterdayOrToday(LocalDateTime time) {
+
         LocalDate today = LocalDate.now();
         LocalDate yesterday = today.minusDays(1);
 
@@ -354,3 +385,4 @@ public class PlanReport {
             CellStyle serviceOperationStyle
     ) {}
 }
+
