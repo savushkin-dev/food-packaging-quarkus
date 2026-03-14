@@ -13,7 +13,7 @@ import java.util.List;
 
 public class CleaningTimeToExcel {
 
-    private static final Logger LOG = Logger.getLogger(PlanReport.class);
+    private static final Logger LOG = Logger.getLogger(CleaningTimeToExcel.class);
 
     public CleaningTimeToExcel(List<Product> productList) throws IOException {
         createCleaningTimeExcel(productList);

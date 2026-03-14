@@ -3,6 +3,7 @@ package org.acme.foodpackaging.persistence.excel;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.exception.excel.ReportGenerationException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -86,8 +87,8 @@ public class PlanReport {
             autoSizeColumns(sheet);
             writeWorkbookToFile(workbook);
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new ReportGenerationException("Error while generating Excel report", e);
         }
     }
 
