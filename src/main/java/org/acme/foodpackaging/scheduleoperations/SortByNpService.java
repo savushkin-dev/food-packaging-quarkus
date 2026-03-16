@@ -276,7 +276,7 @@ public class SortByNpService {
         schedule.setJobs(combined);
     }
     /**
-     * Сортирует дипозон задач на линии по партиям в прямом/обратном в зависимости от флага sortUp
+     * Сортирует диапазон задач на линии по партиям в прямом/обратном в зависимости от флага sortUp
      */
     public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request){
         Line line = findLineById(schedule, request.getLineId());

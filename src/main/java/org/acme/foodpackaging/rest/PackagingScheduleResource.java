@@ -14,6 +14,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.FrontendDataWrapper;
 import org.acme.foodpackaging.record.InitData;
@@ -555,5 +556,20 @@ public class PackagingScheduleResource {
 
     private String getProblemId(String sessionId) {
         return sessionId != null ? sessionId : "default";
+    }
+
+    @POST
+    @Path("report")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response createCsvReport(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        new PlanReport(schedule);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Excel report created successfully").build();
     }
 }
