@@ -96,7 +96,8 @@ public class AlignSolutionService {
         }
         List<Job> jobsWithFactData = lineJobs.stream()
                 .filter(j -> j.getCameraStart()!=null)
-                .filter(j -> j.getCameraEnd()!=null).toList();
+                .filter(j -> j.getCameraEnd()!=null)
+                .filter(j -> j.getLine().getId().equals(j.getLineIdFact())).toList();
 
         LocalDateTime cameraStart = job.getCameraStart();
         LocalDateTime cameraEnd = job.getCameraEnd();
