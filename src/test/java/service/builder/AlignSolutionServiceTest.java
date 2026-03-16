@@ -447,6 +447,45 @@ class AlignSolutionServiceTest {
         assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23), line.getJobs().getLast().getPlanEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 9, 11, 30), line.getJobs().getLast().getEndDateTime());
     }
+
+    @Test
+    void findTimeIntersections_cameraDataMissing() {
+        solution.setJobs(null);
+        Job j1 = getJob();
+        Job j2 = getJob();
+
+        LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
+        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 50);
+
+        LocalDateTime cameraStart2 = LocalDateTime.of(2026, 3, 9, 10, 10);
+
+        j1.setCameraStart(cameraStart1);
+        j1.setCameraEnd(cameraEnd1);
+
+        j1.setStartProductionDateTime(cameraStart1);
+        j1.setEndDateTime(cameraEnd1.minusMinutes(35));
+        j1.setLineIdFact("line1");
+
+        j2.setCameraStart(cameraStart2);
+        j2.setCameraEnd(null);
+
+        j2.setStartProductionDateTime(cameraStart2);
+        j2.setEndDateTime(cameraStart2.plusMinutes(20));
+        j2.setLineIdFact("line1");
+
+        line.setJobs(List.of(j1, j2));
+        line.setStartDateTime(cameraStart1);
+
+        j1.setLine(line);
+        j2.setLine(line);
+
+        solution.setLines(List.of(line));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+        assertFalse(line.getJobs().getLast().isFinalDuration());
+    }
     // ============================================================
     // helpers
     // ============================================================
