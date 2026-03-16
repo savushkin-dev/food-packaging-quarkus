@@ -23,7 +23,7 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.find
 public class PlanReport {
 
     private static final String SHEET_NAME = "Statistics";
-    private static final String REPORT_PATH = "src/main/target/reports/solution_statistics.xlsx";
+    private static final String REPORT_PATH = "src/main/resources/reports/solution_statistics.xlsx";
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final int MAX_AUTO_SIZE_COLUMN = 9;
 
