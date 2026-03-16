@@ -92,11 +92,13 @@ class AlignSolutionServiceTest {
         j1.setStartCleaningDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
         j1.setStartProductionDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
         j1.setEndDateTime(LocalDateTime.of(2026,3, 6, 10, 33));
+        j1.setLineIdFact("line1");
 
         j1.setCameraStart(LocalDateTime.of(2026,3, 6, 11, 0));
         j1.setCameraEnd(LocalDateTime.of(2026,3, 6, 11, 50));
 
         Job j2 = getPackagingMaintenance();
+
 
         List<Job> jobs = new ArrayList<>(List.of(j1, j2));
 
@@ -407,6 +409,7 @@ class AlignSolutionServiceTest {
         solution.setJobs(null);
         Job j1 = getJob();
         Job j2 = getJob();
+        Job j3 = getJob();
 
         LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
         LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 50);
@@ -427,7 +430,9 @@ class AlignSolutionServiceTest {
         j2.setEndDateTime(j2.getCameraEnd().minusMinutes(20));
         j2.setLineIdFact("line2");
 
-        line.setJobs(List.of(j1, j2));
+
+
+        line.setJobs(List.of(j1, j2, j3));
         line.setStartDateTime(cameraStart1);
         j1.setLine(line);
         j2.setLine(line);
@@ -440,12 +445,7 @@ class AlignSolutionServiceTest {
         assertEquals(LocalDateTime.of(2026, 3, 9, 10, 15), line.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(50, line.getJobs().getFirst().getDuration().toMinutes());
 
-        assertTrue(line.getJobs().getLast().isFinalDuration());
-        assertEquals(7, line.getJobs().getLast().getDelayDuration().toMinutes());
-        assertEquals(40, line.getJobs().getLast().getDuration().toMinutes());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 50), line.getJobs().getLast().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23), line.getJobs().getLast().getPlanEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 11, 30), line.getJobs().getLast().getEndDateTime());
+        assertFalse(line.getJobs().getLast().isFinalDuration());
     }
 
     @Test

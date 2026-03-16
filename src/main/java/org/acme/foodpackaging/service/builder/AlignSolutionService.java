@@ -68,7 +68,8 @@ public class AlignSolutionService {
 
         for (Job job : line.getJobs()) {
             Long factMinutes = calculateFactMinutes(job);
-            if (factMinutes == null) {
+            if (factMinutes == null || job.getLineIdFact() == null ||
+                    !job.getLine().getId().equals(job.getLineIdFact())) {
                 continue;
             }
             long extraMinutes = getExtraTime(job, line.getJobs());
@@ -90,10 +91,7 @@ public class AlignSolutionService {
 
     // Поиск партий, которые пересекаются по времени на линиях
     private List<Job> findTimeIntersections(Job job, List<Job> lineJobs){
-        if( job.getLineIdFact()== null
-                || !job.getLine().getId().equals(job.getLineIdFact())){
-            return List.of();
-        }
+
         List<Job> jobsWithFactData = lineJobs.stream()
                 .filter(j -> j.getCameraStart()!=null)
                 .filter(j -> j.getCameraEnd()!=null)
