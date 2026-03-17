@@ -171,7 +171,7 @@ public class Job {
                 row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
                 startProductionDateTime,
                 row.emk() != null ? row.emk() : 0,
-                row.placePlan()
+                row.placePlan() != null ? row.placePlan() : 0
         ));
     }
 
