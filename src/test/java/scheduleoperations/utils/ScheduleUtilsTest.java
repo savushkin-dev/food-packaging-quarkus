@@ -98,6 +98,23 @@ class ScheduleUtilsTest {
     }
 
     @Test
+    void fixPinnedJobs_newIndexLessThenCurrent() {
+        line.setFirstUnpinnedIndex(3);
+        job1.setMaintenance(true);
+
+        ScheduleUtils.fixPinnedJobs(line);
+        assertEquals(3, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
+    void fixPinnedJobs_newIndexMoreThenCurrent() {
+        job1.setMaintenance(true);
+
+        ScheduleUtils.fixPinnedJobs(line);
+        assertEquals(1, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
     void fixEndDateTime() {
         LocalDateTime maxTime = LocalDateTime.now().plusHours(5);
 
