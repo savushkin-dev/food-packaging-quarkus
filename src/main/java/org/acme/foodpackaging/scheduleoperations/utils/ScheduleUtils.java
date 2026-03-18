@@ -55,7 +55,9 @@ public class ScheduleUtils {
             }
         }
 
-        line.setFirstUnpinnedIndex(lastPinnedIndex + 1);
+        if(line.getFirstUnpinnedIndex() < lastPinnedIndex + 1) {
+            line.setFirstUnpinnedIndex(lastPinnedIndex + 1);
+        }
     }
     /**
      * Назначает общий maxEndDateTime для всех задач
