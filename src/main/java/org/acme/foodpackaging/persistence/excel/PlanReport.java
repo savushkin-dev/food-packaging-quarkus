@@ -9,7 +9,6 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +25,6 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.find
 public class PlanReport {
 
     private static final String SHEET_NAME = "Statistics";
-    private static final String REPORT_PATH = "src/main/resources/reports/solution_statistics.xlsx";
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final int MAX_AUTO_SIZE_COLUMN = 9;
 
@@ -67,7 +65,7 @@ public class PlanReport {
         try {
             Files.createDirectories(Paths.get(dir));
         } catch (IOException e) {
-            throw new RuntimeException("Failed to create directory: " + dir, e);
+            throw new ReportGenerationException("Failed to create directory: " + dir, e);
         }
 
         String date = LocalDate.now()
