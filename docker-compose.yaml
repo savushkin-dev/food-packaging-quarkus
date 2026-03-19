@@ -1,0 +1,13 @@
+services:
+  foodpack:
+    build: .
+    container_name: foodpack
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
+    env_file:
+      - .env
+    environment:
+      - QUARKUS_PROFILE=${QUARKUS_PROFILE}
+    volumes:
+      - ./logs:/app/logs
+    restart: always
