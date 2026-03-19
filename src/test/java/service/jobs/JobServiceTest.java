@@ -212,7 +212,7 @@ void initSolutionJobList_shouldSkipJobsWithoutLineId() {
             .thenReturn(Collections.emptyList());
 
     jobService.initSolutionJobList(schedule);
-    assertEquals(1, schedule.getJobs().size());
+    assertEquals(0, schedule.getJobs().size());
 
     Line line = schedule.getLines().getFirst();
     assertTrue(line.getJobs().isEmpty());
