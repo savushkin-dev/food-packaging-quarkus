@@ -288,7 +288,12 @@ public class JobService {
     public void initIdBatch(PackagingSchedule schedule){
         for(Job job : schedule.getJobs()){
             if( job.isMaintenance() || job.getIdBatch() != null) continue;
-            job.setIdBatch(jobInfoService.generateIdBatch(schedule, Long.parseLong(job.getId())));
+            try {
+                long jobIdAsLong = Long.parseLong(job.getId());
+                job.setIdBatch(jobInfoService.generateIdBatch(schedule, jobIdAsLong));
+            } catch (NumberFormatException e) {
+                // Skip this job if its ID cannot be parsed to a long
+            }
         }
     }
 
