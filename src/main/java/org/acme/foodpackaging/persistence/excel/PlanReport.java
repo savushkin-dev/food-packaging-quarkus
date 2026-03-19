@@ -11,6 +11,8 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,7 +25,6 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.find
 public class PlanReport {
 
     private static final String SHEET_NAME = "Statistics";
-    private static final String REPORT_PATH = "src/main/resources/reports/solution_statistics.xlsx";
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final int MAX_AUTO_SIZE_COLUMN = 9;
 
@@ -34,7 +35,8 @@ public class PlanReport {
             "План (мин)",
             "Старт по факту",
             "Факт (мин)",
-            "Превышение \nдлительности фасовки"
+            "Превышение \nдлительности фасовки",
+            "Заметка мастера"
     };
 
     private static final String[] INCORRECT_HEADERS = {
@@ -56,6 +58,21 @@ public class PlanReport {
             "Время окончания",
             "Заметка мастера"
     };
+
+    private String generateReportPath() {
+        String dir = "reports/";
+
+        try {
+            Files.createDirectories(Paths.get(dir));
+        } catch (IOException e) {
+            throw new ReportGenerationException("Failed to create directory: " + dir, e);
+        }
+
+        String date = LocalDate.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        return dir + date + "_PlanReport.xlsx";
+    }
 
     public PlanReport(PackagingSchedule solution) {
         createExcelReport(solution);
@@ -85,7 +102,7 @@ public class PlanReport {
             }
 
             autoSizeColumns(sheet);
-            writeWorkbookToFile(workbook);
+            writeWorkbookToFile(workbook, generateReportPath());
 
         } catch (IOException e) {
             throw new ReportGenerationException("Error while generating Excel report", e);
@@ -193,7 +210,8 @@ public class PlanReport {
                     plan,
                     format(job.getCameraStart(), formatter),
                     fact,
-                    delay
+                    delay,
+                    job.getDelayNote()
             );
 
             if (delay > 0) {
@@ -271,12 +289,21 @@ public class PlanReport {
 
             Row row = sheet.createRow(rowIndex++);
 
+            String masterNote = job.getMaintenanceNote();
+            if (job.getMaintenanceTypeId() == 8 ||
+                    "Auto extra maintenance".equalsIgnoreCase(
+                            job.getMaintenanceNote() != null ? job.getMaintenanceNote().trim() : null
+                    )) {
+
+                masterNote = "";
+            }
+
             writeRow(row,
                     job.getName(),
                     format(job.getStartProductionDateTime(), formatter),
                     job.getDuration().toMinutes(),
                     format(job.getEndDateTime(), formatter),
-                    job.getMaintenanceNote()
+                    masterNote
             );
         }
 
@@ -311,7 +338,7 @@ public class PlanReport {
 
             sheet.autoSizeColumn(i);
 
-            int maxWidth = 70 * 256;
+            int maxWidth = 50 * 256;
 
             if (sheet.getColumnWidth(i) > maxWidth) {
                 sheet.setColumnWidth(i, maxWidth);
@@ -319,9 +346,9 @@ public class PlanReport {
         }
     }
 
-    private void writeWorkbookToFile(Workbook workbook) throws IOException {
+    private void writeWorkbookToFile(Workbook workbook, String path) throws IOException {
 
-        try (FileOutputStream out = new FileOutputStream(REPORT_PATH)) {
+        try (FileOutputStream out = new FileOutputStream(path)) {
             workbook.write(out);
         }
     }
