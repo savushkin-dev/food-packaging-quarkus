@@ -9,8 +9,11 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -58,6 +61,21 @@ public class PlanReport {
             "Заметка мастера"
     };
 
+    private String generateReportPath() {
+        String dir = "reports/";
+
+        try {
+            Files.createDirectories(Paths.get(dir));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create directory: " + dir, e);
+        }
+
+        String date = LocalDate.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        return dir + date + "_PlanReport.xlsx";
+    }
+
     public PlanReport(PackagingSchedule solution) {
         createExcelReport(solution);
     }
@@ -86,7 +104,7 @@ public class PlanReport {
             }
 
             autoSizeColumns(sheet);
-            writeWorkbookToFile(workbook);
+            writeWorkbookToFile(workbook, generateReportPath());
 
         } catch (IOException e) {
             throw new ReportGenerationException("Error while generating Excel report", e);
@@ -330,9 +348,9 @@ public class PlanReport {
         }
     }
 
-    private void writeWorkbookToFile(Workbook workbook) throws IOException {
+    private void writeWorkbookToFile(Workbook workbook, String path) throws IOException {
 
-        try (FileOutputStream out = new FileOutputStream(REPORT_PATH)) {
+        try (FileOutputStream out = new FileOutputStream(path)) {
             workbook.write(out);
         }
     }
