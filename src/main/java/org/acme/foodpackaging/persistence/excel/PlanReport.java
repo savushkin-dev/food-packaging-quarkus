@@ -34,7 +34,8 @@ public class PlanReport {
             "План (мин)",
             "Старт по факту",
             "Факт (мин)",
-            "Превышение \nдлительности фасовки"
+            "Превышение \nдлительности фасовки",
+            "Заметка мастера"
     };
 
     private static final String[] INCORRECT_HEADERS = {
@@ -193,7 +194,8 @@ public class PlanReport {
                     plan,
                     format(job.getCameraStart(), formatter),
                     fact,
-                    delay
+                    delay,
+                    job.getDelayNote()
             );
 
             if (delay > 0) {
@@ -271,12 +273,21 @@ public class PlanReport {
 
             Row row = sheet.createRow(rowIndex++);
 
+            String masterNote = job.getMaintenanceNote();
+            if (job.getMaintenanceTypeId() == 8 ||
+                    "Auto extra maintenance".equalsIgnoreCase(
+                            job.getMaintenanceNote() != null ? job.getMaintenanceNote().trim() : null
+                    )) {
+
+                masterNote = "";
+            }
+
             writeRow(row,
                     job.getName(),
                     format(job.getStartProductionDateTime(), formatter),
                     job.getDuration().toMinutes(),
                     format(job.getEndDateTime(), formatter),
-                    job.getMaintenanceNote()
+                    masterNote
             );
         }
 
@@ -311,7 +322,7 @@ public class PlanReport {
 
             sheet.autoSizeColumn(i);
 
-            int maxWidth = 70 * 256;
+            int maxWidth = 50 * 256;
 
             if (sheet.getColumnWidth(i) > maxWidth) {
                 sheet.setColumnWidth(i, maxWidth);
