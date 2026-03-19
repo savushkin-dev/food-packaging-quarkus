@@ -84,8 +84,9 @@ public class JobService {
                 job.setMinStartTime(minStartDateTime);
                 job.setLine(line);
                 line.getJobs().add(job);
+                jobs.add(job);
             }
-            jobs.add(job);
+
         }
 
         for (DbMaintenanceRow rm : serviceData) {
