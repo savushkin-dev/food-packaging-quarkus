@@ -71,6 +71,4 @@ public class JobInfoService {
 
         return ean13 + dateToIdBatch + formattedNp;
     }
-
-
 }

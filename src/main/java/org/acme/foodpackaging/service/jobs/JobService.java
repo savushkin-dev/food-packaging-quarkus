@@ -38,15 +38,17 @@ public class JobService {
 
     @Inject
     public JobService(LoadDataService loadDataService, 
-        UploadDataService uploadDataService, JobRepository jobRepository) {
+        UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService) {
         this.loadDataService = loadDataService;
         this.uploadDataService = uploadDataService;
         this.jobRepository = jobRepository;
+        this.jobInfoService = jobInfoService;
     }
 
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
     private final JobRepository jobRepository;
+    private final JobInfoService jobInfoService;
     private  Map<Long, Job> allJobsById;
     /**
      * Инициализирует список задач из базы данных.
@@ -282,6 +284,14 @@ public class JobService {
         Job job = line.getJobs().get(request.getIndex());
         job.setDelayNote(request.getDelayNote());
     }
+
+    public void initIdBatch(PackagingSchedule schedule){
+        for(Job job : schedule.getJobs()){
+            if( job.isMaintenance() || job.getIdBatch() != null) continue;
+            job.setIdBatch(jobInfoService.generateIdBatch(schedule, Long.parseLong(job.getId())));
+        }
+    }
+
     /**
      * Преобразует Timestamp в LocalDateTime.
      * 

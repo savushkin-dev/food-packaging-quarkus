@@ -10,6 +10,7 @@ import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.service.jobs.JobInfoService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
@@ -52,6 +53,8 @@ class JobServiceTest {
     JobRepository jobRepository;
     @Mock
     UploadDataService uploadDataService;
+    @Mock
+    JobInfoService jobInfoService;
 
     private PackagingSchedule schedule;
 
@@ -569,5 +572,32 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertNull( schedule.getJobs().getFirst().getDelayDuration());
 
         assertFalse(schedule.getJobs().getFirst().isFinalDuration());
+    }
+
+    @Test
+    void initIdBatch(){
+        Job j1 = new Job();
+        Job j2 = new Job();
+        Job j3 = new Job();
+
+        j1.setId("247811");
+        j1.setDti(LocalDateTime.of(2026, 3, 20, 0, 0));
+        j1.setProduct(new Product("P1", "vanilla"));
+        j1.getProduct().setEan13("4810268050671");
+        j1.setNp(346);
+
+        j2.setIdBatch("79079078908908");
+        j3.setMaintenance(true);
+
+        schedule.setJobs(List.of(j1, j2, j3));
+        schedule.setAllJobsById(Map.of(Long.parseLong(j1.getId()), j1));
+
+        when(jobInfoService.generateIdBatch(any(), anyLong()))
+                .thenCallRealMethod();
+
+        jobService.initIdBatch(schedule);
+
+        assertEquals("481026805067020260320000000346", schedule.getJobs().getFirst().getIdBatch());
+        assertEquals("247811", schedule.getJobs().getFirst().getId());
     }
 }

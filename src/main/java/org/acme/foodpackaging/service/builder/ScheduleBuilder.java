@@ -47,6 +47,7 @@ public class ScheduleBuilder {
         );
 
         jobService.enrichCameraFactsFromPmLog(schedule);
+        jobService.initIdBatch(schedule);
         jobRefreshService.refreshStaleCameraEndFromPmLog(schedule);
         lineService.initLineStartEnd(schedule);
         List<Product> products = productService.getProductList(schedule);
