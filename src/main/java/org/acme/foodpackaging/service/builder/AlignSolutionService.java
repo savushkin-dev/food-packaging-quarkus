@@ -210,7 +210,7 @@ public class AlignSolutionService {
 
         maintenanceJob.addMaintenanceJob(schedule, request);
 
-       line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(12));
+       line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
     }
 
     private List<Job> collectFactJobs(List<Job> jobs) {
