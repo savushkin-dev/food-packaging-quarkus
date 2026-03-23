@@ -1,9 +1,10 @@
 name: ci
-
 on:
   push:
+    branches:
+      - develop_rc
   pull_request:
-
+    types: [opened, synchronize, reopened]
 jobs:
   docker:
     runs-on: ubuntu-latest
