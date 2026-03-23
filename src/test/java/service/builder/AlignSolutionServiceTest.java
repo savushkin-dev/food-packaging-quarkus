@@ -265,6 +265,7 @@ class AlignSolutionServiceTest {
         MaintenanceRequest request = captor.getValue();
         assertEquals(8, request.getMaintenanceTypeId());
         assertTrue(request.getDurationMinutes() > 0);
+        assertEquals(line.getMaxEndTime(), line.getJobs().getLast().getEndDateTime().plusHours(12));
     }
 
     @Test

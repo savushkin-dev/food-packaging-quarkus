@@ -209,6 +209,8 @@ public class AlignSolutionService {
         request.setMaintenanceNote("Выравнивание последней фактической цепочки продукта " + productId);
 
         maintenanceJob.addMaintenanceJob(schedule, request);
+
+       line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(12));
     }
 
     private List<Job> collectFactJobs(List<Job> jobs) {
