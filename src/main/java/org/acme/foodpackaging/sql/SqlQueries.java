@@ -33,7 +33,6 @@ public class SqlQueries {
                 AND v.KSK = ?3
                 AND v.F_DEL = 0
                 AND v.NP > 0
-                AND m.massa < 0.1
                 AND (
                     v.PDTN IS NULL
                     OR v.PDTN >= CAST(?4 AS datetime)
