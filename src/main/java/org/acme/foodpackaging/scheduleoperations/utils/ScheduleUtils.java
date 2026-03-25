@@ -150,4 +150,18 @@ public class ScheduleUtils {
         }
         return new ArrayList<>(rows.values());
     }
+
+    /**
+     * Инициализирует списки с задачами у линий.
+     */
+    public static void initLinesJobList(PackagingSchedule solution){
+        if(solution.getLines() == null) return;
+
+        for(Line line : solution.getLines()){
+            List<Job> lineJobs = solution.getJobs().stream()
+                    .filter(j -> j.getLine().getId().equals(line.getId())).toList();
+
+            line.setJobs(lineJobs);
+        }
+    }
 }

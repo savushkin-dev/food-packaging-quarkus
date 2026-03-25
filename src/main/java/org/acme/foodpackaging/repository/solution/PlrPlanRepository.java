@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @ApplicationScoped
 public class PlrPlanRepository implements PanacheRepository<PlrPlan> {
     public SolutionByVersion getSolutionByVersion(LocalDate dti, String version) {
-        return find("dti = ?1, version =?2",
+        return find("dti = ?1 and version =?2",
                 dti, version).project(SolutionByVersion.class).firstResult();
     }
 }

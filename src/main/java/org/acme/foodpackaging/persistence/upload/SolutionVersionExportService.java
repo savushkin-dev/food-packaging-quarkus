@@ -43,7 +43,7 @@ public class SolutionVersionExportService {
 
             PlrPlan entity = new PlrPlan();
             entity.setId(UUID.randomUUID());
-            entity.setDti(dti);
+            entity.setDti(schedule.getDti());
             entity.setVersion(version);
             entity.setSolutionJson(json);
 

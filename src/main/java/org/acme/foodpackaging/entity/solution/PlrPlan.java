@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -20,11 +20,11 @@ public class PlrPlan {
     private UUID id;
 
     @Column(name = "DT")
-    private LocalDateTime dti;
+    private LocalDate dti;
 
     @Column(name = "VERSION")
     private String version;
 
-    @Column(name = "PLAN")
+    @Column(name = "[PLAN]")
     private String solutionJson;
 }

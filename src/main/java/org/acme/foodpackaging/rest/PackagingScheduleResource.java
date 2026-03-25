@@ -573,6 +573,8 @@ public class PackagingScheduleResource {
      * Сохраняет план в json  определенной версии
      */
     @POST
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces(MediaType.APPLICATION_JSON)
     @Path("saveVersion")
     public Response saveVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 

@@ -11,6 +11,8 @@ import org.acme.foodpackaging.exception.service.SolutionParsingException;
 import org.acme.foodpackaging.record.SolutionByVersion;
 import org.acme.foodpackaging.service.products.ProductService;
 
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.initLinesJobList;
+
 @ApplicationScoped
 public class SolutionImporter {
 
@@ -30,7 +32,7 @@ public class SolutionImporter {
             throw new SolutionNotFoundException("Solution wrapper is null");
         }
 
-        if (solutionWrapper.solution() == null) {
+        if (solutionWrapper.solutionJson() == null) {
             throw new InvalidSolutionException(
                     "JSON is null for version: " + solutionWrapper.version()
             );
@@ -39,10 +41,11 @@ public class SolutionImporter {
         try {
             PackagingSchedule solution =
                     objectMapper.readValue(
-                            solutionWrapper.solution(),
+                            solutionWrapper.solutionJson(),
                             PackagingSchedule.class
                     );
 
+            initLinesJobList(solution);
             solution.setProducts(productService.getProductList(solution));
 
             return solution;
