@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.domain;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
     private List<Job> deletedMaintenance;
+    private LocalDate dti;
     private String version;
 
     @PlanningScore
@@ -61,6 +63,7 @@ public class PackagingSchedule {
         if (isEmptySolution()) {
             workCalendar.setFromDate(startDate);
             workCalendar.setToDate(startDate.plusDays(1));
+            this.dti = startDate;
         }
     }
     // ************************************************************************

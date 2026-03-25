@@ -45,6 +45,7 @@ public class PackagingScheduleResource {
     private final UploadDataService uploadDataService;
     private final JobRefreshService jobRefreshService;
     private final JobSaveService jobSaveService;
+    private final SolutionVersionExportService exportService;
     private final JobInfoService jobInfoService;
     private final AlignSolutionService alignSolutionService;
 
@@ -63,7 +64,7 @@ public class PackagingScheduleResource {
             LoadDataService loadDataService,
             UploadDataService uploadDataService,
             JobRefreshService jobRefreshService,
-            JobSaveService jobSaveService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
+            JobSaveService jobSaveService, SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -79,6 +80,7 @@ public class PackagingScheduleResource {
         this.uploadDataService = uploadDataService;
         this.jobRefreshService = jobRefreshService;
         this.jobSaveService = jobSaveService;
+        this.exportService = exportService;
         this.jobInfoService = jobInfoService;
         this.alignSolutionService = alignSolutionService;
     }
@@ -565,6 +567,30 @@ public class PackagingScheduleResource {
         jobSaveService.saveJobsByType(bestSolution);
         return Response.ok(Map.of(ApiFields.MESSAGE, "Saved successfully")).build();
 
+    }
+
+    /**
+     * Сохраняет план в json  определенной версии
+     */
+    @POST
+    @Path("saveVersion")
+    public Response saveVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule bestSolution = repository.readForSession(sessionId);
+        if (bestSolution == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+
+        if(bestSolution.getVersion() == null && loadDTO.getVersion() == null){
+            bestSolution.setVersion("V1");
+        }
+        else {
+            bestSolution.setVersion(loadDTO.getVersion());
+        }
+        exportService.export(bestSolution, bestSolution.getDti().atStartOfDay(), bestSolution.getVersion());
+        return Response.ok(Map.of(ApiFields.MESSAGE, "Saved to PlrPLan successfully")).build();
     }
 
     @PUT
