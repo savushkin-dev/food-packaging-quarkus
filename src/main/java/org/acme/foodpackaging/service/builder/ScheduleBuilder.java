@@ -22,18 +22,20 @@ public class ScheduleBuilder {
 
     @Inject
     public ScheduleBuilder(JobRepository jobRepository, JobService jobService, LineService lineService,
-                           ProductService productService, JobRefreshService jobRefreshService) {
+                           ProductService productService, JobRefreshService jobRefreshService, AlignSolutionService alignSolutionService) {
         this.jobRepository = jobRepository;
         this.jobService = jobService;
         this.lineService = lineService;
         this.productService = productService;
         this.jobRefreshService = jobRefreshService;
+        this.alignSolutionService = alignSolutionService;
     }
     private final JobRepository jobRepository;
     private final JobService jobService;
     private final LineService lineService;
     private final ProductService productService;
     private final JobRefreshService jobRefreshService;
+    private final AlignSolutionService alignSolutionService;
 
     public InitData buildSchedule(LocalDate startDate) {
 
@@ -55,6 +57,9 @@ public class ScheduleBuilder {
 
         schedule.setDateForEmptySolution(startDate);
         removeJobsWithoutLine(schedule.getJobs());
+
+        alignSolutionService.alignByFactDuration(schedule);
+        alignSolutionService.alignLineStartByFact(schedule);
 
         return new InitData(schedule, jobRows);
     }
