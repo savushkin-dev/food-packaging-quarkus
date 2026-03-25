@@ -39,6 +39,7 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
     private List<Job> deletedMaintenance;
+    private String version;
 
     @PlanningScore
     private HardMediumSoftLongScore score;

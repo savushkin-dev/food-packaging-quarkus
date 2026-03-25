@@ -40,6 +40,7 @@ public class PackagingScheduleResource {
     private final SortByNpService sortByNpService;
     private final PinService pinService;
     private final ScheduleBuilder scheduleBuilder;
+    private final ScheduleBuilderByVersion builderByVersion;
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
     private final JobRefreshService jobRefreshService;
@@ -58,6 +59,7 @@ public class PackagingScheduleResource {
             SortByNpService sortByNpService,
             PinService pinService,
             ScheduleBuilder scheduleBuilder,
+            ScheduleBuilderByVersion builderByVersion,
             LoadDataService loadDataService,
             UploadDataService uploadDataService,
             JobRefreshService jobRefreshService,
@@ -72,6 +74,7 @@ public class PackagingScheduleResource {
         this.sortByNpService = sortByNpService;
         this.pinService = pinService;
         this.scheduleBuilder = scheduleBuilder;
+        this.builderByVersion = builderByVersion;
         this.loadDataService = loadDataService;
         this.uploadDataService = uploadDataService;
         this.jobRefreshService = jobRefreshService;
@@ -236,6 +239,28 @@ public class PackagingScheduleResource {
             }
 
             return Response.ok(data.jobsFromDbRow()).build();
+    }
+
+    @POST
+    @Path("initVersion")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response initVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule solution =  builderByVersion.init(loadDTO.getStartDate(), loadDTO.getVersion());
+        solution.setVersion(loadDTO.getVersion());
+        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, solution);
+
+        if (loadDataService == null) {
+            throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
+        }
+
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Solution version imported from json"
+        )).build();
     }
 
     @POST
