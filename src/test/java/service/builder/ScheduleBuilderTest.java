@@ -5,6 +5,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.service.builder.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.products.ProductService;
@@ -42,6 +43,8 @@ class ScheduleBuilderTest {
     ProductService productService;
     @Mock
     JobRefreshService jobRefreshService;
+    @Mock
+    AlignSolutionService alignSolutionService;
 
     @Test
     void buildSchedule() {
@@ -71,6 +74,9 @@ class ScheduleBuilderTest {
         verify(lineService).getLines();
         verify(lineService).initLineStartEnd(schedule);
         verify(productService).getProductList(schedule);
+
+        verify(alignSolutionService).alignByFactDuration(schedule);
+        verify(alignSolutionService).alignLineStartByFact(schedule);
     }
 
     @Test
