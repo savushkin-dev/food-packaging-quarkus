@@ -29,7 +29,6 @@ public class SolutionVersionExportService {
 
     @Transactional
     public void export(PackagingSchedule schedule,
-                       LocalDateTime dti,
                        String version) {
 
         if (schedule == null) {

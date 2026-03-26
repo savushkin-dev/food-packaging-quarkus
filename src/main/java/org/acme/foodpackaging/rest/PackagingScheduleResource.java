@@ -591,7 +591,7 @@ public class PackagingScheduleResource {
         else {
             bestSolution.setVersion(loadDTO.getVersion());
         }
-        exportService.export(bestSolution, bestSolution.getDti().atStartOfDay(), bestSolution.getVersion());
+        exportService.export(bestSolution, bestSolution.getVersion());
         return Response.ok(Map.of(ApiFields.MESSAGE, "Saved to PlrPLan successfully")).build();
     }
 
