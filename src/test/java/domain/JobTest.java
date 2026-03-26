@@ -71,7 +71,7 @@ class JobTest {
         DbJobRow row = new DbJobRow(
                 Timestamp.valueOf(dti),"1623", 34,5600,1600.23,
                 Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime),
-                20,3L, 0, "17000234", "Strawberry", 18, 100);
+                20,3L, 0, "17000234", "Strawberry", 18, 100, true);
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
 
         assertEquals("3", job.getId());
@@ -85,6 +85,8 @@ class JobTest {
         assertEquals(startProductionDateTime.plus(duration), job.getEndDateTime());
         assertEquals(row.emk(), job.getEmk());
         assertEquals(row.placePlan(), job.getPlacePlan());
+
+        assertTrue(job.isHandPackaging());
     }
 
     @Test
@@ -97,10 +99,11 @@ class JobTest {
                 Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
                 Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
                 null,
-                3L, 0, "17000234", "Strawberry", 18, 100
+                3L, 0, "17000234", "Strawberry", 18, 100, false
         );
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
         assertEquals(Duration.ZERO, job.getDuration());
+        assertFalse(job.isHandPackaging());
     }
 
     @Test
@@ -114,7 +117,7 @@ class JobTest {
                 Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
                 20, 3L, 0, "17000234", "Strawberry",
                 null,  // emk = null
-                100
+                100, true
         );
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
         assertEquals(0, job.getEmk());
@@ -131,7 +134,7 @@ class JobTest {
                 Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
                 20, 3L, 0, "17000234", "Strawberry",
                 10,
-                null // placePlan = null
+                null , true
         );
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
         assertEquals(0, job.getPlacePlan());

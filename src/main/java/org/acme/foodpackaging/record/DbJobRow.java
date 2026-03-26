@@ -21,5 +21,6 @@ public record DbJobRow(
         String lineId,                      // krc
         String shortName,                // SNM
         Integer emk,
-        Integer placePlan
+        Integer placePlan,
+        Boolean handPackaging
 ) {}
