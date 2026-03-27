@@ -163,6 +163,51 @@ class AlignSolutionServiceTest {
        alignSolutionService.alignByFactDuration(solution);
        assertNull(solution.getJobs());
     }
+
+    @Test
+    void alignByFactDuration_WhenMaintenanceTypeIdIsNull(){
+
+        solution.getLines().clear();
+        solution.getJobs().clear();
+
+        Job j1 = getPackagingMaintenance();
+        j1.setMaintenanceTypeId(null);
+
+        solution.setJobs(List.of(j1));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals(1,solution.getJobs().size());
+    }
+
+    @Test
+    void alignByFactDuration_WhenJobIsNotMaintenance(){
+
+        solution.getLines().clear();
+        solution.getJobs().clear();
+
+        Job j1 = getPackagingMaintenance();
+
+        j1.setMaintenance(false);
+        solution.setJobs(List.of(j1));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals(1, solution.getJobs().size());
+    }
+
+    @Test
+    void alignByFactDuration_WhenMaintenanceTypeIdIsNotNull(){
+
+        solution.getLines().clear();
+        solution.getJobs().clear();
+
+        Job j1 = getPackagingMaintenance();
+
+        solution.setJobs(new ArrayList<>(List.of(j1)));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(solution.getJobs().isEmpty());
+    }
+
     // ============================================================
     // alignLineStartByFact
     // ============================================================
