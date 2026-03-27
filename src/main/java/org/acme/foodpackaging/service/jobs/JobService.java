@@ -126,10 +126,6 @@ public class JobService {
                 job.setEndDateTime(row.getEndDateTime().toLocalDateTime());
                 job.setDelayDuration(Duration.ofMinutes(row.getDuration()));
                 job.setDelayNote(row.getMaintenanceNote());
-
-                Duration finalDuration = job.getDuration().plus(job.getDelayDuration());
-                job.setDuration(finalDuration);
-                job.setFinalDuration(true);
             }
         }
     }

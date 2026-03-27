@@ -542,7 +542,7 @@ void initSolutionJobList_shouldSetMinStartTime() {
 
         assertTrue(schedule.getJobs().getFirst().isFinalDuration());
         assertEquals(6, schedule.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(36, schedule.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals(30, schedule.getJobs().getFirst().getDuration().toMinutes());
     }
 
     @Test
