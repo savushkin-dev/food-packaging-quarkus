@@ -36,6 +36,7 @@ import java.util.UUID;
                         @ColumnResult(name = "SNM", type = String.class),
                         @ColumnResult(name = "EMK", type = Integer.class),
                         @ColumnResult(name = "KOLMP", type = Integer.class),
+                        @ColumnResult(name = "STICKER", type =  Integer.class),
                 }
         )
 )

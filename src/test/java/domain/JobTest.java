@@ -71,7 +71,7 @@ class JobTest {
         DbJobRow row = new DbJobRow(
                 Timestamp.valueOf(dti),"1623", 34,5600,1600.23,
                 Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime),
-                20,3L, 0, "17000234", "Strawberry", 18, 100, true);
+                20,3L, 0, "17000234", "Strawberry", 18, 100, 1);
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
 
         assertEquals("3", job.getId());
@@ -99,7 +99,7 @@ class JobTest {
                 Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
                 Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
                 null,
-                3L, 0, "17000234", "Strawberry", 18, 100, false
+                3L, 0, "17000234", "Strawberry", 18, 100, 0
         );
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
         assertEquals(Duration.ZERO, job.getDuration());
@@ -117,7 +117,7 @@ class JobTest {
                 Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
                 20, 3L, 0, "17000234", "Strawberry",
                 null,  // emk = null
-                100, true
+                100, 0
         );
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
         assertEquals(0, job.getEmk());
@@ -134,7 +134,7 @@ class JobTest {
                 Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
                 20, 3L, 0, "17000234", "Strawberry",
                 10,
-                null , true
+                null , 1
         );
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
         assertEquals(0, job.getPlacePlan());

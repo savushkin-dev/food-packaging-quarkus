@@ -175,7 +175,7 @@ public class Job {
                 startProductionDateTime,
                 row.emk() != null ? row.emk() : 0,
                 row.placePlan() != null ? row.placePlan() : 0,
-                row.handPackaging()
+                row.isHandPackaging()
         ));
     }
 

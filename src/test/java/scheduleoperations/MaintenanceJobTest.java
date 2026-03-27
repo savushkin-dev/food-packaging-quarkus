@@ -296,7 +296,7 @@ class MaintenanceJobTest {
                 new DbJobRow(null, "", 0, 0, 0.0,
                         Timestamp.valueOf(start),
                         Timestamp.valueOf(start.plusMinutes(60)),
-                        60, 2212L, 0, "line1", "Job", 0, 100, false),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 product, start, null);
         line.setStartDateTime(start);
         line.getJobs().add(job);
@@ -364,7 +364,7 @@ class MaintenanceJobTest {
                 new DbJobRow(null, "", 0, 0, 0.0,
                         Timestamp.valueOf(day1At10.plusMinutes(30)),
                         Timestamp.valueOf(day2At15),
-                        60, 2212L, 0, "line1", "Job", 0, 100, false),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 normalProduct, day1At10.plusMinutes(30), null);
         prod.setStartCleaningDateTime(day1At10);
         prod.setStartProductionDateTime(day1At10.plusMinutes(30));
@@ -404,7 +404,7 @@ class MaintenanceJobTest {
                 new DbJobRow(null, "", 0, 0, 0.0,
                         Timestamp.valueOf(day1At830),
                         Timestamp.valueOf(day2At10),
-                        60, 2212L, 0, "line1", "Job", 0, 100, false),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 normalProduct, day1At830, null);
         // New logic: cleaning duration = between(startCleaning, startProduction); need startCleaning < startProduction for positive gap
         prod.setStartCleaningDateTime(day1At8);
@@ -462,7 +462,7 @@ class MaintenanceJobTest {
         Job p1 = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
                         Timestamp.valueOf(day1At10.plusMinutes(30)), Timestamp.valueOf(day2At15),
-                        60, 2212L, 0, "line1", "Job", 0, 100, false),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 normalProduct, day1At10.plusMinutes(30), null);
         p1.setStartCleaningDateTime(day1At10);
         p1.setStartProductionDateTime(day1At10.plusMinutes(30));
@@ -486,7 +486,7 @@ class MaintenanceJobTest {
         Job p2 = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
                         Timestamp.valueOf(day1At10.plusMinutes(30)), Timestamp.valueOf(day2At15),
-                        60, 2214L, 0, "line2", "Job2", 0, 100, false),
+                        60, 2214L, 0, "line2", "Job2", 0, 100, 0),
                 normalProduct, day1At10.plusMinutes(30), null);
         p2.setStartCleaningDateTime(day1At10);
         p2.setStartProductionDateTime(day1At10.plusMinutes(30));

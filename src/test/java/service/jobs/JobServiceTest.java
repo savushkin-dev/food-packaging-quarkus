@@ -95,7 +95,7 @@ class JobServiceTest {
         return new DbJobRow(
                 start, "KMC1", 10, 3000, 2.0,
                 start, end, 30, 123L, 1,
-                "L1", "Test Job", 18, 100, true
+                "L1", "Test Job", 18, 100, 1
         );
     }
 
@@ -112,7 +112,7 @@ class JobServiceTest {
                     start, "KMC1",
                     10, 3000, 2.0,
                     start, end, 34, null, 1,
-                    "L1", "Test Job", 18, 100, true
+                    "L1", "Test Job", 18, 100, 1
             );
         }
 
@@ -194,7 +194,7 @@ void initSolutionJobList_shouldSkipJobsWithoutLineId() {
             jobRow.mass(), jobRow.startProductionDateTime(),
             jobRow.endDateTime(), jobRow.duration(),
             jobRow.snpz(), jobRow.priority(),
-            null, jobRow.shortName(), 18, 100, true
+            null, jobRow.shortName(), 18, 100, 1
     );
 
     Product product = new Product(
