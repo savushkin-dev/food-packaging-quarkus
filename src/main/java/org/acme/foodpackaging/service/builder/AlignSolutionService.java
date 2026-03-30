@@ -78,7 +78,11 @@ public class AlignSolutionService {
             long planMinutes = calculatePlanMinutes(job);
             long diff = factMinutes - planMinutes;
             if(diff > 0){
-                job.setPlanEndDateTime(job.getEndDateTime());
+
+                if(job.getPlanEndDateTime() == null){
+                    job.setPlanEndDateTime(job.getEndDateTime());
+                }
+
                 job.setEndDateTime(job.getPlanEndDateTime().plusMinutes(diff));
                 job.setDelayDuration(Duration.ofMinutes(diff));
                 job.setDuration(Duration.ofMinutes(factMinutes));
@@ -124,7 +128,12 @@ public class AlignSolutionService {
                 || job.getEndDateTime() == null) {
             return 0;
         }
-
+        if(job.getPlanEndDateTime() != null){
+            return ceilMinutes(Duration.between(
+                    job.getStartProductionDateTime(),
+                    job.getPlanEndDateTime()
+            ));
+        }
         return ceilMinutes(Duration.between(
                 job.getStartProductionDateTime(),
                 job.getEndDateTime()

@@ -208,6 +208,26 @@ class AlignSolutionServiceTest {
         assertTrue(solution.getJobs().isEmpty());
     }
 
+    @Test
+    void alignByFactDuration_PlanEndDateTimeIsNotNull(){
+        Job j1 = getJob();
+
+        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 30, 15, 0));
+        j1.setEndDateTime(LocalDateTime.of(2026, 3, 30, 16, 0));
+        j1.setPlanEndDateTime(LocalDateTime.of(2026, 3, 30, 15, 40));
+
+        j1.setCameraStart(LocalDateTime.of(2026,3,30, 15, 10));
+        j1.setCameraEnd(LocalDateTime.of(2026,3,30, 16, 10 ));
+
+        line.setStartDateTime(LocalDateTime.of(2026, 3, 30, 15, 0));
+        solution.setJobs(List.of(j1));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals(LocalDateTime.of(2026, 3, 30, 15, 40), solution.getJobs().getFirst().getPlanEndDateTime());
+    }
+
+
     // ============================================================
     // alignLineStartByFact
     // ============================================================
