@@ -540,9 +540,8 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertEquals(delayData.getEndDateTime().toLocalDateTime(), schedule.getJobs().getFirst().getEndDateTime());
         assertEquals(delayData.getMaintenanceNote(), schedule.getJobs().getFirst().getDelayNote());
 
-        assertTrue(schedule.getJobs().getFirst().isFinalDuration());
         assertEquals(6, schedule.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(30, schedule.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals(34, schedule.getJobs().getFirst().getDuration().toMinutes());
     }
 
     @Test
@@ -570,8 +569,6 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertNull(schedule.getJobs().getFirst().getPlanEndDateTime());
         assertNull(schedule.getJobs().getFirst().getDelayNote());
         assertNull( schedule.getJobs().getFirst().getDelayDuration());
-
-        assertTrue(schedule.getJobs().getFirst().isFinalDuration());
     }
 
     @Test

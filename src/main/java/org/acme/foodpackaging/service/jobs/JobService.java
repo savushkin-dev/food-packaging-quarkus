@@ -83,7 +83,6 @@ public class JobService {
                 job.setDti(row.dti().toLocalDateTime());
                 job.setMinStartTime(minStartDateTime);
                 job.setLine(line);
-                job.setFinalDuration(true);
                 line.getJobs().add(job);
                 jobs.add(job);
             }
