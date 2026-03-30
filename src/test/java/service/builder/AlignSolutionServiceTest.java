@@ -218,15 +218,43 @@ class AlignSolutionServiceTest {
 
         j1.setCameraStart(LocalDateTime.of(2026,3,30, 15, 10));
         j1.setCameraEnd(LocalDateTime.of(2026,3,30, 16, 10 ));
+        j1.setFinalDuration(true);
+        j1.setDuration(Duration.ofMinutes(60));
 
         line.setStartDateTime(LocalDateTime.of(2026, 3, 30, 15, 0));
         solution.setJobs(List.of(j1));
+        line.setJobs(new ArrayList<>(List.of(j1)));
+        j1.setLineIdFact(line.getId());
 
         alignSolutionService.alignByFactDuration(solution);
 
         assertEquals(LocalDateTime.of(2026, 3, 30, 15, 40), solution.getJobs().getFirst().getPlanEndDateTime());
     }
 
+    @Test
+    void alignByFactDuration_PlanEndDateTimeIsNull(){
+        Job j1 = getJob();
+
+        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 30, 15, 0));
+        j1.setEndDateTime(LocalDateTime.of(2026, 3, 30, 16, 0));
+
+        j1.setPlanEndDateTime(null);
+        j1.setLineIdFact(line.getId());
+
+        j1.setCameraStart(LocalDateTime.of(2026,3,30, 15, 0));
+        j1.setCameraEnd(LocalDateTime.of(2026,3,30, 16, 30 ));
+
+        line.setStartDateTime(LocalDateTime.of(2026, 3, 30, 15, 0));
+        solution.setJobs(List.of(j1));
+        line.setJobs(new ArrayList<>(List.of(j1)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals(
+                LocalDateTime.of(2026, 3, 30, 16, 0),
+                solution.getJobs().getFirst().getPlanEndDateTime()
+        );
+    }
 
     // ============================================================
     // alignLineStartByFact
