@@ -61,6 +61,8 @@ public class ScheduleBuilder {
         alignSolutionService.alignByFactDuration(schedule);
         alignSolutionService.alignLineStartByFact(schedule);
 
+        lineService.setMaxEndDateTimeByLastJob(schedule);
+
         return new InitData(schedule, jobRows);
     }
 
