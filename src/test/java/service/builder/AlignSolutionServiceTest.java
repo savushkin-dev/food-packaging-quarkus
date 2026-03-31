@@ -532,6 +532,8 @@ class AlignSolutionServiceTest {
         solution.setJobs(List.of(j1));
         alignSolutionService.alignByFactDuration(solution);
 
+        j1.setPlanEndDateTime(null);
+
         assertEquals(LocalDateTime.of(2026,3,31, 16,33), line.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(Duration.ofMinutes(17), line.getJobs().getFirst().getDelayDuration());
         assertEquals(Duration.ofMinutes(50), line.getJobs().getFirst().getDuration());
