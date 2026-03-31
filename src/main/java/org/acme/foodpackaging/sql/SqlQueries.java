@@ -116,7 +116,7 @@ public class SqlQueries {
                 MIN(DTS) AS DTSTART,
                 MAX(DTS) AS DTEND
             FROM [%s].[dbo].[PM_LOG] WITH (NOLOCK)
-            WHERE IDBATCH = ? AND KD = 71
+            WHERE IDBATCH = ?
             """.formatted(prommarkSchema);
     }
 
