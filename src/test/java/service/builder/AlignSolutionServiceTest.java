@@ -487,6 +487,57 @@ class AlignSolutionServiceTest {
         assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertFalse(line.getJobs().getLast().isFinalDuration());
     }
+
+    @Test
+    void alignByFactDuration_WhenPlanEndDateTimeIsNotNull(){
+        Job j1 = getJob();
+
+        j1.setLineIdFact(line.getId());
+        j1.setLine(line);
+        j1.setDuration(Duration.ofMinutes(50));
+        j1.setFinalDuration(true);
+        j1.setDelayDuration(Duration.ofMinutes(20));
+
+        j1.setStartProductionDateTime(LocalDateTime.of(2026,3,31, 16,0));
+        j1.setPlanEndDateTime(LocalDateTime.of(2026,3,31, 16,30));
+        j1.setEndDateTime(LocalDateTime.of(2026,3,31, 16,50));
+
+        j1.setCameraStart(LocalDateTime.of(2026,3,31, 16,0));
+        j1.setCameraEnd(LocalDateTime.of(2026,3,31, 16,50));
+
+        line.setStartDateTime(LocalDateTime.of(2026,3,31, 16,0));
+        line.setJobs(new ArrayList<>(List.of(j1)));
+        solution.setJobs(List.of(j1));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals(LocalDateTime.of(2026,3,31, 16,30), line.getJobs().getFirst().getPlanEndDateTime());
+        assertEquals(Duration.ofMinutes(20), line.getJobs().getFirst().getDelayDuration());
+    }
+
+    @Test
+    void alignByFactDuration_WhenPlanEndDateTimeIsNull(){
+        Job j1 = getJob();
+
+        j1.setLineIdFact(line.getId());
+        j1.setLine(line);
+
+        j1.setStartProductionDateTime(LocalDateTime.of(2026,3,31, 16,0));
+        j1.setEndDateTime(LocalDateTime.of(2026,3,31, 16,33));
+
+        j1.setCameraStart(LocalDateTime.of(2026,3,31, 16,0));
+        j1.setCameraEnd(LocalDateTime.of(2026,3,31, 16,50));
+
+        line.setStartDateTime(LocalDateTime.of(2026,3,31, 16,0));
+        line.setJobs(new ArrayList<>(List.of(j1)));
+        solution.setJobs(List.of(j1));
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertEquals(LocalDateTime.of(2026,3,31, 16,33), line.getJobs().getFirst().getPlanEndDateTime());
+        assertEquals(Duration.ofMinutes(17), line.getJobs().getFirst().getDelayDuration());
+        assertEquals(Duration.ofMinutes(50), line.getJobs().getFirst().getDuration());
+
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+    }
     // ============================================================
     // helpers
     // ============================================================

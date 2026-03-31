@@ -125,6 +125,12 @@ public class AlignSolutionService {
             return 0;
         }
 
+        if(job.getPlanEndDateTime() != null){
+            return ceilMinutes(Duration.between(
+                    job.getStartProductionDateTime(),
+                    job.getPlanEndDateTime()
+            ));
+        }
         return ceilMinutes(Duration.between(
                 job.getStartProductionDateTime(),
                 job.getEndDateTime()
