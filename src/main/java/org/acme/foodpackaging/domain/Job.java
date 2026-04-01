@@ -286,6 +286,14 @@ public class Job {
         if (line == null || product == null || product.getType() == null) return null;
         return SpeedCacheUtils.getHandPackagingSpeed(line.getId(), product.getType());
     }
+
+    public void setPlanEndDateTime(LocalDateTime planEndDateTime){
+        if(this.planEndDateTime != null){
+            return;
+        }
+        this.planEndDateTime = planEndDateTime;
+    }
+
     // ************************************************************************
     // Complex methods
     // ************************************************************************
