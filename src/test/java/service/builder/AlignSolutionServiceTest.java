@@ -145,8 +145,8 @@ class AlignSolutionServiceTest {
         assertEquals(1, solution.getLines().getFirst().getJobs().size());
         assertEquals(33, solution.getJobs().getFirst().getDuration().toMinutes());
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getPlanEndDateTime());
         assertNull(solution.getJobs().getFirst().getDelayDuration());
-        assertNull(solution.getJobs().getFirst().getPlanEndDateTime());
         assertFalse(solution.getJobs().getFirst().isFinalDuration());
     }
 
@@ -413,7 +413,7 @@ class AlignSolutionServiceTest {
         Job j2 = getJob();
 
         LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 50);
+        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 11, 20);
 
         LocalDateTime cameraStart2 = LocalDateTime.of(2026, 3, 9, 10, 10);
         LocalDateTime cameraEnd2 = LocalDateTime.of(2026, 3, 9, 10, 40);
@@ -422,7 +422,7 @@ class AlignSolutionServiceTest {
         j1.setCameraEnd(cameraEnd1);
 
         j1.setStartProductionDateTime(cameraStart1);
-        j1.setEndDateTime(cameraEnd1.minusMinutes(35));
+        j1.setEndDateTime(cameraEnd1.minusMinutes(30));
         j1.setLineIdFact("line1");
 
         j2.setCameraStart(cameraStart2);
@@ -439,15 +439,155 @@ class AlignSolutionServiceTest {
         alignSolutionService.alignByFactDuration(solution);
 
         assertTrue(line.getJobs().getFirst().isFinalDuration());
-        assertEquals(5, line.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 20), line.getJobs().getFirst().getEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 15), line.getJobs().getFirst().getPlanEndDateTime());
-        assertEquals(20, line.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals(17, line.getJobs().getFirst().getDelayDuration().toMinutes());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 50), line.getJobs().getFirst().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 33), line.getJobs().getFirst().getPlanEndDateTime());
+        assertEquals(50, line.getJobs().getFirst().getDuration().toMinutes());
 
         assertFalse(line.getJobs().getLast().isFinalDuration());
         assertNull(line.getJobs().getLast().getDelayDuration());
-        assertNull(line.getJobs().getLast().getPlanEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 53), line.getJobs().getLast().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23),line.getJobs().getLast().getPlanEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23), line.getJobs().getLast().getEndDateTime());
+    }
+
+    @Test
+    void noIntersection_before() {
+        Job j1 = getJob();
+        Job j2 = getJob();
+
+        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
+
+        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 9, 0));
+        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 9, 59));
+
+        j1.setLineIdFact("line1");
+        j2.setLineIdFact("line1");
+        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
+
+        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
+        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+
+        assertTrue(line.getJobs().getLast().isFinalDuration());
+        assertEquals(Duration.ofMinutes(59), line.getJobs().getLast().getDuration());
+    }
+
+    @Test
+    void noIntersection_after() {
+        Job j1 = getJob();
+        Job j2 = getJob();
+
+        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
+
+        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 11, 1));
+        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 12, 0));
+
+        j1.setLineIdFact("line1");
+        j2.setLineIdFact("line1");
+        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 11, 1));
+
+        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
+        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+
+        assertTrue(line.getJobs().getLast().isFinalDuration());
+        assertEquals(Duration.ofMinutes(59), line.getJobs().getLast().getDuration());
+    }
+
+    @Test
+    void touchingBoundary_shouldNotIntersect() {
+        Job j1 = getJob();
+        Job j2 = getJob();
+
+        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
+
+        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 11, 0));
+        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 12, 59));
+
+        j1.setLineIdFact("line1");
+        j2.setLineIdFact("line1");
+        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 11, 0));
+
+        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
+        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+
+        assertTrue(line.getJobs().getLast().isFinalDuration());
+        assertEquals(Duration.ofMinutes(119), line.getJobs().getLast().getDuration());
+    }
+
+    @Test
+    void differentLine_shouldBeIgnored() {
+        Job j1 = getJob();
+        Job j2 = getJob();
+
+        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
+        j1.setLineIdFact("line1");
+
+        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 30));
+        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
+        j2.setLineIdFact("line2");
+
+        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 11, 30));
+
+        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+
+        assertFalse(line.getJobs().getLast().isFinalDuration());
+        assertEquals(Duration.ofMinutes(33), line.getJobs().getLast().getDuration());
+    }
+
+    @Test
+    void missingCameraData_shouldBeIgnored() {
+        Job j1 = getJob();
+        Job j2 = getJob();
+
+        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
+        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
+
+        j1.setLineIdFact("line1");
+        j2.setLineIdFact("line1");
+
+        j2.setCameraStart(null);
+        j2.setCameraEnd(null);
+
+        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+
+        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertTrue(line.getJobs().getFirst().isFinalDuration());
+        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+
+        assertFalse(line.getJobs().getLast().isFinalDuration());
+        assertEquals(Duration.ofMinutes(33), line.getJobs().getLast().getDuration());
     }
 
     @Test
@@ -476,8 +616,6 @@ class AlignSolutionServiceTest {
         j2.setEndDateTime(j2.getCameraEnd().minusMinutes(20));
         j2.setLineIdFact("line2");
 
-
-
         line.setJobs(List.of(j1, j2, j3));
         line.setStartDateTime(cameraStart1);
         j1.setLine(line);
@@ -486,9 +624,9 @@ class AlignSolutionServiceTest {
         alignSolutionService.alignByFactDuration(solution);
 
         assertTrue(line.getJobs().getFirst().isFinalDuration());
-        assertEquals(35, line.getJobs().getFirst().getDelayDuration().toMinutes());
+        assertEquals(17, line.getJobs().getFirst().getDelayDuration().toMinutes());
         assertEquals(LocalDateTime.of(2026, 3, 9, 10, 50), line.getJobs().getFirst().getEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 15), line.getJobs().getFirst().getPlanEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 33), line.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(50, line.getJobs().getFirst().getDuration().toMinutes());
 
         assertFalse(line.getJobs().getLast().isFinalDuration());
@@ -544,7 +682,6 @@ class AlignSolutionServiceTest {
         j1.setDelayDuration(Duration.ofMinutes(20));
 
         j1.setStartProductionDateTime(LocalDateTime.of(2026,3,31, 16,0));
-        j1.setPlanEndDateTime(LocalDateTime.of(2026,3,31, 16,30));
         j1.setEndDateTime(LocalDateTime.of(2026,3,31, 16,50));
 
         j1.setCameraStart(LocalDateTime.of(2026,3,31, 16,0));
@@ -555,8 +692,8 @@ class AlignSolutionServiceTest {
         solution.setJobs(List.of(j1));
         alignSolutionService.alignByFactDuration(solution);
 
-        assertEquals(LocalDateTime.of(2026,3,31, 16,30), line.getJobs().getFirst().getPlanEndDateTime());
-        assertEquals(Duration.ofMinutes(20), line.getJobs().getFirst().getDelayDuration());
+        assertEquals(LocalDateTime.of(2026,3,31, 16,33), line.getJobs().getFirst().getPlanEndDateTime());
+        assertEquals(Duration.ofMinutes(17), line.getJobs().getFirst().getDelayDuration());
     }
 
     @Test
@@ -576,8 +713,6 @@ class AlignSolutionServiceTest {
         line.setJobs(new ArrayList<>(List.of(j1)));
         solution.setJobs(List.of(j1));
         alignSolutionService.alignByFactDuration(solution);
-
-        j1.setPlanEndDateTime(null);
 
         assertEquals(LocalDateTime.of(2026,3,31, 16,33), line.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(Duration.ofMinutes(17), line.getJobs().getFirst().getDelayDuration());

@@ -62,7 +62,6 @@ public class Job {
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
-    private LocalDateTime planEndDateTime;
     private Integer emk;
     private String placeFactInfo;
     private String delayNote;
@@ -260,19 +259,26 @@ public class Job {
     public Duration getDuration() {
         if(isMaintenance() || isFinalDuration()) return duration;
 
-        Integer speed;
-        if (isHandPackaging()) {
-            speed = getHandPackagingSpeed();
-        } else {
-            speed = getSpeed();
-        }
+        return calculateDuration();
+    }
 
-        if (speed == null || speed <= 0) {
-            return Duration.ZERO;
-        }
-        final int IF_CHANGING_PACKAGING = 4;
-        long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
-        return Duration.ofMinutes(minutes);
+   private  Duration calculateDuration(){
+
+       Integer speed;
+       if (isHandPackaging()) {
+           speed = getHandPackagingSpeed();
+       } else {
+           speed = getSpeed();
+       }
+
+       if (speed == null || speed <= 0) {
+           return Duration.ZERO;
+       }
+
+       final int IF_CHANGING_PACKAGING = 4;
+       long minutes =  (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+
+       return Duration.ofMinutes(minutes);
     }
 
     @JsonIgnore
@@ -287,13 +293,13 @@ public class Job {
         return SpeedCacheUtils.getHandPackagingSpeed(line.getId(), product.getType());
     }
 
-    public void setPlanEndDateTime(LocalDateTime planEndDateTime){
-        if(this.planEndDateTime != null){
-            return;
-        }
-        this.planEndDateTime = planEndDateTime;
-    }
+    public LocalDateTime getPlanEndDateTime(){
 
+        if(startProductionDateTime == null) return null;
+
+        Duration planDuration = calculateDuration();
+        return startProductionDateTime.plusMinutes(planDuration.toMinutes());
+    }
     // ************************************************************************
     // Complex methods
     // ************************************************************************
@@ -314,7 +320,6 @@ public class Job {
         setStartCleaningDateTime(startCleaning);
         setStartProductionDateTime(startProduction);
         setEndDateTime(startProduction == null ? null : startProduction.plus(getDuration()));
-        setPlanEndDateTime(delayDuration == null || endDateTime == null ? null : endDateTime.minus(delayDuration));
     }
 
     private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
