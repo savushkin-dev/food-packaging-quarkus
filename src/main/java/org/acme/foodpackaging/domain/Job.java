@@ -11,7 +11,9 @@ import ai.timefold.solver.core.api.domain.variable.CascadingUpdateShadowVariable
 import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 import org.acme.foodpackaging.record.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -48,6 +50,8 @@ public class Job {
 
     private Product product;
     private Duration duration;
+
+    @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration delayDuration;
     private boolean maintenance;
     private boolean handPackaging;
