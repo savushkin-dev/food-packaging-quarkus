@@ -39,6 +39,8 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
     private List<Job> deletedMaintenance;
+    private LocalDate dti;
+    private String version;
 
     @PlanningScore
     private HardMediumSoftLongScore score;
@@ -60,6 +62,7 @@ public class PackagingSchedule {
         if (isEmptySolution()) {
             workCalendar.setFromDate(startDate);
             workCalendar.setToDate(startDate.plusDays(1));
+            this.dti = startDate;
         }
     }
     // ************************************************************************
