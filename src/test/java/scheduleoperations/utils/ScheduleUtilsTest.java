@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.calculateDownTime;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.initLinesJobList;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -311,5 +312,34 @@ class ScheduleUtilsTest {
 
         initLinesJobList(schedule);
         assertNull(schedule.getLines());
+    }
+
+    @Test
+    void calculateDownTime_shouldReturnCorrectDuration() {
+        PackagingSchedule solution = new PackagingSchedule();
+
+        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026,4,6)));
+        Line line = new Line("L1", "line1");
+        LocalDateTime dti = solution.getWorkCalendar().getCurrentDate().atStartOfDay();
+
+        Job job1 = new Job();
+        job1.setLine(line);
+        job1.setDti(dti);
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026,4,6,9, 30));
+        job1.setEndDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+
+        Job job2 = new Job();
+        job2.setLine(line);
+        job2.setDti(dti);
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026,4,6,11, 30));
+        job2.setEndDateTime(LocalDateTime.of(2026, 4, 6, 13, 0));
+
+        line.setJobs(List.of(job1, job2));
+        solution.setLines(List.of(line));
+
+        Duration result = calculateDownTime(solution);
+        assertEquals(Duration.ofHours(1), result);
     }
 }

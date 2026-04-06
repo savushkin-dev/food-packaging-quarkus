@@ -24,6 +24,7 @@ import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.*;
 
+import java.time.Duration;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -432,7 +433,6 @@ public class PackagingScheduleResource {
 
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
         repository.writeForSession(sessionId, finalSchedule);
-
         return Response.ok(Map.of(
                 ApiFields.STATUS, "stopped",
                 ApiFields.SESSION_ID, sessionId,

@@ -5,6 +5,8 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -161,4 +163,34 @@ public class ScheduleUtils {
             line.setJobs(lineJobs);
         }
     }
-}
+
+    /**
+     * Считает суммарное выремя простоя на всех линиях
+     */
+    public static Duration calculateDownTime(PackagingSchedule solution) {
+        if (solution.getLines() == null) return Duration.ZERO;
+
+        Duration downtime = Duration.ZERO;
+        LocalDate currentDate = solution.getWorkCalendar().getCurrentDate();
+
+        for (Line line : solution.getLines()) {
+            if (line.getJobs() != null) {
+                for (Job job : line.getJobs()) {
+                    LocalDate dti = job.getDti().toLocalDate();
+                    if (currentDate.equals(dti)
+                            && job.getStartProductionDateTime() != null
+                            && job.getStartCleaningDateTime() != null
+                            && !job.getStartProductionDateTime().equals(job.getStartCleaningDateTime())) {
+
+                        Duration diff = Duration.between(
+                                job.getStartCleaningDateTime(),
+                                job.getStartProductionDateTime()
+                        );
+                        downtime = downtime.plus(diff);
+                    }
+                }
+            }
+        }
+        return downtime;
+        }
+    }
