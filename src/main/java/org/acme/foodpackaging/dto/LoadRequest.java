@@ -13,6 +13,7 @@ public class LoadRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
+    private String version;
 }
 
 
