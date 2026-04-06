@@ -42,6 +42,7 @@ public class ScheduleBuilder {
         PackagingSchedule schedule = new PackagingSchedule();
         schedule.setWorkCalendar(new WorkCalendar(startDate));
         schedule.setLines(lineService.getLines());
+        schedule.setDti(startDate);
 
         List<DbJobRow> jobRows = jobService.initSolutionJobList(schedule);
         jobService.initFactProductionData(schedule, jobRepository.getFactProductionRowMap(

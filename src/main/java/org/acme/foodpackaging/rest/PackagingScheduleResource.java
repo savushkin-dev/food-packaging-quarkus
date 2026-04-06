@@ -40,10 +40,12 @@ public class PackagingScheduleResource {
     private final SortByNpService sortByNpService;
     private final PinService pinService;
     private final ScheduleBuilder scheduleBuilder;
+    private final ScheduleBuilderByVersion builderByVersion;
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
     private final JobRefreshService jobRefreshService;
     private final JobSaveService jobSaveService;
+    private final SolutionVersionExportService exportService;
     private final JobInfoService jobInfoService;
     private final AlignSolutionService alignSolutionService;
 
@@ -58,10 +60,11 @@ public class PackagingScheduleResource {
             SortByNpService sortByNpService,
             PinService pinService,
             ScheduleBuilder scheduleBuilder,
+            ScheduleBuilderByVersion builderByVersion,
             LoadDataService loadDataService,
             UploadDataService uploadDataService,
             JobRefreshService jobRefreshService,
-            JobSaveService jobSaveService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
+            JobSaveService jobSaveService, SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -72,10 +75,12 @@ public class PackagingScheduleResource {
         this.sortByNpService = sortByNpService;
         this.pinService = pinService;
         this.scheduleBuilder = scheduleBuilder;
+        this.builderByVersion = builderByVersion;
         this.loadDataService = loadDataService;
         this.uploadDataService = uploadDataService;
         this.jobRefreshService = jobRefreshService;
         this.jobSaveService = jobSaveService;
+        this.exportService = exportService;
         this.jobInfoService = jobInfoService;
         this.alignSolutionService = alignSolutionService;
     }
@@ -236,6 +241,28 @@ public class PackagingScheduleResource {
             }
 
             return Response.ok(data.jobsFromDbRow()).build();
+    }
+
+    @POST
+    @Path("initVersion")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response initVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule solution =  builderByVersion.init(loadDTO.getStartDate(), loadDTO.getVersion());
+        solution.setVersion(loadDTO.getVersion());
+        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, solution);
+
+        if (loadDataService == null) {
+            throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
+        }
+
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.SESSION_ID, sessionId,
+                ApiFields.MESSAGE, "Solution version imported from json"
+        )).build();
     }
 
     @POST
@@ -540,6 +567,32 @@ public class PackagingScheduleResource {
         jobSaveService.saveJobsByType(bestSolution);
         return Response.ok(Map.of(ApiFields.MESSAGE, "Saved successfully")).build();
 
+    }
+
+    /**
+     * Сохраняет план в json  определенной версии
+     */
+    @POST
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("saveVersion")
+    public Response saveVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule bestSolution = repository.readForSession(sessionId);
+        if (bestSolution == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+
+        if(bestSolution.getVersion() == null && loadDTO.getVersion() == null){
+            bestSolution.setVersion("V1");
+        }
+        else {
+            bestSolution.setVersion(loadDTO.getVersion());
+        }
+        exportService.export(bestSolution, bestSolution.getVersion());
+        return Response.ok(Map.of(ApiFields.MESSAGE, "Saved to PlrPLan successfully")).build();
     }
 
     @PUT

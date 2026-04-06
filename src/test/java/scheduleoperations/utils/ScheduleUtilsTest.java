@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.initLinesJobList;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ScheduleUtilsTest {
@@ -284,5 +285,31 @@ class ScheduleUtilsTest {
         assertEquals(2, result.size());
         // Verify all values from map are in the list
         assertEquals(2, result.stream().filter(r -> r.equals(row1) || r.equals(row2)).count());
+    }
+
+    @Test
+    void initLinesJobList_WhenLinesListNotNull(){
+
+        Job j = new Job();
+        j.setLine(line);
+
+        schedule.setJobs(List.of(j));
+
+        initLinesJobList(schedule);
+        assertEquals(1, schedule.getLines().getFirst().getJobs().size());
+        assertEquals("line1", line.getJobs().getFirst().getLine().getId());
+    }
+
+    @Test
+    void initLinesJobList_WhenLinesListIsNull(){
+
+        Job j = new Job();
+        j.setLine(line);
+
+        schedule.setJobs(List.of(j));
+        schedule.setLines(null);
+
+        initLinesJobList(schedule);
+        assertNull(schedule.getLines());
     }
 }
