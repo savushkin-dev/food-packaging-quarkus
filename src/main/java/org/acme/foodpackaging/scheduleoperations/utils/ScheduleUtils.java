@@ -6,10 +6,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class ScheduleUtils {
@@ -149,5 +146,19 @@ public class ScheduleUtils {
             return List.of();
         }
         return new ArrayList<>(rows.values());
+    }
+
+    /**
+     * Инициализирует списки с задачами у линий.
+     */
+    public static void initLinesJobList(PackagingSchedule solution){
+        if(solution.getLines() == null) return;
+
+        for(Line line : solution.getLines()){
+            List<Job> lineJobs = solution.getJobs().stream()
+                    .filter(j -> j.getLine().getId().equals(line.getId()))
+                    .sorted(Comparator.comparing(Job::getStartProductionDateTime)).toList();
+            line.setJobs(lineJobs);
+        }
     }
 }
