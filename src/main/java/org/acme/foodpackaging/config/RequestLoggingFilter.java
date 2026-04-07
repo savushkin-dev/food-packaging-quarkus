@@ -15,7 +15,6 @@ import org.acme.foodpackaging.service.log.LogService;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -31,15 +30,11 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.calc
 public class RequestLoggingFilter implements ContainerRequestFilter {
 
     @Inject
-    public RequestLoggingFilter(HttpServerRequest vertxRequest, LogService logService, ObjectMapper objectMapper){
-        this.vertxRequest = vertxRequest;
-        this.logService = logService;
-        this.objectMapper = objectMapper;
-    }
-
-    private final HttpServerRequest vertxRequest;
-    private final LogService logService;
-    private final ObjectMapper objectMapper;
+    HttpServerRequest vertxRequest;
+    @Inject
+    LogService logService;
+    @Inject
+    ObjectMapper objectMapper;
 
     private static final String DEFAULT_SESSION_ID = "default_session_id";
 
@@ -49,35 +44,21 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         String login = requestContext.getHeaderString("X-Session-Id");
         String method = requestContext.getMethod();
 
-        if (login == null || login.isBlank() || DEFAULT_SESSION_ID.equalsIgnoreCase(login)
-        || "GET".equalsIgnoreCase(method)) {
+        if (shouldSkip(login, method)) {
             return;
         }
 
-        InputStream entityStream = requestContext.getEntityStream();
-        String body;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(entityStream, StandardCharsets.UTF_8))) {
-            body = reader.lines()
-                    .collect(Collectors.joining("\n"));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read request body", e);
-        }
-
-        requestContext.setEntityStream(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
-
-        String endpoint = path.contains("/")
-                ? path.substring(path.lastIndexOf('/') + 1)
-                : path;
+        String body = readRequestBody(requestContext);
+        resetEntityStream(requestContext, body);
 
         String ip = getIp(requestContext);
+        String endpoint = extractEndpoint(path);
 
-        String extraJson = null;
+        String payload = shouldUseDowntimeJson(method, endpoint)
+                ? generateDowntimeJson(body)
+                : body;
 
-        if ("POST".equalsIgnoreCase(method) && (endpoint.equals("save") || endpoint.equals("stopSolving"))) {
-            extraJson = generateDowntimeJson(body);
-        }
-
-        logService.logRequest(login, ip, path.substring(path.lastIndexOf('/') + 1), body);
+        logService.logRequest(login, ip, endpoint, payload);
     }
 
     private String readRequestBody(ContainerRequestContext requestContext) {
@@ -89,11 +70,29 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         }
     }
 
+    private void resetEntityStream(ContainerRequestContext requestContext, String body) {
+        requestContext.setEntityStream(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private boolean shouldSkip(String login, String method) {
+        if (login == null || login.isBlank() || DEFAULT_SESSION_ID.equalsIgnoreCase(login)) {
+            return true;
+        }
+        return "GET".equalsIgnoreCase(method);
+    }
+
     private String extractEndpoint(String path) {
         if (path == null || path.isBlank()) {
             return "unknown";
         }
         return path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
+    }
+
+    private boolean shouldUseDowntimeJson(String method, String endpoint) {
+        if (!"POST".equalsIgnoreCase(method)) {
+            return false;
+        }
+        return "save".equalsIgnoreCase(endpoint) || "stopSolving".equalsIgnoreCase(endpoint);
     }
 
     private String generateDowntimeJson(String body) {
@@ -113,13 +112,12 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
             payload.put("lines", lineDownTimesInMinutes);
 
             return objectMapper.writeValueAsString(payload);
-
         } catch (Exception e) {
             return "{\"error\":\"failed to calculate downtime\"}";
         }
     }
 
-    public String getIp(ContainerRequestContext requestContext){
+    private String getIp(ContainerRequestContext requestContext) {
         // сначала пробуем заголовки от Nginx
         String ip = requestContext.getHeaderString("X-Real-IP");
         if (ip == null || ip.isBlank()) {

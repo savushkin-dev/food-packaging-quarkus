@@ -1,6 +1,7 @@
 package scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.record.DownTimeData;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.DownTimeData;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
@@ -353,5 +354,85 @@ class ScheduleUtilsTest {
 
         Duration lineDowntime = result.lineDonwTimes().get("L1");
         assertEquals(Duration.ofMinutes(60), lineDowntime);
+    }
+
+    @Test
+    void calculateDownTime_negativeDiff_shouldBeIgnored() {
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+
+        Line line = new Line("L1", "line1");
+        LocalDateTime dti = solution.getWorkCalendar().getCurrentDate().atStartOfDay();
+
+        Job job = new Job();
+        job.setLine(line);
+        job.setDti(dti);
+
+        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
+        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+
+        line.setJobs(List.of(job));
+        solution.setLines(List.of(line));
+
+        DownTimeData result = calculateDownTime(solution);
+
+        assertEquals(0, result.commonDownTime());
+
+        assertNotNull(result.lineDonwTimes());
+        assertTrue(result.lineDonwTimes().containsKey("L1"));
+
+        Duration lineDowntime = result.lineDonwTimes().get("L1");
+        assertEquals(Duration.ZERO, lineDowntime);
+    }
+
+    @Test
+    void calculateDownTime_lineIdNull_shouldUseUnknownKey() {
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+
+        Line line = new Line(null, "line1");
+        LocalDateTime dti = solution.getWorkCalendar().getCurrentDate().atStartOfDay();
+
+        Job job = new Job();
+        job.setLine(line);
+        job.setDti(dti);
+        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
+        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+
+        line.setJobs(List.of(job));
+        solution.setLines(List.of(line));
+
+        DownTimeData result = calculateDownTime(solution);
+
+        assertEquals(60, result.commonDownTime());
+
+        assertNotNull(result.lineDonwTimes());
+        assertTrue(result.lineDonwTimes().containsKey("unknown"));
+
+        Duration lineDowntime = result.lineDonwTimes().get("unknown");
+        assertEquals(Duration.ofMinutes(60), lineDowntime);
+    }
+
+    @Test
+    void calculateDownTime_nullJob_shouldBeIgnored() {
+        PackagingSchedule solution = new PackagingSchedule();
+        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+
+        Line line = new Line("L1", "line1");
+
+        List<Job> jobs = new ArrayList<>();
+        jobs.add(null);
+
+        line.setJobs(jobs);
+        solution.setLines(List.of(line));
+
+        DownTimeData result = calculateDownTime(solution);
+
+        assertEquals(0, result.commonDownTime());
+
+        assertNotNull(result.lineDonwTimes());
+        assertTrue(result.lineDonwTimes().containsKey("L1"));
+
+        assertEquals(Duration.ZERO, result.lineDonwTimes().get("L1"));
     }
 }
