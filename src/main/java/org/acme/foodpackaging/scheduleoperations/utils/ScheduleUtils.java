@@ -169,49 +169,69 @@ public class ScheduleUtils {
      * Считает суммарное выремя простоя на всех линиях
      */
     public static DownTimeData calculateDownTime(PackagingSchedule solution) {
-    if (solution == null
-            || solution.getLines() == null
-            || solution.getWorkCalendar() == null
-            || solution.getWorkCalendar().getCurrentDate() == null) {
-        return new DownTimeData(0, Map.of());
+        if (isInvalidSolution(solution)) {
+            return new DownTimeData(0, Map.of());
+        }
+
+        Duration totalDowntime = Duration.ZERO;
+        Map<String, Duration> lineDownTimes = new HashMap<>();
+        LocalDate currentDate = solution.getWorkCalendar().getCurrentDate();
+
+        for (Line line : solution.getLines()) {
+            if (line == null) continue;
+
+            Duration lineDowntime = calculateLineDowntime(line, currentDate);
+            totalDowntime = totalDowntime.plus(lineDowntime);
+
+            lineDownTimes.put(getLineId(line), lineDowntime);
+        }
+
+        return new DownTimeData(totalDowntime.toMinutes(), lineDownTimes);
     }
 
-    Duration downtime = Duration.ZERO;
-    Map<String, Duration> lineDownTimes = new HashMap<>();
-    LocalDate currentDate = solution.getWorkCalendar().getCurrentDate();
 
-    for (Line line : solution.getLines()) {
-        if (line == null) continue;
+    /**
+     * Вспомогательные методы
+     */
+    private static boolean isInvalidSolution(PackagingSchedule solution) {
+        return solution == null
+                || solution.getLines() == null
+                || solution.getWorkCalendar() == null
+                || solution.getWorkCalendar().getCurrentDate() == null;
+    }
+
+    private static Duration calculateLineDowntime(Line line, LocalDate currentDate) {
+        if (line.getJobs() == null) return Duration.ZERO;
 
         Duration lineDowntime = Duration.ZERO;
 
-        if (line.getJobs() != null) {
-            for (Job job : line.getJobs()) {
-                if (job == null || job.getDti() == null) continue;
-
-                LocalDate dti = job.getDti().toLocalDate();
-
-                if (currentDate.equals(dti)
-                        && job.getStartProductionDateTime() != null
-                        && job.getStartCleaningDateTime() != null
-                        && !job.getStartProductionDateTime().equals(job.getStartCleaningDateTime())) {
-
-                    Duration diff = Duration.between(
-                            job.getStartCleaningDateTime(),
-                            job.getStartProductionDateTime()
-                    );
-
-                    if (!diff.isNegative()) {
-                        downtime = downtime.plus(diff);
-                        lineDowntime = lineDowntime.plus(diff);
-                    }
-                }
-            }
+        for (Job job : line.getJobs()) {
+            Duration jobDowntime = calculateJobDowntime(job, currentDate);
+            lineDowntime = lineDowntime.plus(jobDowntime);
         }
 
-        lineDownTimes.put(line.getId() != null ? line.getId() : "unknown", lineDowntime);
+        return lineDowntime;
     }
 
-    return new DownTimeData(downtime.toMinutes(), lineDownTimes);
- }
+    private static Duration calculateJobDowntime(Job job, LocalDate currentDate) {
+        if (job == null || job.getDti() == null) return Duration.ZERO;
+
+        if (!currentDate.equals(job.getDti().toLocalDate())) return Duration.ZERO;
+
+        if (job.getStartProductionDateTime() == null
+                || job.getStartCleaningDateTime() == null
+                || job.getStartProductionDateTime().equals(job.getStartCleaningDateTime())) {
+            return Duration.ZERO;
+        }
+
+        Duration diff = Duration.between(
+                job.getStartCleaningDateTime(),
+                job.getStartProductionDateTime()
+        );
+
+        return diff.isNegative() ? Duration.ZERO : diff;
+    }
+    private static String getLineId(Line line) {
+        return line.getId() != null ? line.getId() : "unknown";
+    }
 }
