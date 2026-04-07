@@ -9,6 +9,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.ext.Provider;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.exception.rest.RequestBodyReadException;
+import org.acme.foodpackaging.record.DownTimeData;
 import org.acme.foodpackaging.service.log.LogService;
 
 import java.io.BufferedReader;
@@ -18,6 +19,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -98,11 +100,17 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         try {
             PackagingSchedule solution = objectMapper.readValue(body, PackagingSchedule.class);
             LocalDate dti = solution.getWorkCalendar().getCurrentDate();
-            long downtimeMinutes = calculateDownTime(solution).toMinutes();
+            DownTimeData data = calculateDownTime(solution);
+
+            Map<String, Long> lineDownTimesInMinutes = new HashMap<>();
+            for (Map.Entry<String, Duration> entry : data.lineDonwTimes().entrySet()) {
+                lineDownTimesInMinutes.put(entry.getKey(), entry.getValue().toMinutes());
+            }
 
             Map<String, Object> payload = new HashMap<>();
-            payload.put("dti", dti.toString());
-            payload.put("downtime", downtimeMinutes);
+            payload.put("dt", dti.toString());
+            payload.put("downtime", data.commonDownTime());
+            payload.put("lines", lineDownTimesInMinutes);
 
             return objectMapper.writeValueAsString(payload);
 

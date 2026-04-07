@@ -4,6 +4,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.DownTimeData;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -167,30 +168,50 @@ public class ScheduleUtils {
     /**
      * Считает суммарное выремя простоя на всех линиях
      */
-    public static Duration calculateDownTime(PackagingSchedule solution) {
-        if (solution.getLines() == null) return Duration.ZERO;
+    public static DownTimeData calculateDownTime(PackagingSchedule solution) {
+    if (solution == null
+            || solution.getLines() == null
+            || solution.getWorkCalendar() == null
+            || solution.getWorkCalendar().getCurrentDate() == null) {
+        return new DownTimeData(0, Map.of());
+    }
 
-        Duration downtime = Duration.ZERO;
-        LocalDate currentDate = solution.getWorkCalendar().getCurrentDate();
+    Duration downtime = Duration.ZERO;
+    Map<String, Duration> lineDownTimes = new HashMap<>();
+    LocalDate currentDate = solution.getWorkCalendar().getCurrentDate();
 
-        for (Line line : solution.getLines()) {
-            if (line.getJobs() != null) {
-                for (Job job : line.getJobs()) {
-                    LocalDate dti = job.getDti().toLocalDate();
-                    if (currentDate.equals(dti)
-                            && job.getStartProductionDateTime() != null
-                            && job.getStartCleaningDateTime() != null
-                            && !job.getStartProductionDateTime().equals(job.getStartCleaningDateTime())) {
+    for (Line line : solution.getLines()) {
+        if (line == null) continue;
 
-                        Duration diff = Duration.between(
-                                job.getStartCleaningDateTime(),
-                                job.getStartProductionDateTime()
-                        );
+        Duration lineDowntime = Duration.ZERO;
+
+        if (line.getJobs() != null) {
+            for (Job job : line.getJobs()) {
+                if (job == null || job.getDti() == null) continue;
+
+                LocalDate dti = job.getDti().toLocalDate();
+
+                if (currentDate.equals(dti)
+                        && job.getStartProductionDateTime() != null
+                        && job.getStartCleaningDateTime() != null
+                        && !job.getStartProductionDateTime().equals(job.getStartCleaningDateTime())) {
+
+                    Duration diff = Duration.between(
+                            job.getStartCleaningDateTime(),
+                            job.getStartProductionDateTime()
+                    );
+
+                    if (!diff.isNegative()) {
                         downtime = downtime.plus(diff);
+                        lineDowntime = lineDowntime.plus(diff);
                     }
                 }
             }
         }
-        return downtime;
-        }
+
+        lineDownTimes.put(line.getId() != null ? line.getId() : "unknown", lineDowntime);
     }
+
+    return new DownTimeData(downtime.toMinutes(), lineDownTimes);
+ }
+}
