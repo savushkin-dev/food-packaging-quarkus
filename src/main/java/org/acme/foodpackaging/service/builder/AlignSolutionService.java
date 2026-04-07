@@ -44,7 +44,8 @@ public class AlignSolutionService {
         Iterator<Job> it = jobs.iterator();
         while (it.hasNext()) {
             Job job = it.next();
-            if (job.isMaintenance() && job.getMaintenanceTypeId() == 7) {
+            if (job.isMaintenance() && job.getMaintenanceTypeId()!= null
+                    && job.getMaintenanceTypeId() == 7) {
                 job.setFDel((short)1);
                 schedule.getDeletedMaintenance().add(job);
                 it.remove();
@@ -58,7 +59,8 @@ public class AlignSolutionService {
             }
             List<Job> lineJobs = line.getJobs();
 
-            lineJobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId() == 7);
+            lineJobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId()!= null
+                    && job.getMaintenanceTypeId() == 7);
             fixLineJobs(line);
             fixPinnedJobs(line);
         }
