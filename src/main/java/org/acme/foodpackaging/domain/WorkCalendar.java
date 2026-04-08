@@ -12,7 +12,7 @@ public class WorkCalendar {
 
     private LocalDate fromDate;
     private LocalDate toDate;
-    private LocalDate currentDate;
+    private LocalDate planningDate;
     private LocalDateTime minStartDateTime;
     private LocalDateTime idealEndDateTime;
     private LocalDateTime maxEndDateTime;
@@ -28,7 +28,7 @@ public class WorkCalendar {
     public WorkCalendar(LocalDate currentDate){
         this.fromDate = currentDate.minusDays(2);
         this.toDate = currentDate.plusDays(7);
-        this.currentDate = currentDate;
+        this.planningDate = currentDate;
         this.minStartDateTime = currentDate.atStartOfDay();
     }
 

@@ -432,11 +432,10 @@ public class PackagingScheduleResource {
 
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
         repository.writeForSession(sessionId, finalSchedule);
-        return Response.ok(Map.of(
-                ApiFields.STATUS, "stopped",
-                ApiFields.SESSION_ID, sessionId,
-                ApiFields.MESSAGE, "Solving stopped"
-        )).build();
+
+        DowntimeResponse response = getDowntimeResponse(repository.readForSession(sessionId));
+
+        return Response.ok(response).build();
     }
     /**
      * Перемещение задач на линиях
@@ -564,8 +563,9 @@ public class PackagingScheduleResource {
         }
 
         jobSaveService.saveJobsByType(bestSolution);
-        return Response.ok(Map.of(ApiFields.MESSAGE, "Saved successfully")).build();
+        DowntimeResponse response = getDowntimeResponse(repository.readForSession(sessionId));
 
+        return Response.ok(response).build();
     }
 
     /**

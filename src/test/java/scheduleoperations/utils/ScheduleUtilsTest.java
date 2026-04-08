@@ -1,7 +1,7 @@
 package scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.record.DownTimeData;
+import org.acme.foodpackaging.dto.DowntimeResponse;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
@@ -15,8 +15,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.calculateDownTime;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.initLinesJobList;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ScheduleUtilsTest {
@@ -137,7 +136,7 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void setLineStartDateTime() {
+    void setgetLinestartDateTime() {
         LocalDateTime newStart = LocalDateTime.now().plusDays(1);
         ScheduleUtils.setLineStartDateTime(line, newStart);
 
@@ -153,7 +152,7 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void pinnAllLines() {
+    void pinnAllgetLines() {
         job3.setEndDateTime(LocalDateTime.now().plusHours(3));
         ScheduleUtils.pinnAllLines(List.of(line));
 
@@ -162,7 +161,7 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void unPinnAllLines() {
+    void unPinnAllgetLines() {
         line.setFirstUnpinnedIndex(5);
         ScheduleUtils.unPinnAllLines(List.of(line));
 
@@ -190,7 +189,7 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void keepAllJobsWhenAllHaveLines() {
+    void keepAllJobsWhenAllHavegetLines() {
         Job jobWithLine1 = new Job("1", "Job 1", product, null, 1, false, null);
         Job jobWithLine2 = new Job("2", "Job 2", product, null, 1, false, null);
 
@@ -321,47 +320,40 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void calculateDownTime_shouldReturnCorrectDuration() {
+    void getDowntimeResponse_shouldReturnCorrectDuration() {
         PackagingSchedule solution = new PackagingSchedule();
 
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
-        LocalDateTime dti = solution.getWorkCalendar().getCurrentDate().atStartOfDay();
-
         job1.setLine(line);
-        job1.setDti(dti);
         job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
         job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 30));
 
         job2.setLine(line);
-        job2.setDti(dti);
         job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
         job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 30));
 
         line.setJobs(List.of(job1, job2));
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(60, result.commonDownTime());
+        assertEquals(60, result.getDowntime());
 
-        assertNotNull(result.lineDonwTimes());
-        assertTrue(result.lineDonwTimes().containsKey("line1"));
+        assertNotNull(result.getLines());
+        assertTrue(result.getLines().containsKey("line1"));
 
-        Duration lineDowntime = result.lineDonwTimes().get("line1");
-        assertEquals(Duration.ofMinutes(60), lineDowntime);
+        long lineDowntime = result.getLines().get("line1");
+        assertEquals(60, lineDowntime);
     }
 
     @Test
-    void calculateDownTime_negativeDiff_shouldBeIgnored() {
+    void getDowntimeResponse_negativeDiff_shouldBeIgnored() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
-        LocalDateTime dti = solution.getWorkCalendar().getCurrentDate().atStartOfDay();
-
         Job job = new Job();
         job.setLine(line);
-        job.setDti(dti);
 
         job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
         job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
@@ -369,47 +361,19 @@ class ScheduleUtilsTest {
         line.setJobs(List.of(job));
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
+        assertEquals(0, result.getDowntime());
 
-        assertNotNull(result.lineDonwTimes());
-        assertTrue(result.lineDonwTimes().containsKey("line1"));
+        assertNotNull(result.getLines());
+        assertTrue(result.getLines().containsKey("line1"));
 
-        Duration lineDowntime = result.lineDonwTimes().get("line1");
-        assertEquals(Duration.ZERO, lineDowntime);
+        long lineDowntime = result.getLines().get("line1");
+        assertEquals(0, lineDowntime);
     }
 
     @Test
-    void calculateDownTime_lineIdNull_shouldUseUnknownKey() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
-
-        Line line1 = new Line(null, "line1");
-        LocalDateTime dti = solution.getWorkCalendar().getCurrentDate().atStartOfDay();
-
-        Job job = new Job();
-        job.setLine(line1);
-        job.setDti(dti);
-        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
-        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
-
-        line1.setJobs(List.of(job));
-        solution.setLines(List.of(line1));
-
-        DownTimeData result = calculateDownTime(solution);
-
-        assertEquals(60, result.commonDownTime());
-
-        assertNotNull(result.lineDonwTimes());
-        assertTrue(result.lineDonwTimes().containsKey("unknown"));
-
-        Duration lineDowntime = result.lineDonwTimes().get("unknown");
-        assertEquals(Duration.ofMinutes(60), lineDowntime);
-    }
-
-    @Test
-    void calculateDownTime_nullJob_shouldBeIgnored() {
+    void getDowntimeResponse_nullJob_shouldBeIgnored() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
@@ -419,44 +383,44 @@ class ScheduleUtilsTest {
         line.setJobs(jobs);
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
+        assertEquals(0, result.getDowntime());
 
-        assertNotNull(result.lineDonwTimes());
-        assertTrue(result.lineDonwTimes().containsKey("line1"));
+        assertNotNull(result.getLines());
+        assertTrue(result.getLines().containsKey("line1"));
 
-        assertEquals(Duration.ZERO, result.lineDonwTimes().get("line1"));
+        assertEquals(0, result.getLines().get("line1"));
     }
 
     @Test
-    void calculateDownTime_nullWorkCalendar_shouldReturnZero() {
+    void getDowntimeResponse_nullWorkCalendar_shouldReturnZero() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setLines(List.of(new Line("L1", "line1")));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
-        assertTrue(result.lineDonwTimes().isEmpty());
+        assertEquals(0, result.getDowntime());
+        assertTrue(result.getLines().isEmpty());
     }
 
     @Test
-    void calculateDownTime_nullLine_shouldBeIgnored() {
+    void getDowntimeResponse_nullLine_shouldBeIgnored() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
-        List<Line> lines = new ArrayList<>();
-        lines.add(null);
+        List<Line> getLines = new ArrayList<>();
+        getLines.add(null);
 
-        solution.setLines(lines);
+        solution.setLines(getLines);
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
-        assertTrue(result.lineDonwTimes().isEmpty());
+        assertEquals(0, result.getDowntime());
+        assertTrue(result.getLines().isEmpty());
     }
     @Test
-    void calculateDownTime_nullJobs_shouldReturnZeroForLine() {
+    void getDowntimeResponse_nullJobs_shouldReturnZeroForLine() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
@@ -464,33 +428,32 @@ class ScheduleUtilsTest {
 
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
-        assertEquals(Duration.ZERO, result.lineDonwTimes().get("line1"));
+        assertEquals(0, result.getDowntime());
+        assertEquals(0, result.getLines().get("line1"));
     }
 
     @Test
-    void calculateDownTime_differentDate_shouldBeIgnored() {
+    void getDowntimeResponse_differentDate_shouldBeIgnored() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
         Job job = new Job();
         job.setLine(line);
-        job.setDti(LocalDateTime.of(2026, 4, 5, 0, 0)); // другая дата
-        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
-        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 5, 9, 0));
+        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 5, 10, 0));
 
         line.setJobs(List.of(job));
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
+        assertEquals(0, result.getDowntime());
     }
 
     @Test
-    void calculateDownTime_nullStartProduction_shouldBeIgnored() {
+    void getDowntimeResponse_nullStartProduction_shouldBeIgnored() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
@@ -503,32 +466,31 @@ class ScheduleUtilsTest {
         line.setJobs(List.of(job));
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
+        assertEquals(0, result.getDowntime());
     }
 
     @Test
-    void calculateDownTime_nullStartCleaning_shouldBeIgnored() {
+    void getDowntimeResponse_nullStartCleaning_shouldBeIgnored() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
         Job job = new Job();
         job.setLine(line);
-        job.setDti(LocalDateTime.of(2026, 4, 6, 0, 0));
         job.setStartCleaningDateTime(null);
         job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
 
         line.setJobs(List.of(job));
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
+        assertEquals(0, result.getDowntime());
     }
 
     @Test
-    void calculateDownTime_sameStartTimes_shouldBeIgnored() {
+    void getDowntimeResponse_sameStartTimes_shouldBeIgnored() {
         PackagingSchedule solution = new PackagingSchedule();
         solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
 
@@ -543,8 +505,8 @@ class ScheduleUtilsTest {
         line.setJobs(List.of(job));
         solution.setLines(List.of(line));
 
-        DownTimeData result = calculateDownTime(solution);
+        DowntimeResponse result = getDowntimeResponse(solution);
 
-        assertEquals(0, result.commonDownTime());
+        assertEquals(0, result.getDowntime());
     }
 }

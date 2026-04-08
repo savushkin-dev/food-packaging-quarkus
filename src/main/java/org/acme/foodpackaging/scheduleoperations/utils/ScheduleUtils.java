@@ -3,8 +3,8 @@ package org.acme.foodpackaging.scheduleoperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.DowntimeResponse;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.DownTimeData;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -168,36 +168,45 @@ public class ScheduleUtils {
     /**
      * Считает суммарное выремя простоя на всех линиях
      */
-    public static DownTimeData calculateDownTime(PackagingSchedule solution) {
-        if (isInvalidSolution(solution)) {
-            return new DownTimeData(0, Map.of());
-        }
+    public static DowntimeResponse getDowntimeResponse(PackagingSchedule solution){
+        DowntimeData data = calculateDownTime(solution);
 
-        Duration totalDowntime = Duration.ZERO;
-        Map<String, Duration> lineDownTimes = new HashMap<>();
-        LocalDate currentDate = solution.getWorkCalendar().getCurrentDate();
-
-        for (Line line : solution.getLines()) {
-            if (line == null) continue;
-
-            Duration lineDowntime = calculateLineDowntime(line, currentDate);
-            totalDowntime = totalDowntime.plus(lineDowntime);
-
-            lineDownTimes.put(getLineId(line), lineDowntime);
-        }
-
-        return new DownTimeData(totalDowntime.toMinutes(), lineDownTimes);
+        return new DowntimeResponse(
+                data.planningDate,
+                data.commonDowntime(),
+                data.lineDonwtimes
+        );
     }
-
 
     /**
      * Вспомогательные методы
      */
+    private static DowntimeData calculateDownTime(PackagingSchedule solution) {
+        if (isInvalidSolution(solution)) {
+            return new DowntimeData("", 0, Map.of());
+        }
+
+        Duration totalDowntime = Duration.ZERO;
+        Map<String, Long> lineDownTimes = new LinkedHashMap<>();
+        LocalDate planningDate = solution.getWorkCalendar().getPlanningDate();
+
+        for (Line line : solution.getLines()) {
+            if (line == null) continue;
+
+            Duration lineDowntime = calculateLineDowntime(line, planningDate);
+            totalDowntime = totalDowntime.plus(lineDowntime);
+
+            lineDownTimes.put(line.getId(), lineDowntime.toMinutes());
+        }
+
+        return new DowntimeData(planningDate.toString(), totalDowntime.toMinutes(), lineDownTimes);
+    }
+
     private static boolean isInvalidSolution(PackagingSchedule solution) {
         return solution == null
                 || solution.getLines() == null
                 || solution.getWorkCalendar() == null
-                || solution.getWorkCalendar().getCurrentDate() == null;
+                || solution.getWorkCalendar().getPlanningDate() == null;
     }
 
     private static Duration calculateLineDowntime(Line line, LocalDate currentDate) {
@@ -214,13 +223,11 @@ public class ScheduleUtils {
     }
 
     private static Duration calculateJobDowntime(Job job, LocalDate currentDate) {
-        if (job == null || job.getDti() == null) return Duration.ZERO;
-
-        if (!currentDate.equals(job.getDti().toLocalDate())) return Duration.ZERO;
-
-        if (job.getStartProductionDateTime() == null
+        if (job == null
+                || job.getStartProductionDateTime() == null
                 || job.getStartCleaningDateTime() == null
-                || job.getStartProductionDateTime().equals(job.getStartCleaningDateTime())) {
+                || !currentDate.equals(job.getStartProductionDateTime().toLocalDate())
+                || !job.getStartProductionDateTime().isAfter(job.getStartCleaningDateTime())) {
             return Duration.ZERO;
         }
 
@@ -231,7 +238,6 @@ public class ScheduleUtils {
 
         return diff.isNegative() ? Duration.ZERO : diff;
     }
-    private static String getLineId(Line line) {
-        return line.getId() != null ? line.getId() : "unknown";
-    }
+
+    public record DowntimeData(String planningDate, long commonDowntime, Map<String, Long> lineDonwtimes) {}
 }
