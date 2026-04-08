@@ -16,6 +16,7 @@ import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.upload.*;
+import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.record.FrontendDataWrapper;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.record.JobSelection;
@@ -51,20 +52,12 @@ public class PackagingScheduleResource {
 
     @Inject
     public PackagingScheduleResource(
-            PackagingScheduleRepository repository,
-            SolverManager<PackagingSchedule, String> solverManager,
-            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager,
-            MaintenanceJob maintenanceJob,
-            JobService jobService,
-            MoveJobsService moveJobsService,
-            SortByNpService sortByNpService,
-            PinService pinService,
-            ScheduleBuilder scheduleBuilder,
-            ScheduleBuilderByVersion builderByVersion,
-            LoadDataService loadDataService,
-            UploadDataService uploadDataService,
-            JobRefreshService jobRefreshService,
-            JobSaveService jobSaveService, SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
+            PackagingScheduleRepository repository, SolverManager<PackagingSchedule, String> solverManager,
+            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager, MaintenanceJob maintenanceJob,
+            JobService jobService, MoveJobsService moveJobsService, SortByNpService sortByNpService, PinService pinService,
+            ScheduleBuilder scheduleBuilder, ScheduleBuilderByVersion builderByVersion, LoadDataService loadDataService,
+            UploadDataService uploadDataService, JobRefreshService jobRefreshService, JobSaveService jobSaveService,
+            SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -433,7 +426,7 @@ public class PackagingScheduleResource {
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
         repository.writeForSession(sessionId, finalSchedule);
 
-        DowntimeResponse response = getDowntimeResponse(repository.readForSession(sessionId));
+        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
 
         return Response.ok(response).build();
     }
@@ -563,7 +556,7 @@ public class PackagingScheduleResource {
         }
 
         jobSaveService.saveJobsByType(bestSolution);
-        DowntimeResponse response = getDowntimeResponse(repository.readForSession(sessionId));
+        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
 
         return Response.ok(response).build();
     }

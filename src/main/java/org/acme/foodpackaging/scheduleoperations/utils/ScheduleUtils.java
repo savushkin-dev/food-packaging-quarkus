@@ -3,8 +3,8 @@ package org.acme.foodpackaging.scheduleoperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.DowntimeResponse;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.DowntimeData;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -168,14 +168,8 @@ public class ScheduleUtils {
     /**
      * Считает суммарное выремя простоя на всех линиях
      */
-    public static DowntimeResponse getDowntimeResponse(PackagingSchedule solution){
-        DowntimeData data = calculateDownTime(solution);
-
-        return new DowntimeResponse(
-                data.planningDate,
-                data.commonDowntime(),
-                data.lineDonwtimes
-        );
+    public static DowntimeData getDowntimeData(PackagingSchedule solution){
+        return calculateDownTime(solution);
     }
 
     /**
@@ -183,7 +177,7 @@ public class ScheduleUtils {
      */
     private static DowntimeData calculateDownTime(PackagingSchedule solution) {
         if (isInvalidSolution(solution)) {
-            return new DowntimeData("", 0, Map.of());
+            return new DowntimeData("", "",0, Map.of());
         }
 
         Duration totalDowntime = Duration.ZERO;
@@ -199,7 +193,8 @@ public class ScheduleUtils {
             lineDownTimes.put(line.getId(), lineDowntime.toMinutes());
         }
 
-        return new DowntimeData(planningDate.toString(), totalDowntime.toMinutes(), lineDownTimes);
+        return new DowntimeData(planningDate.toString(),
+                planningDate.plusDays(1).toString(), totalDowntime.toMinutes(), lineDownTimes);
     }
 
     private static boolean isInvalidSolution(PackagingSchedule solution) {
@@ -222,11 +217,11 @@ public class ScheduleUtils {
         return lineDowntime;
     }
 
-    private static Duration calculateJobDowntime(Job job, LocalDate currentDate) {
+    private static Duration calculateJobDowntime(Job job, LocalDate planningDate) {
         if (job == null
                 || job.getStartProductionDateTime() == null
                 || job.getStartCleaningDateTime() == null
-                || !currentDate.equals(job.getStartProductionDateTime().toLocalDate())
+                || !isInTodayOrTomorrow(job.getStartProductionDateTime().toLocalDate(), planningDate)
                 || !job.getStartProductionDateTime().isAfter(job.getStartCleaningDateTime())) {
             return Duration.ZERO;
         }
@@ -239,5 +234,8 @@ public class ScheduleUtils {
         return diff.isNegative() ? Duration.ZERO : diff;
     }
 
-    public record DowntimeData(String planningDate, long commonDowntime, Map<String, Long> lineDonwtimes) {}
+    private static boolean isInTodayOrTomorrow(LocalDate jobDate, LocalDate currentDate) {
+        return !jobDate.isBefore(currentDate) &&
+                !jobDate.isAfter(currentDate.plusDays(1));
+    }
 }
