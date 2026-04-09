@@ -177,7 +177,7 @@ public class ScheduleUtils {
      */
     private static DowntimeData calculateDownTime(PackagingSchedule solution) {
         if (isInvalidSolution(solution)) {
-            return new DowntimeData("", "",0, Map.of());
+            return new DowntimeData("",0, Map.of());
         }
 
         Duration totalDowntime = Duration.ZERO;
@@ -187,42 +187,42 @@ public class ScheduleUtils {
         for (Line line : solution.getLines()) {
             if (line == null) continue;
 
-            Duration lineDowntime = calculateLineDowntime(line, planningDate);
+            Duration lineDowntime = calculateLineDowntime(line, solution.getOverloadedIds());
             totalDowntime = totalDowntime.plus(lineDowntime);
 
             lineDownTimes.put(line.getId(), lineDowntime.toMinutes());
         }
 
-        return new DowntimeData(planningDate.toString(),
-                planningDate.plusDays(1).toString(), totalDowntime.toMinutes(), lineDownTimes);
+        return new DowntimeData(planningDate.toString(), totalDowntime.toMinutes(), lineDownTimes);
     }
 
     private static boolean isInvalidSolution(PackagingSchedule solution) {
         return solution == null
                 || solution.getLines() == null
+                || solution.getOverloadedIds().isEmpty()
                 || solution.getWorkCalendar() == null
                 || solution.getWorkCalendar().getPlanningDate() == null;
     }
 
-    private static Duration calculateLineDowntime(Line line, LocalDate currentDate) {
+    private static Duration calculateLineDowntime(Line line, Set<String> targetIds) {
         if (line.getJobs() == null) return Duration.ZERO;
 
         Duration lineDowntime = Duration.ZERO;
 
         for (Job job : line.getJobs()) {
-            Duration jobDowntime = calculateJobDowntime(job, currentDate);
-            lineDowntime = lineDowntime.plus(jobDowntime);
-        }
+         if( job == null || job.getId() == null) continue;
 
+         if(targetIds.contains(job.getId())){
+             Duration jobDowntime = calculateJobDowntime(job);
+             lineDowntime = lineDowntime.plus(jobDowntime);
+         }
+        }
         return lineDowntime;
     }
 
-    private static Duration calculateJobDowntime(Job job, LocalDate planningDate) {
-        if (job == null
-                || job.getStartProductionDateTime() == null
-                || job.getStartCleaningDateTime() == null
-                || !isInTodayOrTomorrow(job.getStartProductionDateTime().toLocalDate(), planningDate)
-                || !job.getStartProductionDateTime().isAfter(job.getStartCleaningDateTime())) {
+    private static Duration calculateJobDowntime(Job job) {
+        if (job.getStartProductionDateTime() == null
+                || job.getStartCleaningDateTime() == null) {
             return Duration.ZERO;
         }
 
@@ -232,10 +232,5 @@ public class ScheduleUtils {
         );
 
         return diff.isNegative() ? Duration.ZERO : diff;
-    }
-
-    private static boolean isInTodayOrTomorrow(LocalDate jobDate, LocalDate currentDate) {
-        return !jobDate.isBefore(currentDate) &&
-                !jobDate.isAfter(currentDate.plusDays(1));
     }
 }

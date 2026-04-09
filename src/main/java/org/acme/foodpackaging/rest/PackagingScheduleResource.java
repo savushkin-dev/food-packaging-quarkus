@@ -262,8 +262,11 @@ public class PackagingScheduleResource {
     @Path("/selection")
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelection dto) {
 
+        PackagingSchedule solution = repository.readForSession(sessionId);
+        solution.getOverloadedIds().clear();
+
         PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
-                repository.readForSession(sessionId));
+                solution);
 
         solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId,updatedSchedule);

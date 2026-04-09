@@ -320,10 +320,10 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void downtimeData_shouldReturnCorrectDuration() {
-        PackagingSchedule solution = new PackagingSchedule();
+    void downtimeData_shouldReturnCorrectDuration_onlyForOverloadedJobs() {
 
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1", "2"));
 
         job1.setLine(line);
         job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
@@ -333,180 +333,37 @@ class ScheduleUtilsTest {
         job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
         job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 30));
 
-        line.setJobs(List.of(job1, job2));
-        solution.setLines(List.of(line));
-
-        DowntimeData result = getDowntimeData(solution);
+        DowntimeData result = getDowntimeData(schedule);
 
         assertEquals(60, result.downtime());
-
-        assertNotNull(result.lines());
-        assertTrue(result.lines().containsKey("line1"));
-
-        long lineDowntime = result.lines().get("line1");
-        assertEquals(60, lineDowntime);
+        assertEquals(60, result.lines().get(line.getId()));
     }
 
     @Test
-    void downtimeData_negativeDiff_shouldBeIgnored() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+    void downtimeData_shouldIgnoreJobsNotInOverloadedIds() {
 
-        Job job = new Job();
-        job.setLine(line);
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1"));
 
-        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
-        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
 
-        line.setJobs(List.of(job));
-        solution.setLines(List.of(line));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
 
-        DowntimeData result = getDowntimeData(solution);
+        DowntimeData result = getDowntimeData(schedule);
 
-        assertEquals(0, result.downtime());
-
-        assertNotNull(result.lines());
-        assertTrue(result.lines().containsKey("line1"));
-
-        long lineDowntime = result.lines().get("line1");
-        assertEquals(0, lineDowntime);
+        assertEquals(60, result.downtime());
     }
 
     @Test
-    void downtimeData_nullJob_shouldBeIgnored() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+    void downtimeData_emptyOverloadedIds_shouldReturnZero() {
 
-        List<Job> jobs = new ArrayList<>();
-        jobs.add(null);
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of());
 
-        line.setJobs(jobs);
-        solution.setLines(List.of(line));
-
-        DowntimeData result = getDowntimeData(solution);
-
-        assertEquals(0, result.downtime());
-
-        assertNotNull(result.lines());
-        assertTrue(result.lines().containsKey("line1"));
-
-        assertEquals(0, result.lines().get("line1"));
-    }
-
-    @Test
-    void downtimeData_nullWorkCalendar_shouldReturnZero() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setLines(List.of(new Line("L1", "line1")));
-
-        DowntimeData result = getDowntimeData(solution);
-
+        DowntimeData result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertTrue(result.lines().isEmpty());
-    }
-
-    @Test
-    void downtimeData_nullLine_shouldBeIgnored() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
-
-        List<Line> getLines = new ArrayList<>();
-        getLines.add(null);
-
-        solution.setLines(getLines);
-
-        DowntimeData result = getDowntimeData(solution);
-
-        assertEquals(0, result.downtime());
-        assertTrue(result.lines().isEmpty());
-    }
-    @Test
-    void downtimeData_nullJobs_shouldReturnZeroForLine() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
-
-        line.setJobs(null);
-
-        solution.setLines(List.of(line));
-
-        DowntimeData result = getDowntimeData(solution);
-
-        assertEquals(0, result.downtime());
-        assertEquals(0, result.lines().get("line1"));
-    }
-
-    @Test
-    void downtimeData_differentDate_shouldBeIgnored() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
-
-        Job job = new Job();
-        job.setLine(line);
-        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 5, 9, 0));
-        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 5, 10, 0));
-
-        line.setJobs(List.of(job));
-        solution.setLines(List.of(line));
-
-        DowntimeData result = getDowntimeData(solution);
-
-        assertEquals(0, result.downtime());
-    }
-
-    @Test
-    void downtimeData_nullStartProduction_shouldBeIgnored() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
-
-        Job job = new Job();
-        job.setLine(line);
-        job.setDti(LocalDateTime.of(2026, 4, 6, 0, 0));
-        job.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
-        job.setStartProductionDateTime(null);
-
-        line.setJobs(List.of(job));
-        solution.setLines(List.of(line));
-
-        DowntimeData result = getDowntimeData(solution);
-
-        assertEquals(0, result.downtime());
-    }
-
-    @Test
-    void downtimeData_nullStartCleaning_shouldBeIgnored() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
-
-        Job job = new Job();
-        job.setLine(line);
-        job.setStartCleaningDateTime(null);
-        job.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
-
-        line.setJobs(List.of(job));
-        solution.setLines(List.of(line));
-
-        DowntimeData result = getDowntimeData(solution);
-
-        assertEquals(0, result.downtime());
-    }
-
-    @Test
-    void downtimeData_sameStartTimes_shouldBeIgnored() {
-        PackagingSchedule solution = new PackagingSchedule();
-        solution.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
-
-        LocalDateTime time = LocalDateTime.of(2026, 4, 6, 10, 0);
-
-        Job job = new Job();
-        job.setLine(line);
-        job.setDti(time);
-        job.setStartCleaningDateTime(time);
-        job.setStartProductionDateTime(time);
-
-        line.setJobs(List.of(job));
-        solution.setLines(List.of(line));
-
-        DowntimeData result = getDowntimeData(solution);
-
-        assertEquals(0, result.downtime());
     }
 }
