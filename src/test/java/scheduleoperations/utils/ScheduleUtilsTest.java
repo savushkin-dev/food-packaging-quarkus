@@ -453,7 +453,7 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_lineIsnull_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));;
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
         schedule.setOverloadedIds(Set.of("1"));
         schedule.setLines(Arrays.asList(line, null));
 
@@ -465,7 +465,7 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_PlanningDateIsNull_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));;
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
         schedule.setOverloadedIds(Set.of("1"));
        
         schedule.getWorkCalendar().setPlanningDate(null);
@@ -477,7 +477,7 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_lineJobsIsNull_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));;
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
         schedule.setOverloadedIds(Set.of("1"));
         Line line2 = new Line("line2", "Line 2");
         schedule.setLines(Arrays.asList(line, line2));
