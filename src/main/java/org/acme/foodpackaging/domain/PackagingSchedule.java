@@ -11,7 +11,6 @@ import ai.timefold.solver.core.api.domain.solution.ProblemFactProperty;
 import ai.timefold.solver.core.api.domain.valuerange.ValueRangeProvider;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 import ai.timefold.solver.core.api.solver.SolverStatus;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -38,8 +37,6 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
     private List<Job> deletedMaintenance;
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private Set<String> overloadedIds;
     private LocalDate dti;
     private String version;
@@ -67,14 +64,6 @@ public class PackagingSchedule {
             workCalendar.setToDate(startDate.plusDays(1));
             this.dti = startDate;
         }
-    }
-
-    public Set<String> getOverloadedIds() {
-        return overloadedIds == null ? new HashSet<>() : new HashSet<>(overloadedIds);
-    }
-
-    public void setOverloadedIds(Set<String> overloadedIds) {
-        this.overloadedIds = overloadedIds == null ? new HashSet<>() : new HashSet<>(overloadedIds);
     }
     // ************************************************************************
     // Getters and setters
