@@ -446,4 +446,38 @@ class LineServiceTest {
         job.setEndDateTime(endDateTime);
         return job;
     }
+
+    @Test
+    void setMaxEndDateTimeByLastJob_WhenSolutionLinesIsNull(){
+        PackagingSchedule solution = new PackagingSchedule();
+         lineService.setMaxEndDateTimeByLastJob(solution);
+
+         assertNull(solution.getLines());
+    }
+
+    @Test
+    void setMaxEndDateTimeByLastJob_WhenLineJobsIsEmpty() {
+        PackagingSchedule solution = new PackagingSchedule();
+        Line line = new Line("L1", "Line1");
+
+        line.setJobs(new ArrayList<>());
+        solution.setLines(List.of(line));
+
+        lineService.setMaxEndDateTimeByLastJob(solution);
+        assertTrue(solution.getLines().getFirst().getJobs().isEmpty());
+    }
+
+    @Test
+    void setMaxEndDateTimeByLastJob() {
+        PackagingSchedule solution = new PackagingSchedule();
+        Line line = new Line("L1", "Line1");
+        Job j1 = new Job();
+        j1.setEndDateTime(LocalDateTime.of(2026, 3,31, 1,0));
+
+        line.setJobs(List.of(j1));
+        solution.setLines(List.of(line));
+
+        lineService.setMaxEndDateTimeByLastJob(solution);
+        assertEquals(LocalDateTime.of(2026,3,31, 21,0),line.getMaxEndTime());
+    }
 }

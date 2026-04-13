@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import org.acme.foodpackaging.persistence.converter.BooleanToIntegerConverter;
 import org.acme.foodpackaging.record.DbJobRow;
 
 import java.sql.Timestamp;
@@ -35,6 +36,7 @@ import java.util.UUID;
                         @ColumnResult(name = "SNM", type = String.class),
                         @ColumnResult(name = "EMK", type = Integer.class),
                         @ColumnResult(name = "KOLMP", type = Integer.class),
+                        @ColumnResult(name = "STICKER", type =  Integer.class),
                 }
         )
 )
@@ -86,13 +88,17 @@ public class BdVzpmc extends PanacheEntityBase {
     @Column(name = "KOLMP")
     private Integer placePlan;
 
+    @Convert(converter = BooleanToIntegerConverter.class)
+    @Column(name = "STICKER")
+    private Boolean isHandPackaging;
+
     @Override
     public String toString() {
-        return "BdVzPmc{" +
+        return "BdVzpmc{" +
                 "id=" + id +
                 ", kmc='" + kmc + '\'' +
                 ", startDateTime=" + startDateTime +
-                ", np=" + np + 
+                ", np=" + np +
                 ", quantity=" + quantity +
                 ", priority=" + priority +
                 ", snpz=" + snpz +
@@ -102,7 +108,10 @@ public class BdVzpmc extends PanacheEntityBase {
                 ", startProductionDateTime=" + startProductionDateTime +
                 ", endDateTime=" + endDateTime +
                 ", duration=" + duration +
-                '}';    
+                ", emk=" + emk +
+                ", placePlan=" + placePlan +
+                ", isHandPackaging=" + isHandPackaging +
+                '}';
     }
 }
 

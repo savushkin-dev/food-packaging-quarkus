@@ -21,5 +21,6 @@ public record ProductionJobParams(
         Duration duration,
         LocalDateTime startProductionDateTime,
         int emk,
-        int placePlan
+        int placePlan,
+        boolean handPackaging
 ) {}

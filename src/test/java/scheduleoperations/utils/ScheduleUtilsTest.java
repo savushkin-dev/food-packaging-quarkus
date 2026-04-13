@@ -237,13 +237,10 @@ class ScheduleUtilsTest {
     @Test
     void convertsMapToList() {
         Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
-        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1",
-                "Product 1", 18, 100);
-        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2",
-                "Product 2", 19, 100);
-        DbJobRow row3 = new DbJobRow(timestamp, "KMC3", 3, 30, 300.0, timestamp, timestamp, 180, 3L, 3, "L3",
-                "Product 3", 20, 100);
-
+        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        DbJobRow row3 = new DbJobRow(timestamp, "KMC3", 3, 30, 300.0, timestamp, timestamp, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
+        
         Map<Long, DbJobRow> rows = new HashMap<>();
         rows.put(1L, row1);
         rows.put(2L, row2);
@@ -279,11 +276,9 @@ class ScheduleUtilsTest {
     @Test
     void returnListWithAllValues() {
         Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
-        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1",
-                "Product 1", 18, 100);
-        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2",
-                "Product 2", 19, 100);
-
+        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        
         Map<Long, DbJobRow> rows = Map.of(1L, row1, 2L, row2);
 
         List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);

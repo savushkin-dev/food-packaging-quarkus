@@ -13,9 +13,9 @@ public class BdVpmcRepository implements PanacheRepository<BdVzpmc> {
                              LocalDateTime startProductionDateTime,
                              LocalDateTime endDateTime,
                              Integer duration,
-                             String lineId) {
-        update("startProductionDateTime = ?1, endDateTime = ?2, duration = ?3, lineId = ?4 where snpz = ?5",
-                startProductionDateTime, endDateTime, duration, lineId, snpz);
+                             String lineId, Boolean isHandPackaging) {
+        update("startProductionDateTime = ?1, endDateTime = ?2, duration = ?3, lineId = ?4, isHandPackaging =?5 where snpz = ?6",
+                startProductionDateTime, endDateTime, duration, lineId, isHandPackaging, snpz);
     }
 
     public BdVzpmc findBySnpz(Long snpz) {
