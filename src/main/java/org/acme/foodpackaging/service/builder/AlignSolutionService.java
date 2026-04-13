@@ -308,7 +308,5 @@ public class AlignSolutionService {
     private record PlanTarget(Job job, int index) {}
     private record NpBounds(Job min, Job max) {}
 
-    private Integer safe(Integer value){
-        return value != null ? value : 0;
-    }
 }
+
