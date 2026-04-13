@@ -213,6 +213,22 @@ class AlignSolutionServiceTest {
     // ============================================================
 
     @Test
+    void alignByFactDuration_nullMaintenanceTypeId(){
+        Job j1 = getPackagingMaintenance();
+        Job j2 = getPackagingMaintenance();
+
+        j1.setMaintenanceTypeId(null);
+        j2.setMaintenanceTypeId(null);
+
+        line.setJobs(new ArrayList<>(List.of(j1, j2)));
+        solution.setJobs(new ArrayList<>(List.of(j1, j2)));
+
+        alignSolutionService.alignByFactDuration(solution);
+
+        assertFalse(solution.getJobs().isEmpty());
+    }
+
+    @Test
     void alignLineStartByFact_whenFactEqualsPlan_shouldNotAddMaintenance() {
 
         Product product = createProduct();

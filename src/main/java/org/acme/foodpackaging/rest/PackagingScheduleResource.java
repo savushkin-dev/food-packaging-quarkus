@@ -16,6 +16,7 @@ import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.upload.*;
+import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.record.FrontendDataWrapper;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.record.JobSelection;
@@ -51,20 +52,12 @@ public class PackagingScheduleResource {
 
     @Inject
     public PackagingScheduleResource(
-            PackagingScheduleRepository repository,
-            SolverManager<PackagingSchedule, String> solverManager,
-            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager,
-            MaintenanceJob maintenanceJob,
-            JobService jobService,
-            MoveJobsService moveJobsService,
-            SortByNpService sortByNpService,
-            PinService pinService,
-            ScheduleBuilder scheduleBuilder,
-            ScheduleBuilderByVersion builderByVersion,
-            LoadDataService loadDataService,
-            UploadDataService uploadDataService,
-            JobRefreshService jobRefreshService,
-            JobSaveService jobSaveService, SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
+            PackagingScheduleRepository repository, SolverManager<PackagingSchedule, String> solverManager,
+            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager, MaintenanceJob maintenanceJob,
+            JobService jobService, MoveJobsService moveJobsService, SortByNpService sortByNpService, PinService pinService,
+            ScheduleBuilder scheduleBuilder, ScheduleBuilderByVersion builderByVersion, LoadDataService loadDataService,
+            UploadDataService uploadDataService, JobRefreshService jobRefreshService, JobSaveService jobSaveService,
+            SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -269,8 +262,11 @@ public class PackagingScheduleResource {
     @Path("/selection")
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelection dto) {
 
+        PackagingSchedule solution = repository.readForSession(sessionId);
+        solution.getOverloadedIds().clear();
+
         PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
-                repository.readForSession(sessionId));
+                solution);
 
         solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId,updatedSchedule);
@@ -433,11 +429,9 @@ public class PackagingScheduleResource {
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
         repository.writeForSession(sessionId, finalSchedule);
 
-        return Response.ok(Map.of(
-                ApiFields.STATUS, "stopped",
-                ApiFields.SESSION_ID, sessionId,
-                ApiFields.MESSAGE, "Solving stopped"
-        )).build();
+        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
+
+        return Response.ok(response).build();
     }
     /**
      * Перемещение задач на линиях
@@ -565,8 +559,9 @@ public class PackagingScheduleResource {
         }
 
         jobSaveService.saveJobsByType(bestSolution);
-        return Response.ok(Map.of(ApiFields.MESSAGE, "Saved successfully")).build();
+        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
 
+        return Response.ok(response).build();
     }
 
     /**

@@ -11,7 +11,6 @@ import org.acme.foodpackaging.exception.service.InvalidSolutionException;
 import org.acme.foodpackaging.exception.service.SolutionParsingException;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @ApplicationScoped

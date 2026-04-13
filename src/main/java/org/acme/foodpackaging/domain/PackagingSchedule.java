@@ -1,9 +1,7 @@
 package org.acme.foodpackaging.domain;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import ai.timefold.solver.core.api.domain.solution.PlanningEntityCollectionProperty;
 import ai.timefold.solver.core.api.domain.solution.PlanningScore;
@@ -39,6 +37,7 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
     private List<Job> deletedMaintenance;
+    private Set<String> overloadedIds;
     private LocalDate dti;
     private String version;
 
@@ -52,6 +51,7 @@ public class PackagingSchedule {
     public PackagingSchedule() {
         maintenanceProduct = createMaintenanceProduct();
         this.deletedMaintenance = new ArrayList<>();
+        this.overloadedIds = new HashSet<>();
     }
 
     public boolean isEmptySolution() {
