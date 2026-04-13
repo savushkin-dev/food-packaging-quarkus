@@ -86,6 +86,17 @@ public class LineService {
         }
     }
 
+    public void setMaxEndDateTimeByLastJob(PackagingSchedule solution){
+
+        if(solution.getLines() == null) return;
+        for(Line line : solution.getLines()){
+            if(line.getJobs().isEmpty()){
+                continue;
+            }
+            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
+        }
+    }
+
     private LocalDateTime findMaxEndTime(List<Line> lines) {
 
         return lines.stream()

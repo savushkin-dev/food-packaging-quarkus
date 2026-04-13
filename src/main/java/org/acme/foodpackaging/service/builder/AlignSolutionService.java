@@ -44,7 +44,7 @@ public class AlignSolutionService {
         Iterator<Job> it = jobs.iterator();
         while (it.hasNext()) {
             Job job = it.next();
-            if (job.isMaintenance() && job.getMaintenanceTypeId() == 7) {
+            if (job.isMaintenance() && safe(job.getMaintenanceTypeId()) == 7) {
                 job.setFDel((short)1);
                 schedule.getDeletedMaintenance().add(job);
                 it.remove();
@@ -58,7 +58,7 @@ public class AlignSolutionService {
             }
             List<Job> lineJobs = line.getJobs();
 
-            lineJobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId() == 7);
+            lineJobs.removeIf(job -> job.isMaintenance() && safe(job.getMaintenanceTypeId()) == 7);
             fixLineJobs(line);
             fixPinnedJobs(line);
         }
@@ -78,8 +78,6 @@ public class AlignSolutionService {
             long planMinutes = calculatePlanMinutes(job);
             long diff = factMinutes - planMinutes;
             if(diff > 0){
-                job.setPlanEndDateTime(job.getEndDateTime());
-                job.setEndDateTime(job.getPlanEndDateTime().plusMinutes(diff));
                 job.setDelayDuration(Duration.ofMinutes(diff));
                 job.setDuration(Duration.ofMinutes(factMinutes));
                 job.setFinalDuration(true);
@@ -90,19 +88,24 @@ public class AlignSolutionService {
     }
 
     // Поиск партий, которые пересекаются по времени на линиях
-    private List<Job> findTimeIntersections(Job job, List<Job> lineJobs){
+    private List<Job> findTimeIntersections(Job job, List<Job> lineJobs) {
 
         List<Job> jobsWithFactData = lineJobs.stream()
-                .filter(j -> j.getCameraStart()!=null)
-                .filter(j -> j.getCameraEnd()!=null)
-                .filter(j -> j.getLine().getId().equals(j.getLineIdFact())).toList();
+                .filter(j -> j.getCameraStart() != null)
+                .filter(j -> j.getCameraEnd() != null)
+                .filter(j -> j.getLine().getId().equals(j.getLineIdFact()))
+                .toList();
 
         LocalDateTime cameraStart = job.getCameraStart();
         LocalDateTime cameraEnd = job.getCameraEnd();
 
-       return jobsWithFactData.stream()
-                .filter(j -> j.getCameraStart().isAfter(cameraStart))
-                .filter(j -> j.getCameraEnd().isBefore(cameraEnd)).toList();
+        return jobsWithFactData.stream()
+                .filter(j -> j != job)
+                .filter(j ->
+                        j.getCameraStart().isBefore(cameraEnd) &&
+                                j.getCameraEnd().isAfter(cameraStart)
+                )
+                .toList();
     }
 
     // Расчет времени фасовки других партий, в то время как не заверешна предыдущая
@@ -125,10 +128,10 @@ public class AlignSolutionService {
             return 0;
         }
 
-        return ceilMinutes(Duration.between(
-                job.getStartProductionDateTime(),
-                job.getEndDateTime()
-        ));
+            return ceilMinutes(Duration.between(
+                    job.getStartProductionDateTime(),
+                    job.getPlanEndDateTime()
+            ));
     }
 
     private Long calculateFactMinutes(Job job) {
@@ -303,4 +306,7 @@ public class AlignSolutionService {
     private record PlanTarget(Job job, int index) {}
     private record NpBounds(Job min, Job max) {}
 
+    private Integer safe(Integer value){
+        return value != null ? value : 0;
+    }
 }

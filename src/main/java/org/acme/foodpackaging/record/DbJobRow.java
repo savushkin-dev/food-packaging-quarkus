@@ -21,5 +21,10 @@ public record DbJobRow(
         String lineId,                      // krc
         String shortName,                // SNM
         Integer emk,
-        Integer placePlan
-) {}
+        Integer placePlan,
+        Integer sticker
+) {
+        public boolean isHandPackaging() {
+                return sticker != null && sticker > 0;
+        }
+}
