@@ -23,7 +23,7 @@ public class SqlQueries {
         return """
             SELECT
                 v.DTI, v.KMC, v.NP, v.KOLEV, v.MASSA, v.PDTN,
-                v.PDTO, v.PDUR, v.SNPZ, v.UX, v.KRC, m.SNM, v.EMK, v.KOLMP
+                v.PDTO, v.PDUR, v.SNPZ, v.UX, v.KRC, m.SNM, v.EMK, v.KOLMP, v.STICKER
             FROM [%s].[dbo].[BD_VZPMC] AS v
             JOIN [%s].[dbo].[NS_MC] AS m
                 ON v.KMC = m.KMC
@@ -116,7 +116,7 @@ public class SqlQueries {
                 MIN(DTS) AS DTSTART,
                 MAX(DTS) AS DTEND
             FROM [%s].[dbo].[PM_LOG] WITH (NOLOCK)
-            WHERE IDBATCH = ? AND KD = 71
+            WHERE IDBATCH = ?
             """.formatted(prommarkSchema);
     }
 

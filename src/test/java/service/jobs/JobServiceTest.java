@@ -95,7 +95,7 @@ class JobServiceTest {
         return new DbJobRow(
                 start, "KMC1", 10, 3000, 2.0,
                 start, end, 30, 123L, 1,
-                "L1", "Test Job", 18, 100
+                "L1", "Test Job", 18, 100, 1
         );
     }
 
@@ -112,7 +112,7 @@ class JobServiceTest {
                     start, "KMC1",
                     10, 3000, 2.0,
                     start, end, 34, null, 1,
-                    "L1", "Test Job", 18, 100
+                    "L1", "Test Job", 18, 100, 1
             );
         }
 
@@ -194,7 +194,7 @@ void initSolutionJobList_shouldSkipJobsWithoutLineId() {
             jobRow.mass(), jobRow.startProductionDateTime(),
             jobRow.endDateTime(), jobRow.duration(),
             jobRow.snpz(), jobRow.priority(),
-            null, jobRow.shortName(), 18, 100
+            null, jobRow.shortName(), 18, 100, 1
     );
 
     Product product = new Product(
@@ -540,9 +540,8 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertEquals(delayData.getEndDateTime().toLocalDateTime(), schedule.getJobs().getFirst().getEndDateTime());
         assertEquals(delayData.getMaintenanceNote(), schedule.getJobs().getFirst().getDelayNote());
 
-        assertTrue(schedule.getJobs().getFirst().isFinalDuration());
         assertEquals(6, schedule.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(40, schedule.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals(34, schedule.getJobs().getFirst().getDuration().toMinutes());
     }
 
     @Test
@@ -567,11 +566,8 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertEquals(34, schedule.getJobs().getFirst().getDuration().toMinutes());
         assertEquals("null", schedule.getJobs().getFirst().getId());
 
-        assertNull(schedule.getJobs().getFirst().getPlanEndDateTime());
         assertNull(schedule.getJobs().getFirst().getDelayNote());
         assertNull( schedule.getJobs().getFirst().getDelayDuration());
-
-        assertFalse(schedule.getJobs().getFirst().isFinalDuration());
     }
 
     @Test

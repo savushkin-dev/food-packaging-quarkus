@@ -62,7 +62,8 @@ public class JobRefreshService {
     
         job.setHandPackaging(isHandPackaging);
         job.setMinStartTime(solution.getWorkCalendar().getMinStartDateTime());
-    
+
+        solution.getOverloadedIds().add(snpz.toString());
         solution.getJobs().add(job);
     }
 

@@ -26,10 +26,17 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
     @Inject
     LogService logService;
 
+    private static final String DEFAULT_SESSION_ID = "default_session_id";
+
     @Override
     public void filter(ContainerRequestContext requestContext) {
         String path = requestContext.getUriInfo().getPath();
+        String method = requestContext.getMethod();
         String login = requestContext.getHeaderString("X-Session-Id");
+
+        if (shouldSkip(login, method)) {
+            return;
+        }
 
         InputStream entityStream = requestContext.getEntityStream();
         String body;
@@ -45,6 +52,13 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         String ip = getIp(requestContext);
 
         logService.logRequest(login, ip, path.substring(path.lastIndexOf('/') + 1), body);
+    }
+
+    private boolean shouldSkip(String login, String method) {
+        if (login == null || login.isBlank() || DEFAULT_SESSION_ID.equalsIgnoreCase(login)) {
+            return true;
+        }
+        return "GET".equalsIgnoreCase(method);
     }
 
     public String getIp(ContainerRequestContext requestContext){
@@ -66,3 +80,4 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         }
     }
 }
+

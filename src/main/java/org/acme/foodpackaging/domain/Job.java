@@ -2,6 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.function.UnaryOperator;
 
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
 import ai.timefold.solver.core.api.domain.entity.PlanningPin;
@@ -10,6 +11,9 @@ import ai.timefold.solver.core.api.domain.variable.CascadingUpdateShadowVariable
 import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 import org.acme.foodpackaging.record.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -46,6 +50,8 @@ public class Job {
 
     private Product product;
     private Duration duration;
+
+    @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration delayDuration;
     private boolean maintenance;
     private boolean handPackaging;
@@ -60,7 +66,6 @@ public class Job {
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
-    private LocalDateTime planEndDateTime;
     private Integer emk;
     private String placeFactInfo;
     private String delayNote;
@@ -116,6 +121,7 @@ public class Job {
                 : params.startProductionDateTime().plus(params.duration());
         this.emk = params.emk();
         this.placePlan = params.placePlan();
+        this.handPackaging = params.handPackaging();
     }
 
     /**
@@ -151,7 +157,7 @@ public class Job {
         DbJobRow row,
         Product product,
         LocalDateTime startProductionDateTime,
-        java.util.function.UnaryOperator<String> nameCleaner
+        UnaryOperator<String> nameCleaner
 ) {
         String jobName = row.shortName() != null ? row.shortName().trim() : "";
         if (nameCleaner != null) {
@@ -171,7 +177,8 @@ public class Job {
                 row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
                 startProductionDateTime,
                 row.emk() != null ? row.emk() : 0,
-                row.placePlan() != null ? row.placePlan() : 0
+                row.placePlan() != null ? row.placePlan() : 0,
+                row.isHandPackaging()
         ));
     }
 
@@ -184,7 +191,7 @@ public class Job {
      * @param startProductionDateTime The start production date/time (can be null)
      * @return A new maintenance Job instance
      */
-    public static Job fromDbMaintenanceRow(org.acme.foodpackaging.dto.DbMaintenanceRow row, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
+    public static Job fromDbMaintenanceRow(DbMaintenanceRow row, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
         Job job = new Job(new MaintenanceJobParams(
                 String.valueOf(row.getFId()),
                 row.getLineId(),
@@ -256,19 +263,26 @@ public class Job {
     public Duration getDuration() {
         if(isMaintenance() || isFinalDuration()) return duration;
 
-        Integer speed;
-        if (isHandPackaging()) {
-            speed = getHandPackagingSpeed();
-        } else {
-            speed = getSpeed();
-        }
+        return calculateDuration();
+    }
 
-        if (speed == null || speed <= 0) {
-            return Duration.ZERO;
-        }
-        final int IF_CHANGING_PACKAGING = 4;
-        long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
-        return Duration.ofMinutes(minutes);
+   private  Duration calculateDuration(){
+
+       Integer speed;
+       if (isHandPackaging()) {
+           speed = getHandPackagingSpeed();
+       } else {
+           speed = getSpeed();
+       }
+
+       if (speed == null || speed <= 0) {
+           return Duration.ZERO;
+       }
+
+       final int IF_CHANGING_PACKAGING = 4;
+       long minutes =  (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+
+       return Duration.ofMinutes(minutes);
     }
 
     @JsonIgnore
@@ -281,6 +295,14 @@ public class Job {
     public Integer getHandPackagingSpeed() {
         if (line == null || product == null || product.getType() == null) return null;
         return SpeedCacheUtils.getHandPackagingSpeed(line.getId(), product.getType());
+    }
+
+    public LocalDateTime getPlanEndDateTime(){
+
+        if(startProductionDateTime == null) return null;
+
+        Duration planDuration = calculateDuration();
+        return startProductionDateTime.plusMinutes(planDuration.toMinutes());
     }
     // ************************************************************************
     // Complex methods
@@ -302,7 +324,6 @@ public class Job {
         setStartCleaningDateTime(startCleaning);
         setStartProductionDateTime(startProduction);
         setEndDateTime(startProduction == null ? null : startProduction.plus(getDuration()));
-        setPlanEndDateTime(delayDuration == null || endDateTime == null ? null : endDateTime.minus(delayDuration));
     }
 
     private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {

@@ -87,6 +87,7 @@ void applySelection_shouldAddJobIfSelected() {
     );
 
     assertEquals(1, solution.getJobs().size());
+    assertTrue(solution.getOverloadedIds().contains("1"));
 }
 
 @Test
@@ -224,6 +225,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
         );
 
         assertFalse(solution.getJobs().contains(job));
+        assertTrue(solution.getOverloadedIds().isEmpty());
         assertNull(job.getLine());
     }
 

@@ -230,7 +230,7 @@ public class JobSaveService {
                 startProduction,
                 endDateTime,
                 calculateDurationMinutes(startProduction, endDateTime),
-                job.getLine().getId()
+                job.getLine().getId(), job.isHandPackaging()
         );
     }
 

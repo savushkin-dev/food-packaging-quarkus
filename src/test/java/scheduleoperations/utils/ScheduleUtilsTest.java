@@ -2,6 +2,7 @@ package scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.initLinesJobList;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ScheduleUtilsTest {
@@ -29,7 +30,7 @@ class ScheduleUtilsTest {
         // Создание продуктов
         Product maintenanceProduct = new Product("MAINTENANCE", "Maintenance Product");
         Product normalProduct = new Product("NORMAL", "Normal Product");
-        product =  new Product("1", "Vanilla");
+        product = new Product("1", "Vanilla");
 
         // Инициализация карт cleaningDurations
         Map<Product, Duration> cleaningForMaintenance = new HashMap<>();
@@ -55,7 +56,7 @@ class ScheduleUtilsTest {
 
         // Создание задач
         job1 = new Job("1", "Job 1", normalProduct, null, 1, false, null);
-        job2 = new Job("2", "Job 2", normalProduct,  null, 1, false, null);
+        job2 = new Job("2", "Job 2", normalProduct, null, 1, false, null);
         job3 = new Job("3", "Job 3", maintenanceProduct, null, 1, false, null);
 
         line.setJobs(new ArrayList<>(Arrays.asList(job1, job2, job3)));
@@ -135,7 +136,7 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void setLineStartDateTime() {
+    void setLinestartDateTime() {
         LocalDateTime newStart = LocalDateTime.now().plusDays(1);
         ScheduleUtils.setLineStartDateTime(line, newStart);
 
@@ -172,15 +173,15 @@ class ScheduleUtilsTest {
         Job jobWithLine = new Job("1", "Job 1", product, null, 1, false, null);
         Job jobWithoutLine = new Job("2", "Job 2", product, null, 1, false, null);
         Job anotherJobWithLine = new Job("3", "Job 3", product, null, 1, false, null);
-        
+
         jobWithLine.setLine(line);
-      
+
         anotherJobWithLine.setLine(line);
-        
+
         List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithLine, jobWithoutLine, anotherJobWithLine));
-        
+
         ScheduleUtils.removeJobsWithoutLine(jobs);
-        
+
         assertEquals(2, jobs.size());
         assertTrue(jobs.contains(jobWithLine));
         assertTrue(jobs.contains(anotherJobWithLine));
@@ -191,14 +192,14 @@ class ScheduleUtilsTest {
     void keepAllJobsWhenAllHaveLines() {
         Job jobWithLine1 = new Job("1", "Job 1", product, null, 1, false, null);
         Job jobWithLine2 = new Job("2", "Job 2", product, null, 1, false, null);
-        
+
         jobWithLine1.setLine(line);
         jobWithLine2.setLine(line);
-        
+
         List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithLine1, jobWithLine2));
-        
+
         ScheduleUtils.removeJobsWithoutLine(jobs);
-        
+
         assertEquals(2, jobs.size());
         assertTrue(jobs.contains(jobWithLine1));
         assertTrue(jobs.contains(jobWithLine2));
@@ -206,39 +207,39 @@ class ScheduleUtilsTest {
 
     @Test
     void removeAllJobsWhenAllHaveNullLine() {
-      
+
         Job jobWithNullLine1 = new Job("1", "Job 1", product, null, 1, false, null);
         Job jobWithNullLine2 = new Job("2", "Job 2", product, null, 1, false, null);
-        
+
         List<Job> jobs = new ArrayList<>(Arrays.asList(jobWithNullLine1, jobWithNullLine2));
-        
+
         ScheduleUtils.removeJobsWithoutLine(jobs);
-        
+
         assertTrue(jobs.isEmpty());
     }
 
     @Test
     void handlesNullList() {
-       
+
         assertDoesNotThrow(() -> ScheduleUtils.removeJobsWithoutLine(null));
     }
 
     @Test
     void handlesEmptyList() {
-    
+
         List<Job> jobs = new ArrayList<>();
-        
+
         ScheduleUtils.removeJobsWithoutLine(jobs);
-        
+
         assertTrue(jobs.isEmpty());
     }
 
     @Test
     void convertsMapToList() {
         Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
-        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100);
-        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100);
-        DbJobRow row3 = new DbJobRow(timestamp, "KMC3", 3, 30, 300.0, timestamp, timestamp, 180, 3L, 3, "L3", "Product 3", 20, 100);
+        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        DbJobRow row3 = new DbJobRow(timestamp, "KMC3", 3, 30, 300.0, timestamp, timestamp, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
         
         Map<Long, DbJobRow> rows = new HashMap<>();
         rows.put(1L, row1);
@@ -246,7 +247,7 @@ class ScheduleUtilsTest {
         rows.put(3L, row3);
 
         List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);
-        
+
         assertNotNull(result);
         assertEquals(3, result.size());
         assertTrue(result.contains(row1));
@@ -257,7 +258,7 @@ class ScheduleUtilsTest {
     @Test
     void returnEmptyListForNullMap() {
         List<DbJobRow> result = ScheduleUtils.getDbJobRowList(null);
-        
+
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -265,9 +266,9 @@ class ScheduleUtilsTest {
     @Test
     void returnEmptyListForEmptyMap() {
         Map<Long, DbJobRow> emptyMap = new HashMap<>();
-        
+
         List<DbJobRow> result = ScheduleUtils.getDbJobRowList(emptyMap);
-        
+
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -275,20 +276,20 @@ class ScheduleUtilsTest {
     @Test
     void returnListWithAllValues() {
         Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
-        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100);
-        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100);
+        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
         
         Map<Long, DbJobRow> rows = Map.of(1L, row1, 2L, row2);
-        
+
         List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);
-        
+
         assertEquals(2, result.size());
         // Verify all values from map are in the list
         assertEquals(2, result.stream().filter(r -> r.equals(row1) || r.equals(row2)).count());
     }
 
     @Test
-    void initLinesJobList_WhenLinesListNotNull(){
+    void initLinesJobList_WhenLinesListNotNull() {
 
         Job j = new Job();
         j.setLine(line);
@@ -301,7 +302,7 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void initLinesJobList_WhenLinesListIsNull(){
+    void initLinesJobList_WhenLinesListIsNull() {
 
         Job j = new Job();
         j.setLine(line);
@@ -311,5 +312,173 @@ class ScheduleUtilsTest {
 
         initLinesJobList(schedule);
         assertNull(schedule.getLines());
+    }
+
+    @Test
+    void downtimeData_shouldReturnCorrectDuration_onlyForOverloadedJobs() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1", "2"));
+
+        job1.setLine(line);
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 30));
+
+        job2.setLine(line);
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 30));
+
+        DowntimeData result = getDowntimeData(schedule);
+
+        assertEquals(60, result.downtime());
+        assertEquals(60, result.lines().get(line.getId()));
+    }
+
+    @Test
+    void downtimeData_shouldIgnoreNullIdAndJob() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1", "2"));
+
+        job1.setLine(line);
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 30));
+
+        job2.setLine(line);
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 30));
+
+        job2.setId(null);
+        line.setJobs(Arrays.asList(job1, job2, null));
+
+        DowntimeData result = getDowntimeData(schedule);
+
+        assertEquals(30, result.downtime());
+        assertEquals(30, result.lines().get(line.getId()));
+    }
+
+    @Test
+    void downtimeData_shouldIgnoreJobsNotInOverloadedIds() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1"));
+
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
+
+        DowntimeData result = getDowntimeData(schedule);
+
+        assertEquals(60, result.downtime());
+    }
+
+    @Test
+    void downtimeData_isNegativeCleaning() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1", "2"));
+
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+
+        DowntimeData result = getDowntimeData(schedule);
+
+        assertEquals(60, result.downtime());
+    }
+
+    @Test
+    void downtimeData_startProductionIsNull_shouldReturnZero() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1"));
+
+        job1.setStartCleaningDateTime(null);
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+        job2.setStartProductionDateTime(null);
+
+        DowntimeData result = getDowntimeData(schedule);
+
+        assertEquals(0, result.downtime());
+    }
+
+    @Test
+    void downtimeData_emptyOverloadedIds_shouldReturnZero() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of());
+
+        DowntimeData result = getDowntimeData(schedule);
+        assertEquals(0, result.downtime());
+        assertTrue(result.lines().isEmpty());
+    }
+
+    @Test
+    void downtimeData_solutionIsnNull_shouldReturnZero() {
+
+        schedule = null;
+        DowntimeData result = getDowntimeData(schedule);
+        assertEquals(0, result.downtime());
+        assertTrue(result.lines().isEmpty());
+    }
+
+    @Test
+    void downtimeData_WorkCalendarIsNull_shouldReturnZero() {
+
+        DowntimeData result = getDowntimeData(schedule);
+        assertEquals(0, result.downtime());
+        assertTrue(result.lines().isEmpty());
+    }
+
+    @Test
+    void downtimeData_LinesIsNull_shouldReturnZero() {
+
+        schedule.setLines(null);
+        DowntimeData result = getDowntimeData(schedule);
+        assertEquals(0, result.downtime());
+        assertTrue(result.lines().isEmpty());
+    }
+
+    @Test
+    void downtimeData_lineIsnull_shouldReturnZero() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1"));
+        schedule.setLines(Arrays.asList(line, null));
+
+        DowntimeData result = getDowntimeData(schedule);
+        assertEquals(0, result.downtime());
+        assertEquals(1, result.lines().size());
+    }
+
+    @Test
+    void downtimeData_PlanningDateIsNull_shouldReturnZero() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1"));
+       
+        schedule.getWorkCalendar().setPlanningDate(null);
+        DowntimeData result = getDowntimeData(schedule);
+        assertEquals(0, result.downtime());
+        assertTrue(result.lines().isEmpty());
+    }
+
+    @Test
+    void downtimeData_lineJobsIsNull_shouldReturnZero() {
+
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setOverloadedIds(Set.of("1"));
+        Line line2 = new Line("line2", "Line 2");
+        schedule.setLines(Arrays.asList(line, line2));
+
+        DowntimeData result = getDowntimeData(schedule);
+        assertEquals(0, result.downtime());
+        assertEquals(2, result.lines().size());
     }
 }
