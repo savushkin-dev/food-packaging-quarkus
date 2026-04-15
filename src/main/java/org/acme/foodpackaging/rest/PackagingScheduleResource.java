@@ -14,6 +14,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.DowntimeData;
@@ -25,6 +26,7 @@ import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.*;
 
+import java.time.LocalDate;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -614,6 +616,21 @@ public class PackagingScheduleResource {
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
         new PlanReport(schedule);
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Excel report created successfully").build();
+    }
+
+    @POST
+    @Path("reportCleaning")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response createCsvCleaningReport(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        new CleaningDurationReport(schedule, LocalDate.of(2026,4, 12), LocalDate.of(2026,4,14));
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
