@@ -17,10 +17,7 @@ import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.upload.*;
-import org.acme.foodpackaging.record.DowntimeData;
-import org.acme.foodpackaging.record.FrontendDataWrapper;
-import org.acme.foodpackaging.record.InitData;
-import org.acme.foodpackaging.record.JobSelection;
+import org.acme.foodpackaging.record.*;
 import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
@@ -602,11 +599,7 @@ public class PackagingScheduleResource {
         return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
     }
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
-
-    private String getProblemId(String sessionId) {
-        return sessionId != null ? sessionId : "default";
-    }
+    // ========== Генерация Excel отчетов ==========
 
     @POST
     @Path("report")
@@ -624,17 +617,23 @@ public class PackagingScheduleResource {
     }
 
     @POST
-    @Path("reportCleaning")
+    @Path("cleaningReport")
     @Produces(MediaType.TEXT_PLAIN)
-    public Response createCsvCleaningReport(@HeaderParam("X-Session-Id") String sessionId) {
+    public Response createCsvCleaningReport(@HeaderParam("X-Session-Id") String sessionId, DateRange range) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
-        new CleaningDurationReport(schedule, LocalDate.of(2026,4, 12), LocalDate.of(2026,4,14));
+        new CleaningDurationReport(schedule, range.from(), range.to());
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Excel report created successfully").build();
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
+
+    private String getProblemId(String sessionId) {
+        return sessionId != null ? sessionId : "default";
     }
 }

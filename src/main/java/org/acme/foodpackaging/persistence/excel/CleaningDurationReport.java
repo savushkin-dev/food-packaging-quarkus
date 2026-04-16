@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,10 +41,10 @@ public class CleaningDurationReport {
                                   LocalDate to) {
         this.from = from;
         this.to = to;
-        createExcelReport(solution);
+        createExcelReport(solution, from, to);
     }
 
-    private void createExcelReport(PackagingSchedule solution) {
+    private void createExcelReport(PackagingSchedule solution, LocalDate from, LocalDate to) {
 
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(200)) {
 
@@ -74,7 +75,7 @@ public class CleaningDurationReport {
             }
 
             autoSizeColumns(sheet);
-            writeWorkbookToFile(workbook, generateReportPath());
+            writeWorkbookToFile(workbook, generateReportPath(from, to));
 
         } catch (IOException e) {
             throw new ReportGenerationException("Error while generating cleaning report", e);
@@ -130,14 +131,29 @@ public class CleaningDurationReport {
         for (Job job : jobs) {
 
             Row row = sheet.createRow(rowIndex++);
+            String name;
+            LocalDateTime start;
+            LocalDateTime end;
+            long duration;
 
-            long duration = job.getDuration().toMinutes();
+            if(job.isMaintenance()){
+                name = "Мойка, сервисная операция";
+                start = job.getStartProductionDateTime();
+                end = job.getEndDateTime();
+                duration = Duration.between(start, end).toMinutes();
+            }
+            else{
+                name = "Мойка, переналадка";
+                start = job.getStartCleaningDateTime();
+                end = job.getStartProductionDateTime();
+                duration = Duration.between(start, end).toMinutes();
+            }
 
             writeRow(row,
-                    job.getName(),
-                    format(job.getStartCleaningDateTime(), formatter),
+                    name,
+                    format(start, formatter),
                     duration,
-                    format(job.getEndDateTime(), formatter)
+                    format(end, formatter)
             );
         }
 
@@ -150,23 +166,32 @@ public class CleaningDurationReport {
 
         for (Job job : jobs) {
 
-
             if (job.getStartCleaningDateTime() == null ||
                     job.getStartProductionDateTime() == null) {
                 continue;
             }
 
-            if (!job.getStartProductionDateTime().isAfter(job.getStartCleaningDateTime())) {
+            boolean isProductionAfterCleaning =
+                    job.getStartProductionDateTime()
+                            .isAfter(job.getStartCleaningDateTime());
+
+            boolean isMaintenanceMatch =
+                    job.isMaintenance()
+                            && job.getMaintenanceTypeId() != null
+                            && job.getMaintenanceTypeId() == 2;
+
+            if (!isMaintenanceMatch && !isProductionAfterCleaning) {
                 continue;
             }
 
-            LocalDate cleaningDate = job.getStartCleaningDateTime().toLocalDate();
+            LocalDate dateForFilter = job.isMaintenance()
+                    ? job.getStartProductionDateTime().toLocalDate()
+                    : job.getStartCleaningDateTime().toLocalDate();
 
-            if (!cleaningDate.isBefore(from) && !cleaningDate.isAfter(to)) {
+            if (!dateForFilter.isBefore(from) && !dateForFilter.isAfter(to)) {
                 result.add(job);
             }
-        }
-
+    }
         return result;
     }
 
@@ -201,12 +226,7 @@ public class CleaningDurationReport {
         for (int i = 0; i < MAX_AUTO_SIZE_COLUMN; i++) {
 
             sheet.autoSizeColumn(i);
-
-            int maxWidth = 50 * 256;
-
-            if (sheet.getColumnWidth(i) > maxWidth) {
-                sheet.setColumnWidth(i, maxWidth);
-            }
+            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1024);
         }
     }
 
@@ -217,7 +237,7 @@ public class CleaningDurationReport {
         }
     }
 
-    private String generateReportPath() {
+    private String generateReportPath(LocalDate from, LocalDate to) {
 
         String dir = "reports/";
 
@@ -227,9 +247,6 @@ public class CleaningDurationReport {
             throw new ReportGenerationException("Failed to create directory", e);
         }
 
-        String date = LocalDate.now()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-
-        return dir + date + "_CleaningReport.xlsx";
+        return dir + from + "—" + to + "_CleaningReport.xlsx";
     }
 }
