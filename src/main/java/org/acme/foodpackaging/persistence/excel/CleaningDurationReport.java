@@ -58,20 +58,22 @@ public class CleaningDurationReport {
 
             for (Line line : solution.getLines()) {
 
-                if (line == null || line.getJobs() == null) continue;
+                if (line != null && line.getJobs() != null) {
 
-                List<Job> cleaningJobs = collectCleaningJobs(line.getJobs());
+                    List<Job> cleaningJobs = collectCleaningJobs(line.getJobs());
 
-                if (cleaningJobs.isEmpty()) continue;
+                    if (!cleaningJobs.isEmpty()) {
 
-                rowIndex = writeLineSection(
-                        sheet,
-                        line,
-                        cleaningJobs,
-                        headerStyle,
-                        lineStyle,
-                        rowIndex
-                );
+                        rowIndex = writeLineSection(
+                                sheet,
+                                line,
+                                cleaningJobs,
+                                headerStyle,
+                                lineStyle,
+                                rowIndex
+                        );
+                    }
+                }
             }
 
             autoSizeColumns(sheet);
@@ -166,32 +168,33 @@ public class CleaningDurationReport {
 
         for (Job job : jobs) {
 
-            if (job.getStartCleaningDateTime() == null ||
-                    job.getStartProductionDateTime() == null) {
-                continue;
+            boolean hasRequiredDates =
+                    job.getStartCleaningDateTime() != null &&
+                            job.getStartProductionDateTime() != null;
+
+            if (hasRequiredDates) {
+
+                boolean isProductionAfterCleaning =
+                        job.getStartProductionDateTime()
+                                .isAfter(job.getStartCleaningDateTime());
+
+                boolean isMaintenanceMatch =
+                        job.isMaintenance()
+                                && job.getMaintenanceTypeId() != null
+                                && job.getMaintenanceTypeId() == 2;
+
+                if (isMaintenanceMatch || isProductionAfterCleaning) {
+
+                    LocalDate dateForFilter = job.isMaintenance()
+                            ? job.getStartProductionDateTime().toLocalDate()
+                            : job.getStartCleaningDateTime().toLocalDate();
+
+                    if (!dateForFilter.isBefore(from) && !dateForFilter.isAfter(to)) {
+                        result.add(job);
+                    }
+                }
             }
-
-            boolean isProductionAfterCleaning =
-                    job.getStartProductionDateTime()
-                            .isAfter(job.getStartCleaningDateTime());
-
-            boolean isMaintenanceMatch =
-                    job.isMaintenance()
-                            && job.getMaintenanceTypeId() != null
-                            && job.getMaintenanceTypeId() == 2;
-
-            if (!isMaintenanceMatch && !isProductionAfterCleaning) {
-                continue;
-            }
-
-            LocalDate dateForFilter = job.isMaintenance()
-                    ? job.getStartProductionDateTime().toLocalDate()
-                    : job.getStartCleaningDateTime().toLocalDate();
-
-            if (!dateForFilter.isBefore(from) && !dateForFilter.isAfter(to)) {
-                result.add(job);
-            }
-    }
+        }
         return result;
     }
 

@@ -23,7 +23,6 @@ import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.*;
 
-import java.time.LocalDate;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
