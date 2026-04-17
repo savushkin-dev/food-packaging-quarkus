@@ -168,33 +168,35 @@ public class CleaningDurationReport {
 
         for (Job job : jobs) {
 
-            boolean hasRequiredDates =
-                    job.getStartCleaningDateTime() != null &&
-                            job.getStartProductionDateTime() != null;
-
-            if (hasRequiredDates) {
-
-                boolean isProductionAfterCleaning =
-                        job.getStartProductionDateTime()
-                                .isAfter(job.getStartCleaningDateTime());
-
-                boolean isMaintenanceMatch =
-                        job.isMaintenance()
-                                && job.getMaintenanceTypeId() != null
-                                && job.getMaintenanceTypeId() == 2;
-
-                if (isMaintenanceMatch || isProductionAfterCleaning) {
-
-                    LocalDate dateForFilter = job.isMaintenance()
-                            ? job.getStartProductionDateTime().toLocalDate()
-                            : job.getStartCleaningDateTime().toLocalDate();
-
-                    if (!dateForFilter.isBefore(from) && !dateForFilter.isAfter(to)) {
-                        result.add(job);
-                    }
-                }
+            if (job.getStartCleaningDateTime() == null ||
+                    job.getStartProductionDateTime() == null) {
+                continue;
             }
+
+            boolean isProductionAfterCleaning =
+                    job.getStartProductionDateTime()
+                            .isAfter(job.getStartCleaningDateTime());
+
+            boolean isMaintenanceMatch =
+                    job.isMaintenance()
+                            && job.getMaintenanceTypeId() != null
+                            && job.getMaintenanceTypeId() == 2;
+
+            if (!isMaintenanceMatch && !isProductionAfterCleaning) {
+                continue;
+            }
+
+            LocalDate dateForFilter = job.isMaintenance()
+                    ? job.getStartProductionDateTime().toLocalDate()
+                    : job.getStartCleaningDateTime().toLocalDate();
+
+            if (dateForFilter.isBefore(from) || dateForFilter.isAfter(to)) {
+                continue;
+            }
+
+            result.add(job);
         }
+
         return result;
     }
 
