@@ -164,7 +164,8 @@ public class JobService {
 
         Product product = loadDataService.getProducts().get(row.kmc());
         if (product == null) {
-            throw new IllegalStateException("Unknown product KMC=" + row.kmc());
+            throw new IllegalStateException("Продукт с кодом "  + row.kmc() +
+                    "отсутствует в справочнике Реализации:  «Документы» -- «Производство» -- «Планировщик линий» -- «Продукция для планировщика»");
         }
 
         Job job = null;
