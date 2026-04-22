@@ -7,6 +7,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.DelayNoteRequest;
+import org.acme.foodpackaging.exception.service.ProductNotFoundException;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
@@ -163,9 +164,9 @@ public class JobService {
         if(row == null) return null;
 
         Product product = loadDataService.getProducts().get(row.kmc());
-        if (product == null) {
-            throw new IllegalStateException("Unknown product KMC=" + row.kmc());
-        }
+            if (product == null) {
+                throw new ProductNotFoundException(row.kmc());
+            }
 
         Job job = null;
         if(row.lineId()!=null) {
