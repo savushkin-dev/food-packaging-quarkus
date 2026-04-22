@@ -14,6 +14,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
+import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.excel.UserLogReport;
 import org.acme.foodpackaging.persistence.upload.*;
@@ -598,6 +599,7 @@ public class PackagingScheduleResource {
         return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
     }
 
+    // ========== Генерация Excel отчетов ==========
     @POST
     @Path("userLogReport")
     @Produces(MediaType.TEXT_PLAIN)
@@ -606,12 +608,6 @@ public class PackagingScheduleResource {
         new UserLogReport(range.from(), range.to());
 
         return Response.ok("UserLog Excel report created successfully").build();
-    }
-
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
-
-    private String getProblemId(String sessionId) {
-        return sessionId != null ? sessionId : "default";
     }
 
     @POST
@@ -627,5 +623,26 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Excel report created successfully").build();
+    }
+
+    @POST
+    @Path("cleaningReport")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response createCsvCleaningReport(@HeaderParam("X-Session-Id") String sessionId, DateRange range) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        new CleaningDurationReport(schedule, range.from(), range.to());
+
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Excel report created successfully").build();
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
+
+    private String getProblemId(String sessionId) {
+        return sessionId != null ? sessionId : "default";
     }
 }
