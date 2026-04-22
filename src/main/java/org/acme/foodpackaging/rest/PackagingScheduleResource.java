@@ -15,11 +15,9 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
+import org.acme.foodpackaging.persistence.excel.UserLogReport;
 import org.acme.foodpackaging.persistence.upload.*;
-import org.acme.foodpackaging.record.DowntimeData;
-import org.acme.foodpackaging.record.FrontendDataWrapper;
-import org.acme.foodpackaging.record.InitData;
-import org.acme.foodpackaging.record.JobSelection;
+import org.acme.foodpackaging.record.*;
 import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
@@ -598,6 +596,16 @@ public class PackagingScheduleResource {
                                                           @HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule problem = repository.readForSession(sessionId);
         return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
+    }
+
+    @POST
+    @Path("userLogReport")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response createUserLogReport(DateRange range) {
+
+        new UserLogReport(range.from(), range.to());
+
+        return Response.ok("UserLog Excel report created successfully").build();
     }
 
     // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
