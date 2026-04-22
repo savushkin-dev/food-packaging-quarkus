@@ -2,6 +2,7 @@ package service.jobs;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.DelayNoteRequest;
+import org.acme.foodpackaging.exception.service.ProductNotFoundException;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
@@ -185,6 +186,7 @@ class JobServiceTest {
         Line line = schedule.getLines().getFirst();
         assertEquals(2, line.getJobs().size());
     }
+
     @Test
 void initSolutionJobList_shouldSkipJobsWithoutLineId() {
 
@@ -217,6 +219,35 @@ void initSolutionJobList_shouldSkipJobsWithoutLineId() {
     Line line = schedule.getLines().getFirst();
     assertTrue(line.getJobs().isEmpty());
 }
+
+    @Test
+    void initSolutionJobList_shouldThrowException() {
+
+        DbJobRow jobRow = createDbJobRow();
+        jobRow = new DbJobRow(
+                jobRow.dti(), "Unknown kmc", jobRow.np(), jobRow.quantity(),
+                jobRow.mass(), jobRow.startProductionDateTime(),
+                jobRow.endDateTime(), jobRow.duration(),
+                jobRow.snpz(), jobRow.priority(),
+                null, jobRow.shortName(), 18, 100, 1
+        );
+
+        Product product = new Product(
+                "Product1", "KMC1", "KRKMC1",
+                "Type1", "Glaze1", "100", "Filling1"
+        );
+
+        when(loadDataService.getProducts())
+                .thenReturn(Map.of("KMC1", product));
+
+        when(jobRepository.getDbJobRowMap(any(), any()))
+                .thenReturn(Map.of(123L, jobRow));
+
+        when(jobRepository.getMaintenanceData(any(), any()))
+                .thenReturn(Collections.emptyList());
+
+        assertThrows(ProductNotFoundException.class, () -> jobService.initSolutionJobList(schedule));
+    }
 
 @Test
 void initSolutionJobList_shouldSetMinStartTime() {

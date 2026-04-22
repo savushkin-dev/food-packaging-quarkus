@@ -16,6 +16,7 @@ import org.acme.foodpackaging.dto.*;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
+import org.acme.foodpackaging.persistence.excel.UserLogReport;
 import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.*;
 import org.acme.foodpackaging.scheduleoperations.*;
@@ -599,6 +600,21 @@ public class PackagingScheduleResource {
     }
 
     // ========== Генерация Excel отчетов ==========
+    @POST
+    @Path("userLogReport")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response createUserLogReport(DateRange range) {
+
+        new UserLogReport(range.from(), range.to());
+
+        return Response.ok("UserLog Excel report created successfully").build();
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
+
+    private String getProblemId(String sessionId) {
+        return sessionId != null ? sessionId : "default";
+    }
 
     @POST
     @Path("report")
