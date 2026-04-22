@@ -610,12 +610,6 @@ public class PackagingScheduleResource {
         return Response.ok("UserLog Excel report created successfully").build();
     }
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
-
-    private String getProblemId(String sessionId) {
-        return sessionId != null ? sessionId : "default";
-    }
-
     @POST
     @Path("report")
     @Produces(MediaType.TEXT_PLAIN)
