@@ -137,15 +137,25 @@ class LogServiceTest {
     }
 
     @Test
-    void getIp_whenAllSourcesEmpty_returnsUnknown() {
+    void getIp_whenAllHeadersEmptyAndRemoteAddressEmpty_returnsUnknown() {
         when(requestContext.getHeaderString("X-Real-IP")).thenReturn("");
-        when(requestContext.getHeaderString("X-Forwarded-For")).thenReturn(" ");
+        when(requestContext.getHeaderString("X-Forwarded-For")).thenReturn("");
         when(vertxRequest.remoteAddress()).thenReturn(socketAddress);
         when(socketAddress.host()).thenReturn("");
 
         String result = logService.getIp(requestContext, vertxRequest);
 
         assertEquals("unknown", result);
+    }
+
+    @Test
+    void getIp_whenXRealIPBlankAndXForwardedForValid_returnsXForwardedFor() {
+        when(requestContext.getHeaderString("X-Real-IP")).thenReturn("");
+        when(requestContext.getHeaderString("X-Forwarded-For")).thenReturn("10.0.0.2");
+
+        String result = logService.getIp(requestContext, vertxRequest);
+
+        assertEquals("10.0.0.2", result);
     }
 
     // ==================== Тесты для getLoginIdentifier ====================
@@ -169,6 +179,12 @@ class LogServiceTest {
     }
 
     @Test
+    void getLoginIdentifier_withBlankUsernameAndValidSessionId_returnsSessionId() {
+        String result = logService.getLoginIdentifier("   ", "id_123", DEFAULT_SESSION_ID);
+        assertEquals("id_123", result);
+    }
+
+    @Test
     void getLoginIdentifier_withoutUsernameAndDefaultSessionId_returnsDefault() {
         String result = logService.getLoginIdentifier(null, DEFAULT_SESSION_ID, DEFAULT_SESSION_ID);
         assertEquals(DEFAULT_SESSION_ID, result);
@@ -183,6 +199,54 @@ class LogServiceTest {
     @Test
     void getLoginIdentifier_withoutUsernameAndNullSessionId_returnsDefault() {
         String result = logService.getLoginIdentifier(null, null, DEFAULT_SESSION_ID);
+        assertEquals(DEFAULT_SESSION_ID, result);
+    }
+
+    @Test
+    void getLoginIdentifier_withoutUsernameAndEmptySessionId_returnsDefault() {
+        String result = logService.getLoginIdentifier(null, "", DEFAULT_SESSION_ID);
+        assertEquals(DEFAULT_SESSION_ID, result);
+    }
+
+    @Test
+    void getLoginIdentifier_withoutUsernameAndBlankSessionId_returnsDefault() {
+        String result = logService.getLoginIdentifier(null, "   ", DEFAULT_SESSION_ID);
+        assertEquals(DEFAULT_SESSION_ID, result);
+    }
+
+    @Test
+    void getLoginIdentifier_withDefaultSessionIdCaseInsensitive_returnsDefault() {
+        String result = logService.getLoginIdentifier(null, "DEFAULT_SESSION_ID", DEFAULT_SESSION_ID);
+        assertEquals(DEFAULT_SESSION_ID, result);
+    }
+
+    @Test
+    void getIp_whenXRealIPNullAndXForwardedForNullAndRemoteAddressHasBlankHost_returnsUnknown() {
+        when(requestContext.getHeaderString("X-Real-IP")).thenReturn(null);
+        when(requestContext.getHeaderString("X-Forwarded-For")).thenReturn(null);
+        when(vertxRequest.remoteAddress()).thenReturn(socketAddress);
+        when(socketAddress.host()).thenReturn("");
+
+        String result = logService.getIp(requestContext, vertxRequest);
+
+        assertEquals("unknown", result);
+    }
+
+    @Test
+    void getIp_whenXRealIPBlankAndXForwardedForBlankAndRemoteAddressHasBlankHost_returnsUnknown() {
+        when(requestContext.getHeaderString("X-Real-IP")).thenReturn("");
+        when(requestContext.getHeaderString("X-Forwarded-For")).thenReturn("");
+        when(vertxRequest.remoteAddress()).thenReturn(socketAddress);
+        when(socketAddress.host()).thenReturn("");
+
+        String result = logService.getIp(requestContext, vertxRequest);
+
+        assertEquals("unknown", result);
+    }
+
+    @Test
+    void getLoginIdentifier_whenSessionIdEqualsDefaultSessionId_returnsDefault() {
+        String result = logService.getLoginIdentifier(null, DEFAULT_SESSION_ID, DEFAULT_SESSION_ID);
         assertEquals(DEFAULT_SESSION_ID, result);
     }
 }
