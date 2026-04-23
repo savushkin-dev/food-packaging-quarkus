@@ -1,8 +1,10 @@
 package org.acme.foodpackaging.service.log;
 
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import org.acme.foodpackaging.entity.RequestLog;
 import org.acme.foodpackaging.repository.RequestLogRepository;
 
@@ -38,6 +40,34 @@ public class LogService {
             return value.substring(0, maxLength);
         }
         return value;
+    }
+
+    public String getIp(ContainerRequestContext requestContext, HttpServerRequest vertxRequest) {
+        String ip = requestContext.getHeaderString("X-Real-IP");
+
+        if (ip == null || ip.isBlank()) {
+            ip = requestContext.getHeaderString("X-Forwarded-For");
+        }
+
+        if (ip == null || ip.isBlank()) {
+            ip = vertxRequest.remoteAddress().host();
+        }
+
+        return (ip != null && !ip.isBlank()) ? ip : "unknown";
+    }
+
+
+    public String getLoginIdentifier(String username, String sessionId, String default_session_id) {
+
+        if (username != null && !username.isBlank()) {
+            return username;
+        }
+
+        if (sessionId != null && !sessionId.isBlank() && !default_session_id.equalsIgnoreCase(sessionId)) {
+            return sessionId;
+        }
+
+        return default_session_id;
     }
 
 }

@@ -24,6 +24,7 @@ public class ResponseLoggingFilter implements ContainerResponseFilter {
     ObjectMapper objectMapper;
 
     private static final Set<String> ENDPOINTS_TO_LOG = Set.of("save", "stopSolving");
+    private static final String DEFAULT_SESSION_ID = "default_session_id";
 
     @Override
     public void filter(ContainerRequestContext requestContext,
@@ -36,8 +37,13 @@ public class ResponseLoggingFilter implements ContainerResponseFilter {
             return;
         }
 
-        String login = requestContext.getHeaderString("X-Session-Id");
-        String ip = getIp(requestContext);
+        String sessionId = requestContext.getHeaderString("X-Session-Id");
+        String username = requestContext.getHeaderString("X-Username");
+
+        // Определяем идентификатор для логирования (Приоритет: X-Username > X-Session-Id > default)
+        String login = logService.getLoginIdentifier(username, sessionId, DEFAULT_SESSION_ID);
+
+        String ip = logService.getIp(requestContext, vertxRequest);
 
         Object entity = responseContext.getEntity();
         String response;
@@ -58,17 +64,5 @@ public class ResponseLoggingFilter implements ContainerResponseFilter {
         return path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
     }
 
-    private String getIp(ContainerRequestContext requestContext) {
-        String ip = requestContext.getHeaderString("X-Real-IP");
 
-        if (ip == null || ip.isBlank()) {
-            ip = requestContext.getHeaderString("X-Forwarded-For");
-        }
-
-        if (ip == null || ip.isBlank()) {
-            ip = vertxRequest.remoteAddress().host();
-        }
-
-        return (ip != null && !ip.isBlank()) ? ip : "unknown";
-    }
 }
