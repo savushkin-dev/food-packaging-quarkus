@@ -146,7 +146,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("versionsByDate")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<String> getPlanVersions(LoadRequest loadDTO) {
+    public List<String> getPlanVersions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
         return plrPlanRepository.findDistinctVersionsByDate(loadDTO.getStartDate().atStartOfDay().toLocalDate());
     }
 
