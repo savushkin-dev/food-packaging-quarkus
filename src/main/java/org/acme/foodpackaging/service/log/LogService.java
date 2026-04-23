@@ -57,17 +57,17 @@ public class LogService {
     }
 
 
-    public String getLoginIdentifier(String username, String sessionId, String default_session_id) {
+    public String getLoginIdentifier(String username, String sessionId, String defaultSessionId) {
 
         if (username != null && !username.isBlank()) {
             return username;
         }
 
-        if (sessionId != null && !sessionId.isBlank() && !default_session_id.equalsIgnoreCase(sessionId)) {
+        if (sessionId != null && !sessionId.isBlank() && !defaultSessionId.equalsIgnoreCase(sessionId)) {
             return sessionId;
         }
 
-        return default_session_id;
+        return defaultSessionId;
     }
 
 }
