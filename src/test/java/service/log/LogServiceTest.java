@@ -7,10 +7,15 @@ import org.acme.foodpackaging.repository.RequestLogRepository;
 import org.acme.foodpackaging.service.log.LogService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -196,28 +201,20 @@ class LogServiceTest {
         assertEquals("john", result);
     }
 
-    @Test
-    void getLoginIdentifier_withoutUsernameAndNullSessionId_returnsDefault() {
-        String result = logService.getLoginIdentifier(null, null, DEFAULT_SESSION_ID);
+    @ParameterizedTest
+    @MethodSource("sessionIdProvider")
+    void getLoginIdentifier_withoutUsername_returnsDefault(String sessionId) {
+        String result = logService.getLoginIdentifier(null, sessionId, DEFAULT_SESSION_ID);
         assertEquals(DEFAULT_SESSION_ID, result);
     }
 
-    @Test
-    void getLoginIdentifier_withoutUsernameAndEmptySessionId_returnsDefault() {
-        String result = logService.getLoginIdentifier(null, "", DEFAULT_SESSION_ID);
-        assertEquals(DEFAULT_SESSION_ID, result);
-    }
-
-    @Test
-    void getLoginIdentifier_withoutUsernameAndBlankSessionId_returnsDefault() {
-        String result = logService.getLoginIdentifier(null, "   ", DEFAULT_SESSION_ID);
-        assertEquals(DEFAULT_SESSION_ID, result);
-    }
-
-    @Test
-    void getLoginIdentifier_withDefaultSessionIdCaseInsensitive_returnsDefault() {
-        String result = logService.getLoginIdentifier(null, "DEFAULT_SESSION_ID", DEFAULT_SESSION_ID);
-        assertEquals(DEFAULT_SESSION_ID, result);
+    static Stream<Arguments> sessionIdProvider() {
+        return Stream.of(
+                Arguments.of((String) null),  // явное приведение для null
+                Arguments.of(""),
+                Arguments.of("   "),
+                Arguments.of("DEFAULT_SESSION_ID")
+        );
     }
 
     @Test
