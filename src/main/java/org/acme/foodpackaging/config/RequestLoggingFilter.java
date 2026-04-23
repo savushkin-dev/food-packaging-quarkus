@@ -32,7 +32,12 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
     public void filter(ContainerRequestContext requestContext) {
         String path = requestContext.getUriInfo().getPath();
         String method = requestContext.getMethod();
-        String login = requestContext.getHeaderString("X-Session-Id");
+
+        String sessionId = requestContext.getHeaderString("X-Session-Id");
+        String username = requestContext.getHeaderString("X-Username");
+
+        // Определяем идентификатор для логирования (Приоритет: X-Username > X-Session-Id > default)
+        String login = logService.getLoginIdentifier(username, sessionId, DEFAULT_SESSION_ID);
 
         if (shouldSkip(login, method)) {
             return;
@@ -49,7 +54,7 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
 
         requestContext.setEntityStream(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
 
-        String ip = getIp(requestContext);
+        String ip = logService.getIp(requestContext, vertxRequest);
 
         logService.logRequest(login, ip, path.substring(path.lastIndexOf('/') + 1), body);
     }
@@ -61,23 +66,5 @@ public class RequestLoggingFilter implements ContainerRequestFilter {
         return "GET".equalsIgnoreCase(method);
     }
 
-    public String getIp(ContainerRequestContext requestContext){
-        // сначала пробуем заголовки от Nginx
-        String ip = requestContext.getHeaderString("X-Real-IP");
-        if (ip == null || ip.isBlank()) {
-            ip = requestContext.getHeaderString("X-Forwarded-For");
-        }
-
-        // если заголовков нет — берём реальный адрес
-        if (ip == null || ip.isBlank()) {
-            ip = vertxRequest.remoteAddress().host();
-        }
-
-        if (ip != null && !ip.isBlank()) {
-            return ip;
-        } else {
-            return "unknown";
-        }
-    }
 }
 
