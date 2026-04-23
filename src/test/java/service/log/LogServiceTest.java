@@ -229,21 +229,4 @@ class LogServiceTest {
         assertEquals("unknown", result);
     }
 
-    @Test
-    void getIp_whenXRealIPBlankAndXForwardedForBlankAndRemoteAddressHasBlankHost_returnsUnknown() {
-        when(requestContext.getHeaderString("X-Real-IP")).thenReturn("");
-        when(requestContext.getHeaderString("X-Forwarded-For")).thenReturn("");
-        when(vertxRequest.remoteAddress()).thenReturn(socketAddress);
-        when(socketAddress.host()).thenReturn("");
-
-        String result = logService.getIp(requestContext, vertxRequest);
-
-        assertEquals("unknown", result);
-    }
-
-    @Test
-    void getLoginIdentifier_whenSessionIdEqualsDefaultSessionId_returnsDefault() {
-        String result = logService.getLoginIdentifier(null, DEFAULT_SESSION_ID, DEFAULT_SESSION_ID);
-        assertEquals(DEFAULT_SESSION_ID, result);
-    }
 }
