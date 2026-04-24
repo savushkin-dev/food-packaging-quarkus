@@ -22,6 +22,7 @@ import org.acme.foodpackaging.record.*;
 import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.*;
 
 import java.util.*;
@@ -190,8 +191,7 @@ public class PackagingScheduleResource {
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
-        alignSolutionService.alignByFactDuration(schedule);
-        alignSolutionService.alignLineStartByFact(schedule);
+        alignSolutionService.align(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
         return Response.ok(Map.of(

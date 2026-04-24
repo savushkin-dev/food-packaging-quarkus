@@ -53,6 +53,7 @@ public class Job {
 
     @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration delayDuration;
+    private Duration delayCleaningDuration;
     private boolean maintenance;
     private boolean handPackaging;
     private boolean finalDuration;
@@ -69,6 +70,7 @@ public class Job {
     private Integer emk;
     private String placeFactInfo;
     private String delayNote;
+    private String delayCleaningNote;
     private Integer placePlan;
 
     private int priority;

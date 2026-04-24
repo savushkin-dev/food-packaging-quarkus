@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
+import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.products.ProductService;
@@ -15,7 +16,6 @@ import java.time.LocalDate;
 import java.util.*;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.removeJobsWithoutLine;
-
 
 @ApplicationScoped
 public class ScheduleBuilder {
@@ -59,10 +59,7 @@ public class ScheduleBuilder {
         schedule.setDateForEmptySolution(startDate);
         removeJobsWithoutLine(schedule.getJobs());
 
-        alignSolutionService.alignByFactDuration(schedule);
-        alignSolutionService.alignLineStartByFact(schedule);
-
-        lineService.setMaxEndDateTimeByLastJob(schedule);
+        alignSolutionService.align(schedule);
 
         return new InitData(schedule, jobRows);
     }
