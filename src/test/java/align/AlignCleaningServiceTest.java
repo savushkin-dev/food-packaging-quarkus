@@ -19,13 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(MockitoExtension.class)
-public class AlignCleaningServiceTest {
+class AlignCleaningServiceTest {
 
     @InjectMocks
     AlignCleaningService cleaningService;
 
     private PackagingSchedule solution;
-    private Line line;
 
     @BeforeEach
     void setUp(){

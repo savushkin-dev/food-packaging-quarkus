@@ -55,27 +55,7 @@ class AlignByLastChainServiceTest {
 
         solution.setLines(new ArrayList<>(List.of(line)));
     }
-
-    private Job getPackagingMaintenance(){
-        Job job = new Job();
-        job.setMaintenance(true);
-        job.setMaintenanceTypeId(7);
-        return job;
-    }
-
-    private Job getJob() {
-        Job j1 = new Job();
-
-        j1.setLine(line);
-        j1.setQuantity(2900);
-        Product product = new Product();
-        product.setType("CLASSIC");
-        product.setCleaningDurations(Map.of(product, Duration.ZERO));
-        j1.setProduct(product);
-
-        return j1;
-    }
-
+    
     @Test
     void alignLineStartByFact_whenFactEqualsPlan_shouldNotAddMaintenance() {
 
