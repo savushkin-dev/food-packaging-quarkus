@@ -19,6 +19,7 @@ import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.excel.UserLogReport;
 import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.*;
+import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
@@ -49,6 +50,7 @@ public class PackagingScheduleResource {
     private final SolutionVersionExportService exportService;
     private final JobInfoService jobInfoService;
     private final AlignSolutionService alignSolutionService;
+    private final PlrPlanRepository plrPlanRepository;
 
     @Inject
     public PackagingScheduleResource(
@@ -57,7 +59,7 @@ public class PackagingScheduleResource {
             JobService jobService, MoveJobsService moveJobsService, SortByNpService sortByNpService, PinService pinService,
             ScheduleBuilder scheduleBuilder, ScheduleBuilderByVersion builderByVersion, LoadDataService loadDataService,
             UploadDataService uploadDataService, JobRefreshService jobRefreshService, JobSaveService jobSaveService,
-            SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService
+            SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService, PlrPlanRepository plrPlanRepository
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -76,6 +78,7 @@ public class PackagingScheduleResource {
         this.exportService = exportService;
         this.jobInfoService = jobInfoService;
         this.alignSolutionService = alignSolutionService;
+        this.plrPlanRepository = plrPlanRepository;
     }
 
     @GET
@@ -139,6 +142,13 @@ public class PackagingScheduleResource {
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.MESSAGE, ""
         )).build();
+    }
+
+    @POST
+    @Path("versionsByDate")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getPlanVersions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+        return plrPlanRepository.findDistinctVersionsByDate(loadDTO.getStartDate().atStartOfDay().toLocalDate());
     }
 
     @POST

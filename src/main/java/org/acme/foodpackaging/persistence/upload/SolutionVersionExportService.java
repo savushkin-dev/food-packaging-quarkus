@@ -27,8 +27,7 @@ public class SolutionVersionExportService {
     }
 
     @Transactional
-    public void export(PackagingSchedule schedule,
-                       String version) {
+    public void export(PackagingSchedule schedule, String version) {
 
         if (schedule == null) {
             throw new InvalidSolutionException("Schedule is null");
@@ -39,10 +38,18 @@ public class SolutionVersionExportService {
                     .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(schedule);
 
-            PlrPlan entity = new PlrPlan();
-            entity.setId(UUID.randomUUID());
-            entity.setDti(schedule.getDti());
-            entity.setVersion(version);
+            PlrPlan entity = repository.findByDateAndVersion(
+                    schedule.getDti(),
+                    version
+            );
+
+            if (entity == null) {
+                entity = new PlrPlan();
+                entity.setId(UUID.randomUUID());
+                entity.setDti(schedule.getDti());
+                entity.setVersion(version);
+            }
+
             entity.setSolutionJson(json);
 
             repository.persist(entity);
