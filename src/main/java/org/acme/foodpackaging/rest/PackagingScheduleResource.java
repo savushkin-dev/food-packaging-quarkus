@@ -191,6 +191,20 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("cleaningDelay")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response cleaningDelayNote(@HeaderParam("X-Session-Id") String sessionId, DelayNoteRequest request) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        jobService.writeCleaningDelayNote(request, schedule);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Note is written").build();
+    }
+
+    @POST
     @Path("alignPlan")
     @Produces(MediaType.APPLICATION_JSON)
     public Response alignPlan(@HeaderParam("X-Session-Id") String sessionId) {

@@ -3,6 +3,7 @@ package org.acme.foodpackaging.persistence.load;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
@@ -15,16 +16,17 @@ import org.acme.foodpackaging.sql.SqlQueries;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class JobDBLoader {
+
+    private static final String DB_JOB_ROW_MAPPING = "DbJobRowMapping";
+    private static final String DB_MAINTENANCE_ROW_MAPPING = "DbMaintenanceRowMapping";
+    private static final String FACT_PRODUCTION_MAPPING = "FactProductionRowMapping";
+    private static final String CAMERA_FACT_MAPPING = "CameraFactRowMapping";
 
     private final EntityManager em;
     private final SqlQueries queries;
@@ -35,136 +37,141 @@ public class JobDBLoader {
         this.queries = queries;
     }
 
-    @SuppressWarnings("unchecked")
+    // ========================= JOBS =========================
+
     public Map<Long, DbJobRow> loadJobRowMap(
             LocalDateTime from,
             LocalDateTime to,
             String ksk
     ) {
-
-        List<DbJobRow> rows = em
-                .createNativeQuery(queries.loadJobs(), "DbJobRowMapping")
-                .setParameter(1, Timestamp.valueOf(from))
-                .setParameter(2, Timestamp.valueOf(to))
-                .setParameter(3, ksk)
-                .setParameter(4, Timestamp.valueOf(from))
-                .getResultList();
+        List<DbJobRow> rows = getResultList(
+                queries.loadJobs(),
+                DB_JOB_ROW_MAPPING,
+                Timestamp.valueOf(from),
+                Timestamp.valueOf(to),
+                ksk,
+                Timestamp.valueOf(from)
+        );
 
         return rows.stream()
                 .collect(Collectors.toMap(
                         DbJobRow::snpz,
-                        r -> r,
+                        Function.identity(),
                         (existing, duplicate) -> {
-                            throw new IllegalStateException(
-                                    "Duplicate SNPZ: " + existing.snpz()
-                            );
+                            throw new IllegalStateException("Duplicate SNPZ: " + existing.snpz());
                         }
                 ));
     }
 
-    @SuppressWarnings("unchecked")
-    public List<DbMaintenanceRow> loadMaintenanceRows(
+    // ========================= MAINTENANCE / DELAYS =========================
+
+    public List<DbMaintenanceRow> loadMaintenanceRows(LocalDateTime from, LocalDateTime to) {
+        return loadMaintenanceByType(EventTypeFilter.MAINTENANCE, from, to);
+    }
+
+    public Map<Long, DbMaintenanceRow> loadDelayDurationRows(LocalDateTime from, LocalDateTime to) {
+        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.DELAY, from, to));
+    }
+
+    public Map<Long, DbMaintenanceRow> loadCleaningDelayDurationRows(LocalDateTime from, LocalDateTime to) {
+        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.CLEANING, from, to));
+    }
+
+    private List<DbMaintenanceRow> loadMaintenanceByType(
+            EventTypeFilter type,
             LocalDateTime from,
             LocalDateTime to
     ) {
-
-        return   em
-                .createNativeQuery(queries.loadOeePev(EventTypeFilter.MAINTENANCE), "DbMaintenanceRowMapping")
-                .setParameter(1, Timestamp.valueOf(from))
-                .setParameter(2, Timestamp.valueOf(to))
-                .setParameter(3, Timestamp.valueOf(from))
-                .setParameter(4, Timestamp.valueOf(to))
-                .getResultList();
+        return getResultList(
+                queries.loadOeePev(type),
+                DB_MAINTENANCE_ROW_MAPPING,
+                Timestamp.valueOf(from),
+                Timestamp.valueOf(to),
+                Timestamp.valueOf(from),
+                Timestamp.valueOf(to)
+        );
     }
 
-    @SuppressWarnings("unchecked")
-    public Map<Long, DbMaintenanceRow> loadDelayDurationRows(
+    private Map<Long, DbMaintenanceRow> toMapBySnpz(List<DbMaintenanceRow> list) {
+        return list.stream()
+                .collect(Collectors.toMap(
+                        DbMaintenanceRow::getSnpz,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+    }
+
+    // ========================= FACT =========================
+
+    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(
             LocalDateTime from,
             LocalDateTime to
     ) {
-
-      List <DbMaintenanceRow> delayDurationList = em
-                .createNativeQuery(queries.loadOeePev(EventTypeFilter.DELAY), "DbMaintenanceRowMapping")
-                .setParameter(1, Timestamp.valueOf(from))
-                .setParameter(2, Timestamp.valueOf(to))
-                .setParameter(3, Timestamp.valueOf(from))
-                .setParameter(4, Timestamp.valueOf(to))
-                .getResultList();
-
-      return delayDurationList.stream()
-              .collect(Collectors.toMap
-                      (DbMaintenanceRow::getSnpz,
-                              Function.identity(),
-                              (existing, replacement) -> existing)
-              );
-    }
-
-    @SuppressWarnings("unchecked")
-    public Map<Long, DbMaintenanceRow> loadCleaningDelayDurationRows(
-            LocalDateTime from,
-            LocalDateTime to
-    ) {
-
-        List <DbMaintenanceRow> delayDurationList = em
-                .createNativeQuery(queries.loadOeePev(EventTypeFilter.CLEANING), "DbMaintenanceRowMapping")
-                .setParameter(1, Timestamp.valueOf(from))
-                .setParameter(2, Timestamp.valueOf(to))
-                .setParameter(3, Timestamp.valueOf(from))
-                .setParameter(4, Timestamp.valueOf(to))
-                .getResultList();
-
-        return delayDurationList.stream()
-                .collect(Collectors.toMap
-                        (DbMaintenanceRow::getSnpz,
-                                Function.identity(),
-                                (existing, replacement) -> existing)
-                );
-    }
-
-    @SuppressWarnings("unchecked")
-    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
-
-        List<FactProductionRow> rows = em
-                .createNativeQuery(queries.loadFact(), "FactProductionRowMapping")
-                .setParameter(1, Timestamp.valueOf(from))
-                .setParameter(2, Timestamp.valueOf(to))
-                .getResultList();
+        List<FactProductionRow> rows = getResultList(
+                queries.loadFact(),
+                FACT_PRODUCTION_MAPPING,
+                Timestamp.valueOf(from),
+                Timestamp.valueOf(to)
+        );
 
         return rows.stream()
                 .collect(Collectors.toMap(
                         r -> new FactKey(r.kmc(), r.np(), r.eventType()),
                         Function.identity(),
-                        (existing, duplicate) -> existing // Keep first occurrence, skip duplicates
+                        (existing, duplicate) -> existing
                 ));
     }
 
-    @SuppressWarnings("unchecked")
+    // ========================= CAMERA =========================
+
     public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
-    
+
         Map<String, CameraValue> result = new HashMap<>();
         Set<String> processedBatches = new HashSet<>();
-    
+
         for (Job job : jobs) {
             String idBatch = job.getIdBatch();
-            if (idBatch != null && !processedBatches.contains(idBatch)) {
-                processedBatches.add(idBatch);
-                List<CameraFactRow> rows = em
-                        .createNativeQuery(queries.loadCameraFact(), "CameraFactRowMapping")
-                        .setParameter(1, idBatch)
-                        .getResultList();
-                if (!rows.isEmpty()) {
-                    CameraFactRow row = rows.getFirst();
-                    result.put(
-                            idBatch,
-                            new CameraValue(
-                                    row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
-                                    row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
-                            )
-                    );
-                }
+
+            if (idBatch == null || !processedBatches.add(idBatch)) {
+                continue;
+            }
+
+            List<CameraFactRow> rows = getResultList(
+                    queries.loadCameraFact(),
+                    CAMERA_FACT_MAPPING,
+                    idBatch
+            );
+
+            if (!rows.isEmpty()) {
+                CameraFactRow row = rows.get(0);
+
+                result.put(
+                        idBatch,
+                        new CameraValue(
+                                row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
+                                row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
+                        )
+                );
             }
         }
+
         return result;
     }
-}
 
+    // ========================= CORE (JPA HELPER) =========================
+
+    @SuppressWarnings("unchecked")
+    private <T> List<T> getResultList(
+            String sql,
+            String mapping,
+            Object... params
+    ) {
+        Query query = em.createNativeQuery(sql, mapping);
+
+        for (int i = 0; i < params.length; i++) {
+            query.setParameter(i + 1, params[i]);
+        }
+
+        return query.getResultList();
+    }
+}

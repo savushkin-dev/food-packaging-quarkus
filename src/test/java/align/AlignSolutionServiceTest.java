@@ -47,8 +47,8 @@ class AlignSolutionServiceTest {
         alignSolution.align(schedule);
 
         verify(alignDuration).alignByFactDuration(schedule);
-        verify(alignLastChain).alignLineStartByFact(schedule);
         verify(cleaningService).alignCleanings(schedule);
+        verify(alignLastChain).alignLineStartByFact(schedule);
         verify(lineService).setMaxEndDateTimeByLastJob(schedule);
     }
 }
