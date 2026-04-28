@@ -302,6 +302,14 @@ public class JobService {
         job.setDelayNote(request.getDelayNote());
     }
 
+     public void writeCleaningDelayNote(DelayNoteRequest request, PackagingSchedule solution){
+        Line line = findLineById(solution, request.getLineId());
+        if(line == null || line.getJobs() == null || line.getJobs().isEmpty()) return;
+
+        Job job = line.getJobs().get(request.getIndex());
+        job.setCleaningDelayNote(request.getDelayNote());
+    }
+
     public void initIdBatch(PackagingSchedule schedule){
         for(Job job : schedule.getJobs()){
             if( job.isMaintenance() || job.getIdBatch() != null) continue;

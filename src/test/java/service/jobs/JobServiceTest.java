@@ -549,6 +549,66 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertNull(solution.getJobs().getFirst().getDelayNote());
     }
 
+     @Test
+    void writeCleaningDelayNote_whenLineJobsListNull(){
+        PackagingSchedule solution = new PackagingSchedule();
+
+        Job j1 = new Job();
+        Line line1 = new Line("L1", "line1");
+        line1.setJobs(null);
+        solution.setLines(List.of(line1));
+        solution.setJobs(List.of(j1));
+
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note for testing");
+
+        jobService.writeCleaningDelayNote(request, solution);
+
+        assertNull(solution.getJobs().getFirst().getCleaningDelayNote());
+    }
+
+    @Test
+    void writeСleanignDelayNote_whenLineJobsListIsEmpty(){
+        PackagingSchedule solution = new PackagingSchedule();
+
+        Job j1 = new Job();
+        Line line1 = new Line("L1", "line1");
+        line1.setJobs(new ArrayList<>());
+        solution.setLines(List.of(line1));
+        solution.setJobs(List.of(j1));
+
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note for testing");
+
+        jobService.writeCleaningDelayNote(request, solution);
+
+        assertNull(solution.getJobs().getFirst().getCleaningDelayNote());
+    }
+
+    @Test
+    void writeCleaningDelayNote(){
+        PackagingSchedule solution = new PackagingSchedule();
+        Job j1 = new Job();
+        Line line1 = new Line("L1", "line1");
+        j1.setLine(line1);
+        line1.setJobs(List.of(j1));
+        solution.setLines(List.of(line1));
+        solution.setJobs(List.of(j1));
+
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note for testing");
+
+        jobService.writeCleaningDelayNote(request, solution);
+
+        assertEquals(request.getDelayNote(), solution.getJobs().getFirst().getCleaningDelayNote());
+    }
+
     @Test
     void  initDelayDuration(){
         DbJobRow jobRow = createDbJobRow();
