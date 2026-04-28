@@ -6,43 +6,17 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @ApplicationScoped
 public class AlignCleaningService {
 
     public void alignCleanings(PackagingSchedule solution) {
-        Map<String, Long> cleaningGaps = collectCleaningGaps(solution);
-        applyCleaningDelays(solution, cleaningGaps);
+        applyCleaningDelays(solution);
     }
 
-    private void applyCleaningDelays(PackagingSchedule solution,
-                                     Map<String, Long> cleaningGaps) {
-
-        for (Job job : solution.getJobs()) {
-
-            Long gapMinutes = cleaningGaps.get(job.getId());
-            if (gapMinutes == null || nullDataCleaning(job) ||
-                    !hasCleaning(job) || isPreviousWithoutFact(job)) {
-                continue;
-            }
-
-            long actualDelay = Duration.between(
-                    job.getStartCleaningDateTime(),
-                    job.getStartProductionDateTime()
-            ).toMinutes();
-
-            long finalDelay = gapMinutes - actualDelay;
-
-            if (finalDelay > 0) {
-                job.setCleaningDelay(Duration.ofMinutes(finalDelay));
-            }
-        }
-    }
-
-    private Map<String, Long> collectCleaningGaps(PackagingSchedule solution) {
-        Map<String, Long> result = new HashMap<>();
-
+    private void applyCleaningDelays(PackagingSchedule solution) {
         for (Line line : solution.getLines()) {
             List<Job> factJobs = getFactJobsSorted(line.getJobs());
 
@@ -50,29 +24,69 @@ public class AlignCleaningService {
                 continue;
             }
 
-            extractCleaningGaps(factJobs, result);
+            calculateCleaningDelay(factJobs);
         }
-
-        return result;
     }
 
-    private void extractCleaningGaps(List<Job> jobs, Map<String, Long> map) {
-        for (int i = 1; i < jobs.size(); i++) {
-            Job prev = jobs.get(i - 1);
+    private void calculateCleaningDelay(List<Job> jobs) {
+        List<Job> chainEqualsProducts = new ArrayList<>();
+        for (int i = 0; i < jobs.size() - 1; i++) {
             Job curr = jobs.get(i);
+            Job next = jobs.get(i + 1);
+            String currProductId = jobs.get(i).getProduct().getId();
+            String nextProductId = jobs.get(i).getProduct().getId();
 
-            if (!prev.getProduct().getId().equals(curr.getProduct().getId())) {
+            if (currProductId.equals(nextProductId)) {
 
-                long gapMinutes = Duration.between(
-                        prev.getCameraEnd(),
-                        curr.getCameraStart()
-                ).toMinutes();
+                chainEqualsProducts.add(curr);
+                chainEqualsProducts.add(next);
+            } else {
 
-                if (gapMinutes > 0) {
-                    map.put(curr.getId(), gapMinutes);
+                long cleaningMinutesFact = getCleaningMinutes(
+                        curr.getCameraEnd(), next.getCameraStart());
+
+                Job jobWithCleaning = findJobWithCleaning(chainEqualsProducts);
+
+                if(jobWithCleaning != null) {
+                    long cleaningMinutesPlan = getCleaningMinutes(jobWithCleaning.getStartCleaningDateTime(),
+                            jobWithCleaning.getStartProductionDateTime());
+
+                    if (isCandidate(jobWithCleaning, cleaningMinutesFact, cleaningMinutesPlan)) {
+                        long cleaningDelay = cleaningMinutesFact - cleaningMinutesPlan;
+                        jobWithCleaning.setCleaningDelay(Duration.ofMinutes(cleaningDelay));
+                    }
+                    chainEqualsProducts.clear();
                 }
             }
         }
+    }
+
+    private boolean isCandidate(Job candidate,
+                                long cleaningMinutesFact, long cleaningMinutesPlan) {
+        if (!candidate.getLine().getId().equals(candidate.getLineIdFact())
+                || isPreviousWithoutFact(candidate))
+            return false;
+
+        return cleaningMinutesFact > cleaningMinutesPlan;
+
+    }
+
+    private long getCleaningMinutes(LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null) return 0;
+        return Duration.between(
+                start, end
+        ).toMinutes();
+    }
+
+    private Job findJobWithCleaning(List<Job> chainEqualsProducts) {
+        return chainEqualsProducts.stream()
+                .filter(job ->
+                        job.getStartProductionDateTime() != null &&
+                                job.getStartCleaningDateTime() != null &&
+                                job.getStartProductionDateTime().isAfter(job.getStartCleaningDateTime())
+                )
+                .findFirst()
+                .orElse(null);
     }
 
     private List<Job> getFactJobsSorted(List<Job> lineJobs) {
@@ -80,18 +94,8 @@ public class AlignCleaningService {
 
         return lineJobs.stream()
                 .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null
-                 && j.getLine().getId().equals(j.getLineIdFact()))
+                        && j.getLine().getId().equals(j.getLineIdFact()))
                 .sorted(Comparator.comparing(Job::getCameraStart)).toList();
-    }
-
-    private boolean nullDataCleaning(Job job){
-        return job.getStartProductionDateTime() == null ||
-                job.getStartCleaningDateTime() == null;
-    }
-
-    private boolean hasCleaning(Job job) {
-        return job.getStartProductionDateTime()
-                .isAfter(job.getStartCleaningDateTime());
     }
 
     private boolean isPreviousWithoutFact(Job job) {

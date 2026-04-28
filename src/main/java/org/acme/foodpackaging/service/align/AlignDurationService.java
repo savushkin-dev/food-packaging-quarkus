@@ -74,7 +74,6 @@ public class AlignDurationService {
             if(diff > 0){
                 job.setDelayDuration(Duration.ofMinutes(diff));
                 job.setDuration(Duration.ofMinutes(factMinutes));
-                job.setFinalDuration(true);
                 fixLineJobs(line);
                 fixPinnedJobs(line);
             }

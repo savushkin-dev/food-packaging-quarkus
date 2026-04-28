@@ -56,7 +56,6 @@ public class Job {
     private Duration cleaningDelay;
     private boolean maintenance;
     private boolean handPackaging;
-    private boolean finalDuration;
     private Integer maintenanceTypeId;
 
     private LocalDateTime cameraStart;

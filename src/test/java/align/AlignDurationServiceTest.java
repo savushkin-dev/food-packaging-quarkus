@@ -115,7 +115,6 @@ class AlignDurationServiceTest {
         assertEquals(LocalDateTime.of(2026,3, 6, 10, 33), solution.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 50), solution.getJobs().getFirst().getEndDateTime());
 
-        assertTrue(solution.getJobs().getFirst().isFinalDuration());
         assertTrue(solution.getLines().get(1).getJobs().isEmpty());
 
         assertNull(solution.getLines().get(2).getJobs());
@@ -145,7 +144,6 @@ class AlignDurationServiceTest {
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getPlanEndDateTime());
         assertNull(solution.getJobs().getFirst().getDelayDuration());
-        assertFalse(solution.getJobs().getFirst().isFinalDuration());
     }
 
     @Test
@@ -301,13 +299,11 @@ class AlignDurationServiceTest {
         solution.setLines(List.of(line));
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertEquals(17, line.getJobs().getFirst().getDelayDuration().toMinutes());
         assertEquals(LocalDateTime.of(2026, 3, 9, 10, 50), line.getJobs().getFirst().getEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 9, 10, 33), line.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(50, line.getJobs().getFirst().getDuration().toMinutes());
 
-        assertFalse(line.getJobs().getLast().isFinalDuration());
         assertNull(line.getJobs().getLast().getDelayDuration());
         assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23),line.getJobs().getLast().getPlanEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23), line.getJobs().getLast().getEndDateTime());
@@ -334,10 +330,8 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
 
-        assertTrue(line.getJobs().getLast().isFinalDuration());
         assertEquals(Duration.ofMinutes(59), line.getJobs().getLast().getDuration());
     }
 
@@ -362,10 +356,8 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
 
-        assertTrue(line.getJobs().getLast().isFinalDuration());
         assertEquals(Duration.ofMinutes(59), line.getJobs().getLast().getDuration());
     }
 
@@ -390,10 +382,8 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
 
-        assertTrue(line.getJobs().getLast().isFinalDuration());
         assertEquals(Duration.ofMinutes(119), line.getJobs().getLast().getDuration());
     }
 
@@ -418,10 +408,8 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
 
-        assertFalse(line.getJobs().getLast().isFinalDuration());
         assertEquals(Duration.ofMinutes(33), line.getJobs().getLast().getDuration());
     }
 
@@ -446,10 +434,8 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
 
-        assertFalse(line.getJobs().getLast().isFinalDuration());
         assertEquals(Duration.ofMinutes(33), line.getJobs().getLast().getDuration());
     }
 
@@ -486,13 +472,11 @@ class AlignDurationServiceTest {
         solution.setLines(List.of(line));
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
         assertEquals(17, line.getJobs().getFirst().getDelayDuration().toMinutes());
         assertEquals(LocalDateTime.of(2026, 3, 9, 10, 50), line.getJobs().getFirst().getEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 9, 10, 33), line.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(50, line.getJobs().getFirst().getDuration().toMinutes());
 
-        assertFalse(line.getJobs().getLast().isFinalDuration());
     }
 
     @Test
@@ -530,8 +514,6 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
-        assertFalse(line.getJobs().getLast().isFinalDuration());
     }
 
     @Test
@@ -541,7 +523,6 @@ class AlignDurationServiceTest {
         j1.setLineIdFact(line.getId());
         j1.setLine(line);
         j1.setDuration(Duration.ofMinutes(50));
-        j1.setFinalDuration(true);
         j1.setDelayDuration(Duration.ofMinutes(20));
 
         j1.setStartProductionDateTime(LocalDateTime.of(2026,3,31, 16,0));
@@ -580,8 +561,6 @@ class AlignDurationServiceTest {
         assertEquals(LocalDateTime.of(2026,3,31, 16,33), line.getJobs().getFirst().getPlanEndDateTime());
         assertEquals(Duration.ofMinutes(17), line.getJobs().getFirst().getDelayDuration());
         assertEquals(Duration.ofMinutes(50), line.getJobs().getFirst().getDuration());
-
-        assertTrue(line.getJobs().getFirst().isFinalDuration());
     }
 
 }
