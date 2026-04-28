@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.service.lines.LineService;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -39,18 +40,36 @@ public class JobService {
 
     @Inject
     public JobService(LoadDataService loadDataService, 
-        UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService) {
+        UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService,
+                      JobRefreshService refreshService, LineService lineService) {
         this.loadDataService = loadDataService;
         this.uploadDataService = uploadDataService;
         this.jobRepository = jobRepository;
         this.jobInfoService = jobInfoService;
+        this.refreshService = refreshService;
+        this.lineService = lineService;
     }
 
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
     private final JobRepository jobRepository;
     private final JobInfoService jobInfoService;
+    private final JobRefreshService refreshService;
+    private final LineService lineService;
     private  Map<Long, Job> allJobsById;
+
+    public List<DbJobRow> buildJobsOnLines(PackagingSchedule schedule){
+        List<DbJobRow> jobRows = initSolutionJobList(schedule);
+        initFactProductionData(schedule, jobRepository.getFactProductionRowMap(
+                schedule.getWorkCalendar().getFromDate(), schedule.getWorkCalendar().getToDate())
+        );
+
+        enrichCameraFactsFromPmLog(schedule);
+        initIdBatch(schedule);
+        refreshService.refreshStaleCameraEndFromPmLog(schedule);
+        lineService.initLineStartEnd(schedule);
+        return jobRows;
+    }
     /**
      * Инициализирует список задач из базы данных.
      * Фильтрует задачи без lineId и создает Job объекты из DbJobRow и DbMaintenanceRow.

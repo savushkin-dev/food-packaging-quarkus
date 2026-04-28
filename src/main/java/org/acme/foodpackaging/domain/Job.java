@@ -263,7 +263,7 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if(isMaintenance() || isFinalDuration()) return duration;
+        if(isMaintenance()) return duration;
 
         return calculateDuration();
     }
@@ -282,7 +282,8 @@ public class Job {
        }
 
        final int IF_CHANGING_PACKAGING = 4;
-       long minutes =  (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+       final long delayDuration = getDelayDuration() == null ? 0 : getDelayDuration().toMinutes();
+       long minutes =  (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING + delayDuration;
 
        return Duration.ofMinutes(minutes);
     }

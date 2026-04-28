@@ -54,6 +54,16 @@ public class PackagingSchedule {
         this.overloadedIds = new HashSet<>();
     }
 
+    public PackagingSchedule(List<Line> lines, LocalDate startDate) {
+        maintenanceProduct = createMaintenanceProduct();
+        this.deletedMaintenance = new ArrayList<>();
+        this.overloadedIds = new HashSet<>();
+
+        setWorkCalendar(new WorkCalendar(startDate));
+        setLines(lines);
+        setDti(startDate);
+    }
+
     public boolean isEmptySolution() {
         return jobs == null || jobs.isEmpty();
     }
@@ -65,6 +75,7 @@ public class PackagingSchedule {
             this.dti = startDate;
         }
     }
+
     // ************************************************************************
     // Getters and setters
     // ************************************************************************

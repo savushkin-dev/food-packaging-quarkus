@@ -22,7 +22,8 @@ public class AlignCleaningService {
         for (Job job : solution.getJobs()) {
 
             Long gapMinutes = cleaningGaps.get(job.getId());
-            if (gapMinutes == null || nullDataCleaning(job) || !hasCleaning(job)) {
+            if (gapMinutes == null || nullDataCleaning(job) ||
+                    !hasCleaning(job) || isPreviousWithoutFact(job)) {
                 continue;
             }
 
@@ -78,7 +79,8 @@ public class AlignCleaningService {
         if (lineJobs == null) return List.of();
 
         return lineJobs.stream()
-                .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null)
+                .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null
+                 && j.getLine().getId().equals(j.getLineIdFact()))
                 .sorted(Comparator.comparing(Job::getCameraStart)).toList();
     }
 
@@ -90,6 +92,11 @@ public class AlignCleaningService {
     private boolean hasCleaning(Job job) {
         return job.getStartProductionDateTime()
                 .isAfter(job.getStartCleaningDateTime());
+    }
+
+    private boolean isPreviousWithoutFact(Job job) {
+        final String PLUSH_TYPE = "10003";
+        return job.getProduct().getType().equals(PLUSH_TYPE);
     }
 }
 
