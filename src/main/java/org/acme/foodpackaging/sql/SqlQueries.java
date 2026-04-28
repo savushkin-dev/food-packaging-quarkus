@@ -42,58 +42,31 @@ public class SqlQueries {
             """.formatted(mesSchema, mesSchema);
     }
 
-    public String loadMaintenance() {
+    public String loadOeePev(EventTypeFilter filter) {
         return """
-            SELECT
-                v.F_ID, v.KRC,
-                v.PDTN, v.PDTO,
-                v.PDUR, v.SNPZ, v.F_DEL, v.EVTYPE, v.NOTE
-            FROM [%s].[dbo].[OEE_PEV] v
-            WHERE
-                (v.SNPZ IN (0, 10) OR v.SNPZ IS NULL)
-                AND v.F_DEL = 0
-                AND (
-                    (
-                        v.PDTN >= ?1
-                        AND v.PDTN < ?2
-                    )
-                    OR
-                    (
-                        v.PDTO >= ?3
-                        AND v.PDTO < ?4
-                    )
+        SELECT
+            v.F_ID, v.KRC,
+            v.PDTN, v.PDTO,
+            v.PDUR, v.SNPZ, v.F_DEL, v.EVTYPE, v.NOTE
+        FROM [%s].[dbo].[OEE_PEV] v
+        WHERE
+            v.F_DEL = 0
+            %s
+            AND (
+                (
+                    v.PDTN >= ?1
+                    AND v.PDTN < ?2
                 )
-            ORDER BY
-                v.KRC,
-                v.PDTN
-            """.formatted(mesSchema);
-    }
-
-    public String loadDelayDuration() {
-        return """
-            SELECT
-                v.F_ID, v.KRC,
-                v.PDTN, v.PDTO,
-                v.PDUR, v.SNPZ, v.F_DEL, v.EVTYPE, v.NOTE
-            FROM [%s].[dbo].[OEE_PEV] v
-            WHERE
-                v.EVTYPE = 10
-                AND v.F_DEL = 0
-                AND (
-                    (
-                        v.PDTN >= ?1
-                        AND v.PDTN < ?2
-                    )
-                    OR
-                    (
-                        v.PDTO >= ?3
-                        AND v.PDTO < ?4
-                    )
+                OR
+                (
+                    v.PDTO >= ?3
+                    AND v.PDTO < ?4
                 )
-            ORDER BY
-                v.KRC,
-                v.PDTN
-            """.formatted(mesSchema);
+            )
+        ORDER BY
+            v.KRC,
+            v.PDTN
+        """.formatted(mesSchema, filter.getCondition());
     }
 
     public String loadFact() {

@@ -627,4 +627,28 @@ void initSolutionJobList_shouldSetMinStartTime() {
         assertEquals("481026805067020260320000000346", schedule.getJobs().getFirst().getIdBatch());
         assertEquals("247811", schedule.getJobs().getFirst().getId());
     }
+
+    @Test
+    void  initCleaningDelayDuration(){
+        DbJobRow jobRow = createDbJobRow();
+
+        DbMaintenanceRow delayData = createDelayRow();
+
+        when(loadDataService.getProducts())
+                .thenReturn(Map.of("KMC1", getTestProduct()));
+        when(jobRepository.getDbJobRowMap(any(), any()))
+                .thenReturn(Map.of(123L, jobRow));
+        when(jobRepository.getMaintenanceData(any(), any()))
+                .thenReturn(List.of());
+        when(jobRepository.getDelayData(any(), any()))
+                .thenReturn(Map.of(123L, delayData));
+
+        jobService.initSolutionJobList(schedule);
+
+        assertEquals(1, schedule.getJobs().size());
+        assertEquals(6, schedule.getJobs().getFirst().getCleaningDelay().toMinutes());
+        assertEquals(6, schedule.getJobs().getFirst().getDelayDuration().toMinutes());
+        assertEquals(delayData.getMaintenanceNote(), schedule.getJobs().getFirst().getCleaningDelayNote());
+        assertEquals(delayData.getMaintenanceNote(), schedule.getJobs().getFirst().getDelayNote());
+    }
 }

@@ -1,10 +1,12 @@
 package domain;
 
+import builder.JobTestBuilder;
+import builder.LineTestBuilder;
+import builder.ProductTestBuilder;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.record.CleaningResult;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
@@ -259,102 +261,141 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTimeWhenNotPLRLC() {
-        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
-        Line line = new Line("line1", "Line 1", "op", lineStart);
 
-        Product prodA = new Product("A", "Prod A");
-        Product prodB = new Product("B", "Prod B");
-        Map<Product, Duration> cleaningDurations = new HashMap<>();
-        cleaningDurations.put(prodA, Duration.ofMinutes(25));
-        prodB.setCleaningDurations(cleaningDurations);
-        Map<Product, CleaningResult> cleaningResults = new HashMap<>();
-        cleaningResults.put(prodA, new CleaningResult(25, false));
-        prodB.setCleaningResults(cleaningResults);
+        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
 
-        Job job1 = new Job();
-        job1.setProduct(prodA);
-        job1.setMaintenance(true);
-        job1.setDuration(Duration.ofMinutes(60));
-        job1.setStartCleaningDateTime(lineStart);
-        job1.setStartProductionDateTime(lineStart);
-        job1.setEndDateTime(lineStart.plusMinutes(60));
+        Product prodA = ProductTestBuilder.aProduct("A").build();
+        Product prodB = ProductTestBuilder.aProduct("B").build();
+        prodB.setCleaningDurations(new HashMap<>(Map.of(prodA, Duration.ofMinutes(25))));
+        prodB.setCleaningResults(new HashMap<>(Map.of(prodA, new org.acme.foodpackaging.record.CleaningResult(0, false))));
 
-        Job job2 = new Job();
-        job2.setProduct(prodB);
-        job2.setMaintenance(true);
-        job2.setDuration(Duration.ofMinutes(30));
+        Job job1 = JobTestBuilder.aJob()
+                .withProduct(prodA)
+                .withDurationMinutes(60)
+                .asMaintenance()
+                .startingAt(start)
+                .build();
 
-        line.setJobs(java.util.List.of(job1, job2));
+        Job job2 = JobTestBuilder.aJob()
+                .withProduct(prodB)
+                .withDurationMinutes(30)
+                .asMaintenance()
+                .build();
+
+        Line line = LineTestBuilder.aLine("line1", start)
+                .withJobs(job1, job2)
+                .build();
+
         ScheduleUtils.fixLineJobs(line);
 
-        LocalDateTime expectedStartProduction = lineStart.plusMinutes(60).plusMinutes(25);
-        assertEquals(expectedStartProduction, job2.getStartProductionDateTime());
-        assertEquals(expectedStartProduction.plusMinutes(30), job2.getEndDateTime());
+        LocalDateTime expected = start.plusMinutes(60 + 25);
+
+        assertEquals(expected, job2.getStartProductionDateTime());
     }
 
     @Test
     void updateStartCleaningDateTime_whenPLRLC() {
+
         CleaningDurationUtils.init(Map.of("line1", 40));
 
-        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
-        Line line = new Line("line1", "Line 1", "op", lineStart);
+        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
 
-        Product prodA = new Product("A", "Prod A");
-        Product prodB = new Product("B", "Prod B");
-        Map<Product, Duration> cleaningDurations = new HashMap<>();
-        cleaningDurations.put(prodA, Duration.ofMinutes(10)); // ignored when PLRLC
-        prodB.setCleaningDurations(cleaningDurations);
-        Map<Product, CleaningResult> cleaningResults = new HashMap<>();
-        cleaningResults.put(prodA, new CleaningResult(0, true)); // isPLRLC=true -> use linesCleaning
-        prodB.setCleaningResults(cleaningResults);
+        Product prodA = ProductTestBuilder.aProduct("A").build();
+        Product prodB = ProductTestBuilder.aProduct("B")
+                .withPLRLC(prodA)
+                .build();
 
-        Job job1 = new Job();
-        job1.setProduct(prodA);
-        job1.setMaintenance(true);
-        job1.setDuration(Duration.ofMinutes(60));
-        job1.setStartCleaningDateTime(lineStart);
-        job1.setStartProductionDateTime(lineStart);
-        job1.setEndDateTime(lineStart.plusMinutes(60));
+        Job job1 = JobTestBuilder.aJob()
+                .withProduct(prodA)
+                .withDurationMinutes(60)
+                .asMaintenance()
+                .startingAt(start)
+                .build();
 
-        Job job2 = new Job();
-        job2.setProduct(prodB);
-        job2.setMaintenance(true);
-        job2.setDuration(Duration.ofMinutes(30));
+        Job job2 = JobTestBuilder.aJob()
+                .withProduct(prodB)
+                .withDurationMinutes(30)
+                .asMaintenance()
+                .build();
 
-        line.setJobs(java.util.List.of(job1, job2));
+        Line line = LineTestBuilder.aLine("line1", start)
+                .withJobs(job1, job2)
+                .build();
+
         ScheduleUtils.fixLineJobs(line);
 
-        LocalDateTime expectedStartProduction = lineStart.plusMinutes(60).plusMinutes(40);
-        assertEquals(expectedStartProduction, job2.getStartProductionDateTime());
+        LocalDateTime expected = start.plusMinutes(60 + 40);
+
+        assertEquals(expected, job2.getStartProductionDateTime());
     }
 
     @Test
     void updateStartCleaningDateTime_whenCleaningResultMissing() {
-        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
-        Line line = new Line("line1", "Line 1", "op", lineStart);
 
-        Product prodA = new Product("A", "Prod A");
-        Product prodB = new Product("B", "Prod B");
-        prodB.setCleaningDurations(null);
-        prodB.setCleaningResults(null);
+        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
 
-        Job job1 = new Job();
-        job1.setProduct(prodA);
-        job1.setMaintenance(true);
-        job1.setDuration(Duration.ofMinutes(60));
-        job1.setStartCleaningDateTime(lineStart);
-        job1.setStartProductionDateTime(lineStart);
-        job1.setEndDateTime(lineStart.plusMinutes(60));
+        Product prodA = ProductTestBuilder.aProduct("A").build();
+        Product prodB = ProductTestBuilder.aProduct("B")
+                .withoutCleaning()
+                .build();
 
-        Job job2 = new Job();
-        job2.setProduct(prodB);
-        job2.setMaintenance(true);
-        job2.setDuration(Duration.ofMinutes(30));
+        Job job1 = JobTestBuilder.aJob()
+                .withProduct(prodA)
+                .withDurationMinutes(60)
+                .asMaintenance()
+                .startingAt(start)
+                .build();
 
-        line.setJobs(java.util.List.of(job1, job2));
+        Job job2 = JobTestBuilder.aJob()
+                .withProduct(prodB)
+                .withDurationMinutes(30)
+                .asMaintenance()
+                .build();
+
+        Line line = LineTestBuilder.aLine("line1", start)
+                .withJobs(job1, job2)
+                .build();
+
         ScheduleUtils.fixLineJobs(line);
 
-        assertEquals(lineStart.plusMinutes(60), job2.getStartProductionDateTime());
+        assertEquals(start.plusMinutes(60), job2.getStartProductionDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenCleaningDelayExists_shouldAddToDuration() {
+
+        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
+
+        Product prodA = ProductTestBuilder.aProduct("A").build();
+
+        Product prodB = ProductTestBuilder.aProduct("B").build();
+        prodB.setCleaningDurations(new HashMap<>(Map.of(prodA, Duration.ofMinutes(20))));
+        prodB.setCleaningResults(new HashMap<>(Map.of(prodA, new org.acme.foodpackaging.record.CleaningResult(0, false))));
+
+        Job job1 = JobTestBuilder.aJob()
+                .withProduct(prodA)
+                .withDurationMinutes(60)
+                .asMaintenance()
+                .startingAt(lineStart)
+                .build();
+
+        Job job2 = JobTestBuilder.aJob()
+                .withProduct(prodB)
+                .withDurationMinutes(30)
+                .asMaintenance()
+                .withCleaningDelay(Duration.ofMinutes(10))
+                .build();
+
+        Line line = LineTestBuilder.aLine("line1", lineStart)
+                .withJobs(job1, job2)
+                .build();
+
+        ScheduleUtils.fixLineJobs(line);
+
+        LocalDateTime expected = lineStart.plusMinutes(60 + 20 + 10);
+
+        assertEquals(expected, job2.getStartProductionDateTime());
+        assertEquals(expected.plusMinutes(30), job2.getEndDateTime());
     }
 
     private Product createProductWithType(String type) {

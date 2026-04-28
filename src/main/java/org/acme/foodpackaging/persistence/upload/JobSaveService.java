@@ -39,6 +39,7 @@ public class JobSaveService {
             } else {
                 saveRegularJob(job);
                 saveDelayDuration(job);
+                saveCleaningDelayDuration(job);
             }
         }
     }
@@ -147,6 +148,24 @@ public class JobSaveService {
         updateProductionJob(job);
     }
 
+    private void saveCleaningDelayDuration(Job job){
+        OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
+
+        if (hasCleaningDelayDuration(job)) {
+
+            if (existing != null && Integer.valueOf(11).equals(existing.getMaintenanceTypeId())) {
+                updateCleaningDelayOeePev(existing, job);
+            } else {
+                oeePevRepository.persist(buildCleaningDelayOeePev(job));
+            }
+        } else {
+            if (existing != null && Integer.valueOf(11).equals(existing.getMaintenanceTypeId())) {
+                oeePevRepository.delete(existing);
+            }
+        }
+        updateProductionJob(job);
+    }
+
     private boolean hasCleaningOperation(Job job) {
         LocalDateTime startCleaning = job.getStartCleaningDateTime();
         LocalDateTime startProduction = job.getStartProductionDateTime();
@@ -157,7 +176,11 @@ public class JobSaveService {
     }
 
     private boolean hasDelayDuration(Job job) {
-        return job.getDelayDuration() != null && job.getPlanEndDateTime()!=null;
+        return job.getDelayDuration() != null;
+    }
+
+    private boolean hasCleaningDelayDuration(Job job) {
+        return job.getCleaningDelay() != null;
     }
 
     private OeePev buildCleaningOeePev(Job job) {
@@ -193,6 +216,23 @@ public class JobSaveService {
                 .build();
     }
 
+    private OeePev buildCleaningDelayOeePev(Job job) {
+        LocalDateTime planEndDateTime = job.getStartProductionDateTime().minusMinutes(job.getCleaningDelay().toMinutes());
+        LocalDateTime endDateTime = job.getStartProductionDateTime();
+        int delayMinutes = convertToIntDuration(job.getCleaningDelay());
+
+        return OeePev.builder()
+                .lineId(job.getLine().getId())
+                .startProductionDateTime(planEndDateTime)
+                .endDateTime(endDateTime)
+                .duration(delayMinutes)
+                .maintenanceTypeId(11)
+                .reason(null)
+                .note(job.getCleaningDelayNote())
+                .snpz(job.getSnpz())
+                .build();
+    }
+
     private void updateCleaningOeePev(OeePev existing, Job job) {
         LocalDateTime startCleaning = job.getStartCleaningDateTime();
         LocalDateTime startProduction = job.getStartProductionDateTime();
@@ -219,6 +259,20 @@ public class JobSaveService {
         existing.setMaintenanceTypeId(10);
         existing.setReason(null);
         existing.setNote(job.getDelayNote());
+    }
+
+    private void updateCleaningDelayOeePev(OeePev existing, Job job) {
+        LocalDateTime planEndDateTime = job.getStartProductionDateTime().minusMinutes(job.getCleaningDelay().toMinutes());
+        LocalDateTime  endDateTime = job.getStartProductionDateTime();
+
+        int delayMinutes = convertToIntDuration(job.getCleaningDelay());
+        existing.setLineId(job.getLine().getId());
+        existing.setStartProductionDateTime(planEndDateTime);
+        existing.setEndDateTime(endDateTime);
+        existing.setDuration(delayMinutes);
+        existing.setMaintenanceTypeId(11);
+        existing.setReason(null);
+        existing.setNote(job.getCleaningDelayNote());
     }
 
     private void updateProductionJob(Job job) {

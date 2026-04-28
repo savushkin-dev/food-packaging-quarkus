@@ -59,10 +59,22 @@ public class JobRepository {
      *
      * @param from Start date (inclusive)
      * @param to End date (inclusive)
-     * @return Map of delay rows by FId
+     * @return Map of delay rows by Event 10
      */
     public Map<Long, DbMaintenanceRow> getDelayData(LocalDate from, LocalDate to) {
         return jobDBLoader.loadDelayDurationRows(
+                from.atStartOfDay(), to.atStartOfDay()
+        );
+    }
+    /**
+     * Загружает карту партий с задержкой фасовки по времени.
+     *
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of cleaning delay rows by Event 11
+     */
+    public Map<Long, DbMaintenanceRow> getCleaningDelayData(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadCleaningDelayDurationRows(
                 from.atStartOfDay(), to.atStartOfDay()
         );
     }

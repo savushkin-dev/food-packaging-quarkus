@@ -10,6 +10,7 @@ import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.sql.EventTypeFilter;
 import org.acme.foodpackaging.sql.SqlQueries;
 
 import java.sql.Timestamp;
@@ -68,7 +69,7 @@ public class JobDBLoader {
     ) {
 
         return   em
-                .createNativeQuery(queries.loadMaintenance(), "DbMaintenanceRowMapping")
+                .createNativeQuery(queries.loadOeePev(EventTypeFilter.MAINTENANCE), "DbMaintenanceRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .setParameter(3, Timestamp.valueOf(from))
@@ -83,7 +84,7 @@ public class JobDBLoader {
     ) {
 
       List <DbMaintenanceRow> delayDurationList = em
-                .createNativeQuery(queries.loadDelayDuration(), "DbMaintenanceRowMapping")
+                .createNativeQuery(queries.loadOeePev(EventTypeFilter.DELAY), "DbMaintenanceRowMapping")
                 .setParameter(1, Timestamp.valueOf(from))
                 .setParameter(2, Timestamp.valueOf(to))
                 .setParameter(3, Timestamp.valueOf(from))
@@ -96,6 +97,28 @@ public class JobDBLoader {
                               Function.identity(),
                               (existing, replacement) -> existing)
               );
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<Long, DbMaintenanceRow> loadCleaningDelayDurationRows(
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+
+        List <DbMaintenanceRow> delayDurationList = em
+                .createNativeQuery(queries.loadOeePev(EventTypeFilter.CLEANING), "DbMaintenanceRowMapping")
+                .setParameter(1, Timestamp.valueOf(from))
+                .setParameter(2, Timestamp.valueOf(to))
+                .setParameter(3, Timestamp.valueOf(from))
+                .setParameter(4, Timestamp.valueOf(to))
+                .getResultList();
+
+        return delayDurationList.stream()
+                .collect(Collectors.toMap
+                        (DbMaintenanceRow::getSnpz,
+                                Function.identity(),
+                                (existing, replacement) -> existing)
+                );
     }
 
     @SuppressWarnings("unchecked")

@@ -53,7 +53,7 @@ public class Job {
 
     @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration delayDuration;
-    private Duration delayCleaningDuration;
+    private Duration cleaningDelay;
     private boolean maintenance;
     private boolean handPackaging;
     private boolean finalDuration;
@@ -70,7 +70,7 @@ public class Job {
     private Integer emk;
     private String placeFactInfo;
     private String delayNote;
-    private String delayCleaningNote;
+    private String cleaningDelayNote;
     private Integer placePlan;
 
     private int priority;
@@ -337,6 +337,8 @@ public class Job {
             Duration cleanupDuration = meta.isPLRLC()
                     ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()))
                     : product.getCleaningDurations().get(previous.getProduct());
+
+             cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
             return startCleaning.plus(cleanupDuration);
         } catch (IllegalArgumentException | NullPointerException e) {
             return startCleaning;

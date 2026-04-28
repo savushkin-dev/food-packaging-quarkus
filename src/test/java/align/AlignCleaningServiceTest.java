@@ -42,8 +42,8 @@ class AlignCleaningServiceTest {
     void alignCleanings_shouldCalculateCleaningDelay(){
         cleaningService.alignCleanings(solution);
 
-        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getDelayCleaningDuration());
-        assertNull(solution.getJobs().getFirst().getDelayCleaningDuration());
+        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
+        assertNull(solution.getJobs().getFirst().getCleaningDelay());
     }
 
     @Test
@@ -51,7 +51,7 @@ class AlignCleaningServiceTest {
         solution.getJobs().getLast().setStartProductionDateTime(null);
         cleaningService.alignCleanings(solution);
 
-        assertNull(solution.getJobs().getLast().getDelayCleaningDuration());
+        assertNull(solution.getJobs().getLast().getCleaningDelay());
     }
 
     @Test
@@ -59,7 +59,7 @@ class AlignCleaningServiceTest {
         solution.getJobs().getLast().setCameraStart(LocalDateTime.of(2026, 4, 24, 13, 30));
         cleaningService.alignCleanings(solution);
 
-        assertNull(solution.getJobs().getLast().getDelayCleaningDuration());
+        assertNull(solution.getJobs().getLast().getCleaningDelay());
     }
 
     private Job getTestJobFirst(){

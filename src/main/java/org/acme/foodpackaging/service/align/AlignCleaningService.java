@@ -34,7 +34,7 @@ public class AlignCleaningService {
             long finalDelay = gapMinutes - actualDelay;
 
             if (finalDelay > 0) {
-                job.setDelayCleaningDuration(Duration.ofMinutes(finalDelay));
+                job.setCleaningDelay(Duration.ofMinutes(finalDelay));
             }
         }
     }

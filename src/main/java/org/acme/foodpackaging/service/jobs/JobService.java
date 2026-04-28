@@ -65,6 +65,9 @@ public class JobService {
         Map<Long, DbMaintenanceRow> delayDurationMap  = jobRepository.getDelayData(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
 
+        Map<Long, DbMaintenanceRow> cleaningDelayDurationMap  = jobRepository.getDelayData(
+                solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
+
         Map<Long,DbJobRow> jobsBySnpz = jobRepository.getDbJobRowMap(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
 
@@ -109,6 +112,7 @@ public class JobService {
         solution.setAllJobsById(allJobsById);
         solution.setJobs(jobs);
         initDelayDuration(solution.getJobs(), delayDurationMap);
+        initCleaningDelayDuration(solution.getJobs(), cleaningDelayDurationMap);
         return jobsBySnpz.values().stream().toList();
     }
 
@@ -125,6 +129,22 @@ public class JobService {
                 job.setEndDateTime(row.getEndDateTime().toLocalDateTime());
                 job.setDelayDuration(Duration.ofMinutes(row.getDuration()));
                 job.setDelayNote(row.getMaintenanceNote());
+            }
+        }
+    }
+
+    private void initCleaningDelayDuration(List<Job> jobs, Map<Long, DbMaintenanceRow> cleaningDelayDurationMap){
+        for(Job job : jobs){
+            long jobId;
+            try {
+                jobId = Long.parseLong(job.getId());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            if(cleaningDelayDurationMap.containsKey(jobId)){
+                DbMaintenanceRow row = cleaningDelayDurationMap.get(jobId);
+                job.setCleaningDelay(Duration.ofMinutes(row.getDuration()));
+                job.setCleaningDelayNote(row.getMaintenanceNote());
             }
         }
     }
