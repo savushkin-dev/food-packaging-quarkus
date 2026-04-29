@@ -24,7 +24,6 @@ public class AlignSolutionService {
     public void align(PackagingSchedule schedule) {
         durationService.alignByFactDuration(schedule);
         cleaningService.alignCleanings(schedule);
-        lastChainService.alignLineStartByFact(schedule);
         lineService.setMaxEndDateTimeByLastJob(schedule);
     }
 }

@@ -262,8 +262,12 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if(isMaintenance()) return duration;
-
+        if(isMaintenance()){
+            if(cleaningDelay != null) {
+                return duration.plusMinutes(cleaningDelay.toMinutes());
+            }
+            return duration;
+        }
         return calculateDuration();
     }
 
@@ -338,6 +342,7 @@ public class Job {
                     ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()))
                     : product.getCleaningDurations().get(previous.getProduct());
 
+             cleaningDelay = previous.isMaintenance() ? null : cleaningDelay;
              cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
             return startCleaning.plus(cleanupDuration);
         } catch (IllegalArgumentException | NullPointerException e) {

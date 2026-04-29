@@ -9,6 +9,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixPinnedJobs;
+
 @ApplicationScoped
 public class AlignCleaningService {
 
@@ -23,11 +26,13 @@ public class AlignCleaningService {
             if (factJobs.isEmpty()) {
                 continue;
             }
-            calculateCleaningDelay(factJobs);
+            calculateCleaningDelay(factJobs, line.getJobs());
+            fixLineJobs(line);
+            fixPinnedJobs(line);
         }
     }
 
-    private void calculateCleaningDelay(List<Job> jobs) {
+    private void calculateCleaningDelay(List<Job> jobs, List<Job> planLineJobs) {
         if (jobs == null || jobs.size() < 2) {
             return;
         }
@@ -36,7 +41,7 @@ public class AlignCleaningService {
             Job curr = jobs.get(i);
             Job next = jobs.get(i + 1);
 
-            if (!isValidTransition(curr, next)) {
+            if (!isTheSameProduct(curr, next)) {
                 continue;
             }
 
@@ -46,7 +51,7 @@ public class AlignCleaningService {
             List<Job> chain = jobs.subList(i + 1, chainEndIndex);
 
             Job jobWithCleaning = findJobWithCleaning(chain);
-            if (jobWithCleaning == null) {
+            if (!isValidTransition(jobWithCleaning)) {
                 continue;
             }
 
@@ -55,7 +60,7 @@ public class AlignCleaningService {
         }
     }
 
-    private boolean isValidTransition(Job curr, Job next) {
+    private boolean isTheSameProduct(Job curr, Job next) {
         if (curr == null || next == null) return false;
         if (curr.getProduct() == null || next.getProduct() == null) return false;
 
@@ -63,6 +68,19 @@ public class AlignCleaningService {
                 curr.getProduct().getId(),
                 next.getProduct().getId()
         );
+    }
+
+    private boolean isValidTransition(Job candidateJob) {
+        if (isInvalidJobWithProductType(candidateJob) ||
+                isInvalidJobWithProductType(candidateJob.getPreviousJob())) return false;
+
+        final String PLUSH_TYPE = "10003";
+        return !candidateJob.getPreviousJob().getProduct().getType().equals(PLUSH_TYPE);
+    }
+
+    private boolean isInvalidJobWithProductType(Job job) {
+        return job == null || job.getProduct() == null
+                || job.getProduct().getType() == null;
     }
 
     private long calculateFactCleaning(Job curr, Job next) {
@@ -81,7 +99,6 @@ public class AlignCleaningService {
                 Objects.equals(jobs.get(k).getProduct().getId(), productId)) {
             k++;
         }
-
         return k;
     }
 
@@ -99,8 +116,7 @@ public class AlignCleaningService {
 
     private boolean isCandidate(Job candidate,
                                 long cleaningMinutesFact, long cleaningMinutesPlan) {
-        if (!candidate.getLine().getId().equals(candidate.getLineIdFact())
-                || isPreviousWithoutFact(candidate))
+        if (!candidate.getLine().getId().equals(candidate.getLineIdFact()))
             return false;
 
         return cleaningMinutesFact > cleaningMinutesPlan;
@@ -132,11 +148,6 @@ public class AlignCleaningService {
                 .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null
                         && j.getLine().getId().equals(j.getLineIdFact()))
                 .sorted(Comparator.comparing(Job::getCameraStart)).toList();
-    }
-
-    private boolean isPreviousWithoutFact(Job job) {
-        final String PLUSH_TYPE = "10003";
-        return job.getProduct().getType().equals(PLUSH_TYPE);
     }
 }
 
