@@ -8,15 +8,12 @@ import org.acme.foodpackaging.service.lines.LineService;
 public class AlignSolutionService {
 
     private final AlignDurationService durationService;
-    private final AlignByLastChainService lastChainService;
     private final AlignCleaningService cleaningService;
     private final LineService lineService;
 
     public AlignSolutionService(AlignDurationService durationService,
-                                AlignByLastChainService lastChainService,
                                 AlignCleaningService cleaningService, LineService lineService) {
         this.durationService = durationService;
-        this.lastChainService = lastChainService;
         this.cleaningService = cleaningService;
         this.lineService = lineService;
     }

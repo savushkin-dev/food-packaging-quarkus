@@ -2,7 +2,6 @@ package align;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
-import org.acme.foodpackaging.service.align.AlignByLastChainService;
 import org.acme.foodpackaging.service.align.AlignCleaningService;
 import org.acme.foodpackaging.service.align.AlignDurationService;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
@@ -25,8 +24,6 @@ class AlignSolutionServiceTest {
     @Mock
     AlignDurationService alignDuration;
     @Mock
-    AlignByLastChainService alignLastChain;
-    @Mock
     AlignCleaningService cleaningService;
 
     private AlignSolutionService alignSolution;
@@ -35,7 +32,6 @@ class AlignSolutionServiceTest {
     void setUp() {
         alignSolution = new AlignSolutionService(
                 alignDuration,
-                alignLastChain,
                 cleaningService,
                 lineService
         );
@@ -48,7 +44,6 @@ class AlignSolutionServiceTest {
 
         verify(alignDuration).alignByFactDuration(schedule);
         verify(cleaningService).alignCleanings(schedule);
-        verify(alignLastChain).alignLineStartByFact(schedule);
         verify(lineService).setMaxEndDateTimeByLastJob(schedule);
     }
 }
