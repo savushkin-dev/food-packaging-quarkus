@@ -16,7 +16,6 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 public class AlignDurationService {
 
    public void alignByFactDuration(PackagingSchedule schedule) {
-        removePackagingMaintenance(schedule);
         if(schedule.getLines()==null) return;
         for (Line line : schedule.getLines()) {
             List<Job> jobs = line.getJobs();
@@ -24,37 +23,6 @@ public class AlignDurationService {
                 continue;
             }
             fixDurationByFact(line);
-        }
-    }
-
-    private void removePackagingMaintenance(PackagingSchedule schedule){
-        List<Job> jobs = schedule.getJobs();
-        if (schedule.getJobs() == null || schedule.getJobs().isEmpty()) {
-            return;
-        }
-
-        Iterator<Job> it = jobs.iterator();
-        while (it.hasNext()) {
-            Job job = it.next();
-            if (job.isMaintenance() && job.getMaintenanceTypeId()!= null
-                    && job.getMaintenanceTypeId() == 7) {
-                job.setFDel((short)1);
-                schedule.getDeletedMaintenance().add(job);
-                it.remove();
-            }
-        }
-
-        for(Line line : schedule.getLines()){
-
-            if (line == null || line.getJobs() == null || line.getJobs().isEmpty()) {
-                continue;
-            }
-            List<Job> lineJobs = line.getJobs();
-
-            lineJobs.removeIf(job -> job.isMaintenance() && job.getMaintenanceTypeId()!= null
-                    && job.getMaintenanceTypeId() == 7);
-            fixLineJobs(line);
-            fixPinnedJobs(line);
         }
     }
 

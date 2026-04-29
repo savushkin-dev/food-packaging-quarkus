@@ -26,14 +26,13 @@ public class AlignCleaningService {
             if (factJobs.isEmpty()) {
                 continue;
             }
-            calculateCleaningDelay(factJobs, line.getJobs());
+            calculateCleaningDelay(factJobs);
             line.setStartDateTime(factJobs.getFirst().getCameraStart());
             fixLineJobs(line);
             fixPinnedJobs(line);
         }
     }
-
-    private void calculateCleaningDelay(List<Job> jobs, List<Job> planLineJobs) {
+    private void calculateCleaningDelay(List<Job> jobs) {
         if (jobs == null || jobs.size() < 2) {
             return;
         }
