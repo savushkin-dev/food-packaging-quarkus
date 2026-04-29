@@ -344,6 +344,9 @@ public class Job {
 
              cleaningDelay = previous.isMaintenance() ? null : cleaningDelay;
              cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
+            if (cleanupDuration.isNegative()) {
+                cleanupDuration = Duration.ZERO;
+            }
             return startCleaning.plus(cleanupDuration);
         } catch (IllegalArgumentException | NullPointerException e) {
             return startCleaning;
