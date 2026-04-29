@@ -74,7 +74,7 @@ public class JobDBLoader {
     }
 
     public Map<Long, DbMaintenanceRow> loadCleaningDelayDurationRows(LocalDateTime from, LocalDateTime to) {
-        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.CLEANING, from, to));
+        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.CLEANING_DELAY, from, to));
     }
 
     private List<DbMaintenanceRow> loadMaintenanceByType(
@@ -143,7 +143,7 @@ public class JobDBLoader {
             );
 
             if (!rows.isEmpty()) {
-                CameraFactRow row = rows.get(0);
+                CameraFactRow row = rows.getFirst();
 
                 result.put(
                         idBatch,

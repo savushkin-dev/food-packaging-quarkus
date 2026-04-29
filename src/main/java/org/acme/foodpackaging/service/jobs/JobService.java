@@ -84,7 +84,7 @@ public class JobService {
         Map<Long, DbMaintenanceRow> delayDurationMap  = jobRepository.getDelayData(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
 
-        Map<Long, DbMaintenanceRow> cleaningDelayDurationMap  = jobRepository.getDelayData(
+        Map<Long, DbMaintenanceRow> cleaningDelayDurationMap  = jobRepository.getCleaningDelayData(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
 
         Map<Long,DbJobRow> jobsBySnpz = jobRepository.getDbJobRowMap(
