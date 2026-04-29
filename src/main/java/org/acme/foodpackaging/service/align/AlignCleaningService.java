@@ -108,19 +108,14 @@ public class AlignCleaningService {
                 job.getStartProductionDateTime()
         );
 
-        if (isCandidate(job, cleaningMinutesFact, cleaningMinutesPlan)) {
+        if (isTheSameLine(job)) {
             long delay = cleaningMinutesFact - cleaningMinutesPlan;
             job.setCleaningDelay(Duration.ofMinutes(delay));
         }
     }
 
-    private boolean isCandidate(Job candidate,
-                                long cleaningMinutesFact, long cleaningMinutesPlan) {
-        if (!candidate.getLine().getId().equals(candidate.getLineIdFact()))
-            return false;
-
-        return cleaningMinutesFact > cleaningMinutesPlan;
-
+    private boolean isTheSameLine(Job candidate) {
+         return candidate.getLine().getId().equals(candidate.getLineIdFact());
     }
 
     private long getCleaningMinutes(LocalDateTime start, LocalDateTime end) {
