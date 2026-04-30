@@ -27,9 +27,11 @@ public class AlignCleaningService {
                 continue;
             }
             calculateCleaningDelay(factJobs);
-            line.setStartDateTime(factJobs.getFirst().getCameraStart());
-            fixLineJobs(line);
-            fixPinnedJobs(line);
+            if(line.getJobs().getFirst().getProduct().getId().equals(factJobs.getFirst().getProduct().getId())){
+                line.setStartDateTime(factJobs.getFirst().getCameraStart());
+                fixLineJobs(line);
+                fixPinnedJobs(line);
+            }
         }
     }
     private void calculateCleaningDelay(List<Job> jobs) {
