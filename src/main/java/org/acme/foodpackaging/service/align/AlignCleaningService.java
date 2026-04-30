@@ -26,15 +26,20 @@ public class AlignCleaningService {
             if (factJobs.isEmpty()) {
                 continue;
             }
-            calculateCleaningDelay(factJobs);
-            if(line.getJobs().getFirst().getProduct().getId().equals(factJobs.getFirst().getProduct().getId())){
-                line.setStartDateTime(factJobs.getFirst().getCameraStart());
-                fixLineJobs(line);
-                fixPinnedJobs(line);
-            }
+            calculateCleaningDelay(factJobs, line);
+            alignLineByStartDateTime(line, factJobs);
         }
     }
-    private void calculateCleaningDelay(List<Job> jobs) {
+
+    private void alignLineByStartDateTime(Line line, List<Job> factJobs){
+        if(line.getJobs().getFirst().getProduct().getId().equals(factJobs.getFirst().getProduct().getId())){
+            line.setStartDateTime(factJobs.getFirst().getCameraStart());
+        }
+        fixLineJobs(line);
+        fixPinnedJobs(line);
+    }
+
+    private void calculateCleaningDelay(List<Job> jobs, Line line) {
         if (jobs == null || jobs.size() < 2) {
             return;
         }
@@ -53,11 +58,17 @@ public class AlignCleaningService {
             List<Job> chain = jobs.subList(i + 1, chainEndIndex);
 
             Job jobWithCleaning = findJobWithCleaning(chain);
-            if (!isValidTransition(jobWithCleaning)) {
+
+            if (jobWithCleaning == null || chain.isEmpty()) {
                 continue;
             }
 
-            applyCleaningDelay(jobWithCleaning, cleaningMinutesFact);
+            if (isPreviousWithoutFact(jobWithCleaning)) {
+                alignLineByStartDateTime(line, jobs);
+                applyDelayWithoutFact(jobWithCleaning, chain.getFirst().getCameraStart());
+            } else {
+                applyCleaningDelay(jobWithCleaning, cleaningMinutesFact);
+            }
             i = chainEndIndex - 2;
         }
     }
@@ -72,12 +83,25 @@ public class AlignCleaningService {
         );
     }
 
-    private boolean isValidTransition(Job candidateJob) {
+    private boolean isPreviousWithoutFact(Job candidateJob){
         if (isInvalidJobWithProductType(candidateJob) ||
                 isInvalidJobWithProductType(candidateJob.getPreviousJob())) return false;
 
         final String PLUSH_TYPE = "10003";
-        return !candidateJob.getPreviousJob().getProduct().getType().equals(PLUSH_TYPE);
+        return candidateJob.getPreviousJob().getProduct().getType().equals(PLUSH_TYPE);
+    }
+
+    private void applyDelayWithoutFact(Job candidate, LocalDateTime firstStart) {
+        if (candidate == null || firstStart == null || candidate.getStartProductionDateTime() == null) {
+            return;
+        }
+
+        long delay = Duration.between(
+                candidate.getStartProductionDateTime(),
+                firstStart
+        ).toMinutes();
+
+        candidate.setCleaningDelay(Duration.ofMinutes(delay));
     }
 
     private boolean isInvalidJobWithProductType(Job job) {
