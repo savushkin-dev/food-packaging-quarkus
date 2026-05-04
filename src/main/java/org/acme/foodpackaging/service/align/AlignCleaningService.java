@@ -9,8 +9,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixPinnedJobs;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class AlignCleaningService {
@@ -55,21 +54,51 @@ public class AlignCleaningService {
             long cleaningMinutesFact = calculateFactCleaning(curr, next);
 
             int chainEndIndex = findChainEndIndex(jobs, i + 1);
-            List<Job> chain = jobs.subList(i + 1, chainEndIndex);
+            List<Job> chain = new ArrayList<>(jobs.subList(i + 1, chainEndIndex));
 
-            Job jobWithCleaning = findJobWithCleaning(chain);
+            chain.sort(Comparator.comparing(Job::getStartProductionDateTime));
 
-            if (jobWithCleaning == null || chain.isEmpty()) {
+
+            Job jobWithCleaning = chain.getFirst();
+
+            if(jobWithCleaning != null && jobWithCleaning.getPreviousJob() != null && jobWithCleaning.getPreviousJob().isMaintenance()){
+                int index = line.getJobs().indexOf(jobWithCleaning);
+                removeMaintenanceBefore(line.getJobs(), index);
+                alignLineByStartDateTime(line, jobs);
+                applyCleaningDelay(jobWithCleaning, cleaningMinutesFact);
+            }
+           else if (jobWithCleaning == null || jobWithCleaning.getStartCleaningDateTime() == null || jobWithCleaning.getCleaningDelay() != null || chain.isEmpty()) {
                 continue;
             }
 
-            if (isPreviousWithoutFact(jobWithCleaning)) {
+           else if (isPreviousWithoutFact(jobWithCleaning)) {
                 alignLineByStartDateTime(line, jobs);
                 applyDelayWithoutFact(jobWithCleaning, chain.getFirst().getCameraStart());
             } else {
                 applyCleaningDelay(jobWithCleaning, cleaningMinutesFact);
             }
             i = chainEndIndex - 2;
+        }
+    }
+
+    private boolean isPreviousMaintenance(Job job){
+        if(job.getPreviousJob() == null) return false;
+
+        return job.getPreviousJob().isMaintenance();
+    }
+
+    private void removeMaintenanceBefore(List<Job> jobs, int index) {
+        int i = index - 1;
+
+        while (i >= 0) {
+            Job job = jobs.get(i);
+
+            if (!job.isMaintenance()) {
+                break;
+            }
+
+            jobs.remove(i);
+            i--;
         }
     }
 
