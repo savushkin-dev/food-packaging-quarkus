@@ -108,14 +108,7 @@ public class AlignCleaningService {
             return;
         }
 
-       if (candidate == null
-                || candidate.getStartCleaningDateTime() == null
-                || candidate.getCleaningDelay() != null
-                || !isPlanProductsValid(curr, candidate)) {
-            return;
-        }
-
-       if (isPreviousWithoutFact(candidate)) {
+        if (isPreviousWithoutFact(candidate)) {
             alignLineByStartDateTime(line, jobs);
             chain.sort(Comparator.comparing(Job::getCameraStart, Comparator.nullsLast(Comparator.naturalOrder())));
             LocalDateTime firstStart = chain.getFirst() != null ? chain.getFirst().getCameraStart() : null;
@@ -123,6 +116,12 @@ public class AlignCleaningService {
             return;
         }
 
+       if (candidate == null
+                || candidate.getStartCleaningDateTime() == null
+                || candidate.getCleaningDelay() != null
+                || !isPlanProductsValid(curr, candidate)) {
+            return;
+        }
         applyCleaningDelay(candidate, cleaningMinutesFact);
     }
 
