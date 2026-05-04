@@ -17,6 +17,27 @@ curl -X GET "http://localhost:8080/schedule" ^
 curl -X GET "http://localhost:8080/schedule/lines"
 ```
 
+### GET /schedule/downtimePeriods/{idBatch}
+
+Простои между соседними маркировками в `PM_LOG` (порядок `F_ID`), только интервалы **строго длиннее 2 минут**. `cameraStart` / `cameraEnd` — `DTS` первой и последней строки выборки. Заголовок `X-Session-Id` не нужен. Если строк нет — **404**.
+
+```shell
+curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105"
+```
+
+Пример ответа:
+
+```json
+{
+  "idbatch": "481026805610020260426000000105",
+  "cameraStart": "2026-04-27T23:51:53.867",
+  "cameraEnd": "2026-04-28T00:31:08.96",
+  "downtime": [
+    { "dtStart": "2026-04-27T23:55:53.867", "dtEnd": "2026-04-28T00:03:08.96" }
+  ]
+}
+```
+
 ### GET /schedule/serviceTypes
 
 ```shell

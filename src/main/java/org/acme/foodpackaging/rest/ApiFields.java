@@ -15,6 +15,7 @@ public final class ApiFields {
     public static final String REFRESH_OK = "Schedule refreshed";
     // Messages
     public static final String NO_SCHEDULE_LOADED = "No schedule loaded";
+    public static final String NO_PM_LOG_ROWS_FOR_BATCH = "No PM_LOG marking rows for batch";
     public static final String NO_DATA_LOADED = "No data loaded";
     public static final String SESSION_ID_REQUIRED = "Session ID is required";
     public static final String MS_LOG_INSERT_FAILED = "Failed to insert MS_LOG rows";
