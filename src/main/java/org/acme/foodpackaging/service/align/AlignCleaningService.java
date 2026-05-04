@@ -108,7 +108,7 @@ public class AlignCleaningService {
        if (candidate == null
                 || candidate.getStartCleaningDateTime() == null
                 || candidate.getCleaningDelay() != null
-                || isPlanProductsValid(curr, candidate)) {
+                || !isPlanProductsValid(curr, candidate)) {
             return;
         }
 
@@ -146,14 +146,14 @@ public class AlignCleaningService {
         if (candidate.getPreviousJob() == null || candidate.getPreviousJob().getProduct() == null) return false;
         if (candidate.getPreviousJob().getProduct().getId() == null) return false;
 
-        return Objects.equals(curr.getProduct().getId(), candidate.getPreviousJob().getProduct().getId());
+        return curr.getProduct().equals(candidate.getPreviousJob().getProduct());
     }
 
     private boolean areDifferentProducts(Job curr, Job next) {
         if (curr == null || next == null) return false;
         if (curr.getProduct() == null || next.getProduct() == null) return false;
 
-        return !Objects.equals(curr.getProduct().getId(), next.getProduct().getId());
+        return !curr.getProduct().equals(next.getProduct());
     }
 
     private boolean isPreviousWithoutFact(Job candidateJob) {
