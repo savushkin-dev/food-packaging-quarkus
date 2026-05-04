@@ -81,11 +81,12 @@ public class Product {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Product product)) return false;
-        return Objects.equals(id, product.id);
+        return id != null && id.equals(product.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return id != null ? id.hashCode() : System.identityHashCode(this);
     }
+
 }

@@ -46,14 +46,17 @@ public class AlignCleaningService {
         Job firstPlanned = line.getJobs().getFirst();
         Job firstFact = factJobs.getFirst();
 
-        if (firstPlanned != null
-                && firstPlanned.getProduct() != null
-                && firstPlanned.getProduct().getId() != null
-                && firstFact != null
-                && firstFact.getProduct() != null
-                && firstFact.getProduct().getId() != null
-                && Objects.equals(firstPlanned.getProduct().getId(), firstFact.getProduct().getId())) {
+        if(firstFact == null || firstFact.getProduct() == null
+        || firstPlanned == null || firstPlanned.getProduct() == null) return;
+
+        if (firstPlanned.getProduct().equals(firstFact.getProduct())){
             line.setStartDateTime(firstFact.getCameraStart());
+        }
+        else{
+            line.getJobs().stream()
+                    .filter(j -> j.getProduct().equals(firstFact.getProduct())
+                            && j.getStartCleaningDateTime() != null && j.getStartCleaningDateTime().isBefore(j.getStartProductionDateTime()))
+                    .findFirst().ifPresent(candidate -> applyDelayWithoutFact(candidate, firstFact.getCameraStart()));
         }
         fixLineJobs(line);
         fixPinnedJobs(line);
