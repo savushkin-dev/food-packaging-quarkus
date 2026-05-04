@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.service.align;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
@@ -19,6 +20,7 @@ public class AlignSolutionService {
     private final AlignCleaningService cleaningService;
     private final LineService lineService;
 
+    @Inject
     public AlignSolutionService(AlignDurationService durationService,
                                 AlignCleaningService cleaningService, LineService lineService) {
         this.durationService = durationService;

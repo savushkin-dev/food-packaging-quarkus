@@ -25,7 +25,7 @@ public class AlignCleaningService {
             if (factJobs.isEmpty()) {
                 continue;
             }
-            calculateCleaningDelay(factJobs, line);
+            calculateCleaningDelay(factJobs, line, solution.getDeletedMaintenance());
             alignLineByStartDateTime(line, factJobs);
         }
     }
@@ -38,7 +38,7 @@ public class AlignCleaningService {
         fixPinnedJobs(line);
     }
 
-    private void calculateCleaningDelay(List<Job> jobs, Line line) {
+    private void calculateCleaningDelay(List<Job> jobs, Line line, List<Job> deletedMaintenance) {
         if (jobs == null || jobs.size() < 2) {
             return;
         }
@@ -63,7 +63,7 @@ public class AlignCleaningService {
 
             if(jobWithCleaning != null && jobWithCleaning.getPreviousJob() != null && jobWithCleaning.getPreviousJob().isMaintenance()){
                 int index = line.getJobs().indexOf(jobWithCleaning);
-                removeMaintenanceBefore(line.getJobs(), index);
+                removeMaintenanceBefore(line.getJobs(), index, deletedMaintenance);
                 alignLineByStartDateTime(line, jobs);
                 applyCleaningDelay(jobWithCleaning, cleaningMinutesFact);
             }
@@ -73,6 +73,7 @@ public class AlignCleaningService {
 
            else if (isPreviousWithoutFact(jobWithCleaning)) {
                 alignLineByStartDateTime(line, jobs);
+                chain.sort(Comparator.comparing(Job::getCameraStart));
                 applyDelayWithoutFact(jobWithCleaning, chain.getFirst().getCameraStart());
             } else {
                 applyCleaningDelay(jobWithCleaning, cleaningMinutesFact);
@@ -81,13 +82,7 @@ public class AlignCleaningService {
         }
     }
 
-    private boolean isPreviousMaintenance(Job job){
-        if(job.getPreviousJob() == null) return false;
-
-        return job.getPreviousJob().isMaintenance();
-    }
-
-    private void removeMaintenanceBefore(List<Job> jobs, int index) {
+    private void removeMaintenanceBefore(List<Job> jobs, int index, List<Job> deletedJobs) {
         int i = index - 1;
 
         while (i >= 0) {
@@ -96,7 +91,7 @@ public class AlignCleaningService {
             if (!job.isMaintenance()) {
                 break;
             }
-
+            deletedJobs.add(jobs.get(i));
             jobs.remove(i);
             i--;
         }
@@ -178,17 +173,6 @@ public class AlignCleaningService {
         return Duration.between(
                 start, end
         ).toMinutes();
-    }
-
-    private Job findJobWithCleaning(List<Job> chainEqualsProducts) {
-        return chainEqualsProducts.stream()
-                .filter(job ->
-                        job.getStartProductionDateTime() != null &&
-                                job.getStartCleaningDateTime() != null &&
-                                job.getStartProductionDateTime().isAfter(job.getStartCleaningDateTime())
-                )
-                .findFirst()
-                .orElse(null);
     }
 
     private List<Job> getFactJobsSorted(List<Job> lineJobs) {

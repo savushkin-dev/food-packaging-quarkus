@@ -262,16 +262,15 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if(isMaintenance()){
-            if(cleaningDelay != null) {
-                return duration.plusMinutes(cleaningDelay.toMinutes());
-            }
-            return duration;
-        }
-        return calculateDuration();
+        if(isMaintenance()) return duration;
+        return calculateDuration(true);
     }
 
-   private  Duration calculateDuration(){
+    public Duration getPlanDuration(){
+        if(isMaintenance()) return duration;
+        return calculateDuration(false);
+    }
+   private  Duration calculateDuration(boolean use_delay){
 
        Integer speed;
        if (isHandPackaging()) {
@@ -285,9 +284,11 @@ public class Job {
        }
 
        final int IF_CHANGING_PACKAGING = 4;
-       final long delayDuration = getDelayDuration() == null ? 0 : getDelayDuration().toMinutes();
-       long minutes =  (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING + delayDuration;
-
+       long minutes =  (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+       if(use_delay){
+           final long delayDuration = getDelayDuration() == null ? 0 : getDelayDuration().toMinutes();
+           minutes+=delayDuration;
+       }
        return Duration.ofMinutes(minutes);
     }
 
@@ -307,7 +308,7 @@ public class Job {
 
         if(startProductionDateTime == null) return null;
 
-        Duration planDuration = calculateDuration();
+        Duration planDuration = calculateDuration(false);
         return startProductionDateTime.plusMinutes(planDuration.toMinutes());
     }
     // ************************************************************************
