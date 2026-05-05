@@ -16,7 +16,7 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 public class AlignDurationService {
 
    public void alignByFactDuration(PackagingSchedule schedule) {
-        if(schedule.getLines()==null) return;
+        if(schedule.getLines() == null) return;
         for (Line line : schedule.getLines()) {
             List<Job> jobs = line.getJobs();
             if (jobs == null || jobs.isEmpty()) {
@@ -29,15 +29,14 @@ public class AlignDurationService {
     private void  fixDurationByFact(Line line) {
 
         for (Job job : line.getJobs()) {
-            Long factMinutes = calculateFactMinutes(job);
-            if (factMinutes == null || job.getLineIdFact() == null ||
-                    !job.getLine().getId().equals(job.getLineIdFact())) {
-                continue;
-            }
-            long extraMinutes = getExtraTime(job, line.getJobs());
+           if((job.getDelayDuration() != null && !job.isNeedUpdateDurationForFact())
+           || job.getFactDuration() == 0 || !job.areEqualsPlanAndFactLines()) continue;
+
+           long factMinutes = job.getFactDuration();
+           long extraMinutes = getExtraTime(job, line.getJobs());
             factMinutes-=extraMinutes;
 
-            long planMinutes = calculatePlanMinutes(job);
+            long planMinutes = job.getPlanDuration().toMinutes();
             long diff = factMinutes - planMinutes;
             if(diff > 0){
                 job.setDelayDuration(Duration.ofMinutes(diff));
@@ -54,7 +53,7 @@ public class AlignDurationService {
         List<Job> jobsWithFactData = lineJobs.stream()
                 .filter(j -> j.getCameraStart() != null)
                 .filter(j -> j.getCameraEnd() != null)
-                .filter(j -> j.getLine().getId().equals(j.getLineIdFact()))
+                .filter(Job::areEqualsPlanAndFactLines)
                 .toList();
 
         LocalDateTime cameraStart = job.getCameraStart();
@@ -76,34 +75,9 @@ public class AlignDurationService {
         if(timeIntersectionsJobs.isEmpty()) return extraTime;
 
         for(Job intersectionJob : timeIntersectionsJobs){
-            Long cameraDuration = calculateFactMinutes(intersectionJob);
-            if(cameraDuration == null) continue;
-            extraTime+=cameraDuration;
+            long cameraDuration = intersectionJob.getFactDuration();
+            extraTime += cameraDuration;
         }
         return extraTime;
-    }
-
-    private long calculatePlanMinutes(Job job) {
-        if (job.getStartProductionDateTime() == null
-                || job.getEndDateTime() == null) {
-            return 0;
-        }
-
-        return ceilMinutes(Duration.between(
-                job.getStartProductionDateTime(),
-                job.getPlanEndDateTime()
-        ));
-    }
-
-    private Long calculateFactMinutes(Job job) {
-        if (job.getCameraStart() == null
-                || job.getCameraEnd() == null) {
-            return null;
-        }
-
-        return ceilMinutes(Duration.between(
-                job.getCameraStart(),
-                job.getCameraEnd()
-        ));
     }
 }

@@ -76,4 +76,12 @@ public class AlignSolutionService {
             }
         }
     }
+
+    public void resetAlign(PackagingSchedule solution){
+        if(solution == null || solution.getJobs() == null) return;
+        for(Job job : solution.getJobs()){
+            job.setCleaningDelay(null);
+            job.setDelayDuration(null);
+        }
+    }
 }

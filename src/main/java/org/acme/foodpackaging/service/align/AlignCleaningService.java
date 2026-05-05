@@ -100,6 +100,8 @@ public class AlignCleaningService {
         chain.sort(Comparator.comparing(Job::getStartProductionDateTime, Comparator.nullsLast(Comparator.naturalOrder())));
         Job candidate = chain.getFirst();
 
+        if(candidate != null && candidate.getCleaningDelay() != null) return;
+
         if (candidate != null && candidate.getPreviousJob() != null && candidate.getPreviousJob().isMaintenance()) {
             int index = line.getJobs().indexOf(candidate);
             removeMaintenanceBefore(line.getJobs(), index, solution);
@@ -116,10 +118,8 @@ public class AlignCleaningService {
             return;
         }
 
-       if (candidate == null
-                || candidate.getStartCleaningDateTime() == null
-                || candidate.getCleaningDelay() != null
-                || !isPlanProductsValid(curr, candidate)) {
+       if ( candidate == null || candidate.getStartCleaningDateTime() == null
+               || candidate.getCleaningDelay() != null || !isPlanProductsValid(curr, candidate)) {
             return;
         }
         applyCleaningDelay(candidate, cleaningMinutesFact);
@@ -212,22 +212,12 @@ public class AlignCleaningService {
         if (job == null) {
             return;
         }
-        long cleaningMinutesPlan = getCleaningMinutes(
-                job.getStartCleaningDateTime(),
-                job.getStartProductionDateTime()
-        );
+        long cleaningMinutesPlan = job.getCleaningDurationPlan();
 
-        if (isTheSameLine(job)) {
+        if (job.areEqualsPlanAndFactLines()) {
             long delay = cleaningMinutesFact - cleaningMinutesPlan;
             job.setCleaningDelay(Duration.ofMinutes(delay));
         }
-    }
-
-    private boolean isTheSameLine(Job candidate) {
-        return candidate != null
-                && candidate.getLine() != null
-                && candidate.getLine().getId() != null
-                && Objects.equals(candidate.getLine().getId(), candidate.getLineIdFact());
     }
 
     private long getCleaningMinutes(LocalDateTime start, LocalDateTime end) {
@@ -242,7 +232,7 @@ public class AlignCleaningService {
 
         return lineJobs.stream()
                 .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null
-                        && j.getLine().getId().equals(j.getLineIdFact()))
+                        && j.areEqualsPlanAndFactLines())
                 .sorted(Comparator.comparing(Job::getCameraStart)).toList();
     }
 }

@@ -1,7 +1,9 @@
 package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
@@ -250,6 +252,34 @@ public class Job {
         this.pinned = pinned;
         this.startProductionDateTime = startProductionDateTime;
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
+    }
+
+    public boolean areEqualsPlanAndFactLines(){
+        if(lineIdFact == null || line == null || line.getId() == null) return false;
+        return Objects.equals(lineIdFact, line.getId());
+    }
+
+    public boolean isNeedUpdateDurationForFact(){
+        if(cameraStart == null) return false;
+        return !cameraStart.toLocalDate().isBefore(LocalDate.now());
+    }
+
+    public long getFactDuration(){
+        if(cameraStart == null || cameraEnd == null || !cameraStart.isBefore(cameraEnd)) return 0;
+        return Duration.between(cameraStart, cameraEnd).toMinutes();
+    }
+
+    public long getCleaningDurationPlan(){
+        if(startProductionDateTime == null || startCleaningDateTime == null
+        || !startProductionDateTime.isAfter(startCleaningDateTime)) return 0;
+        return Duration.between(startCleaningDateTime, startProductionDateTime).toMinutes();
+    }
+
+    public long getCleaningDurationWithDelay(){
+        if(cleaningDelay == null || startProductionDateTime == null || startCleaningDateTime == null
+                || !startProductionDateTime.isAfter(startCleaningDateTime)) return 0;
+        long cleaningDurationWithDelay = Duration.between(startCleaningDateTime, startProductionDateTime).toMinutes();
+        return cleaningDurationWithDelay + cleaningDelay.toMinutes();
     }
 
     @Override

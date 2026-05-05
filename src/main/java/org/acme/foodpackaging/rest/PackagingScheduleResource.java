@@ -225,6 +225,26 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("resetAlign")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response resetAlign(@HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+        alignSolutionService.resetAlign(schedule);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK
+        )).build();
+    }
+
+    @POST
     @Path("work")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
