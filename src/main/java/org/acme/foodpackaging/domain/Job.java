@@ -55,6 +55,7 @@ public class Job {
 
     @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration delayDuration;
+    @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration cleaningDelay;
     private boolean maintenance;
     private boolean handPackaging;
@@ -259,9 +260,11 @@ public class Job {
         return Objects.equals(lineIdFact, line.getId());
     }
 
-    public boolean isNeedUpdateDurationForFact(){
-        if(cameraStart == null) return false;
-        return !cameraStart.toLocalDate().isBefore(LocalDate.now());
+    public boolean isNeedUpdateDurationForFact() {
+        if (cameraStart == null) return false;
+
+        return Duration.between(cameraStart, LocalDateTime.now())
+                .compareTo(Duration.ofHours(12)) < 0;
     }
 
     public long getFactDuration(){
