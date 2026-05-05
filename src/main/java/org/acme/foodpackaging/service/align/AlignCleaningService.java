@@ -195,14 +195,12 @@ public class AlignCleaningService {
         if (startJob == null || startJob.getProduct() == null) {
             return startIndex + 1;
         }
-        String productId = startJob.getProduct().getId();
-
         int k = startIndex;
 
         while (k < jobs.size() &&
                 jobs.get(k) != null &&
                 jobs.get(k).getProduct() != null &&
-                Objects.equals(jobs.get(k).getProduct().getId(), productId)) {
+                jobs.get(k).getProduct().equals(startJob.getProduct())) {
             k++;
         }
         return k;

@@ -3,6 +3,7 @@ package service.builder;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
@@ -32,16 +33,13 @@ class ScheduleBuilderTest {
 
     @InjectMocks
     ScheduleBuilder builder;
+
     @Mock
     JobService jobService;
-    @Mock
-    JobRepository jobRepository;
     @Mock
     LineService lineService;
     @Mock
     ProductService productService;
-    @Mock
-    JobRefreshService jobRefreshService;
     @Mock
     AlignSolutionService alignSolutionService;
 
@@ -51,29 +49,30 @@ class ScheduleBuilderTest {
 
         List<Line> lines = List.of(new Line(), new Line());
         List<Product> products = List.of(new Product("VAN", "Vanilla"));
-        doAnswer(invocation -> {
-            PackagingSchedule sched = invocation.getArgument(0);
-            sched.setJobs(new ArrayList<>());
-            return null;
-        }).when(jobService).initSolutionJobList(any());
+        List<DbJobRow> jobRows = List.of();
 
-        when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
         when(lineService.getLines()).thenReturn(lines);
-        doNothing().when(lineService).initLineStartEnd(any());
-        when(productService.getProductList(any())).thenReturn(products);
+        when(jobService.buildJobsOnLines(any())).thenReturn(jobRows);
+
+        doAnswer(invocation -> {
+            PackagingSchedule schedule = invocation.getArgument(0);
+            schedule.setProducts(products);
+            return null;
+        }).when(productService).buildProducts(any());
+
+        doNothing().when(alignSolutionService).align(any());
 
         InitData initData = builder.buildSchedule(date);
 
         PackagingSchedule schedule = initData.schedule();
+
         assertEquals(lines, schedule.getLines());
         assertEquals(products, schedule.getProducts());
         assertEquals(date, schedule.getWorkCalendar().getFromDate());
+        assertEquals(jobRows, initData.jobsFromDbRow());
 
-        verify(jobService).initSolutionJobList(schedule);
-        verify(lineService).getLines();
-        verify(lineService).initLineStartEnd(schedule);
-        verify(productService).getProductList(schedule);
-
+        verify(jobService).buildJobsOnLines(schedule);
+        verify(productService).buildProducts(schedule);
         verify(alignSolutionService).align(schedule);
     }
 
@@ -81,12 +80,15 @@ class ScheduleBuilderTest {
     void updateProductList() {
         PackagingSchedule schedule = new PackagingSchedule();
         List<Product> newProducts = List.of(new Product("VAN", "Vanilla"));
+
         when(productService.getProductList(schedule)).thenReturn(newProducts);
 
         PackagingSchedule updated = builder.updateProductList(schedule);
 
         assertSame(schedule, updated);
         assertEquals(newProducts, schedule.getProducts());
+
         verify(productService).getProductList(schedule);
     }
 }
+

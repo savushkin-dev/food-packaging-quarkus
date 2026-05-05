@@ -76,7 +76,7 @@ public class JobService {
      * 
      * @param solution The packaging schedule to initialize
      */
-    public List<DbJobRow> initSolutionJobList(PackagingSchedule solution) {
+    private List<DbJobRow> initSolutionJobList(PackagingSchedule solution) {
 
         List<DbMaintenanceRow> serviceData = jobRepository.getMaintenanceData(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
@@ -227,7 +227,7 @@ public class JobService {
      *
      * @param solution The packaging schedule to initialize
      */
-    public void initFactProductionData(
+    private void initFactProductionData(
         PackagingSchedule solution,
         Map<FactKey, FactProductionRow> factMap
 ) {
@@ -267,7 +267,7 @@ public class JobService {
      *
      * @param solution The packaging schedule to initialize
      */
-    public void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
+    private void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
 
         List<Job> jobsWithoutCamera = solution.getJobs().stream()
                 .filter(j -> j.getIdBatch() != null)
@@ -329,7 +329,7 @@ public class JobService {
         job.setCleaningDelayNote(request.getDelayNote());
     }
 
-    public void initIdBatch(PackagingSchedule schedule){
+    private void initIdBatch(PackagingSchedule schedule){
         for(Job job : schedule.getJobs()){
             if( job.isMaintenance() || job.getIdBatch() != null) continue;
             try {
@@ -347,7 +347,7 @@ public class JobService {
      * @param startProductionDateTime Timestamp to convert
      * @return LocalDateTime or null if input is null
      */
-    public LocalDateTime getStartProductionDateTime(Timestamp startProductionDateTime) {
+    private LocalDateTime getStartProductionDateTime(Timestamp startProductionDateTime) {
         return startProductionDateTime != null
                 ? startProductionDateTime.toLocalDateTime()
                 : null;

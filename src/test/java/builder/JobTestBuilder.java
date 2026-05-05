@@ -52,6 +52,21 @@ public class JobTestBuilder {
         return this;
     }
 
+    public JobTestBuilder withStartProductionDateTime(LocalDateTime startProductionDateTime) {
+        job.setStartProductionDateTime(startProductionDateTime);
+        return this;
+    }
+
+    public JobTestBuilder withStartCleaningDateTime(LocalDateTime startCleaningDateTime) {
+        job.setStartCleaningDateTime(startCleaningDateTime);
+        return this;
+    }
+
+    public JobTestBuilder withQuantity(int quantity){
+        job.setQuantity(quantity);
+        return this;
+    }
+
     public JobTestBuilder withLine(Line line) {
         job.setLine(line);
         return this;

@@ -10,12 +10,13 @@ import java.util.Map;
 public class ProductTestBuilder {
     private final Product product;
 
-    private ProductTestBuilder(String id) {
+    private ProductTestBuilder(String id, String type) {
         this.product = new Product(id, "Product " + id);
+        this.product.setType(type);
     }
 
-    public static ProductTestBuilder aProduct(String id) {
-        return new ProductTestBuilder(id);
+    public static ProductTestBuilder aProduct(String id, String type) {
+        return new ProductTestBuilder(id, type);
     }
 
     public ProductTestBuilder withCleaningResult(Product previous, CleaningResult result) {
@@ -43,6 +44,11 @@ public class ProductTestBuilder {
     public ProductTestBuilder withoutCleaning() {
         product.setCleaningDurations(null);
         product.setCleaningResults(null);
+        return this;
+    }
+
+    public ProductTestBuilder withType(String type) {
+        product.setType(type);
         return this;
     }
 
