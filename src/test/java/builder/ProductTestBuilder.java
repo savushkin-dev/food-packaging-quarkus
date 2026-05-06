@@ -10,13 +10,12 @@ import java.util.Map;
 public class ProductTestBuilder {
     private final Product product;
 
-    private ProductTestBuilder(String id, String type) {
+    private ProductTestBuilder(String id) {
         this.product = new Product(id, "Product " + id);
-        this.product.setType(type);
     }
 
-    public static ProductTestBuilder aProduct(String id, String type) {
-        return new ProductTestBuilder(id, type);
+    public static ProductTestBuilder aProduct(String id) {
+        return new ProductTestBuilder(id);
     }
 
     public ProductTestBuilder withCleaningResult(Product previous, CleaningResult result) {
@@ -31,7 +30,7 @@ public class ProductTestBuilder {
 
     public ProductTestBuilder withPLRLC(Product previous) {
         Map<Product, Duration> durations = new HashMap<>();
-        durations.put(previous, Duration.ofMinutes(10)); // ignored
+        durations.put(previous, Duration.ofMinutes(10));
         product.setCleaningDurations(durations);
 
         Map<Product, CleaningResult> results = new HashMap<>();

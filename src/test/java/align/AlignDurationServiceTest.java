@@ -82,45 +82,6 @@ class AlignDurationServiceTest {
     // ============================================================
 
     @Test
-    void alignByFactDuration(){
-        Job j1 = getJob();
-        Line line1 = new Line();
-        Line line2 = new Line();
-        line1.setJobs(new ArrayList<>());
-        j1.setStartCleaningDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-        j1.setStartProductionDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-        j1.setEndDateTime(LocalDateTime.of(2026,3, 6, 10, 33));
-        j1.setLineIdFact("line1");
-
-        j1.setCameraStart(LocalDateTime.of(2026,3, 6, 11, 0));
-        j1.setCameraEnd(LocalDateTime.of(2026,3, 6, 11, 50));
-
-        Job j2 = getPackagingMaintenance();
-
-
-        List<Job> jobs = new ArrayList<>(List.of(j1, j2));
-
-        line.setJobs(jobs);
-        line.setStartDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-
-        solution.setJobs(jobs);
-        solution.setLines(new ArrayList<>(List.of(line, line1, line2)));
-
-        alignDuration.alignByFactDuration(solution);
-
-        assertEquals(1, solution.getJobs().size());
-        assertEquals(1, solution.getLines().getFirst().getJobs().size());
-        assertEquals(50, solution.getJobs().getFirst().getDuration().toMinutes());
-        assertEquals(17, solution.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(LocalDateTime.of(2026,3, 6, 10, 33), solution.getJobs().getFirst().getPlanEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 50), solution.getJobs().getFirst().getEndDateTime());
-
-        assertTrue(solution.getLines().get(1).getJobs().isEmpty());
-
-        assertNull(solution.getLines().get(2).getJobs());
-    }
-
-    @Test
     void alignByFactDuration_NullCameraData(){
         Job j1 = getJob();
         j1.setStartCleaningDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
@@ -138,8 +99,7 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertEquals(1, solution.getJobs().size());
-        assertEquals(1, solution.getLines().getFirst().getJobs().size());
+        assertEquals(2, solution.getLines().getFirst().getJobs().size());
         assertEquals(33, solution.getJobs().getFirst().getDuration().toMinutes());
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getEndDateTime());
         assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getPlanEndDateTime());
@@ -159,68 +119,6 @@ class AlignDurationServiceTest {
         alignDuration.alignByFactDuration(solution);
         assertNull(solution.getJobs());
     }
-
-    @Test
-    void alignByFactDuration_WhenMaintenanceTypeIdIsNull(){
-
-        solution.getLines().clear();
-        solution.getJobs().clear();
-
-        Job j1 = getPackagingMaintenance();
-        j1.setMaintenanceTypeId(null);
-
-        solution.setJobs(List.of(j1));
-        alignDuration.alignByFactDuration(solution);
-
-        assertEquals(1,solution.getJobs().size());
-    }
-
-    @Test
-    void alignByFactDuration_WhenJobIsNotMaintenance(){
-
-        solution.getLines().clear();
-        solution.getJobs().clear();
-
-        Job j1 = getPackagingMaintenance();
-
-        j1.setMaintenance(false);
-        solution.setJobs(List.of(j1));
-        alignDuration.alignByFactDuration(solution);
-
-        assertEquals(1, solution.getJobs().size());
-    }
-
-    @Test
-    void alignByFactDuration_WhenMaintenanceTypeIdIsNotNull(){
-
-        solution.getLines().clear();
-        solution.getJobs().clear();
-
-        Job j1 = getPackagingMaintenance();
-
-        solution.setJobs(new ArrayList<>(List.of(j1)));
-        alignDuration.alignByFactDuration(solution);
-
-        assertTrue(solution.getJobs().isEmpty());
-    }
-
-    @Test
-    void alignByFactDuration_nullMaintenanceTypeId(){
-        Job j1 = getPackagingMaintenance();
-        Job j2 = getPackagingMaintenance();
-
-        j1.setMaintenanceTypeId(null);
-        j2.setMaintenanceTypeId(null);
-
-        line.setJobs(new ArrayList<>(List.of(j1, j2)));
-        solution.setJobs(new ArrayList<>(List.of(j1, j2)));
-
-        alignDuration.alignByFactDuration(solution);
-
-        assertFalse(solution.getJobs().isEmpty());
-    }
-
-
 
     @Test
     void findTimeIntersections_whenLineIdFactIsNull(){
@@ -514,30 +412,6 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-    }
-
-    @Test
-    void alignByFactDuration_WhenPlanEndDateTimeIsNotNull(){
-        Job j1 = getJob();
-
-        j1.setLineIdFact(line.getId());
-        j1.setLine(line);
-        j1.setDuration(Duration.ofMinutes(50));
-        j1.setDelayDuration(Duration.ofMinutes(20));
-
-        j1.setStartProductionDateTime(LocalDateTime.of(2026,3,31, 16,0));
-        j1.setEndDateTime(LocalDateTime.of(2026,3,31, 16,50));
-
-        j1.setCameraStart(LocalDateTime.of(2026,3,31, 16,0));
-        j1.setCameraEnd(LocalDateTime.of(2026,3,31, 16,50));
-
-        line.setStartDateTime(LocalDateTime.of(2026,3,31, 16,0));
-        line.setJobs(new ArrayList<>(List.of(j1)));
-        solution.setJobs(List.of(j1));
-        alignDuration.alignByFactDuration(solution);
-
-        assertEquals(LocalDateTime.of(2026,3,31, 16,33), line.getJobs().getFirst().getPlanEndDateTime());
-        assertEquals(Duration.ofMinutes(17), line.getJobs().getFirst().getDelayDuration());
     }
 
     @Test

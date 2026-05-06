@@ -14,7 +14,6 @@ import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.sql.EventTypeFilter;
 import org.acme.foodpackaging.sql.SqlQueries;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
@@ -47,10 +46,7 @@ public class JobDBLoader {
         List<DbJobRow> rows = getResultList(
                 queries.loadJobs(),
                 DB_JOB_ROW_MAPPING,
-                Timestamp.valueOf(from),
-                Timestamp.valueOf(to),
-                ksk,
-                Timestamp.valueOf(from)
+                from, to, ksk, from
         );
 
         return rows.stream()
@@ -85,10 +81,7 @@ public class JobDBLoader {
         return getResultList(
                 queries.loadOeePev(type),
                 DB_MAINTENANCE_ROW_MAPPING,
-                Timestamp.valueOf(from),
-                Timestamp.valueOf(to),
-                Timestamp.valueOf(from),
-                Timestamp.valueOf(to)
+                from, to, from, to
         );
     }
 
@@ -110,8 +103,7 @@ public class JobDBLoader {
         List<FactProductionRow> rows = getResultList(
                 queries.loadFact(),
                 FACT_PRODUCTION_MAPPING,
-                Timestamp.valueOf(from),
-                Timestamp.valueOf(to)
+                from, to
         );
 
         return rows.stream()
@@ -148,8 +140,8 @@ public class JobDBLoader {
                 result.put(
                         idBatch,
                         new CameraValue(
-                                row.cameraStart() != null ? row.cameraStart().toLocalDateTime() : null,
-                                row.cameraEnd() != null ? row.cameraEnd().toLocalDateTime() : null
+                                row.cameraStart() != null ? row.cameraStart() : null,
+                                row.cameraEnd() != null ? row.cameraEnd() : null
                         )
                 );
             }

@@ -1,14 +1,15 @@
 package org.acme.foodpackaging.record;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public record FactProductionRow(
         String idBatch,
         String kmc,
-        Timestamp dtv,
+        LocalDateTime dtv,
         Integer np,
         Integer eventType,
-        Timestamp eventTime,
+        LocalDateTime eventTime,
         String lineIdFact
 ) {}
 

@@ -100,7 +100,7 @@ class MaintenanceJobTest {
 
         Product product = schedule.getProducts().getFirst();
         DbMaintenanceRow row = new DbMaintenanceRow(
-                1L, (short)0, "line1", Timestamp.valueOf(startProductionDateTime),Timestamp.valueOf(endDateTime), 15,2212L, 4, "Maintenance 2"
+                1L, (short)0, "line1", startProductionDateTime, endDateTime, 15,2212L, 4, "Maintenance 2"
         );
 
         Job existingJob = Job.fromDbMaintenanceRow(row,"Maintenance Name", product, startProductionDateTime);
@@ -294,8 +294,7 @@ class MaintenanceJobTest {
         LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
         Job job = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
-                        Timestamp.valueOf(start),
-                        Timestamp.valueOf(start.plusMinutes(60)),
+                        start, start.plusMinutes(60),
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 product, start, null);
         line.setStartDateTime(start);
@@ -311,13 +310,12 @@ class MaintenanceJobTest {
     @Test
     void addDailyFullCleaning_skipsWhenDailyCleaningStartAfterLastJobEnd() {
         CleaningDurationUtils.init(Map.of("line1", 30));
-        Product maintenanceProduct = schedule.getProducts().get(0);
+        Product maintenanceProduct = schedule.getProducts().getFirst();
         // Single maintenance type 2, duration 40 min; dailyCleaningStart = end+24h, last job = same → skip
         LocalDateTime jobEnd = LocalDateTime.of(2025, 1, 15, 10, 0);
         Job maint = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(jobEnd.minusMinutes(40)),
-                        Timestamp.valueOf(jobEnd),
+                        jobEnd.minusMinutes(40), jobEnd,
                         40, 2212L, 2, "Мойка"),
                 "Мойка", maintenanceProduct, jobEnd.minusMinutes(40));
         maint.setMaintenance(true);
@@ -349,8 +347,7 @@ class MaintenanceJobTest {
         line.setStartDateTime(dayAt0920); // so fixLineJobs (after add) places all jobs on Jan 16
         Job maint = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(day1At10.minusMinutes(40)),
-                        Timestamp.valueOf(day1At10),
+                        day1At10.minusMinutes(40), day1At10,
                         40, 2211L, 2, "Мойка"),
                 "Мойка", maintenanceProduct, day1At10.minusMinutes(40));
         maint.setMaintenance(true);
@@ -362,8 +359,7 @@ class MaintenanceJobTest {
 
         Job prod = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
-                        Timestamp.valueOf(day1At10.plusMinutes(30)),
-                        Timestamp.valueOf(day2At15),
+                        day1At10.plusMinutes(30), day2At15,
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 normalProduct, day1At10.plusMinutes(30), null);
         prod.setStartCleaningDateTime(day1At10);
@@ -402,8 +398,7 @@ class MaintenanceJobTest {
 
         Job prod = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
-                        Timestamp.valueOf(day1At830),
-                        Timestamp.valueOf(day2At10),
+                        day1At830, day2At10,
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 normalProduct, day1At830, null);
         // New logic: cleaning duration = between(startCleaning, startProduction); need startCleaning < startProduction for positive gap
@@ -450,7 +445,7 @@ class MaintenanceJobTest {
         // Line1: maint type 2 end 10:00, prod end day2 15:00 (no fixLineJobs so end stays)
         Job m1 = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(1L, (short) 0, "line1",
-                        Timestamp.valueOf(day1At10.minusMinutes(40)), Timestamp.valueOf(day1At10),
+                        day1At10.minusMinutes(40), day1At10,
                         40, 2211L, 2, "Мойка"),
                 "Мойка", maintenanceProduct, day1At10.minusMinutes(40));
         m1.setMaintenance(true);
@@ -461,7 +456,7 @@ class MaintenanceJobTest {
         schedule.getJobs().add(m1);
         Job p1 = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
-                        Timestamp.valueOf(day1At10.plusMinutes(30)), Timestamp.valueOf(day2At15),
+                        day1At10.plusMinutes(30), day2At15,
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 normalProduct, day1At10.plusMinutes(30), null);
         p1.setStartCleaningDateTime(day1At10);
@@ -474,7 +469,7 @@ class MaintenanceJobTest {
         // Line2: same pattern
         Job m2 = Job.fromDbMaintenanceRow(
                 new DbMaintenanceRow(2L, (short) 0, "line2",
-                        Timestamp.valueOf(day1At10.minusMinutes(30)), Timestamp.valueOf(day1At10),
+                        day1At10.minusMinutes(30), day1At10,
                         30, 2213L, 2, "Мойка"),
                 "Мойка", maintenanceProduct, day1At10.minusMinutes(30));
         m2.setMaintenance(true);
@@ -485,7 +480,7 @@ class MaintenanceJobTest {
         schedule.getJobs().add(m2);
         Job p2 = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
-                        Timestamp.valueOf(day1At10.plusMinutes(30)), Timestamp.valueOf(day2At15),
+                        day1At10.plusMinutes(30), day2At15,
                         60, 2214L, 0, "line2", "Job2", 0, 100, 0),
                 normalProduct, day1At10.plusMinutes(30), null);
         p2.setStartCleaningDateTime(day1At10);

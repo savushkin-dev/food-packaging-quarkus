@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import org.acme.foodpackaging.persistence.converter.BooleanToIntegerConverter;
 import org.acme.foodpackaging.record.DbJobRow;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -22,13 +21,13 @@ import java.util.UUID;
         classes = @ConstructorResult(
                 targetClass = DbJobRow.class,
                 columns = {
-                        @ColumnResult(name = "DTI", type = Timestamp.class),
+                        @ColumnResult(name = "DTI", type = LocalDateTime.class),
                         @ColumnResult(name = "KMC", type = String.class),
                         @ColumnResult(name = "NP", type = Integer.class),
                         @ColumnResult(name = "KOLEV", type = Integer.class),
                         @ColumnResult(name = "MASSA", type = double.class),
-                        @ColumnResult(name = "PDTN", type = Timestamp.class),
-                        @ColumnResult(name = "PDTO", type = Timestamp.class),
+                        @ColumnResult(name = "PDTN", type = LocalDateTime.class),
+                        @ColumnResult(name = "PDTO", type = LocalDateTime.class),
                         @ColumnResult(name = "PDUR", type = Integer.class),
                         @ColumnResult(name = "SNPZ", type = Long.class),
                         @ColumnResult(name = "UX", type = Integer.class),

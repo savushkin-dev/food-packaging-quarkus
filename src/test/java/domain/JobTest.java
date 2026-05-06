@@ -49,7 +49,7 @@ class JobTest {
         Duration duration = Duration.ofMinutes(60);
 
         DbMaintenanceRow row = new DbMaintenanceRow(
-                1L, (short) 0, "1600", Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime), 60, 2212L, 4, "Note"
+                1L, (short) 0, "1600", startProductionDateTime, endDateTime, 60, 2212L, 4, "Note"
         );
         Job job = Job.fromDbMaintenanceRow(row, "Maintenance Name", product, startProductionDateTime);
 
@@ -77,8 +77,8 @@ class JobTest {
         Duration duration = Duration.ofMinutes(20);
 
         DbJobRow row = new DbJobRow(
-                Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
-                Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
+                dti, "1623", 34, 5600, 1600.23,
+                startProductionDateTime, endDateTime,
                 20, 3L, 0, "17000234", "Strawberry", 18, 100, 1);
         Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
 
@@ -106,8 +106,8 @@ class JobTest {
         LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
         Product product = new Product("12", "Vanilla");
         DbJobRow row = new DbJobRow(
-                Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
-                Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
+                dti, "1623", 34, 5600, 1600.23,
+                startProductionDateTime, endDateTime,
                 null,
                 3L, 0, "17000234", "Strawberry", 18, 100, 0
         );
@@ -123,8 +123,8 @@ class JobTest {
         LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
         Product product = new Product("12", "Vanilla");
         DbJobRow row = new DbJobRow(
-                Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
-                Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
+                dti, "1623", 34, 5600, 1600.23,
+                startProductionDateTime, endDateTime,
                 20, 3L, 0, "17000234", "Strawberry",
                 null,  // emk = null
                 100, 0
@@ -140,8 +140,8 @@ class JobTest {
         LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
         Product product = new Product("12", "Vanilla");
         DbJobRow row = new DbJobRow(
-                Timestamp.valueOf(dti), "1623", 34, 5600, 1600.23,
-                Timestamp.valueOf(startProductionDateTime), Timestamp.valueOf(endDateTime),
+                dti, "1623", 34, 5600, 1600.23,
+                startProductionDateTime, endDateTime,
                 20, 3L, 0, "17000234", "Strawberry",
                 10,
                 null, 1
@@ -278,8 +278,8 @@ class JobTest {
 
         LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
 
-        Product prodA = ProductTestBuilder.aProduct("A", "TYPE_A").build();
-        Product prodB = ProductTestBuilder.aProduct("B", "TYPE_B").build();
+        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
+        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B").build();
         prodB.setCleaningDurations(new HashMap<>(Map.of(prodA, Duration.ofMinutes(25))));
         prodB.setCleaningResults(new HashMap<>(Map.of(prodA, new org.acme.foodpackaging.record.CleaningResult(0, false))));
 
@@ -314,10 +314,9 @@ class JobTest {
 
         LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
 
-        Product prodA = ProductTestBuilder.aProduct("A", "TYPE_A").build();
-        Product prodB = ProductTestBuilder.aProduct("B", "TYPE_B")
-                .withPLRLC(prodA)
-                .build();
+        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
+        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B")
+                .withPLRLC(prodA).build();
 
         Job job1 = JobTestBuilder.aJob()
                 .withProduct(prodA)
@@ -348,8 +347,8 @@ class JobTest {
 
         LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
 
-        Product prodA = ProductTestBuilder.aProduct("A", "TYPE_A").build();
-        Product prodB = ProductTestBuilder.aProduct("B", "TYPE_B")
+        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
+        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B")
                 .withoutCleaning()
                 .build();
 
@@ -380,9 +379,9 @@ class JobTest {
 
         LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
 
-        Product prodA = ProductTestBuilder.aProduct("A", "TYPE_A").build();
+        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
 
-        Product prodB = ProductTestBuilder.aProduct("B", "TYPE_B").build();
+        Product prodB = ProductTestBuilder.aProduct("B").withType( "TYPE_B").build();
         prodB.setCleaningDurations(new HashMap<>(Map.of(prodA, Duration.ofMinutes(20))));
         prodB.setCleaningResults(new HashMap<>(Map.of(prodA, new CleaningResult(0, false))));
 
@@ -547,8 +546,6 @@ class JobTest {
                 .withStartProductionDateTime(startProduction)
                 .withStartCleaningDateTime(cleaningStart)
                 .build();
-        System.out.println(job1.getStartCleaningDateTime());
-        System.out.println(job1.getStartProductionDateTime());
         assertEquals(30, job1.getCleaningDurationPlan());
     }
 

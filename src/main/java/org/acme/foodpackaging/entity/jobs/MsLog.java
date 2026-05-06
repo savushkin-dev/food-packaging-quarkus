@@ -23,10 +23,10 @@ import java.util.UUID;
                 columns = {
                         @ColumnResult(name = "IDBATCH", type = String.class),
                         @ColumnResult(name = "KMC", type = String.class),
-                        @ColumnResult(name = "DTV", type = Timestamp.class),
-                        @ColumnResult(name = "NP", type = Integer.class),
+                        @ColumnResult(name = "DTV", type = LocalDateTime.class),
+                        @ColumnResult(name = "NP", type = LocalDateTime.class),
                         @ColumnResult(name = "EVENT", type = Integer.class),
-                        @ColumnResult(name = "DT", type = Timestamp.class),
+                        @ColumnResult(name = "DT", type = LocalDateTime.class),
                         @ColumnResult(name = "KRC", type = String.class)
                 }
         )

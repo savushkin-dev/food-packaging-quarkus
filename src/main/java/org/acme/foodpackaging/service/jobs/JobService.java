@@ -103,7 +103,7 @@ public class JobService {
                 if(line.getJobs() == null){
                     line.setJobs(new ArrayList<>());
                 }
-                job.setDti(row.dti().toLocalDateTime());
+                job.setDti(row.dti());
                 job.setMinStartTime(minStartDateTime);
                 job.setLine(line);
                 line.getJobs().add(job);
@@ -145,7 +145,7 @@ public class JobService {
             }
             if(delayDurationMap.containsKey(jobId)){
                 DbMaintenanceRow row = delayDurationMap.get(jobId);
-                job.setEndDateTime(row.getEndDateTime().toLocalDateTime());
+                job.setEndDateTime(row.getEndDateTime());
                 job.setDelayDuration(Duration.ofMinutes(row.getDuration()));
                 job.setDelayNote(row.getMaintenanceNote());
             }
@@ -194,7 +194,7 @@ public class JobService {
                 row,
                 maintenanceTypeName,
                 maintenanceProduct,
-                getStartProductionDateTime(row.getStartProductionDateTime())
+                row.getStartProductionDateTime()
         );
         return job;
     }
@@ -209,7 +209,7 @@ public class JobService {
 
         Job job = null;
         if(row.lineId()!=null) {
-            job = Job.fromDbJobRow(row, product, row.startProductionDateTime().toLocalDateTime(),
+            job = Job.fromDbJobRow(row, product, row.startProductionDateTime(),
                     ScheduleUtils::nameCleaner);
         }
         else{
@@ -246,18 +246,18 @@ public class JobService {
         if (startFact != null) {
             job.setIdBatch(startFact.idBatch());
             job.setLineIdFact(startFact.lineIdFact());
-            job.setDtv(startFact.dtv().toLocalDateTime());
-            job.setStartProductionDateTimeFact(startFact.eventTime().toLocalDateTime());
+            job.setDtv(startFact.dtv());
+            job.setStartProductionDateTimeFact(startFact.eventTime());
         }
 
         FactProductionRow startCamera = factMap.get(new FactKey(kmc, np, START_CAMERA_EVENT_TYPE));
         if (startCamera != null) {
-            job.setCameraStart(startCamera.eventTime().toLocalDateTime());
+            job.setCameraStart(startCamera.eventTime());
         }
 
         FactProductionRow endCamera = factMap.get(new FactKey(kmc, np, END_CAMERA_EVENT_TYPE));
         if (endCamera != null) {
-            job.setCameraEnd(endCamera.eventTime().toLocalDateTime());
+            job.setCameraEnd(endCamera.eventTime());
         }
     }
 }
@@ -340,19 +340,6 @@ public class JobService {
             }
         }
     }
-
-    /**
-     * Преобразует Timestamp в LocalDateTime.
-     * 
-     * @param startProductionDateTime Timestamp to convert
-     * @return LocalDateTime or null if input is null
-     */
-    private LocalDateTime getStartProductionDateTime(Timestamp startProductionDateTime) {
-        return startProductionDateTime != null
-                ? startProductionDateTime.toLocalDateTime()
-                : null;
-    }
-
     private int safe(Integer v) {
         return v != null ? v : 0;
     }

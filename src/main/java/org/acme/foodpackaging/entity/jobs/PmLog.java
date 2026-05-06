@@ -21,8 +21,8 @@ import java.util.UUID;
         classes = @ConstructorResult(
                 targetClass = CameraFactRow.class,
                 columns = {
-                        @ColumnResult(name = "DTSTART", type = Timestamp.class),
-                        @ColumnResult(name = "DTEND", type = Timestamp.class)
+                        @ColumnResult(name = "DTSTART", type = LocalDateTime.class),
+                        @ColumnResult(name = "DTEND", type = LocalDateTime.class)
                 }
         )
 )
