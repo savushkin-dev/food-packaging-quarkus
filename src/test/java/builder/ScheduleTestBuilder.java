@@ -31,8 +31,8 @@ public class ScheduleTestBuilder {
         return this;
     }
 
-    public ScheduleTestBuilder withLine(Line... lines) {
-        schedule.setLines(List.of(lines));
+   public ScheduleTestBuilder withLines(Line... lines) {
+        schedule.setLines(new ArrayList<>(List.of(lines)));
         return this;
     }
 
@@ -42,7 +42,7 @@ public class ScheduleTestBuilder {
     }
 
     public ScheduleTestBuilder withJobs(Job... jobs) {
-        schedule.setJobs(List.of(jobs));
+        schedule.setJobs(new ArrayList<>(List.of(jobs)));
         return this;
     }
 
@@ -50,7 +50,7 @@ public class ScheduleTestBuilder {
         schedule.setAllJobsById(new HashMap<>());
         return this;
     }
-
+ 
     public ScheduleTestBuilder withSpeed(String lineId, String productType, int speed) {
         SpeedCacheUtils.init(Map.of(
                 lineId,

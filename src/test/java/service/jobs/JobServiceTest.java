@@ -48,7 +48,7 @@ class JobServiceTest {
                         LocalDate.of(2025, 1, 15),
                         LocalDateTime.of(2025, 1, 15, 8, 0)
                 )
-                .withLine(
+                .withLines(
                         LineTestBuilder
                                 .aLine("L1", LocalDateTime.of(2025, 1, 15, 8, 0))
                                 .build()
@@ -92,7 +92,7 @@ class JobServiceTest {
                         LocalDate.of(2025, 1, 15),
                         LocalDateTime.of(2025, 1, 15, 8, 0)
                 )
-                .withLine(
+                .withLines(
                         LineTestBuilder.aLine("L1", LocalDateTime.now())
                                 .withJobs(job)
                                 .build()
@@ -123,7 +123,7 @@ class JobServiceTest {
                         LocalDate.of(2025, 1, 15),
                         LocalDateTime.of(2025, 1, 15, 8, 0)
                 )
-                .withLine(
+                .withLines(
                         LineTestBuilder.aLine("L1", LocalDateTime.now())
                                 .withJobs(job)
                                 .build()
@@ -152,7 +152,7 @@ class JobServiceTest {
                         LocalDate.of(2025, 1, 15),
                         LocalDateTime.of(2025, 1, 15, 8, 0)
                 )
-                .withLine(
+                .withLines(
                         LineTestBuilder.aLine("L2", LocalDateTime.now())
                                 .withJobs(job)
                                 .build()
@@ -183,7 +183,7 @@ class JobServiceTest {
                         LocalDate.of(2025, 1, 15),
                         LocalDateTime.of(2025, 1, 15, 8, 0)
                 )
-                .withLine(line)
+                .withLines(line)
                 .withEmptyJobs()
                 .withEmptyJobMap()
                 .build();

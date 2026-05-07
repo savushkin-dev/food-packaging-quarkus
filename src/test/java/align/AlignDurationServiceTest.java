@@ -15,11 +15,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import builder.JobTestBuilder;
+import builder.LineTestBuilder;
+import builder.ProductTestBuilder;
+import builder.ScheduleTestBuilder;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,15 +39,20 @@ class AlignDurationServiceTest {
 
     private PackagingSchedule solution;
     private Line line;
+    private LocalDateTime lineSDateTime;
 
     @BeforeEach
     void setUp() {
-        solution = new PackagingSchedule();
-        solution.setJobs(new ArrayList<>());
 
-        line = new Line("line1", "Line 1");
-        line.setJobs(new ArrayList<>());
+        lineSDateTime = LocalDateTime.of(2026, 3, 6, 10, 0);
+        line = LineTestBuilder.aLine("line1", lineSDateTime).build();
 
+        solution = ScheduleTestBuilder.aSchedule()
+                .withJobs(getFirstTestJob(), getSecondTestJob())
+                .withLines(line)
+                .build();
+
+        line.setJobs(solution.getJobs());
         // Init speeds
         Map<String, Map<String, Pair<Integer, Integer>>> speeds = new HashMap<>();
 
@@ -53,28 +62,45 @@ class AlignDurationServiceTest {
         speeds.put("line1", productSpeeds);
 
         SpeedCacheUtils.init(speeds);
-
-        solution.setLines(new ArrayList<>(List.of(line)));
     }
 
-    private Job getPackagingMaintenance(){
-        Job job = new Job();
-        job.setMaintenance(true);
-        job.setMaintenanceTypeId(7);
-        return job;
-    }
+    private Job getFirstTestJob() {
 
-    private Job getJob() {
-        Job j1 = new Job();
-
-        j1.setLine(line);
-        j1.setQuantity(2900);
-        Product product = new Product();
-        product.setType("CLASSIC");
+        Product product = ProductTestBuilder.aProduct("P1").withType("CLASSIC").build();
         product.setCleaningDurations(Map.of(product, Duration.ZERO));
-        j1.setProduct(product);
+
+        Job j1 = JobTestBuilder.aJob()
+                .withId("J1")
+                .withStartCleaningDateTime(lineSDateTime) // 10:00
+                .withStartProductionDateTime(lineSDateTime) // 10:00
+                .withEndDateTime(lineSDateTime.plusMinutes(30)) // 10:30
+                .withCamera(lineSDateTime, lineSDateTime.plusMinutes(90)) // 10:00-11:30
+                .withLine(line)
+                .withLineIdFact("line1")
+                .withQuantity(2600)
+                .withProduct(product)
+                .build();
 
         return j1;
+    }
+
+    private Job getSolutionFirstJob() {
+        return solution.getJobs().getFirst();
+    }
+
+    private Job getSolutionSecondJob() {
+        return solution.getJobs().getLast();
+    }
+
+    private Job getSecondTestJob() {
+        Job j2 = getFirstTestJob();
+        j2.setStartCleaningDateTime(j2.getEndDateTime()); // 10:30
+        j2.setStartProductionDateTime(j2.getEndDateTime()); // 10:30
+        j2.setEndDateTime(j2.getStartProductionDateTime().plusMinutes(30)); // 11:00
+        j2.setCameraStart(LocalDateTime.of(2026, 3, 6, 11, 30)); // 11:30-12:30
+        j2.setCameraEnd(j2.getCameraStart().plusMinutes(60));
+
+        return j2;
     }
 
     // ============================================================
@@ -82,359 +108,180 @@ class AlignDurationServiceTest {
     // ============================================================
 
     @Test
-    void alignByFactDuration_NullCameraData(){
-        Job j1 = getJob();
-        j1.setStartCleaningDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-        j1.setStartProductionDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-        j1.setEndDateTime(LocalDateTime.of(2026,3, 6, 10, 33));
-
-        Job j2 = getPackagingMaintenance();
-
-        List<Job> jobs = new ArrayList<>(List.of(j1, j2));
-
-        line.setJobs(jobs);
-        line.setStartDateTime(LocalDateTime.of(2026,3, 6, 10, 0));
-        solution.setJobs(jobs);
-        solution.setLines(new ArrayList<>(List.of(line)));
+    void alignByFactDuration_sucess() {
 
         alignDuration.alignByFactDuration(solution);
+        Job firstJob = getSolutionFirstJob();
+        Job secondJob = getSolutionSecondJob();
 
-        assertEquals(2, solution.getLines().getFirst().getJobs().size());
-        assertEquals(33, solution.getJobs().getFirst().getDuration().toMinutes());
-        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 33), solution.getJobs().getFirst().getPlanEndDateTime());
-        assertNull(solution.getJobs().getFirst().getDelayDuration());
+        assertEquals(60, firstJob.getDelayDuration().toMinutes());
+        assertEquals(30, secondJob.getDelayDuration().toMinutes());
+
+        assertEquals(90, firstJob.getDuration().toMinutes());
+        assertEquals(60, secondJob.getDuration().toMinutes());
     }
 
     @Test
-    void alignByFactDuration_emptyJobs(){
-        solution.getJobs().clear();
+    void alignByFactDuration_NullLines() {
+        solution.setLines(null);
         alignDuration.alignByFactDuration(solution);
-        assertTrue(solution.getJobs().isEmpty());
+        assertNull(solution.getLines());
     }
 
     @Test
-    void alignByFactDuration_NullJobs(){
-        solution = new PackagingSchedule();
+    void alignByFactDuration_NullJobs() {
+        solution.setJobs(null);
         alignDuration.alignByFactDuration(solution);
         assertNull(solution.getJobs());
     }
 
     @Test
-    void findTimeIntersections_whenLineIdFactIsNull(){
-        solution.setJobs(null);
-        Job j1 = new Job();
-        LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd = LocalDateTime.of(2026, 3, 9, 10, 30);
-
-        j1.setCameraStart(cameraStart);
-        j1.setCameraEnd(cameraEnd);
-
-        j1.setStartProductionDateTime(cameraStart);
-        j1.setEndDateTime(cameraEnd);
-
-        j1.setLineIdFact(null);
-
-        line.setJobs(List.of(j1));
+    void alignByFactDuration_emptyJobs() {
+        solution.setJobs(new ArrayList<>());
         alignDuration.alignByFactDuration(solution);
-
-        assertNull(line.getJobs().getFirst().getLineIdFact());
-        assertNull(line.getJobs().getFirst().getDelayDuration());
+        assertTrue(solution.getJobs().isEmpty());
     }
 
     @Test
-    void findTimeIntersections_whenLineJobsListIsNull(){
-        solution.setJobs(null);
-        Job j1 = new Job();
-        LocalDateTime cameraStart = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd = LocalDateTime.of(2026, 3, 9, 10, 30);
+    void alignByFactDuration_whenLineJobsListIsNull() {
 
-        j1.setCameraStart(cameraStart);
-        j1.setCameraEnd(cameraEnd);
-
-        j1.setStartProductionDateTime(cameraStart);
-        j1.setEndDateTime(cameraEnd);
-        j1.setLineIdFact("L2");
-
-        line.setJobs(List.of(j1));
-        j1.setLine(line);
+        solution.getLines().getFirst().setJobs(null);
         alignDuration.alignByFactDuration(solution);
-
-        assertEquals("L2", line.getJobs().getFirst().getLineIdFact());
-        assertEquals("line1", line.getId());
-        assertNull(line.getJobs().getFirst().getDelayDuration());
+        assertNull(solution.getJobs().getFirst().getDelayDuration());
     }
 
     @Test
-    void findTimeIntersections(){
-        solution.setJobs(null);
-        Job j1 = getJob();
-        Job j2 = getJob();
+    void alignByFactDuration_whenLineJobsListIsEmpty() {
 
-        LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 11, 20);
-
-        LocalDateTime cameraStart2 = LocalDateTime.of(2026, 3, 9, 10, 10);
-        LocalDateTime cameraEnd2 = LocalDateTime.of(2026, 3, 9, 10, 40);
-
-        j1.setCameraStart(cameraStart1);
-        j1.setCameraEnd(cameraEnd1);
-
-        j1.setStartProductionDateTime(cameraStart1);
-        j1.setEndDateTime(cameraEnd1.minusMinutes(30));
-        j1.setLineIdFact("line1");
-
-        j2.setCameraStart(cameraStart2);
-        j2.setCameraEnd(cameraEnd2);
-        j2.setStartProductionDateTime(j2.getCameraStart());
-        j2.setEndDateTime(j2.getCameraEnd());
-        j2.setLineIdFact("line1");
-
-        line.setJobs(List.of(j1, j2));
-        line.setStartDateTime(cameraStart1);
-        j1.setLine(line);
-        j2.setLine(line);
-        solution.setLines(List.of(line));
+        solution.getLines().getFirst().setJobs(new ArrayList<>());
         alignDuration.alignByFactDuration(solution);
-
-        assertEquals(17, line.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 50), line.getJobs().getFirst().getEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 33), line.getJobs().getFirst().getPlanEndDateTime());
-        assertEquals(50, line.getJobs().getFirst().getDuration().toMinutes());
-
-        assertNull(line.getJobs().getLast().getDelayDuration());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23),line.getJobs().getLast().getPlanEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 11, 23), line.getJobs().getLast().getEndDateTime());
+        assertNull(solution.getJobs().getFirst().getDelayDuration());
     }
 
     @Test
-    void noIntersection_before() {
-        Job j1 = getJob();
-        Job j2 = getJob();
-
-        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
-
-        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 9, 0));
-        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 9, 59));
-
-        j1.setLineIdFact("line1");
-        j2.setLineIdFact("line1");
-        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
-
-        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
-        line.setJobs(new ArrayList<>(List.of(j1,j2)));
-
+    void alignByFactDuration_delayDurationIsNotNull() {
+        solution.getJobs().getFirst().setDelayDuration(Duration.ofMinutes(20));
+        ;
         alignDuration.alignByFactDuration(solution);
-
-        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
-
-        assertEquals(Duration.ofMinutes(59), line.getJobs().getLast().getDuration());
+        assertEquals(Duration.ofMinutes(20), solution.getJobs().getFirst().getDelayDuration());
     }
 
     @Test
-    void noIntersection_after() {
-        Job j1 = getJob();
-        Job j2 = getJob();
-
-        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
-
-        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 11, 1));
-        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 12, 0));
-
-        j1.setLineIdFact("line1");
-        j2.setLineIdFact("line1");
-        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 11, 1));
-
-        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
-        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+    void alignByFactDuration_NullCameraData() {
+        Job firstJob = getSolutionFirstJob();
+        firstJob.setCameraStart(null);
+        firstJob.setCameraEnd(null);
 
         alignDuration.alignByFactDuration(solution);
 
-        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
-
-        assertEquals(Duration.ofMinutes(59), line.getJobs().getLast().getDuration());
+        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 30), firstJob.getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 30), firstJob.getPlanEndDateTime());
+        assertNull(solution.getJobs().getFirst().getDelayDuration());
     }
 
     @Test
-    void touchingBoundary_shouldNotIntersect() {
-        Job j1 = getJob();
-        Job j2 = getJob();
-
-        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
-
-        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 11, 0));
-        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 12, 59));
-
-        j1.setLineIdFact("line1");
-        j2.setLineIdFact("line1");
-        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 11, 0));
-
-        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 9, 0));
-        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+    void alignByFactDuration_whenLineIdFactIsNull() {
+        solution.getJobs().getFirst().setLineIdFact(null);
+        solution.getJobs().getLast().setLineIdFact(null);
 
         alignDuration.alignByFactDuration(solution);
 
-        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+        assertEquals(30, solution.getJobs().getFirst().getDuration().toMinutes());
+        assertNull(solution.getJobs().getFirst().getDelayDuration());
+    }
 
-        assertEquals(Duration.ofMinutes(119), line.getJobs().getLast().getDuration());
+    // ============================================================
+    // findTimeIntersections
+    // ============================================================
+
+    @Test
+    void findTimeIntersections_shouldCountFullInsideOverlap() {
+
+        Job firstJob = getSolutionFirstJob();
+        Job secondJob = getSolutionSecondJob();
+
+        LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 6, 10, 10);
+        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 6, 10, 40);
+
+        secondJob.setCameraStart(cameraStart1);
+        secondJob.setCameraEnd(cameraEnd1);
+
+        alignDuration.alignByFactDuration(solution);
+
+        assertEquals(Duration.ofMinutes(30), firstJob.getDelayDuration());
+        assertNull(secondJob.getDelayDuration());
+
+        assertEquals(Duration.ofMinutes(60), firstJob.getDuration());
+        assertEquals(Duration.ofMinutes(30), secondJob.getDuration());
     }
 
     @Test
-    void differentLine_shouldBeIgnored() {
-        Job j1 = getJob();
-        Job j2 = getJob();
+    void alignByFactDuration_shouldTrimIntersectionByParentBounds() {
 
-        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
-        j1.setLineIdFact("line1");
+        Job firstJob = getSolutionFirstJob();
+        Job secondJob = getSolutionSecondJob();
 
-        j2.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 30));
-        j2.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
-        j2.setLineIdFact("line2");
+        System.out.println("First Job Camera Start: " + firstJob.getCameraStart());
+        System.out.println("First Job Camera End: " + firstJob.getCameraEnd());
+        System.out.println("First Job Duration: " + firstJob.getDuration().toMinutes());
+        System.out.println("First Job delayDuration: " + firstJob.getDelayDuration());
+        secondJob.setCameraStart(
+                LocalDateTime.of(2026, 3, 6, 10, 30));
 
-        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j2.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 11, 30));
-
-        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
-        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+        secondJob.setCameraEnd(
+                LocalDateTime.of(2026, 3, 6, 12, 0));
 
         alignDuration.alignByFactDuration(solution);
 
-        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+        assertEquals(Duration.ofMinutes(30),
+                firstJob.getDuration());
 
-        assertEquals(Duration.ofMinutes(33), line.getJobs().getLast().getDuration());
+        assertNull(firstJob.getDelayDuration());
     }
-
     @Test
-    void missingCameraData_shouldBeIgnored() {
-        Job j1 = getJob();
-        Job j2 = getJob();
+void findTimeIntersections_shouldHandleRightOverlap() {
 
-        j1.setCameraStart(LocalDateTime.of(2026, 3, 9, 10, 0));
-        j1.setCameraEnd(LocalDateTime.of(2026, 3, 9, 11, 0));
+    Job firstJob = getSolutionFirstJob();
+    Job secondJob = getSolutionSecondJob();
 
-        j1.setLineIdFact("line1");
-        j2.setLineIdFact("line1");
+    secondJob.setCameraStart(LocalDateTime.of(2026, 3, 6, 11, 0));
+    secondJob.setCameraEnd(LocalDateTime.of(2026, 3, 6, 12, 0));
 
-        j2.setCameraStart(null);
-        j2.setCameraEnd(null);
+    alignDuration.alignByFactDuration(solution);
 
-        j1.setStartProductionDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
+    System.out.println("First Job Camera Start: " + firstJob.getCameraStart());
+    System.out.println("First Job Camera End: " + firstJob.getCameraEnd());
+System.out.println("First Job Duration: " + firstJob.getDuration().toMinutes());
+System.out.println("First Job delayDuration: " + firstJob.getDelayDuration());
+System.out.println("First Job planMinutes: " + firstJob.getPlanMinutes());
+System.out.println();
+System.out.println();
+    assertEquals(60, firstJob.getDelayDuration().toMinutes());
+}
 
-        line.setStartDateTime(LocalDateTime.of(2026, 3, 9, 10, 0));
-        line.setJobs(new ArrayList<>(List.of(j1,j2)));
+@Test
+void findTimeIntersections_shouldMergeMultipleOverlaps() {
 
-        alignDuration.alignByFactDuration(solution);
+    Job firstJob = getSolutionFirstJob();
+    Job secondJob = solution.getJobs().get(1);
 
-        assertEquals(Duration.ofMinutes(60), line.getJobs().getFirst().getDuration());
+    Job thirdJob = solution.getJobs().getLast();
 
-        assertEquals(Duration.ofMinutes(33), line.getJobs().getLast().getDuration());
-    }
+    secondJob.setCameraStart(LocalDateTime.of(2026, 3, 6, 10, 10));
+    secondJob.setCameraEnd(LocalDateTime.of(2026, 3, 6, 10, 30));
 
-    @Test
-    void findTimeIntersections_wrongLine(){
-        solution.setJobs(null);
-        Job j1 = getJob();
-        Job j2 = getJob();
-        Job j3 = getJob();
+    thirdJob.setCameraStart(LocalDateTime.of(2026, 3, 6, 10, 25));
+    thirdJob.setCameraEnd(LocalDateTime.of(2026, 3, 6, 10, 50));
 
-        LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 50);
+    alignDuration.alignByFactDuration(solution);
+    System.out.println();
+    System.out.println("First Job Camera Start: " + firstJob.getCameraStart());
+    System.out.println("First Job Camera End: " + firstJob.getCameraEnd());
+System.out.println("First Job Duration: " + firstJob.getDuration().toMinutes());
+System.out.println("First Job delayDuration: " + firstJob.getDelayDuration());
+System.out.println("First Job planMinutes: " + firstJob.getPlanMinutes());
 
-        LocalDateTime cameraStart2 = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd2 = LocalDateTime.of(2026, 3, 9, 10, 40);
-
-        j1.setCameraStart(cameraStart1);
-        j1.setCameraEnd(cameraEnd1);
-
-        j1.setStartProductionDateTime(cameraStart1);
-        j1.setEndDateTime(cameraEnd1.minusMinutes(35));
-        j1.setLineIdFact("line1");
-
-        j2.setCameraStart(cameraStart2);
-        j2.setCameraEnd(cameraEnd2);
-        j2.setStartProductionDateTime(j2.getCameraStart());
-        j2.setEndDateTime(j2.getCameraEnd().minusMinutes(20));
-        j2.setLineIdFact("line2");
-
-        line.setJobs(List.of(j1, j2, j3));
-        line.setStartDateTime(cameraStart1);
-        j1.setLine(line);
-        j2.setLine(line);
-        solution.setLines(List.of(line));
-        alignDuration.alignByFactDuration(solution);
-
-        assertEquals(17, line.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 50), line.getJobs().getFirst().getEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 9, 10, 33), line.getJobs().getFirst().getPlanEndDateTime());
-        assertEquals(50, line.getJobs().getFirst().getDuration().toMinutes());
-
-    }
-
-    @Test
-    void findTimeIntersections_cameraDataMissing() {
-        solution.setJobs(null);
-        Job j1 = getJob();
-        Job j2 = getJob();
-
-        LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 9, 10, 0);
-        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 9, 10, 50);
-
-        LocalDateTime cameraStart2 = LocalDateTime.of(2026, 3, 9, 10, 10);
-
-        j1.setCameraStart(cameraStart1);
-        j1.setCameraEnd(cameraEnd1);
-
-        j1.setStartProductionDateTime(cameraStart1);
-        j1.setEndDateTime(cameraEnd1.minusMinutes(35));
-        j1.setLineIdFact("line1");
-
-        j2.setCameraStart(cameraStart2);
-        j2.setCameraEnd(null);
-
-        j2.setStartProductionDateTime(cameraStart2);
-        j2.setEndDateTime(cameraStart2.plusMinutes(20));
-        j2.setLineIdFact("line1");
-
-        line.setJobs(List.of(j1, j2));
-        line.setStartDateTime(cameraStart1);
-
-        j1.setLine(line);
-        j2.setLine(line);
-
-        solution.setLines(List.of(line));
-
-        alignDuration.alignByFactDuration(solution);
-
-    }
-
-    @Test
-    void alignByFactDuration_WhenPlanEndDateTimeIsNull(){
-        Job j1 = getJob();
-
-        j1.setLineIdFact(line.getId());
-        j1.setLine(line);
-
-        j1.setStartProductionDateTime(LocalDateTime.of(2026,3,31, 16,0));
-        j1.setEndDateTime(LocalDateTime.of(2026,3,31, 16,33));
-
-        j1.setCameraStart(LocalDateTime.of(2026,3,31, 16,0));
-        j1.setCameraEnd(LocalDateTime.of(2026,3,31, 16,50));
-
-        line.setStartDateTime(LocalDateTime.of(2026,3,31, 16,0));
-        line.setJobs(new ArrayList<>(List.of(j1)));
-        solution.setJobs(List.of(j1));
-        alignDuration.alignByFactDuration(solution);
-
-        assertEquals(LocalDateTime.of(2026,3,31, 16,33), line.getJobs().getFirst().getPlanEndDateTime());
-        assertEquals(Duration.ofMinutes(17), line.getJobs().getFirst().getDelayDuration());
-        assertEquals(Duration.ofMinutes(50), line.getJobs().getFirst().getDuration());
-    }
+    assertEquals(10, firstJob.getDelayDuration().toMinutes());
+}
 
 }

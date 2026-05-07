@@ -62,6 +62,12 @@ public class JobTestBuilder {
         return this;
     }
 
+    public JobTestBuilder withEndDateTime(LocalDateTime endDateTime) {
+        job.setEndDateTime(endDateTime);
+        return this;
+    }
+
+
     public JobTestBuilder withQuantity(int quantity){
         job.setQuantity(quantity);
         return this;

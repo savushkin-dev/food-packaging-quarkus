@@ -50,7 +50,7 @@ class AlignCleaningServiceTest {
                 .withJobs(j1, j2).build();
 
         solution = ScheduleTestBuilder.aSchedule()
-                .withLine(line)
+                .withLines(line)
                 .withJobs(j1,j2).build();
     }
 

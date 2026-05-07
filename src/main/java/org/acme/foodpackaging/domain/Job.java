@@ -1,7 +1,6 @@
 package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -47,12 +46,16 @@ public class Job {
     private Long snpz;
     private int np;
     private int quantity;
+    public Long extraMinutes;
+    public Long factMinutes;
+    public Long planMinutes;
+    public Long diff;
 
     private double mass;
 
     private Product product;
     private Duration duration;
-
+   
     @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration delayDuration;
     @JsonSerialize(using = DurationMinutesSerializer.class)
@@ -266,12 +269,7 @@ public class Job {
         return Duration.between(cameraStart, LocalDateTime.now())
                 .compareTo(Duration.ofHours(12)) < 0;
     }
-
-    public long getFactDuration(){
-        if(cameraStart == null || cameraEnd == null || !cameraStart.isBefore(cameraEnd)) return 0;
-        return Duration.between(cameraStart, cameraEnd).toMinutes();
-    }
-
+   
     public long getCleaningDurationPlan(){
         if(startProductionDateTime == null || startCleaningDateTime == null
         || !startProductionDateTime.isAfter(startCleaningDateTime)) return 0;
@@ -299,11 +297,16 @@ public class Job {
         return calculateDuration(true);
     }
 
+     public long getFactDuration(){
+        if(cameraStart == null || cameraEnd == null || !cameraStart.isBefore(cameraEnd)) return 0;
+        return Duration.between(cameraStart, cameraEnd).toMinutes();
+    }
+
     public Duration getPlanDuration(){
         if(isMaintenance()) return duration;
         return calculateDuration(false);
     }
-   private  Duration calculateDuration(boolean use_delay){
+   private Duration calculateDuration(boolean use_delay){
 
        Integer speed;
        if (isHandPackaging()) {
