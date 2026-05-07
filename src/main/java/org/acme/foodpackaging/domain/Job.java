@@ -46,10 +46,6 @@ public class Job {
     private Long snpz;
     private int np;
     private int quantity;
-    public Long extraMinutes;
-    public Long factMinutes;
-    public Long planMinutes;
-    public Long diff;
 
     private double mass;
 

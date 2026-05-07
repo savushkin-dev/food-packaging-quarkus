@@ -7,10 +7,8 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
-import java.util.Comparator;
 
 @ApplicationScoped
 public class AlignDurationService {
@@ -40,7 +38,6 @@ public class AlignDurationService {
             long diff = factMinutes - planMinutes;
             if(diff > 0){
                 job.setDelayDuration(Duration.ofMinutes(diff));
-                job.setDuration(Duration.ofMinutes(factMinutes));
                 fixLineJobs(line);
                 fixPinnedJobs(line);
             }

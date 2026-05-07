@@ -224,10 +224,6 @@ class AlignDurationServiceTest {
         Job firstJob = getSolutionFirstJob();
         Job secondJob = getSolutionSecondJob();
 
-        System.out.println("First Job Camera Start: " + firstJob.getCameraStart());
-        System.out.println("First Job Camera End: " + firstJob.getCameraEnd());
-        System.out.println("First Job Duration: " + firstJob.getDuration().toMinutes());
-        System.out.println("First Job delayDuration: " + firstJob.getDelayDuration());
         secondJob.setCameraStart(
                 LocalDateTime.of(2026, 3, 6, 10, 30));
 

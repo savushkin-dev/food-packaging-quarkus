@@ -8,7 +8,7 @@ public class DbJobRowBuilder {
     private final LocalDateTime dti = LocalDateTime.of(2025, 1, 15, 9, 0);
     private String kmc = "KMC1";
     private final LocalDateTime start = dti;
-    private final LocalDateTime end = LocalDateTime.of(2025, 1, 15, 9, 34);
+    private final LocalDateTime end = LocalDateTime.of(2025, 1, 15, 9, 30);
     private Long snpz = 123L;
     private String lineId = "L1";
 
@@ -34,8 +34,8 @@ public class DbJobRowBuilder {
     public DbJobRow build() {
         String shortName = "Test Job";
         Integer priority = 1;
-        Integer duration = 34;
-        Integer quantity = 3000;
+        Integer duration = 30;
+        Integer quantity = 2600;
         Integer np = 10;
         double mass = 2.0;
         return new DbJobRow(
