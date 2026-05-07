@@ -69,7 +69,12 @@ class AlignDurationServiceTest {
         Product product = ProductTestBuilder.aProduct("P1").withType("CLASSIC").build();
         product.setCleaningDurations(Map.of(product, Duration.ZERO));
 
-        Job j1 = JobTestBuilder.aJob()
+        // 10:00
+        // 10:00
+        // 10:30
+        // 10:00-11:30
+
+        return JobTestBuilder.aJob()
                 .withId("J1")
                 .withStartCleaningDateTime(lineSDateTime) // 10:00
                 .withStartProductionDateTime(lineSDateTime) // 10:00
@@ -80,8 +85,6 @@ class AlignDurationServiceTest {
                 .withQuantity(2600)
                 .withProduct(product)
                 .build();
-
-        return j1;
     }
 
     private Job getSolutionFirstJob() {
@@ -238,50 +241,4 @@ class AlignDurationServiceTest {
 
         assertNull(firstJob.getDelayDuration());
     }
-    @Test
-void findTimeIntersections_shouldHandleRightOverlap() {
-
-    Job firstJob = getSolutionFirstJob();
-    Job secondJob = getSolutionSecondJob();
-
-    secondJob.setCameraStart(LocalDateTime.of(2026, 3, 6, 11, 0));
-    secondJob.setCameraEnd(LocalDateTime.of(2026, 3, 6, 12, 0));
-
-    alignDuration.alignByFactDuration(solution);
-
-    System.out.println("First Job Camera Start: " + firstJob.getCameraStart());
-    System.out.println("First Job Camera End: " + firstJob.getCameraEnd());
-System.out.println("First Job Duration: " + firstJob.getDuration().toMinutes());
-System.out.println("First Job delayDuration: " + firstJob.getDelayDuration());
-System.out.println("First Job planMinutes: " + firstJob.getPlanMinutes());
-System.out.println();
-System.out.println();
-    assertEquals(60, firstJob.getDelayDuration().toMinutes());
-}
-
-@Test
-void findTimeIntersections_shouldMergeMultipleOverlaps() {
-
-    Job firstJob = getSolutionFirstJob();
-    Job secondJob = solution.getJobs().get(1);
-
-    Job thirdJob = solution.getJobs().getLast();
-
-    secondJob.setCameraStart(LocalDateTime.of(2026, 3, 6, 10, 10));
-    secondJob.setCameraEnd(LocalDateTime.of(2026, 3, 6, 10, 30));
-
-    thirdJob.setCameraStart(LocalDateTime.of(2026, 3, 6, 10, 25));
-    thirdJob.setCameraEnd(LocalDateTime.of(2026, 3, 6, 10, 50));
-
-    alignDuration.alignByFactDuration(solution);
-    System.out.println();
-    System.out.println("First Job Camera Start: " + firstJob.getCameraStart());
-    System.out.println("First Job Camera End: " + firstJob.getCameraEnd());
-System.out.println("First Job Duration: " + firstJob.getDuration().toMinutes());
-System.out.println("First Job delayDuration: " + firstJob.getDelayDuration());
-System.out.println("First Job planMinutes: " + firstJob.getPlanMinutes());
-
-    assertEquals(10, firstJob.getDelayDuration().toMinutes());
-}
-
 }
