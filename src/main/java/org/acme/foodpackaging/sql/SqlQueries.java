@@ -120,9 +120,6 @@ public class SqlQueries {
             """.formatted(prommarkSchema);
     }
 
-    /**
-     * Marking events per glazed curd for a batch (F_ID order).
-     */
     public String loadPmLogMarkingRowsByBatch() {
         return """
             SELECT F_ID, DTS

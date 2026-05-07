@@ -5,13 +5,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.entity.jobs.PmLog;
 import org.acme.foodpackaging.record.CameraFactRow;
-import org.acme.foodpackaging.record.PmLogMarkingRow;
 import org.acme.foodpackaging.sql.SqlQueries;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 @ApplicationScoped
 public class PmLogRepository implements PanacheRepository<PmLog> {
@@ -43,35 +42,20 @@ public class PmLogRepository implements PanacheRepository<PmLog> {
                 .getSingleResult();
     }
 
-    @SuppressWarnings("unchecked")
-    public List<PmLogMarkingRow> findMarkingRowsByIdBatch(String idBatch) {
-        List<Object[]> raw = getEntityManager()
+    public Stream<LocalDateTime> streamMarkingDtsByIdBatch(String idBatch) {
+        return getEntityManager()
                 .createNativeQuery(sqlQueries.loadPmLogMarkingRowsByBatch())
                 .setParameter(1, idBatch)
-                .getResultList();
-
-        List<PmLogMarkingRow> out = new ArrayList<>(raw.size());
-        for (Object[] row : raw) {
-            if (row == null || row.length < 2) {
-                continue;
-            }
-            LocalDateTime dts = toDts(row[1]);
-            if (dts == null) {
-                continue;
-            }
-            out.add(new PmLogMarkingRow(toFId(row[0]), dts));
-        }
-        return out;
+                .getResultStream()
+                .map(PmLogRepository::extractDts)
+                .filter(Objects::nonNull);
     }
 
-    private static long toFId(Object o) {
-        if (o instanceof Number n) {
-            return n.longValue();
+    private static LocalDateTime extractDts(Object rowObj) {
+        if (!(rowObj instanceof Object[] row) || row.length < 2) {
+            return null;
         }
-        if (o instanceof String s) {
-            return Long.parseLong(s.trim());
-        }
-        throw new IllegalArgumentException("Unexpected F_ID type: " + (o == null ? "null" : o.getClass().getName()));
+        return toDts(row[1]);
     }
 
     private static LocalDateTime toDts(Object o) {

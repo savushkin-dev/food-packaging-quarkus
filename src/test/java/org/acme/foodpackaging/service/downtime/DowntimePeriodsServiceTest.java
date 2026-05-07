@@ -2,7 +2,6 @@ package org.acme.foodpackaging.service.downtime;
 
 import jakarta.ws.rs.WebApplicationException;
 import org.acme.foodpackaging.dto.DowntimePeriodsResponse;
-import org.acme.foodpackaging.record.PmLogMarkingRow;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -31,7 +30,7 @@ class DowntimePeriodsServiceTest {
 
     @Test
     void build_emptyRows_throwsNotFound() {
-        when(pmLogRepository.findMarkingRowsByIdBatch("x")).thenReturn(List.of());
+        when(pmLogRepository.streamMarkingDtsByIdBatch("x")).thenReturn(Stream.empty());
         WebApplicationException ex = assertThrows(WebApplicationException.class, () -> service.build("x"));
         assertEquals(404, ex.getResponse().getStatus());
     }
@@ -39,7 +38,7 @@ class DowntimePeriodsServiceTest {
     @Test
     void build_singleRow_cameraEqualsAndNoDowntime() {
         LocalDateTime t = LocalDateTime.of(2026, 4, 27, 10, 0, 0);
-        when(pmLogRepository.findMarkingRowsByIdBatch("b")).thenReturn(List.of(new PmLogMarkingRow(1L, t)));
+        when(pmLogRepository.streamMarkingDtsByIdBatch("b")).thenReturn(Stream.of(t));
 
         DowntimePeriodsResponse r = service.build("b");
 
@@ -53,10 +52,7 @@ class DowntimePeriodsServiceTest {
     void build_twoRows_exactlyTwoMinutes_noDowntime() {
         LocalDateTime a = LocalDateTime.of(2026, 4, 27, 10, 0, 0);
         LocalDateTime b = a.plusMinutes(2);
-        when(pmLogRepository.findMarkingRowsByIdBatch("b")).thenReturn(List.of(
-                new PmLogMarkingRow(1L, a),
-                new PmLogMarkingRow(2L, b)
-        ));
+        when(pmLogRepository.streamMarkingDtsByIdBatch("b")).thenReturn(Stream.of(a, b));
 
         DowntimePeriodsResponse r = service.build("b");
 
@@ -67,10 +63,7 @@ class DowntimePeriodsServiceTest {
     void build_twoRows_moreThanTwoMinutes_oneDowntime() {
         LocalDateTime a = LocalDateTime.of(2026, 4, 27, 10, 0, 0);
         LocalDateTime b = a.plusMinutes(2).plusSeconds(1);
-        when(pmLogRepository.findMarkingRowsByIdBatch("b")).thenReturn(List.of(
-                new PmLogMarkingRow(1L, a),
-                new PmLogMarkingRow(2L, b)
-        ));
+        when(pmLogRepository.streamMarkingDtsByIdBatch("b")).thenReturn(Stream.of(a, b));
 
         DowntimePeriodsResponse r = service.build("b");
 
@@ -83,10 +76,7 @@ class DowntimePeriodsServiceTest {
     void build_reversedTimes_skipsPair() {
         LocalDateTime a = LocalDateTime.of(2026, 4, 27, 10, 0, 0);
         LocalDateTime b = a.minusMinutes(5);
-        when(pmLogRepository.findMarkingRowsByIdBatch("b")).thenReturn(List.of(
-                new PmLogMarkingRow(1L, a),
-                new PmLogMarkingRow(2L, b)
-        ));
+        when(pmLogRepository.streamMarkingDtsByIdBatch("b")).thenReturn(Stream.of(a, b));
 
         DowntimePeriodsResponse r = service.build("b");
 
