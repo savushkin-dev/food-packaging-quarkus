@@ -32,5 +32,5 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       - name: Build and analyze
         env:
-          SONAR_TOKEN: ${{014d74c65db532a555ab501568db705523c7d188}}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=savushkin-dev_food-packaging-quarkus
