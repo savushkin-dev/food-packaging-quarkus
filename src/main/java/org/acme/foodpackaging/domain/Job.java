@@ -302,6 +302,7 @@ public class Job {
         if(isMaintenance()) return duration;
         return calculateDuration(false);
     }
+
    private Duration calculateDuration(boolean use_delay){
 
        Integer speed;
@@ -366,7 +367,7 @@ public class Job {
     }
 
     private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
-        if (previous == null || startCleaning == null || getProduct() == null || previous.getProduct() == null) {
+        if (previous == null || previous.isMaintenance() || startCleaning == null || getProduct() == null || previous.getProduct() == null) {
             return startCleaning;
         }
         try {

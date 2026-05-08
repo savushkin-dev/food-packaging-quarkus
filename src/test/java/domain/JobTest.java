@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
@@ -31,6 +32,8 @@ class JobTest {
         SpeedCacheUtils.init(Map.of(
                 "line1", Map.of("TYPE_A", Pair.of(100, 50), "TYPE_B", Pair.of(200, 80))
         ));
+
+        CleaningDurationUtils.init(Map.of("line1",45));
     }
 
     private Product createProductWithType(String type) {
@@ -97,7 +100,7 @@ class JobTest {
     }
 
     //==================================================================================================================
-   // fromDbJobRow
+    // fromDbJobRow
     @Test
     void fromDbJobRow_WithNullDuration() {
         LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
@@ -150,7 +153,7 @@ class JobTest {
     }
 
     //==================================================================================================================
-   // getDuration
+    // getDuration
 
     @Test
     void getDuration_maintenanceReturnsDuration() {
@@ -205,7 +208,7 @@ class JobTest {
     }
 
     //==================================================================================================================
-   // getSpeed
+    // getSpeed
     @Test
     void getSpeed_returnsNullWhenLineNull() {
         Job job = new Job();
@@ -244,7 +247,7 @@ class JobTest {
 
 
     //==================================================================================================================
-   // updateStartCleaningDateTime
+    // updateStartCleaningDateTime
     @Test
     void updateStartCleaningDateTime_clearsDatesWhenLineNull() {
         Job job = new Job();
@@ -272,73 +275,77 @@ class JobTest {
         assertNull(job.getPlanEndDateTime());
     }
 
-    @Test
-    void updateStartCleaningDateTimeWhenNotPLRLC() {
-
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
-
-        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
-        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B").build();
-        prodB.setCleaningDurations(new HashMap<>(Map.of(prodA, Duration.ofMinutes(25))));
-        prodB.setCleaningResults(new HashMap<>(Map.of(prodA, new org.acme.foodpackaging.record.CleaningResult(0, false))));
-
-        Job job1 = JobTestBuilder.aJob()
-                .withProduct(prodA)
-                .withDurationMinutes(60)
-                .asMaintenance()
+    private Job buildTestJob(String id, Line line, Product product, LocalDateTime start) {
+        return JobTestBuilder.aJob()
+                .withId(id)
+                .withLine(line)
+                .withProduct(product)
+                .withQuantity(2600)
                 .startingAt(start)
                 .build();
 
-        Job job2 = JobTestBuilder.aJob()
-                .withProduct(prodB)
-                .withDurationMinutes(30)
-                .asMaintenance()
-                .build();
+    }
 
-        Line line = LineTestBuilder.aLine("line1", start)
-                .withJobs(job1, job2)
-                .build();
+    private Product buildTestProduct(String id, String type, Product previous, boolean isPlrc) {
+        return ProductTestBuilder.aProduct(id).withType(type)
+                .withCleaningResult(previous, new CleaningResult(30, isPlrc)).build();
+    }
 
-        ScheduleUtils.fixLineJobs(line);
+    private Job getTestJobForPLRC(boolean isPlrc){
+        LocalDateTime start = LocalDateTime.of(2026, 5, 8, 10, 0);
 
-        LocalDateTime expected = start.plusMinutes(60 + 25);
+        Line line = LineTestBuilder.aLine("line1", start).build();
+        Product prodA = buildTestProduct("P1", "TYPE_A", null, false);
+        Product prodB = buildTestProduct("P2", "TYPE_B", prodA, isPlrc);
 
-        assertEquals(expected, job2.getStartProductionDateTime());
+        Job job1 = buildTestJob("J1", line, prodA, LocalDateTime.of(2026, 5, 8, 10, 0));
+        Job job2 = buildTestJob("J2", line, prodB, LocalDateTime.of(2026, 5, 8, 10, 30));
+
+        job2.setPreviousJob(job1);
+        line.setJobs(List.of(job1, job2));
+        return job2;
     }
 
     @Test
-    void updateStartCleaningDateTime_whenPLRLC() {
+    void updateStartCleaningDateTimeWhenNotPLRLC() {
 
-        CleaningDurationUtils.init(Map.of("line1", 40));
+        Job j2 = getTestJobForPLRC(false);
+        j2.updateStartCleaningDateTime();
 
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
+        assertNotNull(j2.getLine());
+        assertEquals(Duration.ofMinutes(17), j2.getDuration());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 30), j2.getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 0), j2.getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 17), j2.getEndDateTime());
+    }
 
-        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
-        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B")
-                .withPLRLC(prodA).build();
+    @Test
+    void updateStartCleaningDateTime_whenIsPLRLC() {
 
-        Job job1 = JobTestBuilder.aJob()
-                .withProduct(prodA)
-                .withDurationMinutes(60)
-                .asMaintenance()
-                .startingAt(start)
-                .build();
+        Job j2 = getTestJobForPLRC(true);
+        j2.updateStartCleaningDateTime();
 
-        Job job2 = JobTestBuilder.aJob()
-                .withProduct(prodB)
-                .withDurationMinutes(30)
-                .asMaintenance()
-                .build();
+        assertNotNull(j2.getLine());
+        assertEquals(Duration.ofMinutes(17), j2.getDuration());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 30), j2.getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 15), j2.getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 32), j2.getEndDateTime());
+    }
 
-        Line line = LineTestBuilder.aLine("line1", start)
-                .withJobs(job1, job2)
-                .build();
+    @Test
+    void updateStartCleaningDateTime_whenPreviousIsMaintenance() {
 
-        ScheduleUtils.fixLineJobs(line);
+        Job j2 = getTestJobForPLRC(false);
+        j2.getPreviousJob().setMaintenance(true);
+        j2.getPreviousJob().setDuration(Duration.ofMinutes(20));
+        j2.getPreviousJob().updateStartCleaningDateTime();
+        j2.updateStartCleaningDateTime();
 
-        LocalDateTime expected = start.plusMinutes(60 + 40);
-
-        assertEquals(expected, job2.getStartProductionDateTime());
+        assertNotNull(j2.getLine());
+        assertEquals(Duration.ofMinutes(17), j2.getDuration());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 20), j2.getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 20), j2.getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 37), j2.getEndDateTime());
     }
 
     @Test
@@ -380,7 +387,7 @@ class JobTest {
 
         Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
 
-        Product prodB = ProductTestBuilder.aProduct("B").withType( "TYPE_B").build();
+        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B").build();
         prodB.setCleaningDurations(new HashMap<>(Map.of(prodA, Duration.ofMinutes(20))));
         prodB.setCleaningResults(new HashMap<>(Map.of(prodA, new CleaningResult(0, false))));
 

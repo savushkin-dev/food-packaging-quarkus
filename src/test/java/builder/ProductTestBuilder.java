@@ -20,10 +20,15 @@ public class ProductTestBuilder {
 
     public ProductTestBuilder withCleaningResult(Product previous, CleaningResult result) {
         Map<Product, CleaningResult> results = product.getCleaningResults();
+        Map<Product, Duration> cleaningDurations = product.getCleaningDurations();
+        if(previous == null) return this;
         if (results == null) {
             results = new HashMap<>();
+            cleaningDurations = new HashMap<>();
         }
         results.put(previous, result);
+        cleaningDurations.put(previous, Duration.ofMinutes(result.minutes()));
+        product.setCleaningDurations(cleaningDurations);
         product.setCleaningResults(results);
         return this;
     }
