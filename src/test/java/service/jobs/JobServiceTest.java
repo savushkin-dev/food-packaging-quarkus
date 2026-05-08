@@ -89,9 +89,10 @@ class JobServiceTest {
                 .withLineId("L1").build();
     }
 
-    private DbMaintenanceRow getTestDbMaintenanceRow(int duration, String note) {
+    private DbMaintenanceRow getTestDbMaintenanceRow(int maintenanceTypeId, int duration, String note) {
         return DbMaintenanceRowBuilder.aRow()
-                .withId(123L)
+                .withId(111L)
+                .withMaintenanceTypeId(maintenanceTypeId)
                 .withDuration(duration)
                 .withNote(note).build();
     }
@@ -108,10 +109,12 @@ class JobServiceTest {
                 .thenReturn(Collections.emptyList());
 
         when(jobRepository.getDelayData(any(), any()))
-                .thenReturn(Map.of(123L, getTestDbMaintenanceRow(22, "Delay note")));
+                .thenReturn(Map.of(123L,
+                        getTestDbMaintenanceRow(2,22, "Delay note")));
 
         when(jobRepository.getCleaningDelayData(any(), any()))
-                .thenReturn(Map.of(123L, getTestDbMaintenanceRow(12, "Cleaning delay note")));
+                .thenReturn(Map.of(123L,
+                        getTestDbMaintenanceRow(2, 12, "Cleaning delay note")));
 
         when(jobRepository.getDbJobRowMap(any(), any()))
                 .thenReturn(Map.of(123L, getTestDbJobRow()));
@@ -136,6 +139,37 @@ class JobServiceTest {
         assertEquals("Cleaning delay note", schedule.getJobs().getFirst().getCleaningDelayNote());
     }
 
+    @Test
+    void buildJobsOnLines_createMaintenanceJobById() {
+
+        when(jobRepository.getMaintenanceData(any(), any()))
+                .thenReturn(List.of(getTestDbMaintenanceRow(7, 60, "Maintenance note")));
+
+        when(jobRepository.getDelayData(any(), any()))
+                .thenReturn(Collections.emptyMap());
+
+        when(jobRepository.getCleaningDelayData(any(), any()))
+                .thenReturn(Collections.emptyMap());
+
+        when(jobRepository.getDbJobRowMap(any(), any()))
+                .thenReturn(Collections.emptyMap());
+
+        doNothing().when(jobRefreshService).refreshStaleCameraEndFromPmLog(any());
+        doNothing().when(lineService).initLineStartEnd(any());
+
+        schedule.getJobs().clear();
+        schedule.getLines().getFirst().getJobs().clear();
+
+        jobService.buildJobsOnLines(schedule);
+        assertEquals(1, schedule.getJobs().size());
+        assertEquals(1, schedule.getLines().getFirst().getJobs().size());
+        assertEquals(7, schedule.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("111", schedule.getJobs().getFirst().getId());
+        assertTrue(schedule.getJobs().getFirst().isMaintenance());
+
+        assertEquals(60, schedule.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals("Maintenance note", schedule.getJobs().getFirst().getMaintenanceNote());
+    }
 
     @Test
     void buildJobsOnLines_shouldThrowException_whenProductNotFound() {
