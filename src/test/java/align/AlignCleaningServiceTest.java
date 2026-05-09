@@ -137,8 +137,16 @@ class AlignCleaningServiceTest {
     }
 
     @Test
+    void alignCleanings_whenLineJobListIsNull() {
+        solution.getLines().getFirst().setJobs(null);
+        cleaningService.alignCleanings(solution);
+        assertNull( solution.getJobs().getLast().getCleaningDelay());
+    }
+
+    @Test
     void alignCleanings_whenLinesListIsNull() {
         solution.setLines(null);
+        cleaningService.alignCleanings(solution);
         assertDoesNotThrow(() -> cleaningService.alignCleanings(solution));
     }
 
@@ -149,9 +157,62 @@ class AlignCleaningServiceTest {
         solution.getJobs().getLast().setCameraStart(null);
         solution.getJobs().getLast().setCameraEnd(null);
 
+        cleaningService.alignCleanings(solution);
        assertEquals(LocalDateTime.of(2026,4, 24, 10,0),
                solution.getLines().getFirst().getStartDateTime());
     }
+
+    @Test
+    void alignCleanings_whenJobSizeLessTwo() {
+        solution.getJobs().removeLast();
+        solution.getLines().getFirst().getJobs().removeLast();
+
+        cleaningService.alignCleanings(solution);
+        assertNull(solution.getJobs().getLast().getCleaningDelay());
+        assertEquals(solution.getJobs().getFirst().getCameraStart(),
+                solution.getLines().getFirst().getStartDateTime());
+    }
+
+    @Test
+    void alignCleanings_whenDeletedMaintenanceIsNull() {
+        solution.setDeletedMaintenance(null);
+
+        cleaningService.alignCleanings(solution);
+        assertNull(solution.getJobs().getLast().getCleaningDelay());
+        assertEquals(solution.getJobs().getFirst().getCameraStart(),
+                solution.getLines().getFirst().getStartDateTime());
+    }
+
+    @Test
+    void alignCleanings_theSameProduct() {
+       solution.getJobs().getLast().setProduct(solution.getJobs().getFirst().getProduct());
+
+        cleaningService.alignCleanings(solution);
+        assertNull(solution.getJobs().getLast().getCleaningDelay());
+        assertEquals(solution.getJobs().getFirst().getCameraStart(),
+                solution.getLines().getFirst().getStartDateTime());
+    }
+
+    @Test
+    void alignCleanings_firstWithoutFact() {
+        Job j2 = solution.getJobs().getLast();
+        Job j3 = buildTestJob("J3", null, null);
+        Product p3 = solution.getProducts().stream()
+                .filter(p -> p.getId().equals("P3"))
+                .findFirst().orElse(null);
+
+        j3.setProduct(p3);
+        buildSolutionWithNewJobs(j3, j2);
+        cleaningService.alignCleanings(solution);
+
+        assertEquals(Duration.ofMinutes(190), solution.getJobs().getLast().getCleaningDelay());
+        assertEquals(solution.getJobs().getLast().getCameraStart(),
+                solution.getJobs().getLast().getStartProductionDateTime());
+
+        assertEquals(solution.getJobs().getFirst().getStartProductionDateTime(),
+                solution.getLines().getFirst().getStartDateTime());
+    }
+
     // ============================================================
     // addition methods
     // ============================================================

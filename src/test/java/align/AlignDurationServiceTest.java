@@ -111,7 +111,7 @@ class AlignDurationServiceTest {
     // ============================================================
 
     @Test
-    void alignByFactDuration_sucсes() {
+    void alignByFactDuration_success() {
 
         alignDuration.alignByFactDuration(solution);
         Job firstJob = getSolutionFirstJob();

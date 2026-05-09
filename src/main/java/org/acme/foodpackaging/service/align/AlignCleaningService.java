@@ -32,19 +32,14 @@ public class AlignCleaningService {
             }
 
             calculateCleaningDelay(factJobs, line, solution);
-            alignLineByStartDateTime(line, factJobs);
+            alignLineByStartDateTime(line, factJobs.getFirst());
         }
     }
 
-    private void alignLineByStartDateTime(Line line, List<Job> factJobs) {
-        if (line == null || factJobs.isEmpty() || line.getJobs().isEmpty()) {
-            return;
-        }
-
+    private void alignLineByStartDateTime(Line line, Job firstFact) {
         Job firstPlanned = line.getJobs().getFirst();
-        Job firstFact = factJobs.getFirst();
 
-        if (firstFact.getProduct() == null || firstPlanned.getProduct() == null) {
+        if (firstPlanned.getProduct() == null) {
             return;
         }
 
@@ -124,14 +119,14 @@ public class AlignCleaningService {
             int index = line.getJobs().indexOf(candidate);
 
             removeMaintenanceBefore(line.getJobs(), index, solution);
-            alignLineByStartDateTime(line, jobs);
+            alignLineByStartDateTime(line, jobs.getFirst());
             applyCleaningDelay(candidate, cleaningMinutesFact);
 
             return;
         }
 
         if (isPreviousWithoutFact(candidate)) {
-            alignLineByStartDateTime(line, jobs);
+            alignLineByStartDateTime(line, jobs.getFirst());
 
             chain.sort(Comparator.comparing(
                     Job::getCameraStart,
@@ -231,11 +226,9 @@ public class AlignCleaningService {
 
     private void applyCleaningDelay(Job job, long cleaningMinutesFact) {
         long cleaningMinutesPlan = job.getCleaningDurationPlan();
-
-        if (job.areEqualsPlanAndFactLines()) {
             long delay = cleaningMinutesFact - cleaningMinutesPlan;
             job.setCleaningDelay(Duration.ofMinutes(delay));
-        }
+
     }
 
     private long getCleaningMinutes(
