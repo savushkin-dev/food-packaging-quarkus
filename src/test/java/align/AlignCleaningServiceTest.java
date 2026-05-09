@@ -23,8 +23,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class AlignCleaningServiceTest {
@@ -130,6 +129,28 @@ class AlignCleaningServiceTest {
                 solution.getJobs().getLast().getStartProductionDateTime());
 
         assertEquals(Duration.ofMinutes(20), solution.getJobs().getLast().getCleaningDelay());
+    }
+
+    @Test
+    void alignCleanings_whenSolutionIsNull() {
+        assertDoesNotThrow(() -> cleaningService.alignCleanings(null));
+    }
+
+    @Test
+    void alignCleanings_whenLinesListIsNull() {
+        solution.setLines(null);
+        assertDoesNotThrow(() -> cleaningService.alignCleanings(solution));
+    }
+
+    @Test
+    void alignCleanings_whenWhenFactJobsIsEmpty() {
+        solution.getJobs().getFirst().setCameraStart(null);
+        solution.getJobs().getFirst().setCameraEnd(null);
+        solution.getJobs().getLast().setCameraStart(null);
+        solution.getJobs().getLast().setCameraEnd(null);
+
+       assertEquals(LocalDateTime.of(2026,4, 24, 10,0),
+               solution.getLines().getFirst().getStartDateTime());
     }
     // ============================================================
     // addition methods
