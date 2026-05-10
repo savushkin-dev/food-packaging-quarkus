@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.acme.foodpackaging.record.FactProductionRow;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 

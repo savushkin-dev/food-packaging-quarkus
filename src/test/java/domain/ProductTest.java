@@ -9,7 +9,7 @@ import java.util.HashMap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.wildfly.common.Assert.assertTrue;
 
-public class ProductTest {
+class ProductTest {
 
     @Test
     void getCleanupDuration_whenDurationExists_returnsDuration() {

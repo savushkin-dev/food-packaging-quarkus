@@ -7,7 +7,6 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.service.lines.LineService;
 
-import java.util.Iterator;
 import java.util.List;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
@@ -77,7 +76,7 @@ public class AlignSolutionService {
         }
     }
 
-    public void resetAlign(PackagingSchedule solution){
+    public void reset(PackagingSchedule solution){
         if(solution == null || solution.getJobs() == null) return;
         for(Job job : solution.getJobs()){
             job.setCleaningDelay(null);

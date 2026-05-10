@@ -1,8 +1,6 @@
 package domain;
 
-import builder.JobTestBuilder;
-import builder.LineTestBuilder;
-import builder.ProductTestBuilder;
+import builder.*;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
@@ -19,514 +17,435 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JobTest {
 
     @BeforeEach
     void initSpeedCache() {
-        SpeedCacheUtils.init(Map.of(
-                "line1", Map.of("TYPE_A", Pair.of(100, 50), "TYPE_B", Pair.of(200, 80))
-        ));
+        Map<String, Pair<Integer, Integer>> line1Speeds = new HashMap<>();
+        line1Speeds.put("TYPE_A", Pair.of(100, 50));
+        line1Speeds.put("TYPE_B", Pair.of(200, 80));
 
-        CleaningDurationUtils.init(Map.of("line1",45));
+        Map<String, Map<String, Pair<Integer, Integer>>> speeds = new HashMap<>();
+        speeds.put("line1", line1Speeds);
+
+        SpeedCacheUtils.init(speeds);
+
+        CleaningDurationUtils.init(Map.of("line1", 45));
     }
+    // ============================================================
+    // fromDbMaintenanceRow
+    // ============================================================
 
-    private Product createProductWithType(String type) {
-        Product p = new Product("id", "name");
-        p.setType(type);
-        return p;
+    @Test
+    void fromDbMaintenanceRow_success() {
+        DbMaintenanceRow row = DbMaintenanceRowBuilder.aRow().build();
+        Product mProduct = new Product();
+        Job mJob = Job.fromDbMaintenanceRow(row, "MJob",
+                mProduct, row.getStartProductionDateTime());
+
+        assertTrue(mJob.isMaintenance());
+
+        assertEquals(String.valueOf(row.getFId()), mJob.getId());
+        assertEquals(row.getMaintenanceTypeId(), mJob.getMaintenanceTypeId());
+        assertEquals(Duration.ofMinutes(row.getDuration()), mJob.getDuration());
+        assertEquals(row.getLineId(), mJob.getLineId());
+        assertEquals(row.getFId(), mJob.getFId());
+        assertEquals(row.getMaintenanceNote(), mJob.getMaintenanceNote());
     }
 
     @Test
-    void setMaintenanceFields() {
-        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
-        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(60);
+    void fromDbMaintenanceRow_whenDurationIsNull() {
+        DbMaintenanceRow row = DbMaintenanceRowBuilder.aRow()
+                .withDuration(null).build();
+        Product mProduct = new Product();
+        Job mJob = Job.fromDbMaintenanceRow(row, "MJob",
+                mProduct, row.getStartProductionDateTime());
 
-        Product product = createMaintenanceProduct();
-        Duration duration = Duration.ofMinutes(60);
-
-        DbMaintenanceRow row = new DbMaintenanceRow(
-                1L, (short) 0, "1600", startProductionDateTime, endDateTime, 60, 2212L, 4, "Note"
-        );
-        Job job = Job.fromDbMaintenanceRow(row, "Maintenance Name", product, startProductionDateTime);
-
-        assertEquals("1", job.getId());
-        assertEquals("1600", job.getLineId());
-        assertEquals("Maintenance Name", job.getName());
-        assertEquals(product, job.getProduct());
-        // getDuration() returns the duration field only for maintenance jobs
-        // For non-maintenance jobs, it calculates from speed/quantity
-        job.setMaintenance(true);
-        assertEquals(duration, job.getDuration());
-        assertEquals(1, job.getPriority());
-        assertTrue(job.isPinned());
-        assertEquals(startProductionDateTime, job.getStartProductionDateTime());
-        assertEquals(startProductionDateTime.plus(duration), job.getEndDateTime());
+        assertTrue(mJob.isMaintenance());
+        assertEquals(Duration.ZERO, mJob.getDuration());
     }
 
+    // ============================================================
+    // fromDbJobRow
+    // ============================================================
     @Test
-    void setProductionFields() {
-        LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
-        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
-        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
+    void fromDbJobRow_success() {
+        DbJobRow row = DbJobRowBuilder.aRow().build();
 
-        Product product = new Product("12", "Vanilla");
-        Duration duration = Duration.ofMinutes(20);
+        Product p1 = new Product();
+        Job job = Job.fromDbJobRow(row, p1, row.startProductionDateTime(),
+                ScheduleUtils::nameCleaner);
 
-        DbJobRow row = new DbJobRow(
-                dti, "1623", 34, 5600, 1600.23,
-                startProductionDateTime, endDateTime,
-                20, 3L, 0, "17000234", "Strawberry", 18, 100, 1);
-        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
-
-        assertEquals("3", job.getId());
-        assertEquals("17000234", job.getLineId());
-        assertEquals(product, job.getProduct());
-        assertEquals("Strawberry", job.getName());
-        assertEquals(34, job.getNp());
-        assertEquals(1600.23, job.getMass());
-        assertEquals(1, job.getPriority());
-        assertEquals(startProductionDateTime, job.getStartProductionDateTime());
-        assertEquals(startProductionDateTime.plus(duration), job.getEndDateTime());
+        assertEquals("123", job.getId());
+        assertEquals(row.shortName(), job.getName());
         assertEquals(row.emk(), job.getEmk());
         assertEquals(row.placePlan(), job.getPlacePlan());
-
-        assertTrue(job.isHandPackaging());
-    }
-
-    //==================================================================================================================
-    // fromDbJobRow
-    @Test
-    void fromDbJobRow_WithNullDuration() {
-        LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
-        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
-        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
-        Product product = new Product("12", "Vanilla");
-        DbJobRow row = new DbJobRow(
-                dti, "1623", 34, 5600, 1600.23,
-                startProductionDateTime, endDateTime,
-                null,
-                3L, 0, "17000234", "Strawberry", 18, 100, 0
-        );
-        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
-        assertEquals(Duration.ZERO, job.getDuration());
-        assertFalse(job.isHandPackaging());
+        assertEquals(row.np(), job.getNp());
+        assertEquals(row.mass(), job.getMass());
+        assertEquals(row.lineId(), job.getLineId());
+        assertEquals(row.startProductionDateTime(), job.getStartProductionDateTime());
+        assertEquals(row.snpz(), job.getSnpz());
     }
 
     @Test
-    void fromDbJobRow_WithNullEmk() {
-        LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
-        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
-        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
-        Product product = new Product("12", "Vanilla");
-        DbJobRow row = new DbJobRow(
-                dti, "1623", 34, 5600, 1600.23,
-                startProductionDateTime, endDateTime,
-                20, 3L, 0, "17000234", "Strawberry",
-                null,  // emk = null
-                100, 0
-        );
-        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
+    void fromDbJobRow_whenValuesAreNull() {
+        DbJobRow row = DbJobRowBuilder.aRow()
+                .withNp(null)
+                .withEmk(null)
+                .withDuration(null)
+                .withPlacePlan(null)
+                .withQuantity(null)
+                .withPriority(null).build();
+
+        Product p1 = new Product();
+        Job job = Job.fromDbJobRow(row, p1, row.startProductionDateTime(),
+                ScheduleUtils::nameCleaner);
+
+        assertEquals(0, job.getNp());
         assertEquals(0, job.getEmk());
-    }
-
-    @Test
-    void fromDbJobRow_WithNullPlacePlan() {
-        LocalDateTime dti = LocalDateTime.of(2025, 1, 1, 8, 30);
-        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
-        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(20);
-        Product product = new Product("12", "Vanilla");
-        DbJobRow row = new DbJobRow(
-                dti, "1623", 34, 5600, 1600.23,
-                startProductionDateTime, endDateTime,
-                20, 3L, 0, "17000234", "Strawberry",
-                10,
-                null, 1
-        );
-        Job job = Job.fromDbJobRow(row, product, startProductionDateTime, ScheduleUtils::nameCleaner);
+        assertEquals(0, job.getQuantity());
         assertEquals(0, job.getPlacePlan());
+        assertEquals(1, job.getPriority());
     }
 
-    //==================================================================================================================
+    // ============================================================
     // getDuration
-
+    // ============================================================
     @Test
-    void getDuration_maintenanceReturnsDuration() {
-        Job job = new Job();
-        job.setMaintenance(true);
-        job.setDuration(Duration.ofMinutes(30));
+    void getDuration_isHandPackaging() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        jobs.getLeft().setHandPackaging(true);
 
-        assertEquals(Duration.ofMinutes(30), job.getDuration());
+        assertEquals(Duration.ofMinutes(56), jobs.getLeft().getDuration());
     }
 
     @Test
-    void getDuration_usesSpeedWhenNotHandPackaging() {
-        Job job = new Job();
-        job.setQuantity(200);
-        job.setHandPackaging(false);
-        job.setLine(new Line("line1", "Line 1"));
-        job.setProduct(createProductWithType("TYPE_A"));
+    void getDuration_whenDelayIsNotNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        jobs.getLeft().setDelayDuration(Duration.ofMinutes(20));
 
-        assertEquals(Duration.ofMinutes(6), job.getDuration()); // ceil(200/100) + 4 = 2 + 4 = 6
+        assertEquals(Duration.ofMinutes(50), jobs.getLeft().getDuration());
     }
 
     @Test
-    void getDuration_usesHandPackagingSpeedWhenHandPackaging() {
-        Job job = new Job();
-        job.setQuantity(200);
-        job.setHandPackaging(true);
-        job.setLine(new Line("line1", "Line 1"));
-        job.setProduct(createProductWithType("TYPE_A"));
+    void getDuration_whenSpeedIsNull() {
+        Job j1 = new Job();
 
-        assertEquals(Duration.ofMinutes(8), job.getDuration()); // ceil(200/50) + 4 = 4 + 4 = 8
+        assertEquals(Duration.ZERO, j1.getDuration());
     }
 
     @Test
-    void getDuration_returnsZeroWhenSpeedNull() {
-        Job job = new Job();
-        job.setQuantity(100);
-        job.setLine(new Line("line1", "Line 1"));
-        job.setProduct(createProductWithType("UNKNOWN_TYPE"));
+    void getDuration_whenSpeedLessZero() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
 
-        assertEquals(Duration.ZERO, job.getDuration());
+        SpeedCacheUtils.getLineSpeeds().put("line1", Map.of("TYPE_A", Pair.of(-100, 50)));
+        assertEquals(Duration.ZERO, jobs.getLeft().getDuration());
     }
 
-    @Test
-    void getDuration_returnsZeroWhenSpeedZero() {
-        SpeedCacheUtils.init(Map.of("line1", Map.of("TYPE_ZERO", Pair.of(0, 0))));
-        Job job = new Job();
-        job.setQuantity(100);
-        job.setLine(new Line("line1", "Line 1"));
-        job.setProduct(createProductWithType("TYPE_ZERO"));
-
-        assertEquals(Duration.ZERO, job.getDuration());
-    }
-
-    //==================================================================================================================
+    // ============================================================
     // getSpeed
+    // ============================================================
     @Test
-    void getSpeed_returnsNullWhenLineNull() {
-        Job job = new Job();
-        job.setProduct(createProductWithType("TYPE_A"));
-
-        assertNull(job.getSpeed());
+    void getSpeed_whenProductIsNull() {
+        Job j1 = new Job();
+        j1.setLine(new Line());
+        assertNull(j1.getSpeed());
     }
 
     @Test
-    void getSpeed_returnsNullWhenProductNull() {
-        Job job = new Job();
-        job.setLine(new Line("line1", "Line 1"));
+    void getSpeed_whenProductTypeIsNull() {
+        Job j1 = new Job();
+        j1.setLine(new Line());
+        j1.setProduct(new Product());
+        assertNull(j1.getSpeed());
+    }
 
-        assertNull(job.getSpeed());
+    // ============================================================
+    //  getHandPackagingSpeed
+    // ============================================================
+    @Test
+    void getHandPackagingSpeed_success() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        jobs.getLeft().setHandPackaging(true);
+        assertEquals(50, jobs.getLeft().getHandPackagingSpeed());
     }
 
     @Test
-    void getSpeed_returnsValueFromCache() {
-        Job job = new Job();
-        job.setLine(new Line("line1", "Line 1"));
-        job.setProduct(createProductWithType("TYPE_A"));
-
-        assertEquals(100, job.getSpeed());
+    void getHandPackagingSpeed_whenLineIsNull() {
+        Job j1 = new Job();
+        assertNull(j1.getHandPackagingSpeed());
     }
 
-    //==================================================================================================================
-    // getHandPackagingSpeed
     @Test
-    void getHandPackagingSpeed_returnsValueFromCache() {
-        Job job = new Job();
-        job.setLine(new Line("line1", "Line 1"));
-        job.setProduct(createProductWithType("TYPE_A"));
-
-        assertEquals(50, job.getHandPackagingSpeed());
+    void getHandPackagingSpeed_whenProductIsNull() {
+        Job j1 = new Job();
+        j1.setLine(new Line());
+        assertNull(j1.getHandPackagingSpeed());
     }
 
+    @Test
+    void getHandPackagingSpeed_whenProductTypeIsNull() {
+        Job j1 = new Job();
+        j1.setLine(new Line());
+        j1.setProduct(new Product());
+        assertNull(j1.getHandPackagingSpeed());
+    }
 
-    //==================================================================================================================
+    // ============================================================
     // updateStartCleaningDateTime
-    @Test
-    void updateStartCleaningDateTime_clearsDatesWhenLineNull() {
-        Job job = new Job();
-        job.setStartCleaningDateTime(LocalDateTime.of(2025, 1, 15, 8, 0));
-        job.setStartProductionDateTime(LocalDateTime.of(2025, 1, 15, 9, 0));
-        job.setEndDateTime(LocalDateTime.of(2025, 1, 15, 10, 0));
-
-        job.updateStartCleaningDateTime();
-
-        assertNull(job.getStartCleaningDateTime());
-        assertNull(job.getStartProductionDateTime());
-        assertNull(job.getEndDateTime());
-    }
+    // ============================================================
 
     @Test
-    void updateStartCleaningDateTime_noChangeWhenLineNullAndDatesAlreadyNull() {
-        Job job = new Job();
-        job.setLine(null);
+    void updateStartCleaningDateTime_success() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
 
-        job.updateStartCleaningDateTime();
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
 
-        assertNull(job.getStartCleaningDateTime());
-        assertNull(job.getStartProductionDateTime());
-        assertNull(job.getEndDateTime());
-        assertNull(job.getPlanEndDateTime());
-    }
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-    private Job buildTestJob(String id, Line line, Product product, LocalDateTime start) {
-        return JobTestBuilder.aJob()
-                .withId(id)
-                .withLine(line)
-                .withProduct(product)
-                .withQuantity(2600)
-                .startingAt(start)
-                .build();
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 50), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 7), jobs.getRight().getEndDateTime());
 
-    }
-
-    private Product buildTestProduct(String id, String type, Product previous, boolean isPlrc) {
-        return ProductTestBuilder.aProduct(id).withType(type)
-                .withCleaningResult(previous, new CleaningResult(30, isPlrc)).build();
-    }
-
-    private Job getTestJobForPLRC(boolean isPlrc){
-        LocalDateTime start = LocalDateTime.of(2026, 5, 8, 10, 0);
-
-        Line line = LineTestBuilder.aLine("line1", start).build();
-        Product prodA = buildTestProduct("P1", "TYPE_A", null, false);
-        Product prodB = buildTestProduct("P2", "TYPE_B", prodA, isPlrc);
-
-        Job job1 = buildTestJob("J1", line, prodA, LocalDateTime.of(2026, 5, 8, 10, 0));
-        Job job2 = buildTestJob("J2", line, prodB, LocalDateTime.of(2026, 5, 8, 10, 30));
-
-        job2.setPreviousJob(job1);
-        line.setJobs(List.of(job1, job2));
-        return job2;
-    }
-
-    @Test
-    void updateStartCleaningDateTimeWhenNotPLRLC() {
-
-        Job j2 = getTestJobForPLRC(false);
-        j2.updateStartCleaningDateTime();
-
-        assertNotNull(j2.getLine());
-        assertEquals(Duration.ofMinutes(17), j2.getDuration());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 30), j2.getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 0), j2.getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 17), j2.getEndDateTime());
-    }
-
-    @Test
-    void updateStartCleaningDateTime_whenIsPLRLC() {
-
-        Job j2 = getTestJobForPLRC(true);
-        j2.updateStartCleaningDateTime();
-
-        assertNotNull(j2.getLine());
-        assertEquals(Duration.ofMinutes(17), j2.getDuration());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 30), j2.getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 15), j2.getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 11, 32), j2.getEndDateTime());
     }
 
     @Test
     void updateStartCleaningDateTime_whenPreviousIsMaintenance() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        jobs.getLeft().setDuration(Duration.ofMinutes(60));
+        jobs.getLeft().setMaintenance(true);
 
-        Job j2 = getTestJobForPLRC(false);
-        j2.getPreviousJob().setMaintenance(true);
-        j2.getPreviousJob().setDuration(Duration.ofMinutes(20));
-        j2.getPreviousJob().updateStartCleaningDateTime();
-        j2.updateStartCleaningDateTime();
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
 
-        assertNotNull(j2.getLine());
-        assertEquals(Duration.ofMinutes(17), j2.getDuration());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 20), j2.getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 20), j2.getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 37), j2.getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 0), jobs.getLeft().getEndDateTime());
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 0), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 0), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 17), jobs.getRight().getEndDateTime());
     }
 
     @Test
-    void updateStartCleaningDateTime_whenCleaningResultMissing() {
+    void updateStartCleaningDateTime_whenProductIsNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
 
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
+        jobs.getRight().setProduct(null);
 
-        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
-        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B")
-                .withoutCleaning()
-                .build();
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
 
-        Job job1 = JobTestBuilder.aJob()
-                .withProduct(prodA)
-                .withDurationMinutes(60)
-                .asMaintenance()
-                .startingAt(start)
-                .build();
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-        Job job2 = JobTestBuilder.aJob()
-                .withProduct(prodB)
-                .withDurationMinutes(30)
-                .asMaintenance()
-                .build();
-
-        Line line = LineTestBuilder.aLine("line1", start)
-                .withJobs(job1, job2)
-                .build();
-
-        ScheduleUtils.fixLineJobs(line);
-
-        assertEquals(start.plusMinutes(60), job2.getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getEndDateTime());
     }
 
     @Test
-    void updateStartCleaningDateTime_whenCleaningDelayExists_shouldAddToDuration() {
+    void updateStartCleaningDateTime_whenPreviousProductIsNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
 
-        LocalDateTime lineStart = LocalDateTime.of(2025, 1, 15, 8, 0);
+        jobs.getLeft().setProduct(null);
 
-        Product prodA = ProductTestBuilder.aProduct("A").withType("TYPE_A").build();
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
 
-        Product prodB = ProductTestBuilder.aProduct("B").withType("TYPE_B").build();
-        prodB.setCleaningDurations(new HashMap<>(Map.of(prodA, Duration.ofMinutes(20))));
-        prodB.setCleaningResults(new HashMap<>(Map.of(prodA, new CleaningResult(0, false))));
+        System.out.println(jobs.getRight().getDuration());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getEndDateTime());
 
-        Job job1 = JobTestBuilder.aJob()
-                .withProduct(prodA)
-                .withQuantity(5000)
-                .startingAt(lineStart)
-                .build();
-
-        Job job2 = JobTestBuilder.aJob()
-                .withProduct(prodB)
-                .withQuantity(6000)
-                .withCleaningDelay(Duration.ofMinutes(10))
-                .build();
-
-        Line line = LineTestBuilder.aLine("line1", lineStart)
-                .withJobs(job1, job2)
-                .build();
-
-        ScheduleUtils.fixLineJobs(line);
-
-        LocalDateTime expected = LocalDateTime.of(2025, 1, 15, 9, 24);
-
-        assertEquals(expected, job2.getStartProductionDateTime());
-        assertEquals(10, job2.getCleaningDelay().toMinutes());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 17), jobs.getRight().getEndDateTime());
     }
 
-    //==================================================================================================================
+    @Test
+    void updateStartCleaningDateTime_whenPreviousIsPLRC() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+
+        jobs.getRight().getProduct().getCleaningResults()
+                .put(jobs.getLeft().getProduct(), new CleaningResult(60, true));
+
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 15), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 32), jobs.getRight().getEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenCleaningDelayIsNotNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+
+        jobs.getRight().setCleaningDelay(Duration.ofMinutes(30));
+
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 20), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 37), jobs.getRight().getEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenCleanupDurationIsNegative() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+
+        jobs.getRight().setCleaningDelay(Duration.ofMinutes(-30));
+
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 47), jobs.getRight().getEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenNPE() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+
+        jobs.getRight().getProduct().getCleaningResults().remove(jobs.getRight().getPreviousJob().getProduct());
+
+        jobs.getLeft().updateStartCleaningDateTime();
+        jobs.getRight().updateStartCleaningDateTime();
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 47), jobs.getRight().getEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenLineIsNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        LocalDateTime endDateTime = LocalDateTime.of(2026, 6, 9, 10, 30);
+        jobs.getLeft().setEndDateTime(endDateTime);
+        jobs.getLeft().setLine(null);
+        jobs.getLeft().updateStartCleaningDateTime();
+
+        assertEquals(endDateTime, jobs.getLeft().getEndDateTime());
+    }
+
+    @Test
+    void updateStartCleaningDateTime_whenLineAndCleaningAreNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+
+        jobs.getLeft().setStartCleaningDateTime(LocalDateTime.of(2026, 6, 9, 10, 0));
+        jobs.getLeft().setLine(null);
+        jobs.getLeft().updateStartCleaningDateTime();
+
+        assertNull(jobs.getLeft().getStartCleaningDateTime());
+    }
+
+    // ============================================================
     // areEqualsPlanAndFactLines
+    // ============================================================
     @Test
-    void areEqualsPlanAndFactLines_WhenLineTheSame() {
-        LocalDateTime lineStart = LocalDateTime.of(2026, 5, 5, 8, 0);
+    void areEqualsPlanAndFactLines_success() {
+        Line line = new Line("L1", "line");
+        Job j1 = new Job();
 
-        Job job1 = JobTestBuilder.aJob()
-                .withLineIdFact("line1")
-                .startingAt(lineStart)
-                .build();
+        j1.setLine(line);
+        j1.setLineIdFact(line.getId());
 
-        Line line = LineTestBuilder.aLine("line1", lineStart)
-                .withJobs(job1)
-                .build();
-
-        assertTrue(job1.areEqualsPlanAndFactLines());
+        assertTrue(j1.areEqualsPlanAndFactLines());
     }
 
     @Test
-    void areEqualsPlanAndFactLines_WhenLineIsNotTheSame() {
-        LocalDateTime lineStart = LocalDateTime.of(2026, 5, 5, 8, 0);
+    void areEqualsPlanAndFactLines_WhenLinesAreNotTheSame() {
+        Line line = new Line("L1", "line");
+        Job j1 = new Job();
 
-        Job job1 = JobTestBuilder.aJob()
-                .withLineIdFact("line2")
-                .startingAt(lineStart)
-                .build();
+        j1.setLine(line);
+        j1.setLineIdFact("L2");
 
-        Line line = LineTestBuilder.aLine("line1", lineStart)
-                .withJobs(job1)
-                .build();
-
-        assertFalse(job1.areEqualsPlanAndFactLines());
-    }
-
-    @Test
-    void areEqualsPlanAndFactLines_WhenLineIsNull() {
-        LocalDateTime lineStart = LocalDateTime.of(2026, 5, 5, 8, 0);
-
-        Job job1 = JobTestBuilder.aJob()
-                .withLineIdFact("line1")
-                .startingAt(lineStart)
-                .build();
-
-        assertFalse(job1.areEqualsPlanAndFactLines());
+        assertFalse(j1.areEqualsPlanAndFactLines());
     }
 
     @Test
     void areEqualsPlanAndFactLines_WhenLineIdFactIsNull() {
-        LocalDateTime lineStart = LocalDateTime.of(2026, 5, 5, 8, 0);
+        Job j1 = new Job();
+        assertFalse(j1.areEqualsPlanAndFactLines());
+    }
 
-        Job job1 = JobTestBuilder.aJob()
-                .startingAt(lineStart)
-                .build();
+    @Test
+    void areEqualsPlanAndFactLines_WhenLineIsNull() {
+        Job j1 = new Job();
+        j1.setLineIdFact("L2");
 
-        Line line = LineTestBuilder.aLine("line1", lineStart)
-                .withJobs(job1)
-                .build();
-
-        assertFalse(job1.areEqualsPlanAndFactLines());
+        assertFalse(j1.areEqualsPlanAndFactLines());
     }
 
     @Test
     void areEqualsPlanAndFactLines_WhenLineIdIsNull() {
-        LocalDateTime lineStart = LocalDateTime.of(2026, 5, 5, 8, 0);
+        Line line = new Line();
+        Job j1 = new Job();
 
-        Job job1 = JobTestBuilder.aJob()
-                .withLineIdFact("line1")
-                .startingAt(lineStart)
-                .build();
+        j1.setLine(line);
+        j1.setLineIdFact("L1");
 
-        Line line = LineTestBuilder.aLine("line1", lineStart)
-                .withJobs(job1)
-                .build();
-
-        line.setId(null);
-        assertFalse(job1.areEqualsPlanAndFactLines());
+        assertFalse(j1.areEqualsPlanAndFactLines());
     }
 
-    //==================================================================================================================
+    // ============================================================
     // getFactDuration
+    // ============================================================
     @Test
     void getFactDuration_WhenCameraDataIsNotNull() {
         LocalDateTime cameraStart = LocalDateTime.of(2026, 5, 5, 8, 0);
         LocalDateTime cameraEnd = LocalDateTime.of(2026, 5, 5, 8, 30);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withCamera(cameraStart, cameraEnd)
-                .build();
-
-        assertEquals(30, job1.getFactDuration());
+        Job j1 = new Job();
+        j1.setCameraStart(cameraStart);
+        j1.setCameraEnd(cameraEnd);
+        assertEquals(30, j1.getFactDuration());
     }
 
     @Test
     void getFactDuration_WhenCameraStartIsNull() {
         LocalDateTime cameraEnd = LocalDateTime.of(2026, 5, 5, 8, 30);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withCamera(null, cameraEnd)
-                .build();
-
-        assertEquals(0, job1.getFactDuration());
+        Job j1 = new Job();
+        j1.setCameraEnd(cameraEnd);
+        assertEquals(0, j1.getFactDuration());
     }
 
     @Test
     void getFactDuration_WhenCameraEndIsNull() {
         LocalDateTime cameraStart = LocalDateTime.of(2026, 5, 5, 8, 30);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withCamera(cameraStart, null)
-                .build();
-
-        assertEquals(0, job1.getFactDuration());
+        Job j1 = new Job();
+        j1.setCameraStart(cameraStart);
+        assertEquals(0, j1.getFactDuration());
     }
 
     @Test
@@ -534,59 +453,152 @@ class JobTest {
         LocalDateTime cameraStart = LocalDateTime.of(2026, 5, 5, 8, 30);
         LocalDateTime cameraEnd = LocalDateTime.of(2026, 5, 5, 8, 0);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withCamera(cameraStart, cameraEnd)
-                .build();
+        Job j1 = new Job();
+        j1.setCameraStart(cameraStart);
+        j1.setCameraEnd(cameraEnd);
 
-        assertEquals(0, job1.getFactDuration());
+        assertEquals(0, j1.getFactDuration());
     }
 
-    //==================================================================================================================
+    // ============================================================
     // getCleaningDurationPlan
+    // ============================================================
+
     @Test
     void getCleaningDurationPlan_WhenCleaningDataIsNotNull() {
         LocalDateTime cleaningStart = LocalDateTime.of(2026, 5, 5, 8, 0);
-        LocalDateTime startProduction = LocalDateTime.of(2026, 5, 5, 8, 30);
+        LocalDateTime productionStart = LocalDateTime.of(2026, 5, 5, 8, 30);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withStartProductionDateTime(startProduction)
-                .withStartCleaningDateTime(cleaningStart)
-                .build();
-        assertEquals(30, job1.getCleaningDurationPlan());
+        Job j1 = new Job();
+        j1.setStartCleaningDateTime(cleaningStart);
+        j1.setStartProductionDateTime(productionStart);
+
+        assertEquals(30, j1.getCleaningDurationPlan());
     }
 
     @Test
-    void getCleaningDurationPlan_WhenCameraCleaningIsNull() {
-        LocalDateTime startProduction = LocalDateTime.of(2026, 5, 5, 8, 30);
+    void getCleaningDurationPlan_WhenCleaningIsNull() {
+        LocalDateTime productionStart = LocalDateTime.of(2026, 5, 5, 8, 30);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withStartProductionDateTime(startProduction)
-                .build();
+        Job j1 = new Job();
+        j1.setStartProductionDateTime(productionStart);
 
-        assertEquals(0, job1.getCleaningDurationPlan());
+        assertEquals(0, j1.getCleaningDurationPlan());
     }
 
     @Test
-    void getCleaningDurationPlan_WhenStartIsNull() {
-        LocalDateTime cleaningStart = LocalDateTime.of(2026, 5, 5, 8, 0);
+    void getCleaningDurationPlan_WhenProductionStartIsNull() {
+        LocalDateTime cleaningStart = LocalDateTime.of(2026, 5, 5, 8, 30);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withStartCleaningDateTime(cleaningStart)
-                .build();
-
-        assertEquals(0, job1.getCleaningDurationPlan());
+        Job j1 = new Job();
+        j1.setStartCleaningDateTime(cleaningStart);
+        assertEquals(0, j1.getCleaningDurationPlan());
     }
 
     @Test
     void getCleaningDurationPlan_WhenStartIsNotBeforeCleaning() {
         LocalDateTime cleaningStart = LocalDateTime.of(2026, 5, 5, 8, 30);
-        LocalDateTime startProduction = LocalDateTime.of(2026, 5, 5, 8, 0);
+        LocalDateTime productionStart = LocalDateTime.of(2026, 5, 5, 8, 0);
 
-        Job job1 = JobTestBuilder.aJob()
-                .withStartProductionDateTime(startProduction)
-                .withStartCleaningDateTime(cleaningStart)
-                .build();
+        Job j1 = new Job();
+        j1.setStartCleaningDateTime(cleaningStart);
+        j1.setStartProductionDateTime(productionStart);
 
-        assertEquals(0, job1.getCleaningDurationPlan());
+        assertEquals(0, j1.getCleaningDurationPlan());
+    }
+
+    // ============================================================
+    // getCleaningDurationPlan
+    // ============================================================
+    @Test
+    void getCleaningDurationWithDelay_whenCleaningDelayIsNull() {
+        Job job = new Job();
+
+        job.setStartCleaningDateTime(LocalDateTime.now().minusMinutes(10));
+        job.setStartProductionDateTime(LocalDateTime.now());
+        job.setCleaningDelay(null);
+
+        assertEquals(0, job.getCleaningDurationWithDelay());
+    }
+
+    @Test
+    void getCleaningDurationWithDelay_whenStartProductionIsNull() {
+        Job job = new Job();
+
+        job.setStartCleaningDateTime(LocalDateTime.now().minusMinutes(10));
+        job.setCleaningDelay(Duration.ofMinutes(5));
+        job.setStartProductionDateTime(null);
+
+        assertEquals(0, job.getCleaningDurationWithDelay());
+    }
+
+    @Test
+    void getCleaningDurationWithDelay_whenStartCleaningIsNull() {
+        Job job = new Job();
+
+        job.setStartProductionDateTime(LocalDateTime.now());
+        job.setCleaningDelay(Duration.ofMinutes(5));
+        job.setStartCleaningDateTime(null);
+
+        assertEquals(0, job.getCleaningDurationWithDelay());
+    }
+
+    @Test
+    void getCleaningDurationWithDelay_whenProductionNotAfterCleaning() {
+        Job job = new Job();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        job.setStartCleaningDateTime(now);
+        job.setStartProductionDateTime(now.minusMinutes(5));
+        job.setCleaningDelay(Duration.ofMinutes(5));
+
+        assertEquals(0, job.getCleaningDurationWithDelay());
+    }
+
+    @Test
+    void getCleaningDurationWithDelay_whenValidData_returnsSumOfDurationAndDelay() {
+        Job job = new Job();
+
+        LocalDateTime cleaning = LocalDateTime.now().minusMinutes(20);
+        LocalDateTime production = LocalDateTime.now();
+
+        job.setStartCleaningDateTime(cleaning);
+        job.setStartProductionDateTime(production);
+        job.setCleaningDelay(Duration.ofMinutes(5));
+
+        assertEquals(25, job.getCleaningDurationWithDelay());
+    }
+
+    // ============================================================
+    // helper methods
+    // ============================================================
+    private Pair<Job, Job> buildTestJobsWithCleanings() {
+        LocalDateTime start = LocalDateTime.of(2026, 5, 9, 10, 0);
+        Job j1 = JobTestBuilder.aJob().withId("J1").withQuantity(2600).build();
+        Job j2 = JobTestBuilder.aJob().withId("J2").withQuantity(2600).build();
+
+        Product p1 = ProductTestBuilder.aProduct("P1").withType("TYPE_A").build();
+        Product p2 = ProductTestBuilder.aProduct("P2").withType("TYPE_B").build();
+
+        Map<Product, Duration> cleaningDurationsP1 = Map.of(p1, Duration.ZERO, p2, Duration.ofMinutes(20));
+        Map<Product, Duration> cleaningDurationsP2 = Map.of(p2, Duration.ZERO, p1, Duration.ofMinutes(20));
+        Map<Product, CleaningResult> results1 = new HashMap<>(Map.of(p1, new CleaningResult(30, false),
+                p2, new CleaningResult(30, false)));
+
+        p1.setCleaningDurations(cleaningDurationsP1);
+        p1.setCleaningResults(results1);
+        p2.setCleaningDurations(cleaningDurationsP2);
+        p2.setCleaningResults(results1);
+
+        Line line = new Line("line1", "line1");
+        line.setStartDateTime(start);
+        j1.setProduct(p1);
+        j2.setProduct(p2);
+        j1.setLine(line);
+        j2.setLine(line);
+
+        j2.setPreviousJob(j1);
+        return Pair.of(j1, j2);
     }
 }

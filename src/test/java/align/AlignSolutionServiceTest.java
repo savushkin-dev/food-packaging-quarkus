@@ -18,8 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.smallrye.common.constraint.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,6 +65,9 @@ class AlignSolutionServiceTest {
         verify(lineService).setMaxEndDateTimeByLastJob(schedule);
     }
 
+    // ============================================================
+    // removeAlignMaintenance
+    // ============================================================
 
     @Test
     void removeAlignMaintenance_maintenanceTypeId() {
@@ -96,13 +98,28 @@ class AlignSolutionServiceTest {
         assertEquals(2, solution.getDeletedMaintenance().size());
     }
 
+    // ============================================================
+    // reset
+    // ============================================================
+
     @Test
     void resetAlign_success() {
         j1.setDelayDuration(Duration.ZERO);
         j1.setCleaningDelay(Duration.ZERO);
-        alignSolution.resetAlign(solution);
+        alignSolution.reset(solution);
 
         assertNull(solution.getJobs().getFirst().getDelayDuration());
         assertNull(solution.getJobs().getFirst().getCleaningDelay());
+    }
+
+    @Test
+    void resetAlign_whenSolutionIsNull() {
+       solution.setJobs(null);
+        assertDoesNotThrow(() -> alignSolution.reset((solution)));
+    }
+
+    @Test
+    void resetAlign_whenSolutionJobsListIsNull() {
+        assertDoesNotThrow(() -> alignSolution.reset((null)));
     }
 }

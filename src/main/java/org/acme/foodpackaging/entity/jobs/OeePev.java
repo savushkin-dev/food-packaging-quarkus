@@ -9,7 +9,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Data
