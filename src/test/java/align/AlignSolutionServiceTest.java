@@ -4,7 +4,6 @@ import builder.JobTestBuilder;
 import builder.LineTestBuilder;
 import builder.ScheduleTestBuilder;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
 import org.acme.foodpackaging.service.align.AlignCleaningService;
 import org.acme.foodpackaging.service.align.AlignDurationService;
 import org.acme.foodpackaging.service.align.AlignSolutionService;

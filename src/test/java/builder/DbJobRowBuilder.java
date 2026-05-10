@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 
 public class DbJobRowBuilder {
 
-    private LocalDateTime dti = LocalDateTime.of(2025, 1, 15, 9, 0);
+    private final LocalDateTime dti = LocalDateTime.of(2025, 1, 15, 9, 0);
     private String kmc = "KMC1";
-    private LocalDateTime start = dti;
-    private LocalDateTime end = LocalDateTime.of(2025, 1, 15, 9, 30);
+    private final LocalDateTime start = dti;
+    private final LocalDateTime end = LocalDateTime.of(2025, 1, 15, 9, 30);
     private Long snpz = 123L;
     private String lineId = "L1";
 
