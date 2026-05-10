@@ -65,27 +65,34 @@ public class AlignCleaningService {
             return;
         }
 
-        for (int i = 0; i < jobs.size() - 1; i++) {
+        int i = 0;
+        while (i < jobs.size() - 1) {
+
             Job curr = jobs.get(i);
             Job next = jobs.get(i + 1);
 
             if (!areDifferentProducts(curr, next)) {
+                i++;
                 continue;
             }
 
             long cleaningMinutesFact = calculateFactCleaning(curr, next);
-
             int chainEndIndex = findChainEndIndex(jobs, i + 1);
 
             if (chainEndIndex > i + 1) {
-                List<Job> chain = new ArrayList<>(jobs.subList(i + 1, chainEndIndex));
 
-                handleCleaningDelayForChain(
-                        curr, cleaningMinutesFact, chain,
-                        line, jobs, solution
+                List<Job> chain = new ArrayList<>(
+                        jobs.subList(i + 1, chainEndIndex)
                 );
 
-                i = chainEndIndex - 2;
+                handleCleaningDelayForChain(
+                        curr, cleaningMinutesFact,
+                        chain, line, jobs, solution
+                );
+
+                i = chainEndIndex - 1;
+            } else {
+                i++;
             }
         }
     }

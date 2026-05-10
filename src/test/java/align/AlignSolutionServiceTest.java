@@ -1,5 +1,7 @@
 package align;
 
+import builder.JobTestBuilder;
+import builder.LineTestBuilder;
 import builder.ScheduleTestBuilder;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
@@ -15,10 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
-import static io.smallrye.common.constraint.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -26,19 +25,14 @@ import static org.mockito.Mockito.*;
 class AlignSolutionServiceTest {
 
     @Mock
-    MaintenanceJob maintenanceJob;
-    @Mock
     LineService lineService;
     @Mock
     AlignDurationService alignDuration;
-
     @Mock
     AlignCleaningService cleaningService;
 
     private AlignSolutionService alignSolution;
     private PackagingSchedule solution;
-    private Line line;
-    private Job j1;
 
     @BeforeEach
     void setUp() {
@@ -47,13 +41,13 @@ class AlignSolutionServiceTest {
                 cleaningService,
                 lineService
         );
-        solution = new PackagingSchedule();
-        line = new Line();
-        j1 = new Job();
-        j1.setId("j1");
-        solution.setJobs(new ArrayList<>(List.of(j1)));
-        line.setJobs(new ArrayList<>(List.of(j1)));
-        solution.setLines(new ArrayList<>(List.of(line)));
+        Job mj1 = JobTestBuilder.aJob().withId("Mj1").asMaintenance().withMaintenanceTypeId(7).build();
+        Job mj2 = JobTestBuilder.aJob().withId("Mj2").asMaintenance().withMaintenanceTypeId(2).build();
+        Job mj3 = JobTestBuilder.aJob().withId("Mj3").asMaintenance().withMaintenanceTypeId(8).build();
+        Job mj4 = JobTestBuilder.aJob().withId("Mj4").asMaintenance().withMaintenanceTypeId(2).build();
+
+        Line line = LineTestBuilder.aLine("L1").withJobs(mj1, mj2, mj3, mj4).build();
+        solution = ScheduleTestBuilder.aSchedule().withLines(line).withJobs(line.getJobs()).build();
 
     }
 
@@ -72,39 +66,79 @@ class AlignSolutionServiceTest {
     // ============================================================
 
     @Test
-    void removeAlignMaintenance_maintenanceTypeId() {
-        j1.setMaintenanceTypeId(8);
-        j1.setMaintenance(true);
+    void removeAlignMaintenance_success() {
         alignSolution.align(solution);
-        assertTrue(solution.getJobs().isEmpty());
-        assertTrue(solution.getLines().getFirst().getJobs().isEmpty());
-        assertEquals(1, solution.getDeletedMaintenance().size());
-        assertEquals(1, solution.getDeletedMaintenance().getFirst().getFDel());
-        assertEquals("j1", solution.getDeletedMaintenance().getFirst().getId());
+        assertEquals(1, solution.getJobs().size());
+        assertEquals(1, solution.getLines().getFirst().getJobs().size());
+        assertEquals(3, solution.getDeletedMaintenance().size());
+
+        assertEquals(2, solution.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("Mj2", solution.getJobs().getFirst().getId());
     }
 
     @Test
-    void removeAlignMaintenance_previousAlign() {
-        Job j2 = new Job();
-        solution.getJobs().add(j2);
-        solution.getLines().getFirst().getJobs().add(j2);
-        j2.setMaintenance(true);
-        j2.setMaintenanceTypeId(2);
-        j2.setPreviousJob(j1);
-
-        j1.setMaintenanceTypeId(8);
-        j1.setMaintenance(true);
+    void removeAlignMaintenance_whenLinesListIsNull() {
+        solution.setLines(null);
         alignSolution.align(solution);
-        assertTrue(solution.getJobs().isEmpty());
-        assertTrue(solution.getLines().getFirst().getJobs().isEmpty());
-        assertEquals(2, solution.getDeletedMaintenance().size());
+        assertDoesNotThrow(() -> alignSolution.align((solution)));
     }
-    
+
+    @Test
+    void removeAlignMaintenance_whenLinesListIsEmpty() {
+        solution.setLines(new ArrayList<>());
+        alignSolution.align(solution);
+        assertDoesNotThrow(() -> alignSolution.align((solution)));
+    }
+
+    @Test
+    void removeAlignMaintenance_whenLinesListHasNull() {
+        solution.getLines().add(null);
+        alignSolution.align(solution);
+        assertDoesNotThrow(() -> alignSolution.align((solution)));
+    }
+
+    @Test
+    void removeAlignMaintenance_whenLineJobListIsNull() {
+        solution.getLines().getFirst().setJobs(null);
+        alignSolution.align(solution);
+
+        assertEquals(1, solution.getJobs().size());
+        assertEquals(3, solution.getDeletedMaintenance().size());
+        assertEquals(2, solution.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("Mj2", solution.getJobs().getFirst().getId());
+        assertNull(solution.getLines().getFirst().getJobs());
+    }
+
+    @Test
+    void removeAlignMaintenance_whenLineJobListIsEmpty() {
+        solution.getLines().getFirst().setJobs(new ArrayList<>());
+        alignSolution.align(solution);
+
+        assertEquals(1, solution.getJobs().size());
+        assertEquals(3, solution.getDeletedMaintenance().size());
+        assertEquals(2, solution.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("Mj2", solution.getJobs().getFirst().getId());
+        assertTrue(solution.getLines().getFirst().getJobs().isEmpty());
+    }
+
+    @Test
+    void removeAlignMaintenance_whenSolutionJobListIsNull() {
+        assertDoesNotThrow(() -> alignSolution.align((new PackagingSchedule())));
+    }
+
+    @Test
+    void removeAlignMaintenance_whenSolutionJobListIsEmpty() {
+        PackagingSchedule schedule = new PackagingSchedule();
+        schedule.setJobs(new ArrayList<>());
+        assertDoesNotThrow(() -> alignSolution.align((schedule)));
+    }
+
     // ============================================================
     // reset
     // ============================================================
     @Test
     void resetAlign_success() {
+        Job j1 = new Job();
         j1.setDelayDuration(Duration.ZERO);
         j1.setCleaningDelay(Duration.ZERO);
         alignSolution.reset(solution);

@@ -43,6 +43,11 @@ public class ScheduleTestBuilder {
         return this;
     }
 
+    public ScheduleTestBuilder withJobs(List<Job> jobs) {
+        schedule.setJobs(jobs);
+        return this;
+    }
+
     public ScheduleTestBuilder withProductsList(List<Product> products) {
         schedule.setProducts(products);
         return this;

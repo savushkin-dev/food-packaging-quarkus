@@ -43,6 +43,7 @@ public class AlignSolutionService {
         markForDeleting(schedule);
         jobs.removeIf(job -> job.getFDel() == 1);
 
+        if(schedule.getLines() == null || schedule.getLines().isEmpty()) return;
         for(Line line : schedule.getLines()){
 
             if (line == null || line.getJobs() == null || line.getJobs().isEmpty()) {
@@ -50,7 +51,7 @@ public class AlignSolutionService {
             }
             List<Job> lineJobs = line.getJobs();
 
-            lineJobs.removeIf(job -> job.getFDel() == 1);;
+            lineJobs.removeIf(job -> job.getFDel() == 1);
             fixLineJobs(line);
             fixPinnedJobs(line);
         }
