@@ -319,8 +319,8 @@ public class Job {
         final int IF_CHANGING_PACKAGING = 4;
         long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
         if (useDelay) {
-            final long delayDuration = getDelayDuration() == null ? 0 : getDelayDuration().toMinutes();
-            minutes += delayDuration;
+            final long finalDelay = getDelayDuration() == null ? 0 : getDelayDuration().toMinutes();
+            minutes += finalDelay;
         }
         return Duration.ofMinutes(minutes);
     }

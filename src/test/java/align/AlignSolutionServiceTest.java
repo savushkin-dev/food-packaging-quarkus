@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static io.smallrye.common.constraint.Assert.assertTrue;
@@ -30,6 +31,7 @@ class AlignSolutionServiceTest {
     LineService lineService;
     @Mock
     AlignDurationService alignDuration;
+
     @Mock
     AlignCleaningService cleaningService;
 
@@ -97,11 +99,10 @@ class AlignSolutionServiceTest {
         assertTrue(solution.getLines().getFirst().getJobs().isEmpty());
         assertEquals(2, solution.getDeletedMaintenance().size());
     }
-
+    
     // ============================================================
     // reset
     // ============================================================
-
     @Test
     void resetAlign_success() {
         j1.setDelayDuration(Duration.ZERO);

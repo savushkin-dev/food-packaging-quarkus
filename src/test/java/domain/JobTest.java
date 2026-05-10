@@ -571,6 +571,41 @@ class JobTest {
     }
 
     // ============================================================
+    // getPlanDuration
+    // ============================================================
+    @Test
+    void getPlanDuration_whenIsMaintenance() {
+        Job job = new Job();
+        job.setMaintenance(true);
+        assertNull(job.getPlanDuration());
+    }
+    // ============================================================
+    // getPlanEndDateTime
+    // ============================================================
+    @Test
+    void getPlanEndDateTime_whenIsMaintenance() {
+        Job job = new Job();
+        assertNull(job.getPlanEndDateTime());
+    }
+    // ============================================================
+    // toString
+    // ============================================================
+    @Test
+    void toString_success() {
+        Job job = new Job();
+        job.setId("J1");
+        job.setProduct(new Product("P1", "product"));
+        String expected = job.getId() + "(" + job.getProduct().getName() + ")";
+        assertEquals(expected, job.toString());
+    }
+    @Test
+    void toString_whenProductIsNUll() {
+        Job job = new Job();
+        job.setId("J1");
+        String expected = job.getId() + "(" + "null" + ")";
+        assertEquals(expected, job.toString());
+    }
+    // ============================================================
     // helper methods
     // ============================================================
     private Pair<Job, Job> buildTestJobsWithCleanings() {
