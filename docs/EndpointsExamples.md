@@ -19,19 +19,16 @@ curl -X GET "http://localhost:8080/schedule/lines"
 
 ### GET /schedule/downtimePeriods/{idBatch}
 
-Простои между соседними маркировками в `PM_LOG` (порядок `F_ID`), только интервалы **строго длиннее 2 минут**. `cameraStart` / `cameraEnd` — `DTS` первой и последней строки выборки. Заголовок `X-Session-Id` не нужен. Если строк нет — **404**.
+Простои между соседними маркировками в `PM_LOG` (порядок `F_ID`). По умолчанию берутся интервалы **строго длиннее 2 минут**.
+Можно переопределить порог query-параметром `duration` (в минутах), например `?duration=10`.
+`cameraStart` / `cameraEnd` — `DTS` первой и последней строки выборки. Заголовок `X-Session-Id` не нужен.
 
 ```shell
 curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105"
 ```
 
-### GET /schedule/downtimePeriods/{idBatch}/duration?minutes={n}
-
-То же вычисление периодов простоя, но порог берется из query-параметра `minutes`.
-Например, `minutes=5` вернет только интервалы строго длиннее 5 минут.
-
 ```shell
-curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105/duration?minutes=5"
+curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105?duration=5"
 ```
 
 Пример ответа:

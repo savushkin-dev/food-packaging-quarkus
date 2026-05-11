@@ -88,26 +88,19 @@ public class PackagingScheduleResource {
     @GET
     @Path("downtimePeriods/{idBatch}")
     @Produces(MediaType.APPLICATION_JSON)
-    public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch) {
+    public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
+                                                   @QueryParam("duration") Integer duration) {
         if (idBatch == null || idBatch.isBlank()) {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
-        }
-        return downtimePeriodsService.build(idBatch.trim());
-    }
-
-    @GET
-    @Path("downtimePeriods/{idBatch}/duration")
-    @Produces(MediaType.APPLICATION_JSON)
-    public DowntimePeriodsResponse downtimePeriodsDuration(@PathParam("idBatch") String idBatch,
-                                                           @QueryParam("minutes") Long minutes) {
-        if (idBatch == null || idBatch.isBlank()) {
-            throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
-        }
-        if (minutes == null || minutes < 0) {
-            throw new WebApplicationException("Query parameter 'minutes' is required and must be >= 0", Response.Status.BAD_REQUEST);
         }
         String trimmed = idBatch.trim();
-        return downtimePeriodsService.build(trimmed, Duration.ofMinutes(minutes));
+        if (duration == null) {
+            return downtimePeriodsService.build(trimmed);
+        }
+        if (duration < 0) {
+            throw new WebApplicationException("Query parameter 'duration' must be >= 0", Response.Status.BAD_REQUEST);
+        }
+        return downtimePeriodsService.build(trimmed, Duration.ofMinutes(duration.longValue()));
     }
 
     @GET
