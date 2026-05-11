@@ -111,7 +111,7 @@ class AlignDurationServiceTest {
     // ============================================================
 
     @Test
-    void alignByFactDuration_sucess() {
+    void alignByFactDuration_success() {
 
         alignDuration.alignByFactDuration(solution);
         Job firstJob = getSolutionFirstJob();
@@ -164,7 +164,7 @@ class AlignDurationServiceTest {
     @Test
     void alignByFactDuration_delayDurationIsNotNull() {
         solution.getJobs().getFirst().setDelayDuration(Duration.ofMinutes(20));
-        ;
+
         alignDuration.alignByFactDuration(solution);
         assertEquals(Duration.ofMinutes(20), solution.getJobs().getFirst().getDelayDuration());
     }

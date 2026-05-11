@@ -37,6 +37,11 @@ public class JobTestBuilder {
         return this;
     }
 
+    public JobTestBuilder withMaintenanceTypeId(int typeId) {
+        job.setMaintenanceTypeId(typeId);
+        return this;
+    }
+
     public JobTestBuilder startingAt(LocalDateTime start) {
         job.setStartCleaningDateTime(start);
         job.setStartProductionDateTime(start);

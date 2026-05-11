@@ -1,9 +1,6 @@
 package builder;
 
-import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.domain.WorkCalendar;
+import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -43,6 +40,16 @@ public class ScheduleTestBuilder {
 
     public ScheduleTestBuilder withJobs(Job... jobs) {
         schedule.setJobs(new ArrayList<>(List.of(jobs)));
+        return this;
+    }
+
+    public ScheduleTestBuilder withJobs(List<Job> jobs) {
+        schedule.setJobs(jobs);
+        return this;
+    }
+
+    public ScheduleTestBuilder withProductsList(List<Product> products) {
+        schedule.setProducts(products);
         return this;
     }
 

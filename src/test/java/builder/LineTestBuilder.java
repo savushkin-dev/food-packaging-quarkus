@@ -14,9 +14,16 @@ public class LineTestBuilder {
         this.line = new Line(id, "Line " + id, "op", start);
         this.line.setJobs(new ArrayList<>());
     }
+    private LineTestBuilder(String id) {
+        this.line = new Line(id, "Line " + id);
+        this.line.setJobs(new ArrayList<>());
+    }
 
     public static LineTestBuilder aLine(String id, LocalDateTime start) {
         return new LineTestBuilder(id, start);
+    }
+    public static LineTestBuilder aLine(String id) {
+        return new LineTestBuilder(id);
     }
 
     public LineTestBuilder withJobs(Job... jobs) {

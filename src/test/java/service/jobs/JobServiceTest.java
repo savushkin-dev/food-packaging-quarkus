@@ -217,7 +217,7 @@ class JobServiceTest {
     @Test
     void writeDelayNote_whenLineNotFound() {
 
-        Job job = JobTestBuilder.aJob().build();
+        Job j1 = JobTestBuilder.aJob().build();
 
         schedule.getLines().getFirst().setId("L2");
         DelayNoteRequest request = new DelayNoteRequest();
@@ -226,7 +226,7 @@ class JobServiceTest {
 
         jobService.writeDelayNote(request, schedule);
 
-        assertNull(job.getDelayNote());
+        assertNull(j1.getDelayNote());
     }
 
     @Test

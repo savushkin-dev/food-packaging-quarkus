@@ -7,7 +7,6 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.service.lines.LineService;
 
-import java.util.Iterator;
 import java.util.List;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
@@ -44,6 +43,7 @@ public class AlignSolutionService {
         markForDeleting(schedule);
         jobs.removeIf(job -> job.getFDel() == 1);
 
+        if(schedule.getLines() == null || schedule.getLines().isEmpty()) return;
         for(Line line : schedule.getLines()){
 
             if (line == null || line.getJobs() == null || line.getJobs().isEmpty()) {
@@ -51,7 +51,7 @@ public class AlignSolutionService {
             }
             List<Job> lineJobs = line.getJobs();
 
-            lineJobs.removeIf(job -> job.getFDel() == 1);;
+            lineJobs.removeIf(job -> job.getFDel() == 1);
             fixLineJobs(line);
             fixPinnedJobs(line);
         }
@@ -77,7 +77,7 @@ public class AlignSolutionService {
         }
     }
 
-    public void resetAlign(PackagingSchedule solution){
+    public void reset(PackagingSchedule solution){
         if(solution == null || solution.getJobs() == null) return;
         for(Job job : solution.getJobs()){
             job.setCleaningDelay(null);

@@ -1,6 +1,5 @@
 package builder;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import java.time.LocalDateTime;
 
@@ -9,11 +8,12 @@ public class DbMaintenanceRowBuilder {
     private LocalDateTime start = LocalDateTime.of(2025, 1, 15, 9, 34);
     private LocalDateTime end = LocalDateTime.of(2025, 1, 15, 9, 40);
 
-    private int duration = 6;
+    private Integer duration = 6;
+
     private String note = "Delay Note";
     private Long id = 1L;
     private String lineId = "L1";
-    private int maintenanceTypeId = 2;
+    private Integer maintenanceTypeId = 2;
 
     public static DbMaintenanceRowBuilder aRow() {
         return new DbMaintenanceRowBuilder();
@@ -24,12 +24,12 @@ public class DbMaintenanceRowBuilder {
         return this;
     }
 
-    public DbMaintenanceRowBuilder withMaintenanceTypeId(int typeId) {
+    public DbMaintenanceRowBuilder withMaintenanceTypeId(Integer typeId) {
         this.maintenanceTypeId = typeId;
         return this;
     }
 
-    public DbMaintenanceRowBuilder withDuration(int duration) {
+    public DbMaintenanceRowBuilder withDuration(Integer duration) {
         this.duration = duration;
         return this;
     }
@@ -68,4 +68,3 @@ public class DbMaintenanceRowBuilder {
         );
     }
 }
-

@@ -235,7 +235,7 @@ public class PackagingScheduleResource {
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
-        alignSolutionService.resetAlign(schedule);
+        alignSolutionService.reset(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
         return Response.ok(Map.of(

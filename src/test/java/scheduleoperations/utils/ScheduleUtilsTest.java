@@ -480,4 +480,39 @@ class ScheduleUtilsTest {
         assertEquals(0, result.downtime());
         assertEquals(2, result.lines().size());
     }
+    // ============================================================
+    // ceilMinutes
+    // ============================================================
+
+    @Test
+    void ceilMinutes_whenDurationIsNull_returnsZero() {
+        assertEquals(0, ceilMinutes(null));
+    }
+
+    @Test
+    void ceilMinutes_whenDurationIsZero_returnsZero() {
+        assertEquals(0, ceilMinutes(Duration.ZERO));
+    }
+
+    @Test
+    void ceilMinutes_whenDurationIsNegative_returnsZero() {
+        assertEquals(0, ceilMinutes(Duration.ofMinutes(-5)));
+    }
+
+    @Test
+    void ceilMinutes_whenLessThanOneMinute_roundsUpToOne() {
+        assertEquals(1, ceilMinutes(Duration.ofSeconds(1)));
+        assertEquals(1, ceilMinutes(Duration.ofSeconds(59)));
+    }
+
+    @Test
+    void ceilMinutes_whenExactMinutes_returnsSameValue() {
+        assertEquals(5, ceilMinutes(Duration.ofMinutes(5)));
+    }
+
+    @Test
+    void ceilMinutes_whenPartialMinute_roundsUp() {
+        assertEquals(2, ceilMinutes(Duration.ofSeconds(61)));
+        assertEquals(3, ceilMinutes(Duration.ofSeconds(125)));
+    }
 }
