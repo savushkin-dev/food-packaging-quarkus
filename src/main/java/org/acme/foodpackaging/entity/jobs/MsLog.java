@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.acme.foodpackaging.record.FactProductionRow;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -24,7 +23,7 @@ import java.util.UUID;
                         @ColumnResult(name = "IDBATCH", type = String.class),
                         @ColumnResult(name = "KMC", type = String.class),
                         @ColumnResult(name = "DTV", type = LocalDateTime.class),
-                        @ColumnResult(name = "NP", type = LocalDateTime.class),
+                        @ColumnResult(name = "NP", type = Integer.class),
                         @ColumnResult(name = "EVENT", type = Integer.class),
                         @ColumnResult(name = "DT", type = LocalDateTime.class),
                         @ColumnResult(name = "KRC", type = String.class)

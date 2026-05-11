@@ -1,6 +1,5 @@
 package org.acme.foodpackaging.record;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 public record FactProductionRow(
