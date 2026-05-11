@@ -41,6 +41,11 @@ public class LineTestBuilder {
         return this;
     }
 
+    public LineTestBuilder withEmptyJobs() {
+        line.setJobs(new ArrayList<>());
+        return this;
+    }
+
     public LineTestBuilder autoLink() {
         List<Job> jobs = line.getJobs();
         for (int i = 1; i < jobs.size(); i++) {

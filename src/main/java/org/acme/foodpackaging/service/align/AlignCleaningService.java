@@ -24,15 +24,36 @@ public class AlignCleaningService {
             return;
         }
 
+        LocalDateTime earliestLineStart = null;
+        List<Line> linesWithoutFact = new ArrayList<>();
+
         for (Line line : solution.getLines()) {
+
             List<Job> factJobs = getFactJobsSorted(line.getJobs());
 
             if (factJobs.isEmpty()) {
+                linesWithoutFact.add(line);
                 continue;
             }
 
             calculateCleaningDelay(factJobs, line, solution);
-            alignLineByStartDateTime(line, factJobs.getFirst());
+
+            Job firstFactJob = factJobs.getFirst();
+            alignLineByStartDateTime(line, firstFactJob);
+
+            LocalDateTime alignedStart = line.getStartDateTime();
+
+            if (earliestLineStart == null || alignedStart.isBefore(earliestLineStart)) {
+                earliestLineStart = alignedStart;
+            }
+        }
+
+        if (earliestLineStart == null) {
+            return;
+        }
+
+        for (Line line : linesWithoutFact) {
+            line.setStartDateTime(earliestLineStart);
         }
     }
 
@@ -233,8 +254,8 @@ public class AlignCleaningService {
 
     private void applyCleaningDelay(Job job, long cleaningMinutesFact) {
         long cleaningMinutesPlan = job.getCleaningDurationPlan();
-            long delay = cleaningMinutesFact - cleaningMinutesPlan;
-            job.setCleaningDelay(Duration.ofMinutes(delay));
+        long delay = cleaningMinutesFact - cleaningMinutesPlan;
+        job.setCleaningDelay(Duration.ofMinutes(delay));
 
     }
 
