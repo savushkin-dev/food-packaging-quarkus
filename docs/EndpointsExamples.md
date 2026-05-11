@@ -25,6 +25,15 @@ curl -X GET "http://localhost:8080/schedule/lines"
 curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105"
 ```
 
+### GET /schedule/downtimePeriods/{idBatch}/duration?minutes={n}
+
+То же вычисление периодов простоя, но порог берется из query-параметра `minutes`.
+Например, `minutes=5` вернет только интервалы строго длиннее 5 минут.
+
+```shell
+curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105/duration?minutes=5"
+```
+
 Пример ответа:
 
 ```json

@@ -26,6 +26,7 @@ import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.*;
 import org.acme.foodpackaging.service.downtime.DowntimePeriodsService;
 
+import java.time.Duration;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -92,6 +93,21 @@ public class PackagingScheduleResource {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
         }
         return downtimePeriodsService.build(idBatch.trim());
+    }
+
+    @GET
+    @Path("downtimePeriods/{idBatch}/duration")
+    @Produces(MediaType.APPLICATION_JSON)
+    public DowntimePeriodsResponse downtimePeriodsDuration(@PathParam("idBatch") String idBatch,
+                                                           @QueryParam("minutes") Long minutes) {
+        if (idBatch == null || idBatch.isBlank()) {
+            throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
+        }
+        if (minutes == null || minutes < 0) {
+            throw new WebApplicationException("Query parameter 'minutes' is required and must be >= 0", Response.Status.BAD_REQUEST);
+        }
+        String trimmed = idBatch.trim();
+        return downtimePeriodsService.build(trimmed, Duration.ofMinutes(minutes));
     }
 
     @GET

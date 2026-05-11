@@ -7,7 +7,6 @@ import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.dto.DowntimePeriodItem;
 import org.acme.foodpackaging.dto.DowntimePeriodsResponse;
 import org.acme.foodpackaging.repository.PmLogRepository;
-import org.acme.foodpackaging.rest.ApiFields;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -29,10 +28,14 @@ public class DowntimePeriodsService {
     }
 
     public DowntimePeriodsResponse build(String idBatch) {
+        return build(idBatch, MIN_DOWNTIME);
+    }
+
+    public DowntimePeriodsResponse build(String idBatch, Duration minDowntime) {
         try (Stream<LocalDateTime> dtsStream = pmLogRepository.streamMarkingDtsByIdBatch(idBatch)) {
             Iterator<LocalDateTime> iterator = dtsStream.iterator();
             if (!iterator.hasNext()) {
-                throw new WebApplicationException(ApiFields.NO_PM_LOG_ROWS_FOR_BATCH, Response.Status.NOT_FOUND);
+                return new DowntimePeriodsResponse(idBatch, null, null, List.of());
             }
 
             LocalDateTime cameraStart = iterator.next();
@@ -43,7 +46,7 @@ public class DowntimePeriodsService {
             while (iterator.hasNext()) {
                 LocalDateTime current = iterator.next();
                 cameraEnd = current;
-                if (!current.isBefore(previous) && Duration.between(previous, current).compareTo(MIN_DOWNTIME) > 0) {
+                if (!current.isBefore(previous) && Duration.between(previous, current).compareTo(minDowntime) > 0) {
                     downtime.add(new DowntimePeriodItem(previous, current));
                 }
                 previous = current;

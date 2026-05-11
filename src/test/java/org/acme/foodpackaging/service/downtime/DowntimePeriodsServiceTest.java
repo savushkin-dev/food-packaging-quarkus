@@ -1,6 +1,5 @@
 package org.acme.foodpackaging.service.downtime;
 
-import jakarta.ws.rs.WebApplicationException;
 import org.acme.foodpackaging.dto.DowntimePeriodsResponse;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
@@ -29,10 +29,13 @@ class DowntimePeriodsServiceTest {
     }
 
     @Test
-    void build_emptyRows_throwsNotFound() {
+    void build_emptyRows_returnsEmpty() {
         when(pmLogRepository.streamMarkingDtsByIdBatch("x")).thenReturn(Stream.empty());
-        WebApplicationException ex = assertThrows(WebApplicationException.class, () -> service.build("x"));
-        assertEquals(404, ex.getResponse().getStatus());
+        DowntimePeriodsResponse r = service.build("x");
+        assertEquals("x", r.idBatch());
+        assertNull(r.cameraStart());
+        assertNull(r.cameraEnd());
+        assertTrue(r.downtime().isEmpty());
     }
 
     @Test
@@ -81,5 +84,25 @@ class DowntimePeriodsServiceTest {
         DowntimePeriodsResponse r = service.build("b");
 
         assertTrue(r.downtime().isEmpty());
+    }
+
+    @Test
+    void buildWithDuration_emptyRows_returnsEmpty() {
+        when(pmLogRepository.streamMarkingDtsByIdBatch("x")).thenReturn(Stream.empty());
+        DowntimePeriodsResponse r = service.build("x", Duration.ofMinutes(5));
+        assertTrue(r.downtime().isEmpty());
+    }
+
+    @Test
+    void buildWithDuration_filtersByProvidedMinutes() {
+        LocalDateTime a = LocalDateTime.of(2026, 4, 27, 10, 0, 0);
+        LocalDateTime b = a.plusMinutes(3);
+        LocalDateTime c = b.plusMinutes(4);
+        when(pmLogRepository.streamMarkingDtsByIdBatch("b")).thenReturn(Stream.of(a, b, c));
+
+        DowntimePeriodsResponse r = service.build("b", Duration.ofMinutes(3));
+        assertEquals(1, r.downtime().size());
+        assertEquals(b, r.downtime().getFirst().dtStart());
+        assertEquals(c, r.downtime().getFirst().dtEnd());
     }
 }
