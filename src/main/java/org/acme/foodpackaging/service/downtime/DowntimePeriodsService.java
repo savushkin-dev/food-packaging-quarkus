@@ -2,8 +2,6 @@ package org.acme.foodpackaging.service.downtime;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.dto.DowntimePeriodItem;
 import org.acme.foodpackaging.dto.DowntimePeriodsResponse;
 import org.acme.foodpackaging.repository.PmLogRepository;
