@@ -15,8 +15,12 @@ import java.util.stream.Stream;
 @ApplicationScoped
 public class PmLogRepository implements PanacheRepository<PmLog> {
 
+    private final SqlQueries sqlQueries;
+
     @Inject
-    SqlQueries sqlQueries;
+    public PmLogRepository(SqlQueries sqlQueries) {
+        this.sqlQueries = sqlQueries;
+    }
 
     public long countByIdBatch(String idBatch) {
         Number result = (Number) getEntityManager()
