@@ -107,12 +107,12 @@ public class AlignCleaningService {
                 );
 
                 handleCleaningDelayForChain(
-                        curr, cleaningMinutesFact,
-                        chain, line, jobs, solution
+                        curr, cleaningMinutesFact, chain, line, jobs, solution
                 );
 
                 i = chainEndIndex - 1;
-            } else {
+            }
+            else {
                 i++;
             }
         }
@@ -136,24 +136,26 @@ public class AlignCleaningService {
         ));
 
         Job candidate = chain.getFirst();
-
         if (candidate.getCleaningDelay() != null) {
             return;
         }
 
-        if (candidate.getPreviousJob() != null
-                && candidate.getPreviousJob().isMaintenance()) {
+        boolean maintenanceRemoved = tryRemoveMaintenanceBefore(
+                candidate, line, solution
+        );
 
-            int index = line.getJobs().indexOf(candidate);
-
-            removeMaintenanceBefore(line.getJobs(), index, solution);
+        if (maintenanceRemoved) {
+            fixLineJobs(line);
             alignLineByStartDateTime(line, jobs.getFirst());
-            applyCleaningDelay(candidate, cleaningMinutesFact);
+        }
 
+
+        if (candidate.getPreviousJob() == null) {
             return;
         }
 
         if (isPreviousWithoutFact(candidate)) {
+
             alignLineByStartDateTime(line, jobs.getFirst());
 
             chain.sort(Comparator.comparing(
@@ -165,7 +167,6 @@ public class AlignCleaningService {
                     candidate,
                     chain.getFirst().getCameraStart()
             );
-
             return;
         }
 
@@ -174,6 +175,21 @@ public class AlignCleaningService {
             return;
         }
         applyCleaningDelay(candidate, cleaningMinutesFact);
+    }
+
+    private boolean tryRemoveMaintenanceBefore(
+            Job candidate,
+            Line line,
+            PackagingSchedule solution
+    ) {
+        if (candidate.getPreviousJob() == null
+                || !candidate.getPreviousJob().isMaintenance()) {
+            return false;
+        }
+
+        int index = line.getJobs().indexOf(candidate);
+        removeMaintenanceBefore(line.getJobs(), index, solution);
+        return true;
     }
 
     private void removeMaintenanceBefore(

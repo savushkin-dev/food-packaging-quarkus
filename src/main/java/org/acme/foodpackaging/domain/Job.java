@@ -377,7 +377,7 @@ public class Job {
                     : product.getCleaningDurations().get(previous.getProduct());
             cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
             if (cleanupDuration.isNegative()) {
-                cleanupDuration = Duration.ZERO;
+                cleanupDuration = Duration.ofMinutes(10);
             }
             return startCleaning.plus(cleanupDuration);
         } catch (IllegalArgumentException | NullPointerException e) {

@@ -322,8 +322,8 @@ class JobTest {
         assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
         assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 47), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 40), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 57), jobs.getRight().getEndDateTime());
     }
 
     @Test
