@@ -24,7 +24,7 @@ import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.*;
-import org.acme.foodpackaging.service.downtime.DowntimePeriodsService;
+import org.acme.foodpackaging.persistence.load.DowntimePeriodsService;
 
 import java.time.Duration;
 import java.util.*;

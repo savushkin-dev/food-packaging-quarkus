@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.service.downtime;
+package org.acme.foodpackaging.persistence.load;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
