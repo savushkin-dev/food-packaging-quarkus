@@ -120,6 +120,15 @@ public class SqlQueries {
             """.formatted(prommarkSchema);
     }
 
+    public String loadPmLogMarkingRowsByBatch() {
+        return """
+            SELECT F_ID, DTS
+            FROM [%s].[dbo].[PM_LOG] WITH (NOLOCK)
+            WHERE IDBATCH = ? AND F_DEL = 0
+            ORDER BY F_ID
+            """.formatted(prommarkSchema);
+    }
+
     public String updateCameraEndEvent() {
         return """
             UPDATE [%s].[dbo].[MS_LOG]

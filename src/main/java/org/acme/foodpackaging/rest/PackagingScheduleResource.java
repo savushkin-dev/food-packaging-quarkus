@@ -24,7 +24,9 @@ import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.*;
+import org.acme.foodpackaging.persistence.load.DowntimePeriodsService;
 
+import java.time.Duration;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -50,6 +52,7 @@ public class PackagingScheduleResource {
     private final JobInfoService jobInfoService;
     private final AlignSolutionService alignSolutionService;
     private final PlrPlanRepository plrPlanRepository;
+    private final DowntimePeriodsService downtimePeriodsService;
 
     @Inject
     public PackagingScheduleResource(
@@ -58,7 +61,8 @@ public class PackagingScheduleResource {
             JobService jobService, MoveJobsService moveJobsService, SortByNpService sortByNpService, PinService pinService,
             ScheduleBuilder scheduleBuilder, ScheduleBuilderByVersion builderByVersion, LoadDataService loadDataService,
             UploadDataService uploadDataService, JobRefreshService jobRefreshService, JobSaveService jobSaveService,
-            SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService, PlrPlanRepository plrPlanRepository
+            SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService, PlrPlanRepository plrPlanRepository,
+            DowntimePeriodsService downtimePeriodsService
     ) {
         this.repository = repository;
         this.solverManager = solverManager;
@@ -78,6 +82,25 @@ public class PackagingScheduleResource {
         this.jobInfoService = jobInfoService;
         this.alignSolutionService = alignSolutionService;
         this.plrPlanRepository = plrPlanRepository;
+        this.downtimePeriodsService = downtimePeriodsService;
+    }
+
+    @GET
+    @Path("downtimePeriods/{idBatch}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
+                                                   @QueryParam("duration") Integer duration) {
+        if (idBatch == null || idBatch.isBlank()) {
+            throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
+        }
+        String trimmed = idBatch.trim();
+        if (duration == null) {
+            return downtimePeriodsService.build(trimmed);
+        }
+        if (duration < 0) {
+            throw new WebApplicationException("Query parameter 'duration' must be >= 0", Response.Status.BAD_REQUEST);
+        }
+        return downtimePeriodsService.build(trimmed, Duration.ofMinutes(duration.longValue()));
     }
 
     @GET
