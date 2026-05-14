@@ -58,25 +58,11 @@ public class AlignCleaningService {
     }
 
     private void alignLineByStartDateTime(Line line, Job firstFact) {
-        Job firstPlanned = line.getJobs().getFirst();
 
-        if (firstPlanned.getProduct() == null) {
-            return;
+        long shift = Duration.between(firstFact.getStartProductionDateTime(), firstFact.getCameraStart()).toMinutes();
+        if(line.getStartDateTime()!= null){
+            line.setStartDateTime(line.getStartDateTime().plusMinutes(shift));
         }
-
-        if (firstPlanned.getProduct().equals(firstFact.getProduct())) {
-            line.setStartDateTime(firstFact.getCameraStart());
-        } else {
-            line.getJobs().stream()
-                    .filter(j ->
-                            firstFact.getProduct().equals(j.getProduct())
-                                    && j.getStartCleaningDateTime() != null
-                                    && j.getStartCleaningDateTime().isBefore(j.getStartProductionDateTime()))
-                    .findFirst()
-                    .ifPresent(candidate ->
-                            applyDelayWithoutFact(candidate, firstFact.getCameraStart()));
-        }
-
         fixLineJobs(line);
         fixPinnedJobs(line);
     }

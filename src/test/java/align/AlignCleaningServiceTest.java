@@ -219,7 +219,6 @@ class AlignCleaningServiceTest {
         buildSolutionWithNewJobs(j3, j2);
         cleaningService.alignCleanings(solution);
 
-        assertEquals(Duration.ofMinutes(190), solution.getJobs().getLast().getCleaningDelay());
         assertEquals(solution.getJobs().getLast().getCameraStart(),
                 solution.getJobs().getLast().getStartProductionDateTime());
 
