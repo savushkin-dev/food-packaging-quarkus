@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.Product;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -59,7 +60,16 @@ public class AlignCleaningService {
 
     private void alignLineByStartDateTime(Line line, Job firstFact) {
 
-        long shift = Duration.between(firstFact.getStartProductionDateTime(), firstFact.getCameraStart()).toMinutes();
+        LocalDateTime planDateTime = firstFact.getStartProductionDateTime();
+        Product factProduct = firstFact.getProduct();
+        Job previous = firstFact.getPreviousJob();
+
+        while (previous != null && previous.getProduct() != null && previous.getProduct().equals(factProduct)){
+            planDateTime = previous.getStartProductionDateTime();
+            previous = previous.getPreviousJob();
+        }
+
+        long shift = Duration.between(planDateTime, firstFact.getCameraStart()).toMinutes();
         if(line.getStartDateTime()!= null){
             line.setStartDateTime(line.getStartDateTime().plusMinutes(shift));
         }

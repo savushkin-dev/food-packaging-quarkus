@@ -108,7 +108,6 @@ class AlignCleaningServiceTest {
         assertEquals(2, solution.getJobs().size());
         assertEquals(1, solution.getDeletedMaintenance().size());
         assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
-
     }
 
     @Test
@@ -312,7 +311,6 @@ class AlignCleaningServiceTest {
                 p2, Duration.ofMinutes(20),
                 mProduct, Duration.ZERO
         );
-
 
         p1.setCleaningDurations(cleaningDurationsP1);
         p2.setCleaningDurations(cleaningDurationsP2);
