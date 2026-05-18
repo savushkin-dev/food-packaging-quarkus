@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class JobDBLoader {
 
-    private static final String DB_JOB_ROW_MAPPING = "DbJobRowMapping";;
+    private static final String DB_JOB_ROW_MAPPING = "DbJobRowMapping";
     private static final String FACT_PRODUCTION_MAPPING = "FactProductionRowMapping";
     private static final String CAMERA_FACT_MAPPING = "CameraFactRowMapping";
 
