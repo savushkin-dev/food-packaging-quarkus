@@ -5,13 +5,14 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.dto.oeePev.CleaningRow;
+import org.acme.foodpackaging.dto.oeePev.DelayRow;
+import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.sql.EventTypeFilter;
 import org.acme.foodpackaging.sql.SqlQueries;
 
 import java.time.LocalDateTime;
@@ -22,8 +23,7 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class JobDBLoader {
 
-    private static final String DB_JOB_ROW_MAPPING = "DbJobRowMapping";
-    private static final String DB_MAINTENANCE_ROW_MAPPING = "DbMaintenanceRowMapping";
+    private static final String DB_JOB_ROW_MAPPING = "DbJobRowMapping";;
     private static final String FACT_PRODUCTION_MAPPING = "FactProductionRowMapping";
     private static final String CAMERA_FACT_MAPPING = "CameraFactRowMapping";
 
@@ -61,38 +61,56 @@ public class JobDBLoader {
 
     // ========================= MAINTENANCE / DELAYS =========================
 
-    public List<DbMaintenanceRow> loadMaintenanceRows(LocalDateTime from, LocalDateTime to) {
-        return loadMaintenanceByType(EventTypeFilter.MAINTENANCE, from, to);
-    }
-
-    public Map<Long, DbMaintenanceRow> loadCleaningRows(LocalDateTime from, LocalDateTime to) {
-        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.CLEANING, from, to));
-    }
-
-    public Map<Long, DbMaintenanceRow> loadDelayDurationRows(LocalDateTime from, LocalDateTime to) {
-        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.DELAY, from, to));
-    }
-
-    public Map<Long, DbMaintenanceRow> loadCleaningDelayDurationRows(LocalDateTime from, LocalDateTime to) {
-        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.CLEANING_DELAY, from, to));
-    }
-
-    private List<DbMaintenanceRow> loadMaintenanceByType(
-            EventTypeFilter type,
+    public List<MaintenanceRow> loadMaintenanceRows(
             LocalDateTime from,
             LocalDateTime to
     ) {
         return getResultList(
-                queries.loadOeePev(type),
-                DB_MAINTENANCE_ROW_MAPPING,
-                from, to, from, to
+                queries.loadMaintenanceData(),
+                "MaintenanceRowMapping",
+                from, to,
+                from, to
         );
     }
 
-    private Map<Long, DbMaintenanceRow> toMapBySnpz(List<DbMaintenanceRow> list) {
-        return list.stream()
+    // cleanings fid by snpz
+    public Map<Long, CleaningRow> loadCleaningRows(
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+
+        List<CleaningRow> rows = getResultList(
+                queries.loadCleaningData(),
+                "CleaningRowMapping",
+                from,
+                to
+        );
+
+        return rows.stream()
                 .collect(Collectors.toMap(
-                        DbMaintenanceRow::getSnpz,
+                        CleaningRow::snpz,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+    }
+
+// packaging/cleaning delays
+    public Map<Long, DelayRow> loadDelayRowsByType(
+            int eventType,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+
+        List<DelayRow> rows = getResultList(
+                queries.loadDelayData(eventType),
+                "DelayRowMapping",
+                from,
+                to
+        );
+
+        return rows.stream()
+                .collect(Collectors.toMap(
+                        DelayRow::snpz,
                         Function.identity(),
                         (existing, replacement) -> existing
                 ));

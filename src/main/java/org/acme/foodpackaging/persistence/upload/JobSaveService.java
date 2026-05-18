@@ -47,7 +47,7 @@ public class JobSaveService {
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
         for (Job job : schedule.getDeletedMaintenance()) {
             if (job.getFDel() == DELETED_FLAG) {
-                OeePev existing = oeePevRepository.findByFId(job.getMaintenanceFId());
+                OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
                 if (existing != null) {
                     existing.setFDel(DELETED_FLAG);
                     oeePevRepository.persist(existing);
@@ -57,7 +57,7 @@ public class JobSaveService {
     }
 
     private void saveMaintenanceJob(Job job) {
-        if (job.isMaintenance() && job.getMaintenanceFId()==null) {
+        if (job.isMaintenance()) {
              saveNewMaintenanceJob(job);
         } else {
             updateExistingMaintenanceJob(job);
@@ -71,11 +71,10 @@ public class JobSaveService {
         // After saving, get the assigned fId and assign it to the session plan
         long fId = entity.getFId();
         job.setId(String.valueOf(fId));
-        job.setMaintenanceFId(fId);
     }
 
     private void updateExistingMaintenanceJob(Job job) {
-        OeePev existing = oeePevRepository.findByFId(job.getMaintenanceFId());
+        OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
         if (existing != null) {
             updateMaintenanceOeePev(existing, job);
             oeePevRepository.persist(existing);
@@ -89,10 +88,10 @@ public class JobSaveService {
     private OeePev buildMaintenanceOeePev(Job job) {
         return OeePev.builder()
                 .lineId(job.getLine().getId())
-                .startProductionDateTime(job.getStartProductionDateTime())
+                .startDateTime(job.getStartProductionDateTime())
                 .endDateTime(job.getEndDateTime())
                 .duration(calculateDurationMinutes(job.getStartProductionDateTime(), job.getEndDateTime()))
-                .maintenanceTypeId(job.getMaintenanceTypeId())
+                .eventTypeId(job.getMaintenanceTypeId())
                 .reason(null)
                 .note(job.getMaintenanceNote())
                 .snpz(0L)
@@ -101,10 +100,10 @@ public class JobSaveService {
 
     private void updateMaintenanceOeePev(OeePev existing, Job job) {
         existing.setLineId(job.getLine().getId());
-        existing.setStartProductionDateTime(job.getStartProductionDateTime());
+        existing.setStartDateTime(job.getStartProductionDateTime());
         existing.setEndDateTime(job.getEndDateTime());
         existing.setDuration(calculateDurationMinutes(job.getStartProductionDateTime(), job.getEndDateTime()));
-        existing.setMaintenanceTypeId(job.getMaintenanceTypeId());
+        existing.setEventTypeId(job.getMaintenanceTypeId());
         existing.setReason(null);
         existing.setNote(job.getMaintenanceNote());
         existing.setSnpz(0L);
@@ -224,10 +223,10 @@ public class JobSaveService {
 
         return OeePev.builder()
                 .lineId(job.getLine().getId())
-                .startProductionDateTime(startCleaning)
+                .startDateTime(startCleaning)
                 .endDateTime(startProduction)
                 .duration(calculateDurationMinutes(startCleaning, startProduction))
-                .maintenanceTypeId(null)
+                .eventTypeId(null)
                 .reason(null)
                 .note(CLEANING_NOTE)
                 .snpz(job.getSnpz())
@@ -241,10 +240,10 @@ public class JobSaveService {
 
         return OeePev.builder()
                 .lineId(job.getLine().getId())
-                .startProductionDateTime(planEndDateTime)
+                .startDateTime(planEndDateTime)
                 .endDateTime(endDateTime)
                 .duration(delayMinutes)
-                .maintenanceTypeId(10)
+                .eventTypeId(10)
                 .reason(null)
                 .note(job.getDelayNote())
                 .snpz(job.getSnpz())
@@ -258,10 +257,10 @@ public class JobSaveService {
 
         return OeePev.builder()
                 .lineId(job.getLine().getId())
-                .startProductionDateTime(planEndDateTime)
+                .startDateTime(planEndDateTime)
                 .endDateTime(endDateTime)
                 .duration(delayMinutes)
-                .maintenanceTypeId(11)
+                .eventTypeId(11)
                 .reason(null)
                 .note(job.getCleaningDelayNote())
                 .snpz(job.getSnpz())
@@ -273,10 +272,10 @@ public class JobSaveService {
         LocalDateTime startProduction = job.getStartProductionDateTime();
 
         existing.setLineId(job.getLine().getId());
-        existing.setStartProductionDateTime(startCleaning);
+        existing.setStartDateTime(startCleaning);
         existing.setEndDateTime(startProduction);
         existing.setDuration(calculateDurationMinutes(startCleaning, startProduction));
-        existing.setMaintenanceTypeId(null);
+        existing.setEventTypeId(null);
         existing.setReason(null);
         existing.setNote(CLEANING_NOTE);
     }
@@ -288,10 +287,10 @@ public class JobSaveService {
 
         int delayMinutes = convertToIntDuration(job.getDelayDuration());
         existing.setLineId(job.getLine().getId());
-        existing.setStartProductionDateTime(planEndDateTime);
+        existing.setStartDateTime(planEndDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setDuration(delayMinutes);
-        existing.setMaintenanceTypeId(10);
+        existing.setEventTypeId(10);
         existing.setReason(null);
         existing.setNote(job.getDelayNote());
     }
@@ -302,10 +301,10 @@ public class JobSaveService {
 
         int delayMinutes = convertToIntDuration(job.getCleaningDelay());
         existing.setLineId(job.getLine().getId());
-        existing.setStartProductionDateTime(planEndDateTime);
+        existing.setStartDateTime(planEndDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setDuration(delayMinutes);
-        existing.setMaintenanceTypeId(11);
+        existing.setEventTypeId(11);
         existing.setReason(null);
         existing.setNote(job.getCleaningDelayNote());
     }

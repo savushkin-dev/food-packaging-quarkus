@@ -95,15 +95,9 @@ public class MaintenanceJob {
                                     MaintenanceRequest request,
                                     Line line,
                                     String maintenanceTypeName) {
-        Job maintenanceJob = Job.createMaintenanceJob(
-                "MAINTENANCE-" + UUID.randomUUID(),
-                null,
-                request.getMaintenanceTypeId(),
-                maintenanceTypeName,
-                request.getMaintenanceNote(),
-                schedule.getMaintenanceProduct(),
-                request.getDurationMinutes()
-        );
+
+        Job maintenanceJob = new Job( "MAINTENANCE-" + UUID.randomUUID(),
+                maintenanceTypeName, request, schedule.getMaintenanceProduct());
         maintenanceJob.setLine(line);
         maintenanceJob.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
         return maintenanceJob;
@@ -168,15 +162,14 @@ public class MaintenanceJob {
     }
 
     private Job createExtraCleaning(Product maintenanceProduct, int duration){
-        return Job.createMaintenanceJob(
-                "MAINTENANCE-" + UUID.randomUUID(),
-                null,
-                2,
-                "Мойка",
-                "Auto extra maintenance",
-                maintenanceProduct,
-                duration
-        );
+        Job extraJob = new Job( "MAINTENANCE-" + UUID.randomUUID(),  "Мойка");
+        extraJob.setMaintenance(true);
+        extraJob.setMaintenanceTypeId(2);
+        extraJob.setMaintenanceNote("Auto extra maintenance");
+        extraJob.setDuration(Duration.ofMinutes(duration));
+        extraJob.setProduct(maintenanceProduct);
+
+        return extraJob;
     }
 
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,

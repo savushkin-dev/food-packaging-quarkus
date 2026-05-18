@@ -2,8 +2,9 @@ package service.jobs;
 
 import builder.*;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.dto.DelayNoteRequest;
+import org.acme.foodpackaging.dto.oeePev.DelayRow;
+import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.ProductNotFoundException;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
@@ -89,12 +90,12 @@ class JobServiceTest {
                 .withLineId("L1").build();
     }
 
-    private DbMaintenanceRow getTestDbMaintenanceRow(int maintenanceTypeId, int duration, String note) {
-        return DbMaintenanceRowBuilder.aRow()
-                .withId(111L)
-                .withMaintenanceTypeId(maintenanceTypeId)
-                .withDuration(duration)
-                .withNote(note).build();
+    private MaintenanceRow getTestMaintenanceRow() {
+        return MaintenanceRowBuilder.aRow()
+                .withFId(111L)
+                .withEventTypeId(7)
+                .withDuration(60)
+                .withNote("Maintenance note").build();
     }
 
     @Test
@@ -108,13 +109,13 @@ class JobServiceTest {
         when(jobRepository.getMaintenanceData(any(), any()))
                 .thenReturn(Collections.emptyList());
 
-        when(jobRepository.getDelayData(any(), any()))
+        when(jobRepository.loadDelayDurationRows(any(), any()))
                 .thenReturn(Map.of(123L,
-                        getTestDbMaintenanceRow(2,22, "Delay note")));
+                        new DelayRow(2L,123L, "Delay note", 22)));
 
-        when(jobRepository.getCleaningDelayData(any(), any()))
+        when(jobRepository.loadCleaningDelayDurationRows(any(), any()))
                 .thenReturn(Map.of(123L,
-                        getTestDbMaintenanceRow(2, 12, "Cleaning delay note")));
+                        new DelayRow(2L, 123L, "Cleaning delay note", 12)));
 
         when(jobRepository.getDbJobRowMap(any(), any()))
                 .thenReturn(Map.of(123L, getTestDbJobRow()));
@@ -143,12 +144,12 @@ class JobServiceTest {
     void buildJobsOnLines_createMaintenanceJobById() {
 
         when(jobRepository.getMaintenanceData(any(), any()))
-                .thenReturn(List.of(getTestDbMaintenanceRow(7, 60, "Maintenance note")));
+                .thenReturn(List.of(getTestMaintenanceRow()));
 
-        when(jobRepository.getDelayData(any(), any()))
+        when(jobRepository.loadCleaningDelayDurationRows(any(), any()))
                 .thenReturn(Collections.emptyMap());
 
-        when(jobRepository.getCleaningDelayData(any(), any()))
+        when(jobRepository.loadCleaningDelayDurationRows(any(), any()))
                 .thenReturn(Collections.emptyMap());
 
         when(jobRepository.getDbJobRowMap(any(), any()))

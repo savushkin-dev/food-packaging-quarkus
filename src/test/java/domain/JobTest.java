@@ -5,6 +5,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
 import org.acme.foodpackaging.record.CleaningResult;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
@@ -41,32 +42,31 @@ class JobTest {
     // ============================================================
 
     @Test
-    void fromDbMaintenanceRow_success() {
-        DbMaintenanceRow row = DbMaintenanceRowBuilder.aRow().build();
+    void ConstructorWithMaintenanceRow_success() {
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
         Product mProduct = new Product();
-        Job mJob = Job.fromDbMaintenanceRow(row, "MJob",
-                mProduct, row.getStartProductionDateTime());
+        Job mJob = new Job(row, "MJob", mProduct);
 
         assertTrue(mJob.isMaintenance());
+        assertTrue(mJob.isPinned());
 
-        assertEquals(String.valueOf(row.getFId()), mJob.getId());
-        assertEquals(row.getMaintenanceTypeId(), mJob.getMaintenanceTypeId());
-        assertEquals(Duration.ofMinutes(row.getDuration()), mJob.getDuration());
-        assertEquals(row.getLineId(), mJob.getLineId());
-        assertEquals(row.getFId(), mJob.getMaintenanceFId());
-        assertEquals(row.getMaintenanceNote(), mJob.getMaintenanceNote());
+        assertEquals(String.valueOf(row.fId()), mJob.getId());
+        assertEquals(1, mJob.getPriority());
+        assertEquals(row.eventTypeId(), mJob.getMaintenanceTypeId());
+        assertEquals(Duration.ofMinutes(row.duration()), mJob.getDuration());
+        assertEquals(row.lineId(), mJob.getLineId());
+        assertEquals(row.fId(), Long.valueOf(mJob.getId()));
+        assertEquals(row.note(), mJob.getMaintenanceNote());
+        assertEquals(row.startProductionDateTime().plusMinutes(row.duration()), mJob.getEndDateTime());
     }
 
     @Test
-    void fromDbMaintenanceRow_whenDurationIsNull() {
-        DbMaintenanceRow row = DbMaintenanceRowBuilder.aRow()
-                .withDuration(null).build();
+    void ConstructorWithMaintenanceRow_whenDurationIsNull() {
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().withStartProductionDateTime(null).build();
         Product mProduct = new Product();
-        Job mJob = Job.fromDbMaintenanceRow(row, "MJob",
-                mProduct, row.getStartProductionDateTime());
-
+        Job mJob = new Job(row, "MJob", mProduct);
         assertTrue(mJob.isMaintenance());
-        assertEquals(Duration.ZERO, mJob.getDuration());
+        assertNull(mJob.getEndDateTime());
     }
 
     // ============================================================

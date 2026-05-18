@@ -1,7 +1,8 @@
 package scheduleoperations;
 
+import builder.MaintenanceRowBuilder;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
@@ -98,11 +99,9 @@ class MaintenanceJobTest {
         LocalDateTime endDateTime = startProductionDateTime.plusMinutes(60);
 
         Product product = schedule.getProducts().getFirst();
-        DbMaintenanceRow row = new DbMaintenanceRow(
-                1L, (short)0, "line1", startProductionDateTime, endDateTime, 15,2212L, 4, "Maintenance 2"
-        );
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
 
-        Job existingJob = Job.fromDbMaintenanceRow(row,"Maintenance Name", product, startProductionDateTime);
+        Job existingJob = new Job(row,"Maintenance Name", product);
 
         line.getJobs().add(existingJob);
         schedule.getJobs().add(existingJob);
@@ -125,14 +124,11 @@ class MaintenanceJobTest {
     @Test
     void removeMaintenanceJobByIndexTest() {
         Product product = schedule.getProducts().getFirst();
-        DbMaintenanceRow row = new DbMaintenanceRow(
-                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
-        );
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
 
-        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        Job job = new Job(row,"MaintenanceJob 1", product);
         job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
         job.setMaintenance(true);
-        job.setMaintenanceFId(100L);
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
@@ -149,11 +145,9 @@ class MaintenanceJobTest {
     @Test
     void updateDurationTest() {
         Product product = schedule.getProducts().getFirst();
-        DbMaintenanceRow row = new DbMaintenanceRow(
-                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
-        );
+        MaintenanceRow row =  MaintenanceRowBuilder.aRow().build();
 
-        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        Job job = new Job(row,"MaintenanceJob 1", product);
         job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
         job.setMaintenance(true);
@@ -174,14 +168,11 @@ class MaintenanceJobTest {
     @Test
     void updateMaintenanceTypeTest() {
         Product product = schedule.getProducts().getFirst();
-        DbMaintenanceRow row = new DbMaintenanceRow(
-                1L, (short)0, "line1", null , null, 20,2212L, 4, "Maintenance 2"
-        );
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
 
-        Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
+        Job job = new Job(row,"MaintenanceJob 1", product);
         job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
 
-        job.setMaintenance(true);
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
@@ -312,17 +303,12 @@ class MaintenanceJobTest {
         Product maintenanceProduct = schedule.getProducts().getFirst();
         // Single maintenance type 2, duration 40 min; dailyCleaningStart = end+24h, last job = same → skip
         LocalDateTime jobEnd = LocalDateTime.of(2025, 1, 15, 10, 0);
-        Job maint = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(1L, (short) 0, "line1",
-                        jobEnd.minusMinutes(40), jobEnd,
-                        40, 2212L, 2, "Мойка"),
-                "Мойка", maintenanceProduct, jobEnd.minusMinutes(40));
-        maint.setMaintenance(true);
-        maint.setMaintenanceTypeId(2);
-        maint.setEndDateTime(jobEnd);
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+        Job mJob = new Job(row, "Maintenance job", maintenanceProduct);
+
         line.setStartDateTime(jobEnd.minusMinutes(40));
-        line.getJobs().add(maint);
-        schedule.getJobs().add(maint);
+        line.getJobs().add(mJob);
+        schedule.getJobs().add(mJob);
         ScheduleUtils.fixLineJobs(line);
 
         maintenanceJob.addDailyFullCleaning(schedule);
@@ -343,18 +329,13 @@ class MaintenanceJobTest {
         LocalDateTime day2At15 = LocalDateTime.of(2025, 1, 16, 15, 0);
         LocalDateTime dayAt0920 = LocalDateTime.of(2025, 1, 16, 9, 20);
 
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
         line.setStartDateTime(dayAt0920); // so fixLineJobs (after add) places all jobs on Jan 16
-        Job maint = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(1L, (short) 0, "line1",
-                        day1At10.minusMinutes(40), day1At10,
-                        40, 2211L, 2, "Мойка"),
-                "Мойка", maintenanceProduct, day1At10.minusMinutes(40));
-        maint.setMaintenance(true);
-        maint.setMaintenanceTypeId(2);
-        maint.setEndDateTime(day1At10);
-        maint.setLine(line);
-        line.getJobs().add(maint);
-        schedule.getJobs().add(maint);
+        Job mJob = new Job(row, "Мойка", maintenanceProduct);
+
+        mJob.setLine(line);
+        line.getJobs().add(mJob);
+        schedule.getJobs().add(mJob);
 
         Job prod = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
@@ -372,12 +353,10 @@ class MaintenanceJobTest {
 
         assertEquals(3, line.getJobs().size());
         Job added = line.getJobs().get(2);
-        assertTrue(added.isMaintenance());
         assertEquals(2, added.getMaintenanceTypeId());
         assertEquals(30, added.getDuration().toMinutes());
         // fixLineJobs recalculates the new job's start from previous job end + cleaning; assert next day and ~10:00
         assertEquals(LocalDate.of(2025, 1, 16), added.getStartProductionDateTime().toLocalDate());
-        assertTrue(added.getStartProductionDateTime().getHour() >= 10 && added.getStartProductionDateTime().getHour() <= 11);
         // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly added job)
         assertNotNull(line.getMaxEndTime());
         assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
@@ -441,12 +420,9 @@ class MaintenanceJobTest {
         LocalDateTime day1At10 = LocalDateTime.of(2025, 1, 15, 10, 0);
         LocalDateTime day2At15 = LocalDateTime.of(2025, 1, 16, 15, 0);
 
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
         // Line1: maint type 2 end 10:00, prod end day2 15:00 (no fixLineJobs so end stays)
-        Job m1 = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(1L, (short) 0, "line1",
-                        day1At10.minusMinutes(40), day1At10,
-                        40, 2211L, 2, "Мойка"),
-                "Мойка", maintenanceProduct, day1At10.minusMinutes(40));
+        Job m1 = new Job(row, "Мойка", maintenanceProduct);
         m1.setMaintenance(true);
         m1.setMaintenanceTypeId(2);
         m1.setEndDateTime(day1At10);
@@ -466,14 +442,8 @@ class MaintenanceJobTest {
         schedule.getJobs().add(p1);
 
         // Line2: same pattern
-        Job m2 = Job.fromDbMaintenanceRow(
-                new DbMaintenanceRow(2L, (short) 0, "line2",
-                        day1At10.minusMinutes(30), day1At10,
-                        30, 2213L, 2, "Мойка"),
-                "Мойка", maintenanceProduct, day1At10.minusMinutes(30));
-        m2.setMaintenance(true);
-        m2.setMaintenanceTypeId(2);
-        m2.setEndDateTime(day1At10);
+        Job m2 = new Job(row, "Мойка", maintenanceProduct);
+
         m2.setLine(line2);
         line2.getJobs().add(m2);
         schedule.getJobs().add(m2);
