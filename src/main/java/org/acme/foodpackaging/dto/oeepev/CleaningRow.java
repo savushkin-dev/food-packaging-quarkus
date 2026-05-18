@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.dto.oeePev;
+package org.acme.foodpackaging.dto.oeepev;
 
 public record CleaningRow(
         Long fId,

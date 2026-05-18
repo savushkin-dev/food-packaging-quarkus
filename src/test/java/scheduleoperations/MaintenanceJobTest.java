@@ -2,7 +2,7 @@ package scheduleoperations;
 
 import builder.MaintenanceRowBuilder;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
-import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
@@ -95,9 +95,6 @@ class MaintenanceJobTest {
 
     @Test
     void addMaintenanceJobTest() {
-        LocalDateTime startProductionDateTime = LocalDateTime.of(2025, 1, 15, 9, 0);
-        LocalDateTime endDateTime = startProductionDateTime.plusMinutes(60);
-
         Product product = schedule.getProducts().getFirst();
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
 

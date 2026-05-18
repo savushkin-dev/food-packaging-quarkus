@@ -47,10 +47,14 @@ public class JobSaveService {
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
         for (Job job : schedule.getDeletedMaintenance()) {
             if (job.getFDel() == DELETED_FLAG) {
-                OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
-                if (existing != null) {
-                    existing.setFDel(DELETED_FLAG);
-                    oeePevRepository.persist(existing);
+                try {
+                    OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
+                    if (existing != null) {
+                        existing.setFDel(DELETED_FLAG);
+                        oeePevRepository.persist(existing);
+                    }
+                } catch (NumberFormatException ignored) {
+                    // Skip invalid job id values that cannot be parsed to Long.
                 }
             }
         }
@@ -74,12 +78,18 @@ public class JobSaveService {
     }
 
     private void updateExistingMaintenanceJob(Job job) {
-        OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
-        if (existing != null) {
-            updateMaintenanceOeePev(existing, job);
-            oeePevRepository.persist(existing);
-        } else {
-            // If not found, create new one
+        try {
+            OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
+            if (existing != null) {
+                updateMaintenanceOeePev(existing, job);
+                oeePevRepository.persist(existing);
+            } else {
+                // If not found, create new one
+                OeePev entity = buildMaintenanceOeePev(job);
+                oeePevRepository.persist(entity);
+            }
+        } catch (NumberFormatException e) {
+            // Invalid id format, treat as a new maintenance job
             OeePev entity = buildMaintenanceOeePev(job);
             oeePevRepository.persist(entity);
         }

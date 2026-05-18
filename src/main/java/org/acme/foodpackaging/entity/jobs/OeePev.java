@@ -3,10 +3,9 @@ package org.acme.foodpackaging.entity.jobs;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import lombok.*;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
-import org.acme.foodpackaging.dto.oeePev.CleaningRow;
-import org.acme.foodpackaging.dto.oeePev.DelayRow;
-import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
+import org.acme.foodpackaging.dto.oeepev.CleaningRow;
+import org.acme.foodpackaging.dto.oeepev.DelayRow;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 
 import java.time.LocalDateTime;
 @Getter

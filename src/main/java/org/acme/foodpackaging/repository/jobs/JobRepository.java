@@ -3,19 +3,17 @@ package org.acme.foodpackaging.repository.jobs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.dto.oeePev.CleaningRow;
-import org.acme.foodpackaging.dto.oeePev.DelayRow;
-import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
+import org.acme.foodpackaging.dto.oeepev.CleaningRow;
+import org.acme.foodpackaging.dto.oeepev.DelayRow;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 

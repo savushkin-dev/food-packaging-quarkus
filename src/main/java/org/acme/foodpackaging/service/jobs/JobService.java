@@ -7,9 +7,9 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.DelayNoteRequest;
-import org.acme.foodpackaging.dto.oeePev.CleaningRow;
-import org.acme.foodpackaging.dto.oeePev.DelayRow;
-import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
+import org.acme.foodpackaging.dto.oeepev.CleaningRow;
+import org.acme.foodpackaging.dto.oeepev.DelayRow;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.ProductNotFoundException;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
@@ -105,7 +105,10 @@ public class JobService {
                 if(line.getJobs() == null){
                     line.setJobs(new ArrayList<>());
                 }
-                CleaningRow cleaningRow = cleaningIdMap.get(Long.valueOf(job.getId()));
+                CleaningRow cleaningRow = null;
+                try {
+                    cleaningRow = cleaningIdMap.get(Long.valueOf(job.getId()));
+                } catch (NumberFormatException ignored) {}
                 if(cleaningRow != null){
                     job.setCleaningFId(cleaningRow.fId());
                 }

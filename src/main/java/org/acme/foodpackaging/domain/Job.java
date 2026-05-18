@@ -14,7 +14,7 @@ import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
-import org.acme.foodpackaging.dto.oeePev.MaintenanceRow;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 import org.acme.foodpackaging.record.CleaningResult;
 
