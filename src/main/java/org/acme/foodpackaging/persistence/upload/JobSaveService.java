@@ -47,7 +47,7 @@ public class JobSaveService {
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
         for (Job job : schedule.getDeletedMaintenance()) {
             if (job.getFDel() == DELETED_FLAG) {
-                OeePev existing = oeePevRepository.findByFId(job.getFId());
+                OeePev existing = oeePevRepository.findByFId(job.getMaintenanceFId());
                 if (existing != null) {
                     existing.setFDel(DELETED_FLAG);
                     oeePevRepository.persist(existing);
@@ -57,7 +57,7 @@ public class JobSaveService {
     }
 
     private void saveMaintenanceJob(Job job) {
-        if (job.isMaintenance() && job.getFId()==null) {
+        if (job.isMaintenance() && job.getMaintenanceFId()==null) {
              saveNewMaintenanceJob(job);
         } else {
             updateExistingMaintenanceJob(job);
@@ -71,11 +71,11 @@ public class JobSaveService {
         // After saving, get the assigned fId and assign it to the session plan
         long fId = entity.getFId();
         job.setId(String.valueOf(fId));
-        job.setFId(fId);
+        job.setMaintenanceFId(fId);
     }
 
     private void updateExistingMaintenanceJob(Job job) {
-        OeePev existing = oeePevRepository.findByFId(job.getFId());
+        OeePev existing = oeePevRepository.findByFId(job.getMaintenanceFId());
         if (existing != null) {
             updateMaintenanceOeePev(existing, job);
             oeePevRepository.persist(existing);
@@ -112,57 +112,92 @@ public class JobSaveService {
 
     private void saveRegularJob(Job job) {
 
-        OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
+        OeePev existing = null;
+
+        if (job.getCleaningFId() != null) {
+            existing = oeePevRepository.findByFId(job.getCleaningFId());
+        }
 
         if (hasCleaningOperation(job)) {
 
             if (existing != null) {
                 updateCleaningOeePev(existing, job);
+
             } else {
-                oeePevRepository.persist(buildCleaningOeePev(job));
+                OeePev newEntity = buildCleaningOeePev(job);
+                oeePevRepository.persist(newEntity);
+                job.setCleaningFId(newEntity.getFId());
             }
+
         } else {
+
             if (existing != null) {
                 oeePevRepository.delete(existing);
+                job.setCleaningFId(null);
             }
         }
-
         updateProductionJob(job);
     }
 
+
     private void saveDelayDuration(Job job){
-        OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
+
+        OeePev existing = null;
+
+        if (job.getDelayFId() != null) {
+            existing = oeePevRepository.findByFId(job.getDelayFId());
+        }
 
         if (hasDelayDuration(job)) {
 
-            if (existing != null && Integer.valueOf(10).equals(existing.getMaintenanceTypeId())) {
+            if (existing != null) {
                 updateDelayOeePev(existing, job);
+
             } else {
-                oeePevRepository.persist(buildDelayOeePev(job));
+
+                OeePev newEntity = buildDelayOeePev(job);
+                oeePevRepository.persist(newEntity);
+                job.setDelayFId(newEntity.getFId());
             }
+
         } else {
-            if (existing != null && Integer.valueOf(10).equals(existing.getMaintenanceTypeId())) {
+
+            if (existing != null) {
                 oeePevRepository.delete(existing);
+                job.setDelayFId(null);
             }
         }
         updateProductionJob(job);
     }
 
     private void saveCleaningDelayDuration(Job job){
-        OeePev existing = oeePevRepository.findBySnpz(job.getSnpz());
+
+        OeePev existing = null;
+
+        if (job.getCleaningFId() != null) {
+            existing = oeePevRepository.findByFId(job.getCleaningFId());
+        }
 
         if (hasCleaningDelayDuration(job)) {
 
-            if (existing != null && Integer.valueOf(11).equals(existing.getMaintenanceTypeId())) {
+            if (existing != null) {
                 updateCleaningDelayOeePev(existing, job);
+
             } else {
-                oeePevRepository.persist(buildCleaningDelayOeePev(job));
+
+                OeePev newEntity = buildCleaningDelayOeePev(job);
+                oeePevRepository.persist(newEntity);
+                job.setCleaningFId(newEntity.getFId());
             }
+
         } else {
-            if (existing != null && Integer.valueOf(11).equals(existing.getMaintenanceTypeId())) {
+
+            if (existing != null) {
                 oeePevRepository.delete(existing);
+                job.setCleaningFId(null);
             }
         }
+
         updateProductionJob(job);
     }
 

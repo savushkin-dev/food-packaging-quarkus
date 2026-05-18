@@ -84,6 +84,9 @@ public class JobService {
         Map<Long, DbMaintenanceRow> delayDurationMap  = jobRepository.getDelayData(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
 
+        Map<Long, DbMaintenanceRow> cleaningIdMap  = jobRepository.getCleaningData(
+                solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
+
         Map<Long, DbMaintenanceRow> cleaningDelayDurationMap  = jobRepository.getCleaningDelayData(
                 solution.getWorkCalendar().getFromDate(), solution.getWorkCalendar().getToDate());
 
@@ -102,6 +105,10 @@ public class JobService {
                 if(line == null) continue;
                 if(line.getJobs() == null){
                     line.setJobs(new ArrayList<>());
+                }
+                DbMaintenanceRow cleaningRow = cleaningIdMap.get(Long.valueOf(job.getId()));
+                if(cleaningRow != null){
+                    job.setCleaningFId(cleaningRow.getFId());
                 }
                 job.setDti(row.dti());
                 job.setMinStartTime(minStartDateTime);
@@ -145,7 +152,7 @@ public class JobService {
             }
             if(delayDurationMap.containsKey(jobId)){
                 DbMaintenanceRow row = delayDurationMap.get(jobId);
-                job.setEndDateTime(row.getEndDateTime());
+                job.setDelayFId(row.getFId());
                 job.setDelayDuration(Duration.ofMinutes(row.getDuration()));
                 job.setDelayNote(row.getMaintenanceNote());
             }

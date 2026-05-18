@@ -35,7 +35,10 @@ public class Job {
 
     @PlanningId
     private String id;
-    private Long fId;
+    private Long maintenanceFId;
+    private Long cleaningFId;
+    private Long cleaningDelayFId;
+    private Long delayFId;
     private short fDel;
     private String idBatch;
     private String lineId;
@@ -206,7 +209,7 @@ public class Job {
                 0, true, startProductionDateTime
 
         ));
-        job.setFId(row.getFId());
+        job.setMaintenanceFId(row.getFId());
         job.setMaintenance(true);
         return job;
     }

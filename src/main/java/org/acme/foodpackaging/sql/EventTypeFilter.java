@@ -11,6 +11,10 @@ public enum EventTypeFilter {MAINTENANCE("""
         AND v.EVTYPE = 10
     """),
 
+    CLEANING("""
+        AND v.EVTYPE IS NULL
+    """),
+
     CLEANING_DELAY("""
         AND v.EVTYPE = 11
     """);

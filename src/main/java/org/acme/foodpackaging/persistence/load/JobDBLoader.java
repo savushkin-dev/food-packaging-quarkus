@@ -65,6 +65,10 @@ public class JobDBLoader {
         return loadMaintenanceByType(EventTypeFilter.MAINTENANCE, from, to);
     }
 
+    public Map<Long, DbMaintenanceRow> loadCleaningRows(LocalDateTime from, LocalDateTime to) {
+        return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.CLEANING, from, to));
+    }
+
     public Map<Long, DbMaintenanceRow> loadDelayDurationRows(LocalDateTime from, LocalDateTime to) {
         return toMapBySnpz(loadMaintenanceByType(EventTypeFilter.DELAY, from, to));
     }

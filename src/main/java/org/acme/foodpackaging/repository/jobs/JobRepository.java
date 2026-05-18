@@ -55,6 +55,20 @@ public class JobRepository {
     }
 
     /**
+     * Загружает карту c fid для cleaning.
+     *
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of delay rows by Event 10
+     */
+
+    public Map<Long, DbMaintenanceRow> getCleaningData(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadCleaningRows(
+                from.atStartOfDay(), to.atStartOfDay()
+        );
+    }
+
+    /**
      * Загружает карту партий с задержкой фасовки по времени.
      *
      * @param from Start date (inclusive)

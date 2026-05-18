@@ -53,7 +53,7 @@ class JobTest {
         assertEquals(row.getMaintenanceTypeId(), mJob.getMaintenanceTypeId());
         assertEquals(Duration.ofMinutes(row.getDuration()), mJob.getDuration());
         assertEquals(row.getLineId(), mJob.getLineId());
-        assertEquals(row.getFId(), mJob.getFId());
+        assertEquals(row.getFId(), mJob.getMaintenanceFId());
         assertEquals(row.getMaintenanceNote(), mJob.getMaintenanceNote());
     }
 

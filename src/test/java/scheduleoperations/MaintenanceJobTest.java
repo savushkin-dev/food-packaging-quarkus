@@ -132,7 +132,7 @@ class MaintenanceJobTest {
         Job job = Job.fromDbMaintenanceRow(row,"MaintenanceJob 1", product, null);
         job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
         job.setMaintenance(true);
-        job.setFId(100L);
+        job.setMaintenanceFId(100L);
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
