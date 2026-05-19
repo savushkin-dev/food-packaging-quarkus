@@ -49,14 +49,15 @@ public class JobDBLoader {
                 from, to, ksk, from
         );
 
-        return rows.stream()
-                .collect(Collectors.toMap(
-                        DbJobRow::snpz,
-                        Function.identity(),
-                        (existing, duplicate) -> {
-                            throw new IllegalStateException("Duplicate SNPZ: " + existing.snpz());
-                        }
-                ));
+
+        Map<Long, DbJobRow> result =
+                new HashMap<>((int) (rows.size() / 0.75f) + 1);
+
+        for (DbJobRow row : rows) {
+            result.putIfAbsent(row.snpz(), row);
+        }
+
+        return result;
     }
 
     // ========================= MAINTENANCE / DELAYS =========================
@@ -86,12 +87,14 @@ public class JobDBLoader {
                 to
         );
 
-        return rows.stream()
-                .collect(Collectors.toMap(
-                        CleaningRow::snpz,
-                        Function.identity(),
-                        (existing, replacement) -> existing
-                ));
+        Map<Long, CleaningRow> result =
+                new HashMap<>((int) (rows.size() / 0.75f) + 1);
+
+        for (CleaningRow row : rows) {
+            result.putIfAbsent(row.snpz(), row);
+        }
+
+        return result;
     }
 
 // packaging/cleaning delays
@@ -108,44 +111,58 @@ public class JobDBLoader {
                 to
         );
 
-        return rows.stream()
-                .collect(Collectors.toMap(
-                        DelayRow::snpz,
-                        Function.identity(),
-                        (existing, replacement) -> existing
-                ));
+        Map<Long, DelayRow> result =
+                new HashMap<>((int) (rows.size() / 0.75f) + 1);
+
+        for (DelayRow row : rows) {
+            result.putIfAbsent(row.snpz(), row);
+        }
+
+        return result;
     }
 
     // ========================= FACT =========================
 
     public Map<FactKey, FactProductionRow> loadFactProductionRowMap(
-            LocalDateTime from,
-            LocalDateTime to
+            LocalDateTime from, LocalDateTime to
     ) {
+
         List<FactProductionRow> rows = getResultList(
                 queries.loadFact(),
                 FACT_PRODUCTION_MAPPING,
                 from, to
         );
 
-        return rows.stream()
-                .collect(Collectors.toMap(
-                        r -> new FactKey(r.kmc(), r.np(), r.eventType()),
-                        Function.identity(),
-                        (existing, duplicate) -> existing
-                ));
+        Map<FactKey, FactProductionRow> result =
+                new HashMap<>((int) (rows.size() / 0.75f) + 1);
+
+        for (FactProductionRow row : rows) {
+
+            FactKey key = new FactKey(
+                    row.kmc(), row.np(), row.eventType()
+            );
+
+            result.putIfAbsent(key, row);
+        }
+
+        return result;
     }
+
 
     // ========================= CAMERA =========================
 
     public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
 
-        Map<String, CameraValue> result = new HashMap<>();
-        Set<String> processedBatches = new HashSet<>();
+        int expectedSize = jobs.size();
+        Map<String, CameraValue> result =
+                new HashMap<>((int) (expectedSize / 0.75f) + 1);
+
+        Set<String> processedBatches =
+                new HashSet<>((int) (expectedSize / 0.75f) + 1);
 
         for (Job job : jobs) {
-            String idBatch = job.getIdBatch();
 
+            String idBatch = job.getIdBatch();
             if (idBatch == null || !processedBatches.add(idBatch)) {
                 continue;
             }
@@ -156,17 +173,18 @@ public class JobDBLoader {
                     idBatch
             );
 
-            if (!rows.isEmpty()) {
-                CameraFactRow row = rows.getFirst();
-
-                result.put(
-                        idBatch,
-                        new CameraValue(
-                                row.cameraStart() != null ? row.cameraStart() : null,
-                                row.cameraEnd() != null ? row.cameraEnd() : null
-                        )
-                );
+            if (rows.isEmpty()) {
+                continue;
             }
+
+            CameraFactRow row = rows.getFirst();
+
+            result.put(
+                    idBatch,
+                    new CameraValue(
+                            row.cameraStart(), row.cameraEnd()
+                    )
+            );
         }
 
         return result;

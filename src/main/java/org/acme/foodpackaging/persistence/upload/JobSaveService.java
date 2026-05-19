@@ -34,73 +34,83 @@ public class JobSaveService {
         markDeletedMaintenanceJobs(schedule);
 
         for (Job job : schedule.getJobs()) {
+
             if (job.isMaintenance()) {
                 saveMaintenanceJob(job);
-            } else {
-                saveRegularJob(job);
-                saveDelayDuration(job);
-                saveCleaningDelayDuration(job);
+                continue;
             }
+
+            saveRegularJob(job);
+            saveDelayDuration(job);
+            saveCleaningDelayDuration(job);
         }
     }
 
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
+
         for (Job job : schedule.getDeletedMaintenance()) {
-            if (job.getFDel() == DELETED_FLAG) {
-                try {
-                    OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
-                    if (existing != null) {
-                        existing.setFDel(DELETED_FLAG);
-                        oeePevRepository.persist(existing);
-                    }
-                } catch (NumberFormatException ignored) {
-                    // Skip invalid job id values that cannot be parsed to Long.
+
+            if (job.getFDel() != DELETED_FLAG) {
+                continue;
+            }
+
+            try {
+                Long id = Long.valueOf(job.getId());
+
+                OeePev existing = oeePevRepository.findByFId(id);
+
+                if (existing != null) {
+                    existing.setFDel(DELETED_FLAG);
                 }
+
+            } catch (NumberFormatException ignored) {
+                // Ignore invalid ids
             }
         }
     }
 
     private void saveMaintenanceJob(Job job) {
-        if (job.isMaintenance()) {
-             saveNewMaintenanceJob(job);
-        } else {
-            updateExistingMaintenanceJob(job);
+
+        if (job.getId() == null || job.getId().isBlank()) {
+            saveNewMaintenanceJob(job);
+            return;
         }
-    }
 
-    private void  saveNewMaintenanceJob(Job job) {
-        OeePev entity = buildMaintenanceOeePev(job);
-        oeePevRepository.persist(entity);
-
-        // After saving, get the assigned fId and assign it to the session plan
-        long fId = entity.getFId();
-        job.setId(String.valueOf(fId));
-    }
-
-    private void updateExistingMaintenanceJob(Job job) {
         try {
-            OeePev existing = oeePevRepository.findByFId(Long.valueOf(job.getId()));
-            if (existing != null) {
-                updateMaintenanceOeePev(existing, job);
-                oeePevRepository.persist(existing);
-            } else {
-                // If not found, create new one
-                OeePev entity = buildMaintenanceOeePev(job);
-                oeePevRepository.persist(entity);
+            Long id = Long.valueOf(job.getId());
+
+            OeePev existing = oeePevRepository.findByFId(id);
+
+            if (existing == null) {
+                saveNewMaintenanceJob(job);
+                return;
             }
+
+            updateMaintenanceOeePev(existing, job);
+
         } catch (NumberFormatException e) {
-            // Invalid id format, treat as a new maintenance job
-            OeePev entity = buildMaintenanceOeePev(job);
-            oeePevRepository.persist(entity);
+            saveNewMaintenanceJob(job);
         }
+    }
+
+    private void saveNewMaintenanceJob(Job job) {
+
+        OeePev entity = buildMaintenanceOeePev(job);
+
+        oeePevRepository.persist(entity);
+        job.setId(String.valueOf(entity.getFId()));
     }
 
     private OeePev buildMaintenanceOeePev(Job job) {
+
         return OeePev.builder()
                 .lineId(job.getLine().getId())
                 .startDateTime(job.getStartProductionDateTime())
                 .endDateTime(job.getEndDateTime())
-                .duration(calculateDurationMinutes(job.getStartProductionDateTime(), job.getEndDateTime()))
+                .duration(calculateDurationMinutes(
+                        job.getStartProductionDateTime(),
+                        job.getEndDateTime()
+                ))
                 .eventTypeId(job.getMaintenanceTypeId())
                 .reason(null)
                 .note(job.getMaintenanceNote())
@@ -109,10 +119,16 @@ public class JobSaveService {
     }
 
     private void updateMaintenanceOeePev(OeePev existing, Job job) {
+
         existing.setLineId(job.getLine().getId());
         existing.setStartDateTime(job.getStartProductionDateTime());
         existing.setEndDateTime(job.getEndDateTime());
-        existing.setDuration(calculateDurationMinutes(job.getStartProductionDateTime(), job.getEndDateTime()));
+
+        existing.setDuration(calculateDurationMinutes(
+                job.getStartProductionDateTime(),
+                job.getEndDateTime()
+        ));
+
         existing.setEventTypeId(job.getMaintenanceTypeId());
         existing.setReason(null);
         existing.setNote(job.getMaintenanceNote());

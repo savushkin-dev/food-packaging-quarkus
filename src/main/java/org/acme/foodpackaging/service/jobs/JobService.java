@@ -131,13 +131,11 @@ public class JobService {
             Job job = createJobById(row);
             Line line = findLineById(solution, job.getLineId());
 
-            if (line == null) {
-                continue;
+            if (line != null) {
+                attachJobToLineIfNeeded(line, jobs.size(), solution.getLines().size());
+                enrichProductionJob(job, row, cleaningIdMap, minStartDateTime);
+                assignJobToLine(job, line, jobs);
             }
-
-            attachJobToLineIfNeeded(line);
-            enrichProductionJob(job, row, cleaningIdMap, minStartDateTime);
-            assignJobToLine(job, line, jobs);
         }
     }
 
@@ -179,23 +177,20 @@ public class JobService {
             Job job = createJobById(row, solution.getMaintenanceProduct());
             Line line = findLineById(solution, job.getLineId());
 
-            if (line == null) {
-                continue;
+            if (line != null) {
+                attachJobToLineIfNeeded(line, jobs.size(), solution.getLines().size());
+                job.setLine(line);
+                job.setMinStartTime(minStartDateTime);
+                assignJobToLine(job, line, jobs);
             }
-
-            attachJobToLineIfNeeded(line);
-
-            job.setLine(line);
-            job.setMinStartTime(minStartDateTime);
-            job.setMaintenance(true);
-
-            assignJobToLine(job, line, jobs);
         }
     }
 
     private void assignJobToLine(Job job, Line line, List<Job> jobs) {
         line.getJobs().add(job);
         jobs.add(job);
+
+        if(job.isMaintenance()) return;
         try {
             allJobsById.put(Long.valueOf(job.getId()), job);
         } catch (NumberFormatException ignored) {
@@ -203,9 +198,9 @@ public class JobService {
         }
     }
 
-    private void attachJobToLineIfNeeded(Line line) {
+    private void attachJobToLineIfNeeded(Line line, int size, int lineCount) {
         if (line.getJobs() == null) {
-            line.setJobs(new ArrayList<>(300));
+            line.setJobs(new ArrayList<>(size/lineCount));
         }
     }
 

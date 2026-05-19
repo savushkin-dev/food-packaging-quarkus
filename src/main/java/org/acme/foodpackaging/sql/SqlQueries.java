@@ -146,9 +146,8 @@ public class SqlQueries {
     public String loadMaintenanceData() {
         return """
         SELECT
-            v.F_ID, v.KRC,
-            v.PDTN, v.PDTO,
-            v.PDUR, v.SNPZ, v.F_DEL, v.EVTYPE, v.NOTE
+            v.F_ID, v.KRC,v.NOTE,
+            v.PDTN, v.PDUR, v.EVTYPE
         FROM [%s].[dbo].[OEE_PEV] v
         WHERE
             v.F_DEL = 0
