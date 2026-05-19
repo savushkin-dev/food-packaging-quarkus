@@ -17,8 +17,6 @@ import org.acme.foodpackaging.sql.SqlQueries;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class JobDBLoader {
@@ -50,9 +48,7 @@ public class JobDBLoader {
         );
 
 
-        Map<Long, DbJobRow> result =
-                new HashMap<>((int) (rows.size() / 0.75f) + 1);
-
+        Map<Long, DbJobRow> result = HashMap.newHashMap(rows.size());
         for (DbJobRow row : rows) {
             result.putIfAbsent(row.snpz(), row);
         }
@@ -87,8 +83,7 @@ public class JobDBLoader {
                 to
         );
 
-        Map<Long, CleaningRow> result =
-                new HashMap<>((int) (rows.size() / 0.75f) + 1);
+        Map<Long, CleaningRow> result = HashMap.newHashMap(rows.size());
 
         for (CleaningRow row : rows) {
             result.putIfAbsent(row.snpz(), row);
@@ -111,8 +106,7 @@ public class JobDBLoader {
                 to
         );
 
-        Map<Long, DelayRow> result =
-                new HashMap<>((int) (rows.size() / 0.75f) + 1);
+        Map<Long, DelayRow> result = HashMap.newHashMap(rows.size());
 
         for (DelayRow row : rows) {
             result.putIfAbsent(row.snpz(), row);
@@ -133,8 +127,7 @@ public class JobDBLoader {
                 from, to
         );
 
-        Map<FactKey, FactProductionRow> result =
-                new HashMap<>((int) (rows.size() / 0.75f) + 1);
+        Map<FactKey, FactProductionRow> result = HashMap.newHashMap(rows.size());
 
         for (FactProductionRow row : rows) {
 
@@ -153,12 +146,8 @@ public class JobDBLoader {
 
     public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
 
-        int expectedSize = jobs.size();
-        Map<String, CameraValue> result =
-                new HashMap<>((int) (expectedSize / 0.75f) + 1);
-
-        Set<String> processedBatches =
-                new HashSet<>((int) (expectedSize / 0.75f) + 1);
+        Map<String, CameraValue> result = HashMap.newHashMap(jobs.size());
+        Set<String> processedBatches = HashSet.newHashSet(jobs.size());
 
         for (Job job : jobs) {
 
@@ -173,10 +162,7 @@ public class JobDBLoader {
                     idBatch
             );
 
-            if (rows.isEmpty()) {
-                continue;
-            }
-
+            if (!rows.isEmpty()) {
             CameraFactRow row = rows.getFirst();
 
             result.put(
@@ -185,6 +171,7 @@ public class JobDBLoader {
                             row.cameraStart(), row.cameraEnd()
                     )
             );
+        }
         }
 
         return result;
