@@ -132,11 +132,11 @@ public class Job {
     /**
      * Creates a regular production job from a database row.
      *
-     * @param mRow                     The database row containing job data
-     * @param mName                    Name by event type
-     * @param mProduct                 The empty product for this job
+     * @param mRow     The database row containing job data
+     * @param mName    Name by event type
+     * @param mProduct The empty product for this job
      */
-    public Job (MaintenanceRow mRow,String mName, Product mProduct){
+    public Job(MaintenanceRow mRow, String mName, Product mProduct) {
         this.id = String.valueOf(mRow.fId());
         this.name = mName;
         this.lineId = mRow.lineId();
@@ -199,7 +199,7 @@ public class Job {
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
     }
 
-    public Job(String id, String name, MaintenanceRequest request, Product mProduct){
+    public Job(String id, String name, MaintenanceRequest request, Product mProduct) {
         this.id = id;
         this.name = name;
         this.maintenance = true;
@@ -209,7 +209,7 @@ public class Job {
         this.duration = Duration.ofMinutes(request.getDurationMinutes());
     }
 
-    public Job(String id, String name){
+    public Job(String id, String name) {
         this.id = id;
         this.name = name;
     }
@@ -227,16 +227,16 @@ public class Job {
     }
 
     public long getCleaningDurationPlan() {
-        if (startProductionDateTime == null || startCleaningDateTime == null
-                || !startProductionDateTime.isAfter(startCleaningDateTime)) return 0;
-        return Duration.between(startCleaningDateTime, startProductionDateTime).toMinutes();
+        if (product == null || product.getCleaningDurations() == null || previousJob == null || previousJob.getProduct() == null
+                || previousJob.getProduct().getCleaningDurations() == null) return 0;
+        return product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
     }
 
-    public long getCleaningDurationWithDelay() {
-        if (cleaningDelay == null || startProductionDateTime == null || startCleaningDateTime == null
-                || !startProductionDateTime.isAfter(startCleaningDateTime)) return 0;
-        long cleaningDurationWithDelay = Duration.between(startCleaningDateTime, startProductionDateTime).toMinutes();
-        return cleaningDurationWithDelay + cleaningDelay.toMinutes();
+    public long getCleaningDurationFact() {
+        if (cleaningDelay == null) {
+            return getCleaningDurationPlan();
+        }
+        return getCleaningDurationPlan() + cleaningDelay.toMinutes();
     }
 
     @Override

@@ -464,111 +464,73 @@ class JobTest {
     // ============================================================
 
     @Test
-    void getCleaningDurationPlan_WhenCleaningDataIsNotNull() {
-        LocalDateTime cleaningStart = LocalDateTime.of(2026, 5, 5, 8, 0);
-        LocalDateTime productionStart = LocalDateTime.of(2026, 5, 5, 8, 30);
-
-        Job j1 = new Job();
-        j1.setStartCleaningDateTime(cleaningStart);
-        j1.setStartProductionDateTime(productionStart);
-
-        assertEquals(30, j1.getCleaningDurationPlan());
+    void getCleaningDurationPlan_success() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        assertEquals(20, jobs.getRight().getCleaningDurationPlan());
     }
 
     @Test
-    void getCleaningDurationPlan_WhenCleaningIsNull() {
-        LocalDateTime productionStart = LocalDateTime.of(2026, 5, 5, 8, 30);
-
+    void getCleaningDurationPlan_WhenProductIsNull() {
         Job j1 = new Job();
-        j1.setStartProductionDateTime(productionStart);
-
         assertEquals(0, j1.getCleaningDurationPlan());
     }
 
     @Test
-    void getCleaningDurationPlan_WhenProductionStartIsNull() {
-        LocalDateTime cleaningStart = LocalDateTime.of(2026, 5, 5, 8, 30);
-
+    void getCleaningDurationPlan_WhenProductCleaningsAreNull() {
         Job j1 = new Job();
-        j1.setStartCleaningDateTime(cleaningStart);
+        Product p1 = new Product();
+        j1.setProduct(p1);
         assertEquals(0, j1.getCleaningDurationPlan());
     }
 
     @Test
-    void getCleaningDurationPlan_WhenStartIsNotBeforeCleaning() {
-        LocalDateTime cleaningStart = LocalDateTime.of(2026, 5, 5, 8, 30);
-        LocalDateTime productionStart = LocalDateTime.of(2026, 5, 5, 8, 0);
-
+    void getCleaningDurationPlan_WhenPreviousIsNull() {
         Job j1 = new Job();
-        j1.setStartCleaningDateTime(cleaningStart);
-        j1.setStartProductionDateTime(productionStart);
+        Product p1 = new Product();
+        p1.setCleaningDurations(new HashMap<>());
+        j1.setProduct(p1);
+        assertEquals(0, j1.getCleaningDurationPlan());
+    }
 
+    @Test
+    void getCleaningDurationPlan_WhenPreviousProductIsNull() {
+        Job j1 = new Job();
+        Product p1 = new Product();
+        p1.setCleaningDurations(new HashMap<>());
+        j1.setProduct(p1);
+        j1.setPreviousJob(new Job());
+        assertEquals(0, j1.getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenPreviousProductCleaningsAreNull() {
+        Job j1 = new Job();
+        Job j2 = new Job();
+        Product p1 = new Product();
+        Product p2 = new Product();
+        p1.setCleaningDurations(new HashMap<>());
+        j1.setProduct(p1);
+        j2.setProduct(p2);
+        j1.setPreviousJob(j2);
         assertEquals(0, j1.getCleaningDurationPlan());
     }
 
     // ============================================================
-    // getCleaningDurationPlan
+    //  getCleaningDurationFact
     // ============================================================
     @Test
-    void getCleaningDurationWithDelay_whenCleaningDelayIsNull() {
-        Job job = new Job();
+    void getCleaningDurationWithFact_whenCleaningDelayIsNotNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        jobs.getRight().setCleaningDelay(Duration.ofMinutes(20));
 
-        job.setStartCleaningDateTime(LocalDateTime.now().minusMinutes(10));
-        job.setStartProductionDateTime(LocalDateTime.now());
-        job.setCleaningDelay(null);
-
-        assertEquals(0, job.getCleaningDurationWithDelay());
+        assertEquals(40, jobs.getRight().getCleaningDurationFact());
     }
 
     @Test
-    void getCleaningDurationWithDelay_whenStartProductionIsNull() {
-        Job job = new Job();
-
-        job.setStartCleaningDateTime(LocalDateTime.now().minusMinutes(10));
-        job.setCleaningDelay(Duration.ofMinutes(5));
-        job.setStartProductionDateTime(null);
-
-        assertEquals(0, job.getCleaningDurationWithDelay());
+    void getCleaningDurationWithFact_whenCleaningDelayIsNull() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        assertEquals(20, jobs.getRight().getCleaningDurationFact());
     }
-
-    @Test
-    void getCleaningDurationWithDelay_whenStartCleaningIsNull() {
-        Job job = new Job();
-
-        job.setStartProductionDateTime(LocalDateTime.now());
-        job.setCleaningDelay(Duration.ofMinutes(5));
-        job.setStartCleaningDateTime(null);
-
-        assertEquals(0, job.getCleaningDurationWithDelay());
-    }
-
-    @Test
-    void getCleaningDurationWithDelay_whenProductionNotAfterCleaning() {
-        Job job = new Job();
-
-        LocalDateTime now = LocalDateTime.now();
-
-        job.setStartCleaningDateTime(now);
-        job.setStartProductionDateTime(now.minusMinutes(5));
-        job.setCleaningDelay(Duration.ofMinutes(5));
-
-        assertEquals(0, job.getCleaningDurationWithDelay());
-    }
-
-    @Test
-    void getCleaningDurationWithDelay_whenValidData_returnsSumOfDurationAndDelay() {
-        Job job = new Job();
-
-        LocalDateTime cleaning = LocalDateTime.now().minusMinutes(20);
-        LocalDateTime production = LocalDateTime.now();
-
-        job.setStartCleaningDateTime(cleaning);
-        job.setStartProductionDateTime(production);
-        job.setCleaningDelay(Duration.ofMinutes(5));
-
-        assertEquals(25, job.getCleaningDurationWithDelay());
-    }
-
     // ============================================================
     // getPlanDuration
     // ============================================================
