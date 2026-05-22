@@ -93,7 +93,7 @@ public class AlignCleaningService {
                 continue;
             }
 
-            long cleaningMinutesFact = calculateFactCleaning(curr, next);
+
             int chainEndIndex = findChainEndIndex(jobs, i + 1);
 
             if (chainEndIndex > i + 1) {
@@ -102,10 +102,14 @@ public class AlignCleaningService {
                         jobs.subList(i + 1, chainEndIndex)
                 );
 
-                handleCleaningDelayForChain(
-                        curr, cleaningMinutesFact, chain, line, jobs, solution
-                );
+                if (!chain.isEmpty()) {
+                    chain.sort(Comparator.comparing(Job::getCameraStart));
+                    long cleaningMinutesFact = calculateFactCleaning(curr, chain.getFirst());
 
+                    handleCleaningDelayForChain(
+                            curr, cleaningMinutesFact, chain, line, jobs, solution
+                    );
+                }
                 i = chainEndIndex - 1;
             } else {
                 i++;
@@ -121,9 +125,6 @@ public class AlignCleaningService {
             List<Job> jobs,
             PackagingSchedule solution
     ) {
-        if (chain.isEmpty()) {
-            return;
-        }
 
         chain.sort(Comparator.comparing(
                 Job::getStartProductionDateTime,
