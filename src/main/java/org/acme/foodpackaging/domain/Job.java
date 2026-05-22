@@ -229,7 +229,10 @@ public class Job {
     public long getCleaningDurationPlan() {
         if (product == null || product.getCleaningDurations() == null || previousJob == null || previousJob.getProduct() == null
                 || previousJob.getProduct().getCleaningDurations() == null) return 0;
-        return product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
+        CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
+        return meta.isPLRLC()
+                ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
+                : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
     }
 
     public long getCleaningDurationFact() {

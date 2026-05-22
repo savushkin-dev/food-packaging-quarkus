@@ -470,6 +470,15 @@ class JobTest {
     }
 
     @Test
+    void getCleaningDurationPlan_whenPLRCIsTrue() {
+        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        jobs.getRight().getProduct().getCleaningResults()
+                .put(jobs.getLeft().getProduct(), new CleaningResult(60, true));
+
+        assertEquals(45, jobs.getRight().getCleaningDurationPlan());
+    }
+
+    @Test
     void getCleaningDurationPlan_WhenProductIsNull() {
         Job j1 = new Job();
         assertEquals(0, j1.getCleaningDurationPlan());
