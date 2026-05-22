@@ -64,13 +64,13 @@ public class AlignCleaningService {
         Product factProduct = firstFact.getProduct();
         Job previous = firstFact.getPreviousJob();
 
-        while (previous != null && previous.getProduct() != null && previous.getProduct().equals(factProduct)){
+        while (previous != null && previous.getProduct() != null && previous.getProduct().equals(factProduct)) {
             planDateTime = previous.getStartProductionDateTime();
             previous = previous.getPreviousJob();
         }
 
         long shift = Duration.between(planDateTime, firstFact.getCameraStart()).toMinutes();
-        if(line.getStartDateTime()!= null){
+        if (line.getStartDateTime() != null) {
             line.setStartDateTime(line.getStartDateTime().plusMinutes(shift));
         }
         fixLineJobs(line);
@@ -107,8 +107,7 @@ public class AlignCleaningService {
                 );
 
                 i = chainEndIndex - 1;
-            }
-            else {
+            } else {
                 i++;
             }
         }
@@ -288,7 +287,7 @@ public class AlignCleaningService {
                         j.getCameraStart() != null
                                 && j.getCameraEnd() != null
                                 && j.areEqualsPlanAndFactLines())
-                .sorted(Comparator.comparing(Job::getCameraStart))
+                .sorted(Comparator.comparing(Job::getCameraEnd))
                 .toList();
     }
 }
