@@ -11,6 +11,7 @@ import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -155,5 +156,26 @@ class AlignSolutionServiceTest {
     @Test
     void resetAlign_whenSolutionJobsListIsNull() {
         assertDoesNotThrow(() -> alignSolution.reset((null)));
+    }
+
+    // ============================================================
+    // alignFromScratch
+    // ============================================================
+
+    @Test
+    void shouldCallResetBeforeAlign() {
+        PackagingSchedule schedule = new PackagingSchedule();
+
+        AlignSolutionService spyAlignSolution = spy(alignSolution);
+
+        doNothing().when(spyAlignSolution).reset(any());
+        doNothing().when(spyAlignSolution).align(any());
+
+        spyAlignSolution.alignFromScratch(schedule);
+
+        InOrder inOrder = inOrder(spyAlignSolution);
+
+        inOrder.verify(spyAlignSolution).reset(schedule);
+        inOrder.verify(spyAlignSolution).align(schedule);
     }
 }

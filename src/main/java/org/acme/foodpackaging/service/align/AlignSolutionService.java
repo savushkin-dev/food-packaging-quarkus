@@ -34,6 +34,11 @@ public class AlignSolutionService {
         lineService.setMaxEndDateTimeByLastJob(schedule);
     }
 
+    public void alignFromScratch(PackagingSchedule schedule){
+        reset(schedule);
+        align(schedule);
+    }
+
     private void removeAlignMaintenance(PackagingSchedule schedule){
         List<Job> jobs = schedule.getJobs();
         if (schedule.getJobs() == null || schedule.getJobs().isEmpty()) {
