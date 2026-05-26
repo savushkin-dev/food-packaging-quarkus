@@ -354,7 +354,7 @@ public class PackagingScheduleResource {
                     .build();
         }
         Line line = findLineById(solution, request.getLineId());
-        if(line.getJobs().isEmpty()) {
+        if(!line.getJobs().isEmpty()) {
             setLineStartDateTime(line, request.getStartLineDateTime());
 
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
