@@ -13,6 +13,9 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 @ApplicationScoped
 public class AlignDurationService {
 
+    private static final Duration ALLOWED_OVERLAP =
+            Duration.ofMinutes(10);
+
     public void alignByFactDuration(PackagingSchedule schedule) {
         if(schedule.getLines() == null) return;
         for (Line line : schedule.getLines()) {
@@ -58,10 +61,24 @@ public class AlignDurationService {
 
         return jobsWithFactData.stream()
                 .filter(j -> j != job)
-                .filter(j ->
-                        j.getCameraStart().isBefore(cameraEnd) &&
-                                j.getCameraEnd().isAfter(cameraStart)
-                )
+                .filter(j -> {
+
+                    LocalDateTime overlapStart =
+                            cameraStart.isAfter(j.getCameraStart())
+                                    ? cameraStart
+                                    : j.getCameraStart();
+
+                    LocalDateTime overlapEnd =
+                            cameraEnd.isBefore(j.getCameraEnd())
+                                    ? cameraEnd
+                                    : j.getCameraEnd();
+
+                    Duration overlap =
+                            Duration.between(overlapStart, overlapEnd);
+
+                    return !overlap.isNegative()
+                            && overlap.compareTo(ALLOWED_OVERLAP) > 0;
+                })
                 .toList();
     }
 
