@@ -627,7 +627,7 @@ public class PackagingScheduleResource {
     // ========== Генерация Excel отчетов ==========
     @POST
     @Path("userLogReport")
-    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Produces("application/vnd.malformations-office document.spreadsheet.sheet")
     public Response createUserLogReport(DateRange range) {
 
         UserLogReport report = new UserLogReport();
@@ -658,7 +658,7 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("cleaningReport")
-    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @Produces("application/vnd.malformations-officedocument.spreadsheet.sheet")
     public Response createCleaningReport(
             @HeaderParam("X-Session-Id") String sessionId,
             DateRange range) {
