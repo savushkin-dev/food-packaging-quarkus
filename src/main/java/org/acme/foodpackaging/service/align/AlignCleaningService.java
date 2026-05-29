@@ -184,16 +184,18 @@ public class AlignCleaningService {
         }
 
         int index = line.getJobs().indexOf(candidate);
-        removeMaintenanceBefore(line.getJobs(), index, solution);
+        String mNote = removeMaintenanceBefore(line.getJobs(), index, solution);
+        candidate.setCleaningDelayNote(mNote);
         return true;
     }
 
-    private void removeMaintenanceBefore(
+    private String removeMaintenanceBefore(
             List<Job> jobs,
             int index,
             PackagingSchedule solution
     ) {
         int i = index - 1;
+        StringBuilder deletedNotes = new StringBuilder();
 
         while (i >= 0) {
             Job job = jobs.get(i);
@@ -202,13 +204,20 @@ public class AlignCleaningService {
                 break;
             }
 
+            if (job.getMaintenanceNote() != null) {
+                if (!deletedNotes.isEmpty()) {
+                    deletedNotes.append(", ");
+                }
+                deletedNotes.append(job.getMaintenanceNote());
+            }
+
             job.setFDel((short) 1);
             solution.getDeletedMaintenance().add(job);
             jobs.remove(i);
-
             i--;
         }
         solution.getJobs().removeIf(job -> job.getFDel() == 1);
+        return deletedNotes.toString();
     }
 
     boolean isPlanProductsValid(Job curr, Job candidate) {
