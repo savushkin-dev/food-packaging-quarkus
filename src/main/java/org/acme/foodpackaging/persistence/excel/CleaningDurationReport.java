@@ -54,35 +54,32 @@ public class CleaningDurationReport {
                     continue;
                 }
 
-                List<Job> cleaningJobs = collectCleaningJobs(line.getJobs(), from, to);
+                List<Job> cleaningJobs =
+                        collectCleaningJobs(line.getJobs(), from, to);
 
-                if (cleaningJobs.isEmpty()) {
-                    continue;
+                if (!cleaningJobs.isEmpty()) {
+
+                    rowIndex = writeLineSection(
+                            sheet,
+                            line,
+                            cleaningJobs,
+                            headerStyle,
+                            lineStyle,
+                            rowIndex
+                    );
                 }
-
-                rowIndex = writeLineSection(
-                        sheet,
-                        line,
-                        cleaningJobs,
-                        headerStyle,
-                        lineStyle,
-                        rowIndex);
             }
-
             autoSizeColumns(sheet);
-
             workbook.write(out);
+
             return out.toByteArray();
 
         } catch (IOException e) {
             throw new ReportGenerationException(
                     "Error while generating cleaning report",
-                    e);
+                    e
+            );
         }
-    }
-
-    public String generateFileName(LocalDate from, LocalDate to) {
-        return from + "—" + to + "_CleaningReport.xlsx";
     }
 
     private CellStyle createHeaderStyle(Workbook workbook) {
