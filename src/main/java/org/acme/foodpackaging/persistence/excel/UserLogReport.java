@@ -1,17 +1,17 @@
 package org.acme.foodpackaging.persistence.excel;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.inject.spi.CDI;
 import org.acme.foodpackaging.entity.RequestLog;
+import org.acme.foodpackaging.exception.excel.ReportGenerationException;
 import org.acme.foodpackaging.repository.RequestLogRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,13 +32,10 @@ public class UserLogReport {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public UserLogReport(LocalDate from, LocalDate to) {
-        createExcelReport(from, to);
-    }
+    public byte[] createExcelReport(LocalDate from, LocalDate to) {
 
-    private void createExcelReport(LocalDate from, LocalDate to) {
-
-        RequestLogRepository repository = CDI.current().select(RequestLogRepository.class).get();
+        RequestLogRepository repository =
+                CDI.current().select(RequestLogRepository.class).get();
 
         List<RequestLog> logs = repository.find(
                 "(method = ?1 or method = ?2) and dateTime >= ?3 and dateTime <= ?4 order by dateTime",
@@ -48,7 +45,10 @@ public class UserLogReport {
                 to.plusDays(1).atStartOfDay()
         ).list();
 
-        try (SXSSFWorkbook workbook = new SXSSFWorkbook(200)) {
+        try (
+                SXSSFWorkbook workbook = new SXSSFWorkbook(200);
+                ByteArrayOutputStream out = new ByteArrayOutputStream()
+        ) {
 
             SXSSFSheet sheet = workbook.createSheet(SHEET_NAME);
             sheet.trackAllColumnsForAutoSizing();
@@ -60,15 +60,19 @@ public class UserLogReport {
             Row header = sheet.createRow(rowIndex++);
             createHeader(header, headerStyle);
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
+            DateTimeFormatter formatter =
+                    DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
 
             for (RequestLog log : logs) {
 
-                if(!isValidLog(log)) continue;
+                if (!isValidLog(log)) {
+                    continue;
+                }
 
                 Row row = sheet.createRow(rowIndex++);
 
-                writeRow(row,
+                writeRow(
+                        row,
                         format(log.getDateTime(), formatter),
                         trim(log.getIp()),
                         trim(log.getMethod()),
@@ -77,15 +81,69 @@ public class UserLogReport {
             }
 
             autoSizeColumns(sheet);
-            writeWorkbookToFile(workbook, generateReportPath(from, to));
+
+            workbook.write(out);
+
+            return out.toByteArray();
 
         } catch (IOException e) {
-            throw new RuntimeException("Error while generating UserLog report", e);
+            throw new ReportGenerationException(
+                    "Error while generating UserLog report",
+                    e
+            );
         }
     }
+
+    // ---------------- validation ----------------
+
+    private boolean isValidLog(RequestLog log) {
+
+        String method = trim(log.getMethod());
+
+        if (!("save".equalsIgnoreCase(method)
+                || "stopSolving".equalsIgnoreCase(method))) {
+            return false;
+        }
+
+        String query = log.getQuery();
+
+        if (query == null || query.isBlank()) {
+            return false;
+        }
+
+        query = query.trim();
+
+        if (query.equals("{}")) {
+            return false;
+        }
+
+        return hasPlanningDate(query);
+    }
+
+    private boolean hasPlanningDate(String query) {
+
+        try {
+            JsonNode root = objectMapper.readTree(query);
+            JsonNode planningDate = root.get("planningDate");
+
+            if (planningDate == null || planningDate.isNull()) {
+                return false;
+            }
+
+            return !planningDate.asText().trim().isEmpty();
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ---------------- excel helpers ----------------
+
     private CellStyle createHeaderStyle(Workbook workbook) {
 
         CellStyle style = workbook.createCellStyle();
+
+
         style.setFillForegroundColor(IndexedColors.SKY_BLUE.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
@@ -99,7 +157,9 @@ public class UserLogReport {
     }
 
     private void createHeader(Row row, CellStyle style) {
+
         for (int i = 0; i < HEADERS.length; i++) {
+
             Cell cell = row.createCell(i);
             cell.setCellValue(HEADERS[i]);
             cell.setCellStyle(style);
@@ -107,6 +167,7 @@ public class UserLogReport {
     }
 
     private void writeRow(Row row, Object... values) {
+
         for (int i = 0; i < values.length; i++) {
 
             Cell cell = row.createCell(i);
@@ -128,8 +189,11 @@ public class UserLogReport {
 
         try {
             Object json = objectMapper.readValue(query.trim(), Object.class);
-            return objectMapper.writerWithDefaultPrettyPrinter()
+
+            return objectMapper
+                    .writerWithDefaultPrettyPrinter()
                     .writeValueAsString(json);
+
         } catch (Exception e) {
             return query.trim();
         }
@@ -150,54 +214,13 @@ public class UserLogReport {
         for (int i = 0; i < MAX_AUTO_SIZE_COLUMN; i++) {
 
             if (i == 3) {
-                sheet.setColumnWidth(i, 100 * 256); // QUERY колонка
+                sheet.setColumnWidth(i, 100 * 256);
                 continue;
             }
 
             sheet.autoSizeColumn(i);
-
             int width = sheet.getColumnWidth(i) + 1024;
             sheet.setColumnWidth(i, Math.min(width, maxWidth));
         }
-    }
-
-    private void writeWorkbookToFile(Workbook workbook, String path) throws IOException {
-
-        try (FileOutputStream out = new FileOutputStream(path)) {
-            workbook.write(out);
-        }
-    }
-
-    private boolean isValidLog(RequestLog log) {
-
-        String method = trim(log.getMethod());
-
-        if ("save".equalsIgnoreCase(method) || "stopSolving".equalsIgnoreCase(method)) {
-
-            String query = log.getQuery();
-
-            if (query == null || query.isBlank()) {
-                return false;
-            }
-
-            query = query.trim();
-
-            return !query.equals("{}");
-        }
-
-        return false;
-    }
-
-    private String generateReportPath(LocalDate from, LocalDate to) {
-
-        String dir = "reports/";
-
-        try {
-            Files.createDirectories(Paths.get(dir));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create directory", e);
-        }
-
-        return dir + from + "—" + to + "_UserLogReport.xlsx";
     }
 }
