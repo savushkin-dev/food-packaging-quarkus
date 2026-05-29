@@ -7,11 +7,9 @@ import org.acme.foodpackaging.repository.RequestLogRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import java.io.ByteArrayOutputStream;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -32,11 +30,10 @@ public class UserLogReport {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public UserLogReport(LocalDate from, LocalDate to) {
-        createExcelReport(from, to);
+    public UserLogReport() {
     }
 
-    private void createExcelReport(LocalDate from, LocalDate to) {
+    public byte[] createExcelReport(LocalDate from, LocalDate to) {
 
         RequestLogRepository repository = CDI.current().select(RequestLogRepository.class).get();
 
@@ -45,18 +42,17 @@ public class UserLogReport {
                 "stopSolving",
                 "save",
                 from.atStartOfDay(),
-                to.plusDays(1).atStartOfDay()
-        ).list();
+                to.plusDays(1).atStartOfDay()).list();
 
-        try (SXSSFWorkbook workbook = new SXSSFWorkbook(200)) {
+        try (
+                SXSSFWorkbook workbook = new SXSSFWorkbook(200);
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             SXSSFSheet sheet = workbook.createSheet(SHEET_NAME);
             sheet.trackAllColumnsForAutoSizing();
-
             CellStyle headerStyle = createHeaderStyle(workbook);
 
             int rowIndex = 0;
-
             Row header = sheet.createRow(rowIndex++);
             createHeader(header, headerStyle);
 
@@ -64,25 +60,33 @@ public class UserLogReport {
 
             for (RequestLog log : logs) {
 
-                if(!isValidLog(log)) continue;
+                if (!isValidLog(log)) {
+                    continue;
+                }
 
                 Row row = sheet.createRow(rowIndex++);
 
-                writeRow(row,
+                writeRow(
+                        row,
                         format(log.getDateTime(), formatter),
                         trim(log.getIp()),
                         trim(log.getMethod()),
-                        parseQuery(log.getQuery())
-                );
+                        parseQuery(log.getQuery()));
             }
 
             autoSizeColumns(sheet);
-            writeWorkbookToFile(workbook, generateReportPath(from, to));
+
+            workbook.write(out);
+
+            return out.toByteArray();
 
         } catch (IOException e) {
-            throw new RuntimeException("Error while generating UserLog report", e);
+            throw new RuntimeException(
+                    "Error while generating UserLog report",
+                    e);
         }
     }
+
     private CellStyle createHeaderStyle(Workbook workbook) {
 
         CellStyle style = workbook.createCellStyle();
@@ -155,16 +159,8 @@ public class UserLogReport {
             }
 
             sheet.autoSizeColumn(i);
-
             int width = sheet.getColumnWidth(i) + 1024;
             sheet.setColumnWidth(i, Math.min(width, maxWidth));
-        }
-    }
-
-    private void writeWorkbookToFile(Workbook workbook, String path) throws IOException {
-
-        try (FileOutputStream out = new FileOutputStream(path)) {
-            workbook.write(out);
         }
     }
 
@@ -181,23 +177,9 @@ public class UserLogReport {
             }
 
             query = query.trim();
-
             return !query.equals("{}");
         }
 
         return false;
-    }
-
-    private String generateReportPath(LocalDate from, LocalDate to) {
-
-        String dir = "reports/";
-
-        try {
-            Files.createDirectories(Paths.get(dir));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create directory", e);
-        }
-
-        return dir + from + "—" + to + "_UserLogReport.xlsx";
     }
 }

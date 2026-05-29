@@ -8,11 +8,9 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import java.io.ByteArrayOutputStream;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,20 +31,14 @@ public class CleaningDurationReport {
             "Время окончания мойки"
     };
 
-    private final LocalDate from;
-    private final LocalDate to;
+    public byte[] createExcelReport(
+            PackagingSchedule solution,
+            LocalDate from,
+            LocalDate to) {
 
-    public CleaningDurationReport(PackagingSchedule solution,
-                                  LocalDate from,
-                                  LocalDate to) {
-        this.from = from;
-        this.to = to;
-        createExcelReport(solution, from, to);
-    }
-
-    private void createExcelReport(PackagingSchedule solution, LocalDate from, LocalDate to) {
-
-        try (SXSSFWorkbook workbook = new SXSSFWorkbook(200)) {
+        try (
+                SXSSFWorkbook workbook = new SXSSFWorkbook(200);
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             SXSSFSheet sheet = workbook.createSheet(SHEET_NAME);
             sheet.trackAllColumnsForAutoSizing();
@@ -58,35 +50,45 @@ public class CleaningDurationReport {
 
             for (Line line : solution.getLines()) {
 
-                if (line != null && line.getJobs() != null) {
-
-                    List<Job> cleaningJobs = collectCleaningJobs(line.getJobs());
-
-                    if (!cleaningJobs.isEmpty()) {
-
-                        rowIndex = writeLineSection(
-                                sheet,
-                                line,
-                                cleaningJobs,
-                                headerStyle,
-                                lineStyle,
-                                rowIndex
-                        );
-                    }
+                if (line == null || line.getJobs() == null) {
+                    continue;
                 }
+
+                List<Job> cleaningJobs = collectCleaningJobs(line.getJobs(), from, to);
+
+                if (cleaningJobs.isEmpty()) {
+                    continue;
+                }
+
+                rowIndex = writeLineSection(
+                        sheet,
+                        line,
+                        cleaningJobs,
+                        headerStyle,
+                        lineStyle,
+                        rowIndex);
             }
 
             autoSizeColumns(sheet);
-            writeWorkbookToFile(workbook, generateReportPath(from, to));
+
+            workbook.write(out);
+            return out.toByteArray();
 
         } catch (IOException e) {
-            throw new ReportGenerationException("Error while generating cleaning report", e);
+            throw new ReportGenerationException(
+                    "Error while generating cleaning report",
+                    e);
         }
+    }
+
+    public String generateFileName(LocalDate from, LocalDate to) {
+        return from + "—" + to + "_CleaningReport.xlsx";
     }
 
     private CellStyle createHeaderStyle(Workbook workbook) {
 
         CellStyle style = workbook.createCellStyle();
+
         style.setFillForegroundColor(IndexedColors.AQUA.getIndex());
         style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
@@ -105,25 +107,30 @@ public class CleaningDurationReport {
 
         Font font = workbook.createFont();
         font.setBold(true);
-
         style.setFont(font);
-
         return style;
     }
 
-    private int writeLineSection(Sheet sheet,
-                                 Line line,
-                                 List<Job> jobs,
-                                 CellStyle headerStyle,
-                                 CellStyle lineStyle,
-                                 int rowIndex) {
+    private int writeLineSection(
+            Sheet sheet,
+            Line line,
+            List<Job> jobs,
+            CellStyle headerStyle,
+            CellStyle lineStyle,
+            int rowIndex) {
 
         Row lineRow = sheet.createRow(rowIndex++);
+
         Cell lineCell = lineRow.createCell(0);
         lineCell.setCellValue(line.getName());
         lineCell.setCellStyle(lineStyle);
 
-        sheet.addMergedRegion(new CellRangeAddress(rowIndex - 1, rowIndex - 1, 0, 3));
+        sheet.addMergedRegion(
+                new CellRangeAddress(
+                        rowIndex - 1,
+                        rowIndex - 1,
+                        0,
+                        3));
 
         Row header = sheet.createRow(rowIndex++);
         createHeader(header, headerStyle);
@@ -133,36 +140,44 @@ public class CleaningDurationReport {
         for (Job job : jobs) {
 
             Row row = sheet.createRow(rowIndex++);
+
             String name;
             LocalDateTime start;
             LocalDateTime end;
             long duration;
 
-            if(job.isMaintenance()){
+            if (job.isMaintenance()) {
+
                 name = "Мойка, сервисная операция";
+
                 start = job.getStartProductionDateTime();
                 end = job.getEndDateTime();
-                duration = Duration.between(start, end).toMinutes();
-            }
-            else{
+
+            } else {
+
                 name = "Мойка, переналадка";
+
                 start = job.getStartCleaningDateTime();
                 end = job.getStartProductionDateTime();
-                duration = Duration.between(start, end).toMinutes();
             }
 
-            writeRow(row,
+            duration = Duration.between(start, end).toMinutes();
+
+            writeRow(
+                    row,
                     name,
                     format(start, formatter),
                     duration,
-                    format(end, formatter)
-            );
+                    format(end, formatter));
         }
 
         return rowIndex + 2;
     }
 
-    private List<Job> collectCleaningJobs(List<Job> jobs) {
+    private List<Job> collectCleaningJobs(
+            List<Job> jobs,
+            LocalDate from,
+            LocalDate to) {
 
         List<Job> result = new ArrayList<>();
 
@@ -173,14 +188,12 @@ public class CleaningDurationReport {
                 continue;
             }
 
-            boolean isProductionAfterCleaning =
-                    job.getStartProductionDateTime()
-                            .isAfter(job.getStartCleaningDateTime());
+            boolean isProductionAfterCleaning = job.getStartProductionDateTime()
+                    .isAfter(job.getStartCleaningDateTime());
 
-            boolean isMaintenanceMatch =
-                    job.isMaintenance()
-                            && job.getMaintenanceTypeId() != null
-                            && job.getMaintenanceTypeId() == 2;
+            boolean isMaintenanceMatch = job.isMaintenance()
+                    && job.getMaintenanceTypeId() != null
+                    && job.getMaintenanceTypeId() == 2;
 
             if (!isMaintenanceMatch && !isProductionAfterCleaning) {
                 continue;
@@ -190,7 +203,8 @@ public class CleaningDurationReport {
                     ? job.getStartProductionDateTime().toLocalDate()
                     : job.getStartCleaningDateTime().toLocalDate();
 
-            if (dateForFilter.isBefore(from) || dateForFilter.isAfter(to)) {
+            if (dateForFilter.isBefore(from)
+                    || dateForFilter.isAfter(to)) {
                 continue;
             }
 
@@ -201,57 +215,52 @@ public class CleaningDurationReport {
     }
 
     private void createHeader(Row row, CellStyle style) {
-        for (int i = 0; i < CleaningDurationReport.SERVICE_HEADERS.length; i++) {
+
+        for (int i = 0; i < SERVICE_HEADERS.length; i++) {
+
             Cell cell = row.createCell(i);
-            cell.setCellValue(CleaningDurationReport.SERVICE_HEADERS[i]);
+
+            cell.setCellValue(SERVICE_HEADERS[i]);
             cell.setCellStyle(style);
         }
     }
 
     private void writeRow(Row row, Object... values) {
-        for (int i = 0; i < values.length; i++) {
 
+        for (int i = 0; i < values.length; i++) {
             Cell cell = row.createCell(i);
             Object value = values[i];
 
-            if (value instanceof Number n) {
-                cell.setCellValue(n.doubleValue());
+            if (value instanceof Number number) {
+
+                cell.setCellValue(number.doubleValue());
+
             } else if (value != null) {
+
                 cell.setCellValue(value.toString());
             }
         }
     }
 
-    private String format(LocalDateTime time, DateTimeFormatter formatter) {
-        return time == null ? "" : time.format(formatter);
+    private String format(
+            LocalDateTime time,
+            DateTimeFormatter formatter) {
+        return time == null
+                ? ""
+                : time.format(formatter);
     }
 
     private void autoSizeColumns(Sheet sheet) {
 
+        int maxWidth = 255 * 256;
+
         for (int i = 0; i < MAX_AUTO_SIZE_COLUMN; i++) {
 
             sheet.autoSizeColumn(i);
-            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1024);
+            int width = sheet.getColumnWidth(i) + 1024;
+            sheet.setColumnWidth(
+                    i,
+                    Math.min(width, maxWidth));
         }
-    }
-
-    private void writeWorkbookToFile(Workbook workbook, String path) throws IOException {
-
-        try (FileOutputStream out = new FileOutputStream(path)) {
-            workbook.write(out);
-        }
-    }
-
-    private String generateReportPath(LocalDate from, LocalDate to) {
-
-        String dir = "reports/";
-
-        try {
-            Files.createDirectories(Paths.get(dir));
-        } catch (IOException e) {
-            throw new ReportGenerationException("Failed to create directory", e);
-        }
-
-        return dir + from + "—" + to + "_CleaningReport.xlsx";
     }
 }
