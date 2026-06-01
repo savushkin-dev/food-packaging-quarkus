@@ -28,6 +28,7 @@ import org.acme.foodpackaging.service.jobs.*;
 import org.acme.foodpackaging.persistence.load.DowntimePeriodsService;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -59,12 +60,13 @@ public class PackagingScheduleResource {
     public PackagingScheduleResource(
             PackagingScheduleRepository repository, SolverManager<PackagingSchedule, String> solverManager,
             SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager, MaintenanceJob maintenanceJob,
-            JobService jobService, MoveJobsService moveJobsService, SortByNpService sortByNpService, PinService pinService,
+            JobService jobService, MoveJobsService moveJobsService, SortByNpService sortByNpService,
+            PinService pinService,
             ScheduleBuilder scheduleBuilder, ScheduleBuilderByVersion builderByVersion, LoadDataService loadDataService,
             UploadDataService uploadDataService, JobRefreshService jobRefreshService, JobSaveService jobSaveService,
-            SolutionVersionExportService exportService, JobInfoService jobInfoService, AlignSolutionService alignSolutionService, PlrPlanRepository plrPlanRepository,
-            DowntimePeriodsService downtimePeriodsService
-    ) {
+            SolutionVersionExportService exportService, JobInfoService jobInfoService,
+            AlignSolutionService alignSolutionService, PlrPlanRepository plrPlanRepository,
+            DowntimePeriodsService downtimePeriodsService) {
         this.repository = repository;
         this.solverManager = solverManager;
         this.solutionManager = solutionManager;
@@ -90,7 +92,7 @@ public class PackagingScheduleResource {
     @Path("downtimePeriods/{idBatch}")
     @Produces(MediaType.APPLICATION_JSON)
     public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
-                                                   @QueryParam("duration") Integer duration) {
+            @QueryParam("duration") Integer duration) {
         if (idBatch == null || idBatch.isBlank()) {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
         }
@@ -129,8 +131,7 @@ public class PackagingScheduleResource {
                 schedule.getJobs(),
                 schedule.getLines(),
                 schedule.getScore(),
-                schedule.getSolverStatus()
-        );
+                schedule.getSolverStatus());
     }
 
     @GET
@@ -163,8 +164,7 @@ public class PackagingScheduleResource {
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, ""
-        )).build();
+                ApiFields.MESSAGE, "")).build();
     }
 
     @POST
@@ -184,8 +184,7 @@ public class PackagingScheduleResource {
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, ""
-        )).build();
+                ApiFields.MESSAGE, "")).build();
     }
 
     @POST
@@ -195,8 +194,7 @@ public class PackagingScheduleResource {
         loadDataService.refresh();
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "Data refreshed successfully from database"
-        )).build();
+                ApiFields.MESSAGE, "Data refreshed successfully from database")).build();
     }
 
     @POST
@@ -263,8 +261,7 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, schedule);
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, ApiFields.REFRESH_OK
-        )).build();
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK)).build();
     }
 
     @POST
@@ -290,16 +287,16 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        InitData data =  scheduleBuilder.buildSchedule(loadDTO.getStartDate());
+        InitData data = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
         PackagingSchedule schedule = data.schedule();
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
         if (loadDataService == null) {
-                throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
-            }
+            throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
+        }
 
-            return Response.ok(data.jobsFromDbRow()).build();
+        return Response.ok(data.jobsFromDbRow()).build();
     }
 
     @POST
@@ -308,7 +305,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response initVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        PackagingSchedule solution =  builderByVersion.init(loadDTO.getStartDate(), loadDTO.getVersion());
+        PackagingSchedule solution = builderByVersion.init(loadDTO.getStartDate(), loadDTO.getVersion());
         solution.setVersion(loadDTO.getVersion());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);
@@ -320,8 +317,7 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.SESSION_ID, sessionId,
-                ApiFields.MESSAGE, "Solution version imported from json"
-        )).build();
+                ApiFields.MESSAGE, "Solution version imported from json")).build();
     }
 
     @POST
@@ -335,7 +331,7 @@ public class PackagingScheduleResource {
                 solution);
 
         solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId,updatedSchedule);
+        repository.writeForSession(sessionId, updatedSchedule);
 
         return Response.ok().build();
     }
@@ -354,7 +350,7 @@ public class PackagingScheduleResource {
                     .build();
         }
         Line line = findLineById(solution, request.getLineId());
-        if(!line.getJobs().isEmpty()) {
+        if (!line.getJobs().isEmpty()) {
             setLineStartDateTime(line, request.getStartLineDateTime());
 
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
@@ -362,14 +358,12 @@ public class PackagingScheduleResource {
             return Response.ok(Map.of(
                     ApiFields.STATUS, ApiFields.SUCCESS,
                     ApiFields.SESSION_ID, sessionId,
-                    ApiFields.MESSAGE, "Line start time updated"
-            )).build();
+                    ApiFields.MESSAGE, "Line start time updated")).build();
         }
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.SESSION_ID, sessionId,
-                ApiFields.MESSAGE, "Line has jobs. Start time is not updated"
-        )).build();
+                ApiFields.MESSAGE, "Line has jobs. Start time is not updated")).build();
     }
 
     @POST
@@ -395,8 +389,7 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.SESSION_ID, sessionId,
-                ApiFields.MESSAGE, "Line end time updated"
-        )).build();
+                ApiFields.MESSAGE, "Line end time updated")).build();
     }
 
     @POST
@@ -451,7 +444,8 @@ public class PackagingScheduleResource {
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
-        return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs sorted successfully")).build();
+        return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs sorted successfully"))
+                .build();
     }
 
     @POST
@@ -475,8 +469,7 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(
                 ApiFields.STATUS, "started",
                 ApiFields.SESSION_ID, sessionId,
-                ApiFields.MESSAGE, "Solving started"
-        )).build();
+                ApiFields.MESSAGE, "Solving started")).build();
     }
 
     @POST
@@ -499,6 +492,7 @@ public class PackagingScheduleResource {
 
         return Response.ok(response).build();
     }
+
     /**
      * Перемещение задач на линиях
      */
@@ -520,8 +514,10 @@ public class PackagingScheduleResource {
         solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, result);
 
-        return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully")).build();
+        return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully"))
+                .build();
     }
+
     /**
      * Суточная мойка линий
      */
@@ -551,7 +547,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("maintenance")
     public Response addMaintenance(MaintenanceRequest request,
-                                   @HeaderParam("X-Session-Id") String sessionId) {
+            @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         PackagingSchedule updated;
@@ -560,29 +556,26 @@ public class PackagingScheduleResource {
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
-            if(request.isUpdateLineMode()){
-                if(request.getMaintenanceTypeId()!=null) {
-                    updated = maintenanceJob.updateMaintenanceType(schedule, request);
-                }
-                else{
-                    updated = maintenanceJob.updateDuration(schedule,request);
-                }
+        if (request.isUpdateLineMode()) {
+            if (request.getMaintenanceTypeId() != null) {
+                updated = maintenanceJob.updateMaintenanceType(schedule, request);
+            } else {
+                updated = maintenanceJob.updateDuration(schedule, request);
             }
-            else if(request.isRemoveLineMode()){
-                updated = maintenanceJob.removeMaintenanceJob(schedule, request);
-            }
-            else{
-                updated = maintenanceJob.addMaintenanceJob(schedule, request);
-            }
+        } else if (request.isRemoveLineMode()) {
+            updated = maintenanceJob.removeMaintenanceJob(schedule, request);
+        } else {
+            updated = maintenanceJob.addMaintenanceJob(schedule, request);
+        }
         solutionManager.update(updated, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, updated);
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.MESSAGE, "Maintenance job added",
-                ApiFields.LINE_ID, request.getLineId()
-        )).build();
+                ApiFields.LINE_ID, request.getLineId())).build();
     }
+
     /**
      * Закрепеляет/открепляет задачи на линииях
      */
@@ -606,8 +599,7 @@ public class PackagingScheduleResource {
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "Line " + line.getId() + " updated successfully."
-        )).build();
+                ApiFields.MESSAGE, "Line " + line.getId() + " updated successfully.")).build();
     }
 
     /**
@@ -631,10 +623,10 @@ public class PackagingScheduleResource {
     }
 
     /**
-     * Сохраняет план в json  определенной версии
+     * Сохраняет план в json определенной версии
      */
     @POST
-    @Consumes({MediaType.APPLICATION_JSON})
+    @Consumes({ MediaType.APPLICATION_JSON })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("saveVersion")
     public Response saveVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
@@ -646,10 +638,9 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        if(bestSolution.getVersion() == null && loadDTO.getVersion() == null){
+        if (bestSolution.getVersion() == null && loadDTO.getVersion() == null) {
             bestSolution.setVersion("V1");
-        }
-        else {
+        } else {
             bestSolution.setVersion(loadDTO.getVersion());
         }
         exportService.export(bestSolution, bestSolution.getVersion());
@@ -657,11 +648,12 @@ public class PackagingScheduleResource {
     }
 
     @PUT
-    @Consumes({MediaType.APPLICATION_JSON})
+    @Consumes({ MediaType.APPLICATION_JSON })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("analyze")
-    public ScoreAnalysis<HardMediumSoftLongScore> analyze(@QueryParam("fetchPolicy") ScoreAnalysisFetchPolicy fetchPolicy,
-                                                          @HeaderParam("X-Session-Id") String sessionId) {
+    public ScoreAnalysis<HardMediumSoftLongScore> analyze(
+            @QueryParam("fetchPolicy") ScoreAnalysisFetchPolicy fetchPolicy,
+            @HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule problem = repository.readForSession(sessionId);
         return fetchPolicy == null ? solutionManager.analyze(problem) : solutionManager.analyze(problem, fetchPolicy);
     }
@@ -669,12 +661,18 @@ public class PackagingScheduleResource {
     // ========== Генерация Excel отчетов ==========
     @POST
     @Path("userLogReport")
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces("application/vnd.malformations-office document.spreadsheet.sheet")
     public Response createUserLogReport(DateRange range) {
 
-        new UserLogReport(range.from(), range.to());
+        UserLogReport report = new UserLogReport();
+        byte[] file = report.createExcelReport(range.from(), range.to());
+        String fileName = generateFileName(range.from(), range.to(), "_UserLogReport.xlsx");
 
-        return Response.ok("UserLog Excel report created successfully").build();
+        return Response.ok(file)
+                .header(
+                        "Content-Disposition",
+                        "attachment; filename=\"" + fileName + "\"")
+                .build();
     }
 
     @POST
@@ -694,22 +692,37 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("cleaningReport")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response createCsvCleaningReport(@HeaderParam("X-Session-Id") String sessionId, DateRange range) {
+    @Produces("application/vnd.malformations-officedocument.spreadsheet.sheet")
+    public Response createCleaningReport(
+            @HeaderParam("X-Session-Id") String sessionId,
+            DateRange range) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
+        CleaningDurationReport report = new CleaningDurationReport();
 
-        new CleaningDurationReport(schedule, range.from(), range.to());
+        byte[] file = report.createExcelReport(
+                schedule,
+                range.from(), range.to());
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
 
-        return Response.ok("Excel report created successfully").build();
+        String fileName = generateFileName(range.from(), range.to(), "_CleaningReport.xlsx");
+
+        return Response.ok(file)
+                .header(
+                        "Content-Disposition",
+                        "attachment; filename=\"" + fileName + "\"")
+                .build();
     }
 
     // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
 
     private String getProblemId(String sessionId) {
         return sessionId != null ? sessionId : "default";
+    }
+
+    private String generateFileName(LocalDate from, LocalDate to, String postfixString) {
+        return from + "—" + to + "_" + postfixString + ".xlsx";
     }
 }
