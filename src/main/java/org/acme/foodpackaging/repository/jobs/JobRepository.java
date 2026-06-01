@@ -3,9 +3,11 @@ package org.acme.foodpackaging.repository.jobs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.dto.oeepev.CleaningRow;
+import org.acme.foodpackaging.dto.oeepev.DelayRow;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
@@ -48,24 +50,52 @@ public class JobRepository {
      * @param to End date (inclusive)
      * @return List of maintenance rows by FId
      */
-    public List<DbMaintenanceRow> getMaintenanceData(LocalDate from, LocalDate to) {
+    public List<MaintenanceRow> getMaintenanceData(LocalDate from, LocalDate to) {
         return jobDBLoader.loadMaintenanceRows(
                 from.atStartOfDay(), to.atStartOfDay()
         );
     }
 
     /**
+     * Загружает карту c fid для cleaning.
+     *
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of delay rows by Event 10
+     */
+
+    public Map<Long, CleaningRow> getCleaningData(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadCleaningRows(
+                from.atStartOfDay(), to.atStartOfDay()
+        );
+    }
+    /**
      * Загружает карту партий с задержкой фасовки по времени.
      *
      * @param from Start date (inclusive)
      * @param to End date (inclusive)
-     * @return Map of delay rows by FId
+     * @return Map of delay rows by Event 10
      */
-    public Map<Long, DbMaintenanceRow> getDelayData(LocalDate from, LocalDate to) {
-        return jobDBLoader.loadDelayDurationRows(
-                from.atStartOfDay(), to.atStartOfDay()
-        );
+    public Map<Long, DelayRow> loadDelayDurationRows(
+            LocalDate from,
+            LocalDate to
+    ) {
+        return jobDBLoader.loadDelayRowsByType(10, from.atStartOfDay(), to.atStartOfDay());
     }
+    /**
+     * Загружает карту партий с задержкой фасовки по времени.
+     *
+     * @param from Start date (inclusive)
+     * @param to End date (inclusive)
+     * @return Map of cleaning delay rows by Event 11
+     */
+    public Map<Long, DelayRow> loadCleaningDelayDurationRows(
+            LocalDate from,
+            LocalDate to
+    ) {
+        return jobDBLoader.loadDelayRowsByType(11, from.atStartOfDay(), to.atStartOfDay());
+    }
+
     /**
      * Загружает карту фактического производства.
      *
@@ -90,9 +120,8 @@ public class JobRepository {
         if (jobs.isEmpty()) {
             return Map.of();
         }
-    
         return jobDBLoader.loadCameraRowMap(jobs);
-    }    
+    }
 }
 
 

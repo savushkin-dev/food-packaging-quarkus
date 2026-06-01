@@ -8,7 +8,6 @@ import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,6 +23,7 @@ class ScheduleUtilsTest {
     private Job job1, job2, job3;
     private PackagingSchedule schedule;
     private Product product;
+    private LocalDateTime now;
 
     @BeforeEach
     void setup() {
@@ -50,6 +50,7 @@ class ScheduleUtilsTest {
         productSpeeds.put("NORMAL", Pair.of(2, 1));
         speeds.put("line1", productSpeeds);
         SpeedCacheUtils.init(speeds);
+        now = LocalDateTime.now();
 
         // Создание линии
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
@@ -236,10 +237,9 @@ class ScheduleUtilsTest {
 
     @Test
     void convertsMapToList() {
-        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
-        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
-        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
-        DbJobRow row3 = new DbJobRow(timestamp, "KMC3", 3, 30, 300.0, timestamp, timestamp, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
+        DbJobRow row1 = new DbJobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        DbJobRow row2 = new DbJobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        DbJobRow row3 = new DbJobRow(now, "KMC3", 3, 30, 300.0, now, now, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
         
         Map<Long, DbJobRow> rows = new HashMap<>();
         rows.put(1L, row1);
@@ -275,9 +275,8 @@ class ScheduleUtilsTest {
 
     @Test
     void returnListWithAllValues() {
-        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
-        DbJobRow row1 = new DbJobRow(timestamp, "KMC1", 1, 10, 100.0, timestamp, timestamp, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
-        DbJobRow row2 = new DbJobRow(timestamp, "KMC2", 2, 20, 200.0, timestamp, timestamp, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        DbJobRow row1 = new DbJobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        DbJobRow row2 = new DbJobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
         
         Map<Long, DbJobRow> rows = Map.of(1L, row1, 2L, row2);
 
@@ -480,5 +479,40 @@ class ScheduleUtilsTest {
         DowntimeData result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertEquals(2, result.lines().size());
+    }
+    // ============================================================
+    // ceilMinutes
+    // ============================================================
+
+    @Test
+    void ceilMinutes_whenDurationIsNull_returnsZero() {
+        assertEquals(0, ceilMinutes(null));
+    }
+
+    @Test
+    void ceilMinutes_whenDurationIsZero_returnsZero() {
+        assertEquals(0, ceilMinutes(Duration.ZERO));
+    }
+
+    @Test
+    void ceilMinutes_whenDurationIsNegative_returnsZero() {
+        assertEquals(0, ceilMinutes(Duration.ofMinutes(-5)));
+    }
+
+    @Test
+    void ceilMinutes_whenLessThanOneMinute_roundsUpToOne() {
+        assertEquals(1, ceilMinutes(Duration.ofSeconds(1)));
+        assertEquals(1, ceilMinutes(Duration.ofSeconds(59)));
+    }
+
+    @Test
+    void ceilMinutes_whenExactMinutes_returnsSameValue() {
+        assertEquals(5, ceilMinutes(Duration.ofMinutes(5)));
+    }
+
+    @Test
+    void ceilMinutes_whenPartialMinute_roundsUp() {
+        assertEquals(2, ceilMinutes(Duration.ofSeconds(61)));
+        assertEquals(3, ceilMinutes(Duration.ofSeconds(125)));
     }
 }

@@ -138,6 +138,12 @@ public class ScheduleUtils {
         jobs.removeIf(job -> job.getLine() == null);
     }
 
+    public static long ceilMinutes(Duration duration) {
+        if (duration == null || duration.isNegative() || duration.isZero()) {
+            return 0;
+        }
+        return (duration.toSeconds() + 59) / 60;
+    }
      /**
      * Преобразует Map в List для удобства работы.
      * 

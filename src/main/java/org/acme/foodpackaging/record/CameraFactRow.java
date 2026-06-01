@@ -1,8 +1,8 @@
 package org.acme.foodpackaging.record;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public record CameraFactRow (
-    Timestamp cameraStart,
-    Timestamp cameraEnd
+    LocalDateTime cameraStart,
+    LocalDateTime cameraEnd
 ) {}

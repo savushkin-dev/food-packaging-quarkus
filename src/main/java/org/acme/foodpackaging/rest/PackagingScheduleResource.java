@@ -23,6 +23,7 @@ import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.service.builder.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.*;
 import org.acme.foodpackaging.persistence.load.DowntimePeriodsService;
 
@@ -211,6 +212,20 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("cleaningDelay")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response cleaningDelayNote(@HeaderParam("X-Session-Id") String sessionId, DelayNoteRequest request) {
+
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        jobService.writeCleaningDelayNote(request, schedule);
+        repository.writeForSession(sessionId, schedule);
+
+        return Response.ok("Note is written").build();
+    }
+
+    @POST
     @Path("alignPlan")
     @Produces(MediaType.APPLICATION_JSON)
     public Response alignPlan(@HeaderParam("X-Session-Id") String sessionId) {
@@ -221,8 +236,27 @@ public class PackagingScheduleResource {
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
-        alignSolutionService.alignByFactDuration(schedule);
-        alignSolutionService.alignLineStartByFact(schedule);
+        alignSolutionService.alignFromScratch(schedule);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
+        return Response.ok(Map.of(
+                ApiFields.STATUS, ApiFields.SUCCESS,
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK
+        )).build();
+    }
+
+    @POST
+    @Path("resetAlign")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response resetAlign(@HeaderParam("X-Session-Id") String sessionId) {
+        PackagingSchedule schedule = repository.readForSession(sessionId);
+
+        if (schedule == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+        alignSolutionService.reset(schedule);
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
         return Response.ok(Map.of(

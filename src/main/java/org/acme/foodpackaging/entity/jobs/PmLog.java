@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.acme.foodpackaging.record.CameraFactRow;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,8 +20,8 @@ import java.util.UUID;
         classes = @ConstructorResult(
                 targetClass = CameraFactRow.class,
                 columns = {
-                        @ColumnResult(name = "DTSTART", type = Timestamp.class),
-                        @ColumnResult(name = "DTEND", type = Timestamp.class)
+                        @ColumnResult(name = "DTSTART", type = LocalDateTime.class),
+                        @ColumnResult(name = "DTEND", type = LocalDateTime.class)
                 }
         )
 )

@@ -14,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -44,10 +43,9 @@ class JobInfoServiceTest {
         product.setEan13("4810268053150");
         product.setMass(2.5);
 
-        Timestamp timestamp = Timestamp.valueOf(NOW);
         DbJobRow dbJobRow = new DbJobRow(
-                timestamp, "KMC001", 111, 100, 2.5,
-                timestamp, timestamp, 60, SNPZ, 1,
+                NOW, "KMC001", 111, 100, 2.5,
+                NOW, NOW, 60, SNPZ, 1,
                 "L1", "Product Name", 19, 100, 0
         );
 
@@ -87,8 +85,7 @@ class JobInfoServiceTest {
         LocalDateTime start = NOW.plusHours(1);
         LocalDateTime end = NOW.plusHours(2);
         CameraFactRow cameraFact = new CameraFactRow(
-                Timestamp.valueOf(start),
-                Timestamp.valueOf(end)
+                start, end
         );
 
         when(pmLogRepository.getCameraFactRow(idBatch)).thenReturn(cameraFact);

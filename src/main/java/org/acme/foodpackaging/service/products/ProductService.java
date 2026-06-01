@@ -53,4 +53,8 @@ public class ProductService {
 
         return productList;
     }
+
+    public void buildProducts(PackagingSchedule schedule){
+       schedule.setProducts(getProductList(schedule));
+    }
 }

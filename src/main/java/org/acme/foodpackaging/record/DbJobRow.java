@@ -1,20 +1,19 @@
 package org.acme.foodpackaging.record;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public record DbJobRow(
         @JsonFormat(timezone = "Europe/Minsk")
-        Timestamp dti,
+        LocalDateTime dti,
         String kmc,
         Integer np,
         Integer quantity,                          // KOLEV
         double mass,
         @JsonFormat(timezone = "Europe/Minsk")
-        Timestamp startProductionDateTime,       // PDTN
+        LocalDateTime startProductionDateTime,       // PDTN
         @JsonFormat(timezone = "Europe/Minsk")
-        Timestamp endDateTime,
+        LocalDateTime endDateTime,
         Integer duration,                      // numeric(7,2)
         Long snpz,                            // numeric(12,0)
         Integer priority,                    // UX

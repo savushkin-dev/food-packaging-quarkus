@@ -2,37 +2,56 @@ package org.acme.foodpackaging.entity.jobs;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import lombok.*;
+import org.acme.foodpackaging.dto.oeepev.CleaningRow;
+import org.acme.foodpackaging.dto.oeepev.DelayRow;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
-
-@Data
-@EqualsAndHashCode(callSuper = false)
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "OEE_PEV", schema = "dbo")
+
 @SqlResultSetMapping(
-        name = "DbMaintenanceRowMapping",
+        name = "MaintenanceRowMapping",
         classes = @ConstructorResult(
-                targetClass = DbMaintenanceRow.class,
+                targetClass = MaintenanceRow.class,
                 columns = {
                         @ColumnResult(name = "F_ID", type = Long.class),
-                        @ColumnResult(name = "F_DEL", type = Short.class),
                         @ColumnResult(name = "KRC", type = String.class),
-                        @ColumnResult(name = "PDTN", type = Timestamp.class),
-                        @ColumnResult(name = "PDTO", type = Timestamp.class),
-                        @ColumnResult(name = "PDUR", type = Integer.class),
-                        @ColumnResult(name = "SNPZ", type = Long.class),
-                        @ColumnResult(name = "EVTYPE", type = Integer.class),
                         @ColumnResult(name = "NOTE", type = String.class),
+                        @ColumnResult(name = "PDTN", type = LocalDateTime.class),
+                        @ColumnResult(name = "PDUR", type = Integer.class),
+                        @ColumnResult(name = "EVTYPE", type = Integer.class)
+                }
+        )
+)
+
+@SqlResultSetMapping(
+        name = "DelayRowMapping",
+        classes = @ConstructorResult(
+                targetClass = DelayRow.class,
+                columns = {
+                        @ColumnResult(name = "F_ID", type = Long.class),
+                        @ColumnResult(name = "SNPZ", type = Long.class),
+                        @ColumnResult(name = "NOTE", type = String.class),
+                        @ColumnResult(name = "PDUR", type = Integer.class)
+                }
+        )
+)
+
+@SqlResultSetMapping(
+        name = "CleaningRowMapping",
+        classes = @ConstructorResult(
+                targetClass = CleaningRow.class,
+                columns = {
+                        @ColumnResult(name = "F_ID", type = Long.class),
+                        @ColumnResult(name = "SNPZ", type = Long.class)
                 }
         )
 )
@@ -50,7 +69,7 @@ public class OeePev extends PanacheEntityBase {
     private String lineId;
 
     @Column(name = "PDTN")
-    private LocalDateTime startProductionDateTime;
+    private LocalDateTime startDateTime;
 
     @Column(name = "PDTO")
     private LocalDateTime endDateTime;
@@ -62,27 +81,11 @@ public class OeePev extends PanacheEntityBase {
     private Long snpz;
 
     @Column(name = "EVTYPE")
-    private Integer maintenanceTypeId;
+    private Integer eventTypeId;
 
     @Column(name = "REASON")
     private Integer reason;
 
     @Column(name = "NOTE")
     private String note;
-
-    @Override
-    public String toString() {
-        return "OeePev{" +
-                "fId=" + fId +
-                ", fDel=" + fDel +
-                ", lineId='" + lineId + '\'' +
-                ", startProductionDateTime=" + startProductionDateTime +
-                ", endDateTime=" + endDateTime +
-                ", duration=" + duration +
-                ", snpz=" + snpz +
-                ", maintenanceTypeId=" + maintenanceTypeId +
-                ", reason=" + reason +
-                ", note='" + note + '\'' +
-                '}';
-    }
 }

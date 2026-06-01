@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -15,8 +15,8 @@ public class DbMaintenanceRow {
    private Long fId;
    private Short fDel;
    private String lineId;
-   private Timestamp startProductionDateTime;
-   private Timestamp endDateTime;
+   private LocalDateTime startProductionDateTime;
+   private LocalDateTime endDateTime;
    private Integer duration;
    private Long snpz;
    private Integer maintenanceTypeId;

@@ -37,7 +37,7 @@ class WorkCalendarTest {
 
         WorkCalendar calendar = new WorkCalendar(startDate);
 
-        assertEquals(startDate.minusDays(2), calendar.getFromDate());
+        assertEquals(startDate.minusDays(3), calendar.getFromDate());
         assertEquals(startDate.plusDays(7), calendar.getToDate());
         assertEquals(startDate.atStartOfDay(), calendar.getMinStartDateTime());
     }

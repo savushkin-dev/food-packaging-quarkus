@@ -51,9 +51,9 @@ public class JobInfoService {
         CameraFactRow cameraFact = pmLogRepository.getCameraFactRow(idBatch);
 
         LocalDateTime start = cameraFact.cameraStart() != null ?
-                cameraFact.cameraStart().toLocalDateTime() : null;
+                cameraFact.cameraStart() : null;
         LocalDateTime end = cameraFact.cameraEnd() != null ?
-                cameraFact.cameraEnd().toLocalDateTime() : null;
+                cameraFact.cameraEnd() : null;
 
         solution.getAllJobsById().get(snpz).setCameraStart(start);
         solution.getAllJobsById().get(snpz).setCameraEnd(end);

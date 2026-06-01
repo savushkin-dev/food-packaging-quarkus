@@ -2,6 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import ai.timefold.solver.core.api.domain.entity.PlanningEntity;
@@ -12,7 +13,8 @@ import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.acme.foodpackaging.dto.DbMaintenanceRow;
+import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 import org.acme.foodpackaging.record.CleaningResult;
 
@@ -21,7 +23,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.MaintenanceJobParams;
 import org.acme.foodpackaging.record.ProductionJobParams;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
@@ -34,7 +35,9 @@ public class Job {
 
     @PlanningId
     private String id;
-    private Long fId;
+    private Long cleaningFId;
+    private Long cleaningDelayFId;
+    private Long delayFId;
     private short fDel;
     private String idBatch;
     private String lineId;
@@ -53,9 +56,10 @@ public class Job {
 
     @JsonSerialize(using = DurationMinutesSerializer.class)
     private Duration delayDuration;
+    @JsonSerialize(using = DurationMinutesSerializer.class)
+    private Duration cleaningDelay;
     private boolean maintenance;
     private boolean handPackaging;
-    private boolean finalDuration;
     private Integer maintenanceTypeId;
 
     private LocalDateTime cameraStart;
@@ -69,6 +73,7 @@ public class Job {
     private Integer emk;
     private String placeFactInfo;
     private String delayNote;
+    private String cleaningDelayNote;
     private Integer placePlan;
 
     private int priority;
@@ -117,7 +122,7 @@ public class Job {
         this.product = params.product();
         this.duration = params.duration();
         this.startProductionDateTime = params.startProductionDateTime();
-        this.endDateTime = params.startProductionDateTime() == null ? null 
+        this.endDateTime = params.startProductionDateTime() == null ? null
                 : params.startProductionDateTime().plus(params.duration());
         this.emk = params.emk();
         this.placePlan = params.placePlan();
@@ -125,45 +130,39 @@ public class Job {
     }
 
     /**
-     * Constructor for maintenance jobs with time constraints.
-     * Package-private - use factory methods for public API.
+     * Creates a regular production job from a database row.
+     *
+     * @param mRow     The database row containing job data
+     * @param mName    Name by event type
+     * @param mProduct The empty product for this job
      */
-   private Job(MaintenanceJobParams params) {
-        this.id = params.id();
-        this.lineId = params.lineId();
-        this.name = params.name();
-        this.maintenanceNote = params.note();
-        this.maintenanceTypeId = params.typeId();
-        this.product = params.product();
-        this.duration = params.duration();
-        this.priority = params.priority() == 0 ? 1 : params.priority() * 10;
-        this.pinned = params.pinned();
-        this.startProductionDateTime = params.startProductionDateTime();
-        this.endDateTime = params.startProductionDateTime() == null ? null 
-                : params.startProductionDateTime().plus(params.duration());
-
+    public Job(MaintenanceRow mRow, String mName, Product mProduct) {
+        this.id = String.valueOf(mRow.fId());
+        this.name = mName;
+        this.lineId = mRow.lineId();
+        this.maintenanceNote = mRow.note();
+        this.maintenanceTypeId = mRow.eventTypeId();
+        this.duration = Duration.ofMinutes(mRow.duration());
+        this.priority = 1;
+        this.pinned = true;
+        this.maintenance = true;
+        this.product = mProduct;
+        this.startProductionDateTime = mRow.startProductionDateTime();
+        this.endDateTime = startProductionDateTime == null ? null
+                : startProductionDateTime.plus(duration);
     }
 
-    /**
-     * Creates a regular production job from a database row.
-     * 
-     * @param row The database row containing job data
-     * @param product The product for this job
-     * @param startProductionDateTime The start production date/time (can be null)
-     * @param nameCleaner Optional function to clean the job name (can be null to use raw name)
-     * @return A new Job instance
-     */
     public static Job fromDbJobRow(
-        DbJobRow row,
-        Product product,
-        LocalDateTime startProductionDateTime,
-        UnaryOperator<String> nameCleaner
-) {
+            DbJobRow row,
+            Product product,
+            LocalDateTime startProductionDateTime,
+            UnaryOperator<String> nameCleaner
+    ) {
         String jobName = row.shortName() != null ? row.shortName().trim() : "";
         if (nameCleaner != null) {
             jobName = nameCleaner.apply(jobName);
         }
-        
+
         return new Job(new ProductionJobParams(
                 String.valueOf(row.snpz()),
                 row.lineId(),
@@ -180,57 +179,6 @@ public class Job {
                 row.placePlan() != null ? row.placePlan() : 0,
                 row.isHandPackaging()
         ));
-    }
-
-    /**
-     * Creates a maintenance job from a database row.
-     * 
-     * @param row The maintenance database row
-     * @param maintenanceName The name of the maintenance type
-     * @param maintenanceProduct The maintenance product
-     * @param startProductionDateTime The start production date/time (can be null)
-     * @return A new maintenance Job instance
-     */
-    public static Job fromDbMaintenanceRow(DbMaintenanceRow row, String maintenanceName, Product maintenanceProduct, LocalDateTime startProductionDateTime) {
-        Job job = new Job(new MaintenanceJobParams(
-                String.valueOf(row.getFId()),
-                row.getLineId(),
-                maintenanceName,
-                row.getMaintenanceNote(),
-                row.getMaintenanceTypeId(),
-                maintenanceProduct,
-                row.getDuration() != null ? Duration.ofMinutes(row.getDuration()) : Duration.ZERO,
-                0, true, startProductionDateTime
-
-        ));
-        job.setFId(row.getFId());
-        job.setMaintenance(true);
-        return job;
-    }
-
-    /**
-     * Creates a maintenance job from a maintenance request.
-     * 
-     * @param id The unique job ID
-     * @param maintenanceTypeId The maintenance type ID
-     * @param maintenanceName The name of the maintenance type
-     * @param maintenanceNote Optional maintenance note
-     * @param maintenanceProduct The maintenance product
-     * @param durationMinutes The duration in minutes
-     * @return A new maintenance Job instance
-     */
-    public static Job createMaintenanceJob(String id, String lineId, Integer maintenanceTypeId, String maintenanceName, String maintenanceNote, Product maintenanceProduct, int durationMinutes) {
-        Job job = new Job(new MaintenanceJobParams(
-                id, lineId,
-                maintenanceName,
-                maintenanceNote,
-                maintenanceTypeId,
-                maintenanceProduct,
-                Duration.ofMinutes(durationMinutes),
-                0, true, null
-        ));
-        job.setMaintenance(true);
-        return job;
     }
 
     /**
@@ -251,6 +199,49 @@ public class Job {
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
     }
 
+    public Job(String id, String name, MaintenanceRequest request, Product mProduct) {
+        this.id = id;
+        this.name = name;
+        this.maintenance = true;
+        this.product = mProduct;
+        this.maintenanceTypeId = request.getMaintenanceTypeId();
+        this.maintenanceNote = request.getMaintenanceNote();
+        this.duration = Duration.ofMinutes(request.getDurationMinutes());
+    }
+
+    public Job(String id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public boolean areEqualsPlanAndFactLines() {
+        if (lineIdFact == null || line == null || line.getId() == null) return false;
+        return Objects.equals(lineIdFact, line.getId());
+    }
+
+    public boolean isNeedUpdateDurationForFact() {
+        if (cameraStart == null) return false;
+
+        return Duration.between(cameraStart, LocalDateTime.now())
+                .compareTo(Duration.ofHours(12)) < 0;
+    }
+
+    public long getCleaningDurationPlan() {
+        if (product == null || product.getCleaningDurations() == null || previousJob == null || previousJob.getProduct() == null
+                || previousJob.getProduct().getCleaningDurations() == null) return 0;
+        CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
+        return meta.isPLRLC()
+                ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
+                : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
+    }
+
+    public long getCleaningDurationFact() {
+        if (cleaningDelay == null) {
+            return getCleaningDurationPlan();
+        }
+        return getCleaningDurationPlan() + cleaningDelay.toMinutes();
+    }
+
     @Override
     public String toString() {
         return id + "(" + (product != null ? product.getName() : "null") + ")";
@@ -261,28 +252,40 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if(isMaintenance() || isFinalDuration()) return duration;
-
-        return calculateDuration();
+        if (isMaintenance()) return duration;
+        return calculateDuration(true);
     }
 
-   private  Duration calculateDuration(){
+    public long getFactDuration() {
+        if (cameraStart == null || cameraEnd == null || !cameraStart.isBefore(cameraEnd)) return 0;
+        return Duration.between(cameraStart, cameraEnd).toMinutes();
+    }
 
-       Integer speed;
-       if (isHandPackaging()) {
-           speed = getHandPackagingSpeed();
-       } else {
-           speed = getSpeed();
-       }
+    public Duration getPlanDuration() {
+        if (isMaintenance()) return duration;
+        return calculateDuration(false);
+    }
 
-       if (speed == null || speed <= 0) {
-           return Duration.ZERO;
-       }
+    private Duration calculateDuration(boolean useDelay) {
 
-       final int IF_CHANGING_PACKAGING = 4;
-       long minutes =  (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+        Integer speed;
+        if (isHandPackaging()) {
+            speed = getHandPackagingSpeed();
+        } else {
+            speed = getSpeed();
+        }
 
-       return Duration.ofMinutes(minutes);
+        if (speed == null || speed <= 0) {
+            return Duration.ZERO;
+        }
+
+        final int IF_CHANGING_PACKAGING = 4;
+        long minutes = (long) Math.ceil(quantity / (double) speed) + IF_CHANGING_PACKAGING;
+        if (useDelay) {
+            final long finalDelay = getDelayDuration() == null ? 0 : getDelayDuration().toMinutes();
+            minutes += finalDelay;
+        }
+        return Duration.ofMinutes(minutes);
     }
 
     @JsonIgnore
@@ -297,11 +300,11 @@ public class Job {
         return SpeedCacheUtils.getHandPackagingSpeed(line.getId(), product.getType());
     }
 
-    public LocalDateTime getPlanEndDateTime(){
+    public LocalDateTime getPlanEndDateTime() {
 
-        if(startProductionDateTime == null) return null;
+        if (startProductionDateTime == null) return null;
 
-        Duration planDuration = calculateDuration();
+        Duration planDuration = calculateDuration(false);
         return startProductionDateTime.plusMinutes(planDuration.toMinutes());
     }
     // ************************************************************************
@@ -327,7 +330,7 @@ public class Job {
     }
 
     private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
-        if (previous == null || startCleaning == null || getProduct() == null || previous.getProduct() == null) {
+        if (previous == null || previous.isMaintenance() || startCleaning == null || getProduct() == null || previous.getProduct() == null) {
             return startCleaning;
         }
         try {
@@ -335,9 +338,13 @@ public class Job {
             Duration cleanupDuration = meta.isPLRLC()
                     ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()))
                     : product.getCleaningDurations().get(previous.getProduct());
+            cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
+            if (cleanupDuration.isNegative()) {
+                cleanupDuration = Duration.ofMinutes(10);
+            }
             return startCleaning.plus(cleanupDuration);
         } catch (IllegalArgumentException | NullPointerException e) {
             return startCleaning;
         }
-    }   
+    }
 }
