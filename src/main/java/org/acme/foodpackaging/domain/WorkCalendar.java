@@ -26,7 +26,7 @@ public class WorkCalendar {
     }
 
     public WorkCalendar(LocalDate currentDate){
-        this.fromDate = currentDate.minusDays(2);
+        this.fromDate = currentDate.minusDays(3);
         this.toDate = currentDate.plusDays(7);
         this.planningDate = currentDate;
         this.minStartDateTime = currentDate.atStartOfDay();
