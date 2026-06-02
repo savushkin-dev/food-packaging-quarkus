@@ -8,6 +8,7 @@ import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.ProductNotFoundException;
+import org.acme.foodpackaging.persistence.load.DeletedLineLoader;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
@@ -39,15 +40,16 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 public class JobService {
 
     @Inject
-    public JobService(LoadDataService loadDataService, 
-        UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService,
-                      JobRefreshService refreshService, LineService lineService) {
+    public JobService(LoadDataService loadDataService,
+                      UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService,
+                      JobRefreshService refreshService, LineService lineService, DeletedLineLoader lineLoader) {
         this.loadDataService = loadDataService;
         this.uploadDataService = uploadDataService;
         this.jobRepository = jobRepository;
         this.jobInfoService = jobInfoService;
         this.refreshService = refreshService;
         this.lineService = lineService;
+        this.lineLoader = lineLoader;
     }
 
     private final LoadDataService loadDataService;
@@ -57,6 +59,7 @@ public class JobService {
     private final JobRefreshService refreshService;
     private final LineService lineService;
     private  Map<Long, Job> allJobsById;
+    private final DeletedLineLoader lineLoader;
 
     public List<DbJobRow> buildJobsOnLines(PackagingSchedule schedule){
         List<DbJobRow> jobRows = initSolutionJobList(schedule);
@@ -130,6 +133,12 @@ public class JobService {
 
             Job job = createJobById(row);
             Line line = findLineById(solution, job.getLineId());
+
+            if(line == null){
+                Line deletedLine = lineLoader.loadDeletedLine(job.getLineId());
+                solution.getLines().add(deletedLine);
+                job.setDuration(Duration.ofMinutes(row.duration()));
+            }
 
             if (line != null) {
                 attachJobToLineIfNeeded(line, jobs.size(), solution.getLines().size());

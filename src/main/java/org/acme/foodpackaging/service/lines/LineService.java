@@ -8,10 +8,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,10 +22,12 @@ public class LineService {
     LoadDataService loadDataService;
    
     public List<Line> getLines() {
-        return loadDataService.getLines().entrySet().stream()
+        return new ArrayList<>(
+                loadDataService.getLines().entrySet().stream()
                 .sorted(lineNameComparator())
                 .map(e -> new Line(e.getKey(), e.getValue()))
-                .toList();
+                .toList()
+        );
     }
 
     private Comparator<Map.Entry<String, String>> lineNameComparator() {

@@ -24,6 +24,7 @@ public class Line {
 
     private LocalDateTime startDateTime;
     private LocalDateTime maxEndTime;
+    private boolean deletedLine;
 
     @JsonIgnore
     @PlanningListVariable
