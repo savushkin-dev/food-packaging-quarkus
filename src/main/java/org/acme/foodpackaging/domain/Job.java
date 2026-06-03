@@ -335,14 +335,11 @@ public class Job {
             return startCleaning;
         }
         try {
-            if(line.isDeletedLine()){
-                Duration cleaningDelay = getCleaningDelay() != null ? getCleaningDelay() : Duration.ZERO;
-                return startCleaning.plus(product.getCleaningDurations().get(previous.getProduct()).plus(cleaningDelay));
+            Duration cleanupDuration = product.getCleaningDurations().get(previous.getProduct());
+            if(!line.isDeletedLine()){
+                CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
+                cleanupDuration =  meta.isPLRLC() ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId())) : cleanupDuration;
             }
-            CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
-            Duration cleanupDuration = meta.isPLRLC()
-                    ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()))
-                    : product.getCleaningDurations().get(previous.getProduct());
             cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
             if (cleanupDuration.isNegative()) {
                 cleanupDuration = Duration.ofMinutes(10);
