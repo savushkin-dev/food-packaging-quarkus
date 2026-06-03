@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.persistence.load;
+package org.acme.foodpackaging.service.lines;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -9,40 +9,52 @@ import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.PlrLcRepository;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 @RequiredArgsConstructor
-public class DeletedLineLoader {
+public class LineActivitySyncService {
 
     private final LineRepository lineRepository;
     private final PlrLcRepository plrLcRepository;
 
-    public void loadDeletedLines(
+    public void syncLines(
             PackagingSchedule schedule,
             LocalDate from,
             LocalDate to) {
+
+        Set<String> activeLineIds = plrLcRepository.loadEquipmentPeriods()
+                .stream()
+                .filter(period -> isActiveInPeriod(period, from, to))
+                .map(EquipmentPeriodDto::lineId)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        syncScheduleLines(schedule, activeLineIds);
+    }
+
+    private void syncScheduleLines(
+            PackagingSchedule schedule,
+            Set<String> activeLineIds) {
+
+        schedule.getLines().removeIf(line ->
+                !activeLineIds.contains(line.getId()));
 
         Set<String> existingLineIds = schedule.getLines()
                 .stream()
                 .map(Line::getId)
                 .collect(Collectors.toSet());
 
-        plrLcRepository.loadEquipmentPeriods()
-                .stream()
-                .filter(period -> isActiveInPeriod(period, from, to))
-                .filter(period -> !existingLineIds.contains(period.lineId()))
-                .forEach(period -> addDeletedLine(
-                        period.lineId(),
-                        schedule,
-                        existingLineIds));
+        activeLineIds.stream()
+                .filter(id -> !existingLineIds.contains(id))
+                .forEach(id -> addLineToSchedule(schedule, id));
     }
 
-    private void addDeletedLine(
-            String lineId,
-            PackagingSchedule schedule,
-            Set<String> existingLineIds) {
+    private void addLineToSchedule(
+            PackagingSchedule schedule, String lineId) {
 
         lineRepository.findLineInfo(lineId)
                 .ifPresent(entity -> {
@@ -53,7 +65,6 @@ public class DeletedLineLoader {
                     line.setDeletedLine(true);
 
                     schedule.getLines().add(line);
-                    existingLineIds.add(line.getId());
                 });
     }
 
@@ -74,4 +85,3 @@ public class DeletedLineLoader {
                 && !period.begin().isAfter(to);
     }
 }
-
