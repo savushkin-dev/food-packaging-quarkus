@@ -3,6 +3,7 @@ package service.builder;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.persistence.load.DeletedLineLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
@@ -38,6 +39,8 @@ class ScheduleBuilderTest {
     ProductService productService;
     @Mock
     AlignSolutionService alignSolutionService;
+    @Mock
+    DeletedLineLoader deletedLineLoader;
 
     @Test
     void buildSchedule() {
@@ -57,6 +60,7 @@ class ScheduleBuilderTest {
         }).when(productService).buildProducts(any());
 
         doNothing().when(alignSolutionService).align(any());
+        doNothing().when(deletedLineLoader).loadDeletedLines(any(), any(), any());
 
         InitData initData = builder.buildSchedule(date);
 

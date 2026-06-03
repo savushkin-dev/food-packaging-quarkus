@@ -252,7 +252,7 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if (isMaintenance() || line == null || line.isDeletedLine()) return duration;
+        if (isMaintenance() || (line != null && line.isDeletedLine())) return duration;
         return calculateDuration(true);
     }
 
@@ -329,44 +329,27 @@ public class Job {
         setEndDateTime(startProduction == null ? null : startProduction.plus(getDuration()));
     }
 
-    private LocalDateTime computeStartProduction(
-            Job previous,
-            LocalDateTime startCleaning) {
-
-        if (previous == null
-                || startCleaning == null
-                || getProduct() == null
-                || previous.getProduct() == null) {
+    private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
+        if (previous == null || previous.isMaintenance() || startCleaning == null
+                || getProduct() == null || previous.getProduct() == null || line == null) {
             return startCleaning;
         }
-
         try {
-            Duration cleanupDuration =
-                    product.getCleaningDurations()
-                            .get(previous.getProduct());
-
-            if (line != null && !line.isDeletedLine()) {
-                CleaningResult meta =
-                        product.getCleaningResults()
-                                .get(previous.getProduct());
-
-                if (meta != null && meta.isPLRLC()) {
-                    Integer cleaning =
-                            CleaningDurationUtils.getLinesCleaning()
-                                    .get(line.getId());
-
-                    if (cleaning != null) {
-                        cleanupDuration = Duration.ofMinutes(cleaning);
-                    }
-                }
+            if(line.isDeletedLine()){
+                return startCleaning.plus(product.getCleaningDurations().get(previous.getProduct()));
             }
-
-            return cleanupDuration == null
-                    ? startCleaning
-                    : startCleaning.plus(cleanupDuration);
-
+            CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
+            Duration cleanupDuration = meta.isPLRLC()
+                    ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()))
+                    : product.getCleaningDurations().get(previous.getProduct());
+            cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
+            if (cleanupDuration.isNegative()) {
+                cleanupDuration = Duration.ofMinutes(10);
+            }
+            return startCleaning.plus(cleanupDuration);
         } catch (IllegalArgumentException | NullPointerException e) {
             return startCleaning;
         }
     }
 }
+

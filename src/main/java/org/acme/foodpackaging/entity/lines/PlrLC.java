@@ -6,6 +6,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -24,16 +27,12 @@ public class PlrLC {
     @Column(name = "CLEAN")
     private Integer additionalCleaning;
 
+    @Column(name = "DTBEG")
+    private LocalDate dtBegin;
+
+    @Column(name = "DTEND")
+    private LocalDate dtEnd;
+
     @Column(name = "F_DEL")
     private Integer fDel;
-
-    @Override
-    public String toString() {
-        return "PlrLC{" +
-                "id=" + id +
-                ", lineId='" + lineId + '\'' +
-                ", additionalCleaning=" + additionalCleaning +
-                ", fDel=" + fDel +
-                '}';
-    }
 }
