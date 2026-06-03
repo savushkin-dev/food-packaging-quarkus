@@ -336,7 +336,8 @@ public class Job {
         }
         try {
             if(line.isDeletedLine()){
-                return startCleaning.plus(product.getCleaningDurations().get(previous.getProduct()));
+                Duration cleaningDelay = getCleaningDelay() != null ? getCleaningDelay() : Duration.ZERO;
+                return startCleaning.plus(product.getCleaningDurations().get(previous.getProduct()).plus(cleaningDelay));
             }
             CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
             Duration cleanupDuration = meta.isPLRLC()
