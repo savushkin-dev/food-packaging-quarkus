@@ -69,8 +69,13 @@ class AlignCleaningServiceTest {
     void alignCleanings_shouldCalculateCleaningDelay() {
         cleaningService.alignCleanings(solution);
 
-        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
+        LocalDateTime drawCleaningStart = solution.getJobs().getFirst().getCameraEnd();
+        LocalDateTime drawCleaningEnd = solution.getJobs().getLast().getCameraStart();
+
         assertNull(solution.getJobs().getFirst().getCleaningDelay());
+        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
+        assertEquals(drawCleaningStart, solution.getJobs().getLast().getDrawCleaningStart());
+        assertEquals(drawCleaningEnd, solution.getJobs().getLast().getDrawCleaningEnd());
     }
 
     @Test
@@ -106,11 +111,17 @@ class AlignCleaningServiceTest {
         m2.setMaintenanceNote("Обслуживание");
         buildSolutionWithNewJobs(j1, m1, m2, j2);
 
+        LocalDateTime drawCleaningStart = solution.getJobs().getFirst().getCameraEnd();
+        LocalDateTime drawCleaningEnd = solution.getJobs().getLast().getCameraStart();
+
         cleaningService.alignCleanings(solution);
         assertEquals(2, solution.getJobs().size());
         assertEquals(2, solution.getDeletedMaintenance().size());
         assertEquals(m2.getMaintenanceNote(), solution.getJobs().getLast().getCleaningDelayNote());
         assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
+
+        assertEquals(drawCleaningStart, solution.getJobs().getLast().getDrawCleaningStart());
+        assertEquals(drawCleaningEnd, solution.getJobs().getLast().getDrawCleaningEnd());
     }
 
     @Test
@@ -163,6 +174,8 @@ class AlignCleaningServiceTest {
                 solution.getJobs().getLast().getStartProductionDateTime());
 
         assertEquals(Duration.ofMinutes(20), solution.getJobs().getLast().getCleaningDelay());
+        assertNull(solution.getJobs().getLast().getDrawCleaningStart());
+        assertNull(solution.getJobs().getLast().getDrawCleaningEnd());
     }
 
     @Test

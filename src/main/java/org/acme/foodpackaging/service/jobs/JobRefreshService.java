@@ -51,7 +51,6 @@ public class JobRefreshService {
     private void addJobIfAbsent(Long snpz, boolean isHandPackaging, PackagingSchedule solution) {
 
         Job job = solution.getAllJobsById().get(snpz);
-
         if (job == null) {
             return;
         }

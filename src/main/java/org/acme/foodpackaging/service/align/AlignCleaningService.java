@@ -93,9 +93,7 @@ public class AlignCleaningService {
                 continue;
             }
 
-
             int chainEndIndex = findChainEndIndex(jobs, i + 1);
-
             if (chainEndIndex > i + 1) {
 
                 List<Job> chain = new ArrayList<>(
@@ -107,10 +105,11 @@ public class AlignCleaningService {
                     long cleaningMinutesFact = calculateFactCleaning(curr, chain.getFirst());
 
                     handleCleaningDelayForChain(
-                            curr, cleaningMinutesFact, chain, line, jobs, solution
+                            curr, next.getCameraStart(), cleaningMinutesFact, chain, line, jobs, solution
                     );
                 }
                 i = chainEndIndex - 1;
+
             } else {
                 i++;
             }
@@ -118,7 +117,7 @@ public class AlignCleaningService {
     }
 
     private void handleCleaningDelayForChain(
-            Job curr,
+            Job curr, LocalDateTime nextStart,
             long cleaningMinutesFact,
             List<Job> chain,
             Line line,
@@ -145,7 +144,6 @@ public class AlignCleaningService {
             alignLineByStartDateTime(line, jobs.getFirst());
         }
 
-
         if (candidate.getPreviousJob() == null) {
             return;
         }
@@ -153,7 +151,6 @@ public class AlignCleaningService {
         if (isPreviousWithoutFact(candidate)) {
 
             alignLineByStartDateTime(line, jobs.getFirst());
-
             chain.sort(Comparator.comparing(
                     Job::getCameraStart,
                     Comparator.nullsLast(Comparator.naturalOrder())
@@ -170,7 +167,7 @@ public class AlignCleaningService {
                 || !isPlanProductsValid(curr, candidate)) {
             return;
         }
-        applyCleaningDelay(candidate, cleaningMinutesFact);
+        applyCleaningDelay(candidate, curr.getCameraEnd(), nextStart, cleaningMinutesFact);
     }
 
     private boolean tryRemoveMaintenanceBefore(
@@ -273,9 +270,11 @@ public class AlignCleaningService {
         return k;
     }
 
-    private void applyCleaningDelay(Job job, long cleaningMinutesFact) {
+    private void applyCleaningDelay(Job job, LocalDateTime drawStart, LocalDateTime drawEnd, long cleaningMinutesFact) {
         long cleaningMinutesPlan = job.getCleaningDurationPlan();
         long delay = cleaningMinutesFact - cleaningMinutesPlan;
+        job.setDrawCleaningStart(drawStart);
+        job.setDrawCleaningEnd(drawEnd);
         job.setCleaningDelay(Duration.ofMinutes(delay));
 
     }

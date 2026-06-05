@@ -70,6 +70,8 @@ public class Job {
     private LocalDateTime minStartTime;
     private LocalDateTime idealEndTime;
     private LocalDateTime maxEndTime;
+    private LocalDateTime drawCleaningStart;
+    private LocalDateTime drawCleaningEnd;
     private Integer emk;
     private String placeFactInfo;
     private String delayNote;
