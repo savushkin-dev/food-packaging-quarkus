@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.acme.foodpackaging.domain.Job;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Getter
