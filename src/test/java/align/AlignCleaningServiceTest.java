@@ -171,7 +171,7 @@ class AlignCleaningServiceTest {
         buildSolutionWithNewJobs(j1, j3, j2);
         cleaningService.alignCleanings(solution);
 
-        assertEquals(LocalDateTime.of(2026, 4, 24, 14, 0),
+        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 14, 0),
                 solution.getJobs().getLast().getStartProductionDateTime());
 
         assertEquals(Duration.ofMinutes(20), solution.getJobs().getLast().getCleaningDelay());

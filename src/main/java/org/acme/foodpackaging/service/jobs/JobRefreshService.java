@@ -103,7 +103,7 @@ public class JobRefreshService {
      */
     public void refreshStaleCameraEndFromPmLog(PackagingSchedule solution) {
 
-        LocalDateTime threshold = LocalDateTime.now().minusHours(24);
+        LocalDateTime threshold = LocalDateTime.now(ZoneId.systemDefault()).minusHours(24);
 
         List<Job> staleCameraJobs = solution.getJobs().stream()
                 .filter(j -> j.getIdBatch() != null)
