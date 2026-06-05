@@ -229,17 +229,19 @@ public class AlignCleaningService {
     }
 
     private void applyDelayWithoutFact(
-            Job candidate,
-            LocalDateTime firstStart) {
-        if (firstStart == null
-                || candidate.getStartProductionDateTime() == null) {
-            return;
-        }
+        Job candidate,
+        LocalDateTime firstStart) {
 
-        long delay = Duration.between(
-                candidate.getStartProductionDateTime(),
-                firstStart).toMinutes();
+    if (firstStart == null
+            || candidate.getStartProductionDateTime() == null) {
+        return;
+    }
 
+    ZoneId zone = ZoneId.systemDefault();
+    long delay = Duration.between(
+            candidate.getStartProductionDateTime().atZone(zone),
+            firstStart.atZone(zone)).toMinutes();
+            
         candidate.setCleaningDelay(Duration.ofMinutes(delay));
     }
 

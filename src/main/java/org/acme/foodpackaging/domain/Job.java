@@ -3,6 +3,7 @@ package org.acme.foodpackaging.domain;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -221,14 +222,6 @@ public class Job {
         if (lineIdFact == null || line == null || line.getId() == null)
             return false;
         return Objects.equals(lineIdFact, line.getId());
-    }
-
-    public boolean isNeedUpdateDurationForFact() {
-        if (cameraStart == null)
-            return false;
-
-        return Duration.between(cameraStart, LocalDateTime.now())
-                .compareTo(Duration.ofHours(12)) < 0;
     }
 
     public long getCleaningDurationPlan() {

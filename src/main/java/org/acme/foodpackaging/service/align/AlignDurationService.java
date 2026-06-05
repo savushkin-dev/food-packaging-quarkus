@@ -30,7 +30,7 @@ public class AlignDurationService {
     private void  fixDurationByFact(Line line) {
 
         for (Job job : line.getJobs()) {
-            if((job.getDelayDuration() != null && !job.isNeedUpdateDurationForFact())
+            if((job.getDelayDuration() != null)
                     || job.getFactDuration() == 0 || !job.areEqualsPlanAndFactLines()) continue;
 
             long factMinutes = job.getFactDuration();
