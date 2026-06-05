@@ -2,6 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -158,8 +159,7 @@ public class Job {
             DbJobRow row,
             Product product,
             LocalDateTime startProductionDateTime,
-            UnaryOperator<String> nameCleaner
-    ) {
+            UnaryOperator<String> nameCleaner) {
         String jobName = row.shortName() != null ? row.shortName().trim() : "";
         if (nameCleaner != null) {
             jobName = nameCleaner.apply(jobName);
@@ -179,18 +179,19 @@ public class Job {
                 startProductionDateTime,
                 row.emk() != null ? row.emk() : 0,
                 row.placePlan() != null ? row.placePlan() : 0,
-                row.isHandPackaging()
-        ));
+                row.isHandPackaging()));
     }
 
     /**
-     * Creates a job with time constraints (used for maintenance jobs with scheduling constraints).
-     * Public for backward compatibility with tests - prefer other factory methods for production code.
+     * Creates a job with time constraints (used for maintenance jobs with
+     * scheduling constraints).
+     * Public for backward compatibility with tests - prefer other factory methods
+     * for production code.
      * This method is kept for test compatibility.
      */
 
     public Job(String id, String name, Product product, Duration duration,
-               int priority, boolean pinned, LocalDateTime startProductionDateTime) {
+            int priority, boolean pinned, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
         this.product = product;
@@ -217,20 +218,24 @@ public class Job {
     }
 
     public boolean areEqualsPlanAndFactLines() {
-        if (lineIdFact == null || line == null || line.getId() == null) return false;
+        if (lineIdFact == null || line == null || line.getId() == null)
+            return false;
         return Objects.equals(lineIdFact, line.getId());
     }
 
     public boolean isNeedUpdateDurationForFact() {
-        if (cameraStart == null) return false;
+        if (cameraStart == null)
+            return false;
 
         return Duration.between(cameraStart, LocalDateTime.now())
                 .compareTo(Duration.ofHours(12)) < 0;
     }
 
     public long getCleaningDurationPlan() {
-        if (product == null || product.getCleaningDurations() == null || previousJob == null || previousJob.getProduct() == null
-                || previousJob.getProduct().getCleaningDurations() == null) return 0;
+        if (product == null || product.getCleaningDurations() == null || previousJob == null
+                || previousJob.getProduct() == null
+                || previousJob.getProduct().getCleaningDurations() == null)
+            return 0;
         CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
         return meta.isPLRLC()
                 ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
@@ -254,17 +259,26 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if (isMaintenance()) return duration;
+        if (isMaintenance())
+            return duration;
         return calculateDuration(true);
     }
 
     public long getFactDuration() {
-        if (cameraStart == null || cameraEnd == null || !cameraStart.isBefore(cameraEnd)) return 0;
-        return Duration.between(cameraStart, cameraEnd).toMinutes();
+        if (cameraStart == null || cameraEnd == null || !cameraStart.isBefore(cameraEnd)) {
+            return 0;
+        }
+
+        ZoneId zone = ZoneId.systemDefault();
+
+        return Duration.between(
+                cameraStart.atZone(zone),
+                cameraEnd.atZone(zone)).toMinutes();
     }
 
     public Duration getPlanDuration() {
-        if (isMaintenance()) return duration;
+        if (isMaintenance())
+            return duration;
         return calculateDuration(false);
     }
 
@@ -292,19 +306,22 @@ public class Job {
 
     @JsonIgnore
     public Integer getSpeed() {
-        if (line == null || product == null || product.getType() == null) return null;
+        if (line == null || product == null || product.getType() == null)
+            return null;
         return SpeedCacheUtils.getSpeed(line.getId(), product.getType());
     }
 
     @JsonIgnore
     public Integer getHandPackagingSpeed() {
-        if (line == null || product == null || product.getType() == null) return null;
+        if (line == null || product == null || product.getType() == null)
+            return null;
         return SpeedCacheUtils.getHandPackagingSpeed(line.getId(), product.getType());
     }
 
     public LocalDateTime getPlanEndDateTime() {
 
-        if (startProductionDateTime == null) return null;
+        if (startProductionDateTime == null)
+            return null;
 
         Duration planDuration = calculateDuration(false);
         return startProductionDateTime.plusMinutes(planDuration.toMinutes());
@@ -332,7 +349,8 @@ public class Job {
     }
 
     private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
-        if (previous == null || previous.isMaintenance() || startCleaning == null || getProduct() == null || previous.getProduct() == null) {
+        if (previous == null || previous.isMaintenance() || startCleaning == null || getProduct() == null
+                || previous.getProduct() == null) {
             return startCleaning;
         }
         try {
