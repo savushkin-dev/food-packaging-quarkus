@@ -125,8 +125,7 @@ public class JobRefreshService {
                     && differsMoreThan(job.getCameraEnd(), camera.cameraEnd())) {
                 job.setCameraEnd(camera.cameraEnd());
                 msLogRows.add(new MsLogInsertRow(
-                        job, END_CAMERA_EVENT_TYPE,
-                        Timestamp.valueOf(camera.cameraEnd())));
+                        job, END_CAMERA_EVENT_TYPE, camera.cameraEnd()));
             }
         }
 
