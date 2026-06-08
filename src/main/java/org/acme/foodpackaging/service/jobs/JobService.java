@@ -124,10 +124,6 @@ public class JobService {
 
         for (DbJobRow row : jobRows.values()) {
 
-            if (row.lineId() == null) {
-                continue;
-            }
-
             Job job = createJobById(row);
             Line line = findLineById(solution, job.getLineId());
 
@@ -271,7 +267,7 @@ public class JobService {
             }
 
         Job job = null;
-        if(row.lineId()!=null) {
+        if(row.lineId() != null) {
             job = Job.fromDbJobRow(row, product, row.startProductionDateTime(),
                     ScheduleUtils::nameCleaner);
         }
