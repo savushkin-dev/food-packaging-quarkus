@@ -6,6 +6,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.persistence.load.CameraDataLoader;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
@@ -26,6 +27,9 @@ public class JobRepository {
 
     @Inject
     JobDBLoader jobDBLoader;
+
+    @Inject
+    CameraDataLoader cameraDataLoader;
 
     @ConfigProperty(name = "ksk")
     String ksk;
@@ -120,7 +124,7 @@ public class JobRepository {
         if (jobs.isEmpty()) {
             return Map.of();
         }
-        return jobDBLoader.loadCameraRowMap(jobs);
+        return cameraDataLoader.loadCameraRowMap(jobs);
     }
 }
 
