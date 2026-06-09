@@ -109,8 +109,7 @@ public class AlignCleaningService {
                     long cleaningMinutesFact = calculateFactCleaning(curr, chain.getFirst());
 
                     handleCleaningDelayForChain(
-                            curr, cleaningMinutesFact, chain, line, jobs
-                    );
+                            curr, next.getCameraStart(), cleaningMinutesFact, chain, line, jobs);
                 }
                 i = chainEndIndex - 1;
 
@@ -125,9 +124,7 @@ public class AlignCleaningService {
             long cleaningMinutesFact,
             List<Job> chain,
             Line line,
-            List<Job> jobs,
-            PackagingSchedule solution
-    ) {
+            List<Job> jobs) {
 
         chain.sort(Comparator.comparing(
                 Job::getStartProductionDateTime,
@@ -137,16 +134,6 @@ public class AlignCleaningService {
         if (candidate.getCleaningDelay() != null) {
             return;
         }
-
-        boolean maintenanceRemoved = tryRemoveMaintenanceBefore(
-                candidate, line, solution
-        );
-
-        if (maintenanceRemoved) {
-            fixLineJobs(line);
-            alignLineByStartDateTime(line, jobs.getFirst());
-        }
-
 
         if (candidate.getPreviousJob() == null) {
             return;
@@ -172,53 +159,6 @@ public class AlignCleaningService {
         applyCleaningDelay(candidate, curr.getCameraEnd(), nextStart, cleaningMinutesFact);
     }
 
-    private boolean tryRemoveMaintenanceBefore(
-            Job candidate,
-            Line line,
-            PackagingSchedule solution
-    ) {
-        if (candidate.getPreviousJob() == null
-                || !candidate.getPreviousJob().isMaintenance()) {
-            return false;
-        }
-
-        int index = line.getJobs().indexOf(candidate);
-        String mNote = removeMaintenanceBefore(line.getJobs(), index, solution);
-        candidate.setCleaningDelayNote(mNote);
-        return true;
-    }
-
-    private String removeMaintenanceBefore(
-            List<Job> jobs,
-            int index,
-            PackagingSchedule solution
-    ) {
-        int i = index - 1;
-        StringBuilder deletedNotes = new StringBuilder();
-
-        while (i >= 0) {
-            Job job = jobs.get(i);
-
-            if (!job.isMaintenance()) {
-                break;
-            }
-
-            if (job.getMaintenanceNote() != null) {
-                if (!deletedNotes.isEmpty()) {
-                    deletedNotes.append(", ");
-                }
-                deletedNotes.append(job.getMaintenanceNote());
-            }
-
-            job.setFDel((short) 1);
-            solution.getDeletedMaintenance().add(job);
-            jobs.remove(i);
-            i--;
-        }
-        solution.getJobs().removeIf(job -> job.getFDel() == 1);
-        return deletedNotes.toString();
-    }
-
     boolean isPlanProductsValid(Job curr, Job candidate) {
         return curr.getProduct().equals(
                 candidate.getPreviousJob().getProduct());
@@ -235,19 +175,19 @@ public class AlignCleaningService {
     }
 
     private void applyDelayWithoutFact(
-        Job candidate,
-        LocalDateTime firstStart) {
+            Job candidate,
+            LocalDateTime firstStart) {
 
-    if (firstStart == null
-            || candidate.getStartProductionDateTime() == null) {
-        return;
-    }
+        if (firstStart == null
+                || candidate.getStartProductionDateTime() == null) {
+            return;
+        }
 
-    ZoneId zone = ZoneId.systemDefault();
-    long delay = Duration.between(
-            candidate.getStartProductionDateTime().atZone(zone),
-            firstStart.atZone(zone)).toMinutes();
-            
+        ZoneId zone = ZoneId.systemDefault();
+        long delay = Duration.between(
+                candidate.getStartProductionDateTime().atZone(zone),
+                firstStart.atZone(zone)).toMinutes();
+
         candidate.setCleaningDelay(Duration.ofMinutes(delay));
     }
 
