@@ -13,6 +13,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 @ApplicationScoped
 public class PmLogRepository {
@@ -23,19 +26,15 @@ public class PmLogRepository {
     @Inject
     public PmLogRepository(
             @DataSource("prommark") AgroalDataSource dataSource,
-            SqlQueries sqlQueries
-    ) {
+            SqlQueries sqlQueries) {
         this.dataSource = dataSource;
         this.sqlQueries = sqlQueries;
     }
 
-    public long countByIdBatch(String idBatch) throws CameraDataReadException {
+    public long countByIdBatch(String idBatch) {
 
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement ps =
-                        connection.prepareStatement(sqlQueries.countPmLogByBatch())
-        ) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sqlQueries.countPmLogByBatch())) {
             ps.setString(1, idBatch);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -45,19 +44,14 @@ public class PmLogRepository {
         } catch (SQLException e) {
             throw new CameraDataReadException(
                     "Failed to count PM_LOG for batch " + idBatch,
-                    e
-            );
+                    e);
         }
     }
 
-    public CameraFactRow getCameraFactRow(String idBatch)
-            throws CameraDataReadException {
+    public CameraFactRow getCameraFactRow(String idBatch) {
 
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement ps =
-                        connection.prepareStatement(sqlQueries.loadCameraFact())
-        ) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sqlQueries.loadCameraFact())) {
             ps.setString(1, idBatch);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -68,47 +62,38 @@ public class PmLogRepository {
 
                 return new CameraFactRow(
                         rs.getObject("DTSTART", LocalDateTime.class),
-                        rs.getObject("DTEND", LocalDateTime.class)
-                );
+                        rs.getObject("DTEND", LocalDateTime.class));
             }
 
         } catch (SQLException e) {
             throw new CameraDataReadException(
                     "Failed to load camera fact for batch " + idBatch,
-                    e
-            );
+                    e);
         }
     }
 
-    public Iterable<LocalDateTime> loadMarkingDts(String idBatch)
-            throws CameraDataReadException {
+    public Stream<LocalDateTime> streamMarkingDtsByIdBatch(String idBatch) {
 
-        try (
-                Connection connection = dataSource.getConnection();
-                PreparedStatement ps =
-                        connection.prepareStatement(sqlQueries.loadPmLogMarkingRowsByBatch())
-        ) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sqlQueries.loadPmLogMarkingRowsByBatch())) {
             ps.setString(1, idBatch);
 
-            try (ResultSet rs = ps.executeQuery()) {
+            ResultSet rs = ps.executeQuery();
+            List<LocalDateTime> result = new ArrayList<>();
 
-                var result = new java.util.ArrayList<LocalDateTime>();
-
-                while (rs.next()) {
-                    LocalDateTime dts = rs.getObject("DTS", LocalDateTime.class);
-                    if (dts != null) {
-                        result.add(dts);
-                    }
+            while (rs.next()) {
+                LocalDateTime dts = rs.getObject("DTS", LocalDateTime.class);
+                if (dts != null) {
+                    result.add(dts);
                 }
-
-                return result;
             }
+
+            return result.stream();
 
         } catch (SQLException e) {
             throw new CameraDataReadException(
                     "Failed to load marking rows for batch " + idBatch,
-                    e
-            );
+                    e);
         }
     }
 }
