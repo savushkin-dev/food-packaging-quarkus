@@ -120,8 +120,8 @@ public class UploadDataService {
             ps.setString(3, row.getLineIdFact());
             ps.setInt(4, row.getNp());
             ps.setInt(5, row.getEventType());
-            ps.setTimestamp(6, row.getDtv());
-            ps.setTimestamp(7, row.getEventTime());
+            ps.setObject(6, row.getDtv());
+            ps.setObject(7, row.getEventTime());
 
             ps.addBatch();
         }
@@ -145,7 +145,7 @@ public class UploadDataService {
              PreparedStatement ps = conn.prepareStatement(queries.updateCameraEndEvent())) {
 
             for (MsLogInsertRow row : rows) {
-                ps.setTimestamp(1, row.getEventTime());
+                ps.setObject(1, row.getEventTime());
                 ps.setString(2, row.getIdBatch());
                 ps.setInt(3, row.getEventType());
                 ps.addBatch();

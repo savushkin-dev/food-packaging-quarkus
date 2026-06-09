@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.*;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
@@ -37,13 +38,13 @@ class AlignCleaningServiceTest {
     void setUp() {
         initSpeedCache();
 
-        LocalDateTime lineStart = LocalDateTime.of(2026, 4, 24, 10, 0);
+        LocalDateTime lineStart = LocalDateTime.of(2026, Month.APRIL, 24, 10, 0);
 
-        LocalDateTime j1CameraStart = LocalDateTime.of(2026, 4, 24, 12, 0);
-        LocalDateTime j1CameraEnd = LocalDateTime.of(2026, 4, 24, 13, 0);
+        LocalDateTime j1CameraStart = LocalDateTime.of(2026, Month.APRIL, 24, 12, 0);
+        LocalDateTime j1CameraEnd = LocalDateTime.of(2026, Month.APRIL, 24, 13, 0);
 
-        LocalDateTime j2CameraStart = LocalDateTime.of(2026, 4, 24, 14, 0);
-        LocalDateTime j2CameraEnd = LocalDateTime.of(2026, 4, 24, 15, 0);
+        LocalDateTime j2CameraStart = LocalDateTime.of(2026, Month.APRIL, 24, 14, 0);
+        LocalDateTime j2CameraEnd = LocalDateTime.of(2026, Month.APRIL, 24, 15, 0);
 
         Job j1 = buildTestJob("J1", j1CameraStart, j1CameraEnd);
         Job j2 = buildTestJob("J2", j2CameraStart, j2CameraEnd);
@@ -69,8 +70,13 @@ class AlignCleaningServiceTest {
     void alignCleanings_shouldCalculateCleaningDelay() {
         cleaningService.alignCleanings(solution);
 
-        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
+        LocalDateTime drawCleaningStart = solution.getJobs().getFirst().getCameraEnd();
+        LocalDateTime drawCleaningEnd = solution.getJobs().getLast().getCameraStart();
+
         assertNull(solution.getJobs().getFirst().getCleaningDelay());
+        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
+        assertEquals(drawCleaningStart, solution.getJobs().getLast().getDrawCleaningStart());
+        assertEquals(drawCleaningEnd, solution.getJobs().getLast().getDrawCleaningEnd());
     }
 
     @Test
@@ -81,9 +87,9 @@ class AlignCleaningServiceTest {
         solution.getLines().add(emptyLine);
         cleaningService.alignCleanings(solution);
 
-        assertEquals(LocalDateTime.of(2026, 4, 24, 12, 0),
+        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 12, 0),
                 solution.getLines().getFirst().getStartDateTime());
-        assertEquals(LocalDateTime.of(2026, 4, 24, 12, 0),
+        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 12, 0),
                 solution.getLines().getLast().getStartDateTime());
     }
 
@@ -108,10 +114,12 @@ class AlignCleaningServiceTest {
         buildSolutionWithNewJobs(j1, j3, j2);
         cleaningService.alignCleanings(solution);
 
-        assertEquals(LocalDateTime.of(2026, 4, 24, 14, 0),
+        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 14, 0),
                 solution.getJobs().getLast().getStartProductionDateTime());
 
         assertEquals(Duration.ofMinutes(20), solution.getJobs().getLast().getCleaningDelay());
+        assertNull(solution.getJobs().getLast().getDrawCleaningStart());
+        assertNull(solution.getJobs().getLast().getDrawCleaningEnd());
     }
 
     @Test
@@ -123,7 +131,7 @@ class AlignCleaningServiceTest {
     void alignCleanings_whenLineJobListIsNull() {
         solution.getLines().getFirst().setJobs(null);
         cleaningService.alignCleanings(solution);
-        assertNull( solution.getJobs().getLast().getCleaningDelay());
+        assertNull(solution.getJobs().getLast().getCleaningDelay());
     }
 
     @Test
@@ -141,8 +149,8 @@ class AlignCleaningServiceTest {
         solution.getJobs().getLast().setCameraEnd(null);
 
         cleaningService.alignCleanings(solution);
-       assertEquals(LocalDateTime.of(2026,4, 24, 10,0),
-               solution.getLines().getFirst().getStartDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 10, 0),
+                solution.getLines().getFirst().getStartDateTime());
     }
 
     @Test
@@ -168,7 +176,7 @@ class AlignCleaningServiceTest {
 
     @Test
     void alignCleanings_theSameProduct() {
-       solution.getJobs().getLast().setProduct(solution.getJobs().getFirst().getProduct());
+        solution.getJobs().getLast().setProduct(solution.getJobs().getFirst().getProduct());
 
         cleaningService.alignCleanings(solution);
         assertNull(solution.getJobs().getLast().getCleaningDelay());
@@ -202,8 +210,7 @@ class AlignCleaningServiceTest {
     void initSpeedCache() {
         SpeedCacheUtils.init(Map.of(
                 "line1", Map.of("TYPE_A", Pair.of(100, 50), "10003",
-                        Pair.of(100, 50), "TYPE_B", Pair.of(100, 80))
-        ));
+                        Pair.of(100, 50), "TYPE_B", Pair.of(100, 80))));
     }
 
     private void setCleaningResults(List<Product> products) {
@@ -249,8 +256,7 @@ class AlignCleaningServiceTest {
                 p1, Duration.ZERO,
                 p3, Duration.ofMinutes(20),
                 mProduct, Duration.ZERO,
-                p2, Duration.ofMinutes(30)
-        );
+                p2, Duration.ofMinutes(30));
 
         Map<Product, Duration> cleaningDurationsP2 = Map.of(
                 p2, Duration.ZERO,
@@ -263,14 +269,12 @@ class AlignCleaningServiceTest {
         Map<Product, Duration> cleaningDurationsMp = Map.of(
                 p2, Duration.ZERO,
                 mProduct, Duration.ZERO,
-                p1, Duration.ZERO
-        );
+                p1, Duration.ZERO);
 
         Map<Product, Duration> cleaningDurationsP3 = Map.of(
                 p1, Duration.ofMinutes(20),
                 p2, Duration.ofMinutes(20),
-                mProduct, Duration.ZERO
-        );
+                mProduct, Duration.ZERO);
 
         p1.setCleaningDurations(cleaningDurationsP1);
         p2.setCleaningDurations(cleaningDurationsP2);

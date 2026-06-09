@@ -8,6 +8,7 @@ import org.acme.foodpackaging.domain.Product;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -69,7 +70,11 @@ public class AlignCleaningService {
             previous = previous.getPreviousJob();
         }
 
-        long shift = Duration.between(planDateTime, firstFact.getCameraStart()).toMinutes();
+        ZoneId zone = ZoneId.systemDefault();
+
+        long shift = Duration.between(
+                planDateTime.atZone(zone),
+                firstFact.getCameraStart().atZone(zone)).toMinutes();
         if (line.getStartDateTime() != null) {
             line.setStartDateTime(line.getStartDateTime().plusMinutes(shift));
         }
@@ -97,18 +102,17 @@ public class AlignCleaningService {
             if (chainEndIndex > i + 1) {
 
                 List<Job> chain = new ArrayList<>(
-                        jobs.subList(i + 1, chainEndIndex)
-                );
+                        jobs.subList(i + 1, chainEndIndex));
 
                 if (!chain.isEmpty()) {
                     chain.sort(Comparator.comparing(Job::getCameraStart));
                     long cleaningMinutesFact = calculateFactCleaning(curr, chain.getFirst());
 
                     handleCleaningDelayForChain(
-                            curr, cleaningMinutesFact, chain, line, jobs
-                    );
+                            curr, next.getCameraStart(), cleaningMinutesFact, chain, line, jobs);
                 }
                 i = chainEndIndex - 1;
+
             } else {
                 i++;
             }
@@ -116,17 +120,15 @@ public class AlignCleaningService {
     }
 
     private void handleCleaningDelayForChain(
-            Job curr,
+            Job curr, LocalDateTime nextStart,
             long cleaningMinutesFact,
             List<Job> chain,
             Line line,
-            List<Job> jobs
-    ) {
+            List<Job> jobs) {
 
         chain.sort(Comparator.comparing(
                 Job::getStartProductionDateTime,
-                Comparator.nullsLast(Comparator.naturalOrder())
-        ));
+                Comparator.nullsLast(Comparator.naturalOrder())));
 
         Job candidate = chain.getFirst();
         if (candidate.getCleaningDelay() != null) {
@@ -140,16 +142,13 @@ public class AlignCleaningService {
         if (isPreviousWithoutFact(candidate)) {
 
             alignLineByStartDateTime(line, jobs.getFirst());
-
             chain.sort(Comparator.comparing(
                     Job::getCameraStart,
-                    Comparator.nullsLast(Comparator.naturalOrder())
-            ));
+                    Comparator.nullsLast(Comparator.naturalOrder())));
 
             applyDelayWithoutFact(
                     candidate,
-                    chain.getFirst().getCameraStart()
-            );
+                    chain.getFirst().getCameraStart());
             return;
         }
 
@@ -157,13 +156,12 @@ public class AlignCleaningService {
                 || !isPlanProductsValid(curr, candidate)) {
             return;
         }
-        applyCleaningDelay(candidate, cleaningMinutesFact);
+        applyCleaningDelay(candidate, curr.getCameraEnd(), nextStart, cleaningMinutesFact);
     }
 
     boolean isPlanProductsValid(Job curr, Job candidate) {
         return curr.getProduct().equals(
-                candidate.getPreviousJob().getProduct()
-        );
+                candidate.getPreviousJob().getProduct());
     }
 
     private boolean areDifferentProducts(Job curr, Job next) {
@@ -173,23 +171,22 @@ public class AlignCleaningService {
     private boolean isPreviousWithoutFact(Job candidateJob) {
         return Objects.equals(
                 candidateJob.getPreviousJob().getProduct().getType(),
-                PLUSH_TYPE
-        );
+                PLUSH_TYPE);
     }
 
     private void applyDelayWithoutFact(
             Job candidate,
-            LocalDateTime firstStart
-    ) {
+            LocalDateTime firstStart) {
+
         if (firstStart == null
                 || candidate.getStartProductionDateTime() == null) {
             return;
         }
 
+        ZoneId zone = ZoneId.systemDefault();
         long delay = Duration.between(
-                candidate.getStartProductionDateTime(),
-                firstStart
-        ).toMinutes();
+                candidate.getStartProductionDateTime().atZone(zone),
+                firstStart.atZone(zone)).toMinutes();
 
         candidate.setCleaningDelay(Duration.ofMinutes(delay));
     }
@@ -197,8 +194,7 @@ public class AlignCleaningService {
     private long calculateFactCleaning(Job curr, Job next) {
         return getCleaningMinutes(
                 curr.getCameraEnd(),
-                next.getCameraStart()
-        );
+                next.getCameraStart());
     }
 
     private int findChainEndIndex(List<Job> jobs, int startIndex) {
@@ -213,18 +209,28 @@ public class AlignCleaningService {
         return k;
     }
 
-    private void applyCleaningDelay(Job job, long cleaningMinutesFact) {
+    private void applyCleaningDelay(Job job, LocalDateTime drawStart, LocalDateTime drawEnd, long cleaningMinutesFact) {
         long cleaningMinutesPlan = job.getCleaningDurationPlan();
         long delay = cleaningMinutesFact - cleaningMinutesPlan;
+        job.setDrawCleaningStart(drawStart);
+        job.setDrawCleaningEnd(drawEnd);
         job.setCleaningDelay(Duration.ofMinutes(delay));
 
     }
 
     private long getCleaningMinutes(
             LocalDateTime start,
-            LocalDateTime end
-    ) {
-        return Duration.between(start, end).toMinutes();
+            LocalDateTime end) {
+
+        if (start == null || end == null) {
+            return 0;
+        }
+
+        ZoneId zone = ZoneId.systemDefault();
+
+        return Duration.between(
+                start.atZone(zone),
+                end.atZone(zone)).toMinutes();
     }
 
     private List<Job> getFactJobsSorted(List<Job> lineJobs) {
@@ -233,12 +239,10 @@ public class AlignCleaningService {
         }
 
         return lineJobs.stream()
-                .filter(j ->
-                        j.getCameraStart() != null
-                                && j.getCameraEnd() != null
-                                && j.areEqualsPlanAndFactLines())
+                .filter(j -> j.getCameraStart() != null
+                        && j.getCameraEnd() != null
+                        && j.areEqualsPlanAndFactLines())
                 .sorted(Comparator.comparing(Job::getCameraEnd))
                 .toList();
     }
 }
-
