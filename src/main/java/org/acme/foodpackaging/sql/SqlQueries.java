@@ -66,6 +66,16 @@ public class SqlQueries {
                 """.formatted(prommarkSchema);
     }
 
+    public String countPmLogByBatch() {
+        return """
+                SELECT COUNT(*)
+                        FROM [%s].[dbo].[PM_LOG] WITH (NOLOCK)
+                        WHERE IDBATCH = ?
+                          AND KD = 17
+                          AND TP = 0
+                        """.formatted(prommarkSchema);
+    }
+
     public String loadPmLogMarkingRowsByBatch() {
         return """
                 SELECT F_ID, DTS
@@ -141,7 +151,6 @@ public class SqlQueries {
                     AND v.PDTO < ?2
                 """.formatted(mesSchema, eventType);
     }
-
 
     public String loadMaintenanceData() {
         return """
