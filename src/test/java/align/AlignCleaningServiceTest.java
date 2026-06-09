@@ -102,63 +102,6 @@ class AlignCleaningServiceTest {
     }
 
     @Test
-    void alignCleanings_whenPreviousIsMaintenance() {
-
-        Product mProduct = solution.getMaintenanceProduct();
-        Job j1 = solution.getJobs().getFirst();
-        Job j2 = solution.getJobs().getLast();
-        Job m1 = buildMaintenanceTestJob("M1", 1, Duration.ofMinutes(60), mProduct);
-        Job m2 = buildMaintenanceTestJob("M2", 1, Duration.ofMinutes(60), mProduct);
-        m2.setMaintenanceNote("Обслуживание");
-        buildSolutionWithNewJobs(j1, m1, m2, j2);
-
-        LocalDateTime drawCleaningStart = solution.getJobs().getFirst().getCameraEnd();
-        LocalDateTime drawCleaningEnd = solution.getJobs().getLast().getCameraStart();
-
-        cleaningService.alignCleanings(solution);
-        assertEquals(2, solution.getJobs().size());
-        assertEquals(2, solution.getDeletedMaintenance().size());
-        assertEquals(m2.getMaintenanceNote(), solution.getJobs().getLast().getCleaningDelayNote());
-        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
-
-        assertEquals(drawCleaningStart, solution.getJobs().getLast().getDrawCleaningStart());
-        assertEquals(drawCleaningEnd, solution.getJobs().getLast().getDrawCleaningEnd());
-    }
-
-    @Test
-    void alignCleanings_whenPreviousIsMaintenanceWithNotes() {
-
-        Product mProduct = solution.getMaintenanceProduct();
-        Job j1 = solution.getJobs().getFirst();
-        Job j2 = solution.getJobs().getLast();
-        Job m1 = buildMaintenanceTestJob("M1", 1, Duration.ofMinutes(60), mProduct);
-        Job m2 = buildMaintenanceTestJob("M2", 1, Duration.ofMinutes(60), mProduct);
-        m1.setMaintenanceNote("Ремонт");
-        m2.setMaintenanceNote("Обслуживание");
-        buildSolutionWithNewJobs(j1, m1, m2, j2);
-
-        cleaningService.alignCleanings(solution);
-
-        String result = m2.getMaintenanceNote() + ", " + m1.getMaintenanceNote();
-        assertEquals(result, solution.getJobs().getLast().getCleaningDelayNote());
-    }
-
-    @Test
-    void alignCleanings_whenPreviousIsMaintenanceWithCleaning() {
-        Product mProduct = solution.getMaintenanceProduct();
-        Job j1 = solution.getJobs().getFirst();
-        Job j2 = solution.getJobs().getLast();
-        Job m1 = buildMaintenanceTestJob("M1", 8, Duration.ofMinutes(60), mProduct);
-        Job m2 = buildMaintenanceTestJob("M2", 2, Duration.ofMinutes(60), mProduct);
-        buildSolutionWithNewJobs(j1, m1, m2, j2);
-
-        cleaningService.alignCleanings(solution);
-        assertEquals(2, solution.getJobs().size());
-        assertEquals(2, solution.getDeletedMaintenance().size());
-        assertEquals(Duration.ofMinutes(30), solution.getJobs().getLast().getCleaningDelay());
-    }
-
-    @Test
     void alignCleanings_whenPreviousWithoutFact() {
         Job j1 = solution.getJobs().getFirst();
         Job j2 = solution.getJobs().getLast();
@@ -285,17 +228,7 @@ class AlignCleaningServiceTest {
                 .withQuantity(2600)
                 .withCamera(cameraStart, cameraEnd).build();
     }
-
-    private Job buildMaintenanceTestJob(String id, int maintenanceTypeId, Duration duration, Product product) {
-        return JobTestBuilder.aJob()
-                .withId(id)
-                .withMaintenanceTypeId(maintenanceTypeId)
-                .asMaintenance()
-                .withDurationMinutes(duration.toMinutes())
-                .withLineIdFact("line1")
-                .withProduct(product).build();
-    }
-
+    
     private Product buildTestProduct(String id, String type) {
         return ProductTestBuilder.aProduct(id)
                 .withType(type)

@@ -109,7 +109,8 @@ public class AlignCleaningService {
                     long cleaningMinutesFact = calculateFactCleaning(curr, chain.getFirst());
 
                     handleCleaningDelayForChain(
-                            curr, next.getCameraStart(), cleaningMinutesFact, chain, line, jobs, solution);
+                            curr, cleaningMinutesFact, chain, line, jobs
+                    );
                 }
                 i = chainEndIndex - 1;
 
@@ -125,7 +126,8 @@ public class AlignCleaningService {
             List<Job> chain,
             Line line,
             List<Job> jobs,
-            PackagingSchedule solution) {
+            PackagingSchedule solution
+    ) {
 
         chain.sort(Comparator.comparing(
                 Job::getStartProductionDateTime,
@@ -137,12 +139,14 @@ public class AlignCleaningService {
         }
 
         boolean maintenanceRemoved = tryRemoveMaintenanceBefore(
-                candidate, line, solution);
+                candidate, line, solution
+        );
 
         if (maintenanceRemoved) {
             fixLineJobs(line);
             alignLineByStartDateTime(line, jobs.getFirst());
         }
+
 
         if (candidate.getPreviousJob() == null) {
             return;
@@ -171,7 +175,8 @@ public class AlignCleaningService {
     private boolean tryRemoveMaintenanceBefore(
             Job candidate,
             Line line,
-            PackagingSchedule solution) {
+            PackagingSchedule solution
+    ) {
         if (candidate.getPreviousJob() == null
                 || !candidate.getPreviousJob().isMaintenance()) {
             return false;
@@ -186,7 +191,8 @@ public class AlignCleaningService {
     private String removeMaintenanceBefore(
             List<Job> jobs,
             int index,
-            PackagingSchedule solution) {
+            PackagingSchedule solution
+    ) {
         int i = index - 1;
         StringBuilder deletedNotes = new StringBuilder();
 
