@@ -221,17 +221,7 @@ class AlignCleaningServiceTest {
                 .withQuantity(2600)
                 .withCamera(cameraStart, cameraEnd).build();
     }
-
-    private Job buildMaintenanceTestJob(String id, int maintenanceTypeId, Duration duration, Product product) {
-        return JobTestBuilder.aJob()
-                .withId(id)
-                .withMaintenanceTypeId(maintenanceTypeId)
-                .asMaintenance()
-                .withDurationMinutes(duration.toMinutes())
-                .withLineIdFact("line1")
-                .withProduct(product).build();
-    }
-
+    
     private Product buildTestProduct(String id, String type) {
         return ProductTestBuilder.aProduct(id)
                 .withType(type)
