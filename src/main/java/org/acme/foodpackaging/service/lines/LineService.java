@@ -91,7 +91,7 @@ public class LineService {
         if(solution.getLines() == null) return;
         for(Line line : solution.getLines()){
             if(line.getJobs().isEmpty()){
-                continue;
+                line.setMaxEndTime(line.getStartDateTime().plusHours(20));
             }
             line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
         }
