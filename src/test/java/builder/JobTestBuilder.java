@@ -3,13 +3,9 @@ package builder;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.record.CleaningResult;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 public class JobTestBuilder {
 
