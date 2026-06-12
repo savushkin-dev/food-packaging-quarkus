@@ -1,13 +1,14 @@
 package domain;
 
 import builder.*;
+import fixtures.JobFixtures;
+import fixtures.SolutionFixtures;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.record.CleaningResult;
 import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,16 +26,7 @@ class JobTest {
 
     @BeforeEach
     void initSpeedCache() {
-        Map<String, Pair<Integer, Integer>> line1Speeds = new HashMap<>();
-        line1Speeds.put("TYPE_A", Pair.of(100, 50));
-        line1Speeds.put("TYPE_B", Pair.of(200, 80));
-
-        Map<String, Map<String, Pair<Integer, Integer>>> speeds = new HashMap<>();
-        speeds.put("line1", line1Speeds);
-
-        SpeedCacheUtils.init(speeds);
-
-        CleaningDurationUtils.init(Map.of("line1", 45));
+        SolutionFixtures.initSpeedCache();
     }
     // ============================================================
     // fromDbMaintenanceRow
@@ -116,7 +108,7 @@ class JobTest {
     // ============================================================
     @Test
     void getDuration_isHandPackaging() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         jobs.getLeft().setHandPackaging(true);
 
         assertEquals(Duration.ofMinutes(56), jobs.getLeft().getDuration());
@@ -124,7 +116,7 @@ class JobTest {
 
     @Test
     void getDuration_whenDelayIsNotNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         jobs.getLeft().setDelayDuration(Duration.ofMinutes(20));
 
         assertEquals(Duration.ofMinutes(50), jobs.getLeft().getDuration());
@@ -139,9 +131,9 @@ class JobTest {
 
     @Test
     void getDuration_whenSpeedLessZero() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
-        SpeedCacheUtils.getLineSpeeds().put("line1", Map.of("TYPE_A", Pair.of(-100, 50)));
+        SpeedCacheUtils.getLineSpeeds().put("L007", Map.of("TYPE_A", Pair.of(-100, 50)));
         assertEquals(Duration.ZERO, jobs.getLeft().getDuration());
     }
 
@@ -168,7 +160,7 @@ class JobTest {
     // ============================================================
     @Test
     void getHandPackagingSpeed_success() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         jobs.getLeft().setHandPackaging(true);
         assertEquals(50, jobs.getLeft().getHandPackagingSpeed());
     }
@@ -200,7 +192,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_success() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
@@ -217,7 +209,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenPreviousIsMaintenance() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         jobs.getLeft().setDuration(Duration.ofMinutes(60));
         jobs.getLeft().setMaintenance(true);
 
@@ -235,7 +227,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenProductIsNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getRight().setProduct(null);
 
@@ -253,7 +245,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenPreviousProductIsNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getLeft().setProduct(null);
 
@@ -272,7 +264,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenPreviousIsPLRC() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getRight().getProduct().getCleaningResults()
                 .put(jobs.getLeft().getProduct(), new CleaningResult(60, true));
@@ -291,7 +283,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenCleaningDelayIsNotNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getRight().setCleaningDelay(Duration.ofMinutes(30));
 
@@ -309,7 +301,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenCleanupDurationIsNegative() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getRight().setCleaningDelay(Duration.ofMinutes(-30));
 
@@ -327,7 +319,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenNPE() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getRight().getProduct().getCleaningResults().remove(jobs.getRight().getPreviousJob().getProduct());
 
@@ -345,7 +337,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenLineIsNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         LocalDateTime endDateTime = LocalDateTime.of(2026, 6, 9, 10, 30);
         jobs.getLeft().setEndDateTime(endDateTime);
         jobs.getLeft().setLine(null);
@@ -356,7 +348,7 @@ class JobTest {
 
     @Test
     void updateStartCleaningDateTime_whenLineAndCleaningAreNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
         jobs.getLeft().setStartCleaningDateTime(LocalDateTime.of(2026, 6, 9, 10, 0));
         jobs.getLeft().setLine(null);
@@ -465,13 +457,13 @@ class JobTest {
 
     @Test
     void getCleaningDurationPlan_success() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         assertEquals(20, jobs.getRight().getCleaningDurationPlan());
     }
 
     @Test
     void getCleaningDurationPlan_whenPLRCIsTrue() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         jobs.getRight().getProduct().getCleaningResults()
                 .put(jobs.getLeft().getProduct(), new CleaningResult(60, true));
 
@@ -529,7 +521,7 @@ class JobTest {
     // ============================================================
     @Test
     void getCleaningDurationWithFact_whenCleaningDelayIsNotNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         jobs.getRight().setCleaningDelay(Duration.ofMinutes(20));
 
         assertEquals(40, jobs.getRight().getCleaningDurationFact());
@@ -537,7 +529,7 @@ class JobTest {
 
     @Test
     void getCleaningDurationWithFact_whenCleaningDelayIsNull() {
-        Pair<Job, Job> jobs = buildTestJobsWithCleanings();
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         assertEquals(20, jobs.getRight().getCleaningDurationFact());
     }
     // ============================================================
@@ -574,36 +566,5 @@ class JobTest {
         job.setId("J1");
         String expected = job.getId() + "(" + "null" + ")";
         assertEquals(expected, job.toString());
-    }
-    // ============================================================
-    // helper methods
-    // ============================================================
-    private Pair<Job, Job> buildTestJobsWithCleanings() {
-        LocalDateTime start = LocalDateTime.of(2026, 5, 9, 10, 0);
-        Job j1 = JobTestBuilder.aJob().withId("J1").withQuantity(2600).build();
-        Job j2 = JobTestBuilder.aJob().withId("J2").withQuantity(2600).build();
-
-        Product p1 = ProductTestBuilder.aProduct("P1").withType("TYPE_A").build();
-        Product p2 = ProductTestBuilder.aProduct("P2").withType("TYPE_B").build();
-
-        Map<Product, Duration> cleaningDurationsP1 = Map.of(p1, Duration.ZERO, p2, Duration.ofMinutes(20));
-        Map<Product, Duration> cleaningDurationsP2 = Map.of(p2, Duration.ZERO, p1, Duration.ofMinutes(20));
-        Map<Product, CleaningResult> results1 = new HashMap<>(Map.of(p1, new CleaningResult(30, false),
-                p2, new CleaningResult(30, false)));
-
-        p1.setCleaningDurations(cleaningDurationsP1);
-        p1.setCleaningResults(results1);
-        p2.setCleaningDurations(cleaningDurationsP2);
-        p2.setCleaningResults(results1);
-
-        Line line = new Line("line1", "line1");
-        line.setStartDateTime(start);
-        j1.setProduct(p1);
-        j2.setProduct(p2);
-        j1.setLine(line);
-        j2.setLine(line);
-
-        j2.setPreviousJob(j1);
-        return Pair.of(j1, j2);
     }
 }
