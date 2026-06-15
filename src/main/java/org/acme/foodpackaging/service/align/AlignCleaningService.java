@@ -26,36 +26,16 @@ public class AlignCleaningService {
             return;
         }
 
-        LocalDateTime earliestLineStart = null;
-        List<Line> linesWithoutFact = new ArrayList<>();
-
         for (Line line : solution.getLines()) {
-
             List<Job> factJobs = getFactJobsSorted(line.getJobs());
 
             if (factJobs.isEmpty()) {
-                linesWithoutFact.add(line);
                 continue;
             }
 
             calculateCleaningDelay(factJobs, line, solution);
-
             Job firstFactJob = factJobs.getFirst();
             alignLineByStartDateTime(line, firstFactJob);
-
-            LocalDateTime alignedStart = line.getStartDateTime();
-
-            if (earliestLineStart == null || alignedStart.isBefore(earliestLineStart)) {
-                earliestLineStart = alignedStart;
-            }
-        }
-
-        if (earliestLineStart == null) {
-            return;
-        }
-
-        for (Line line : linesWithoutFact) {
-            line.setStartDateTime(earliestLineStart);
         }
     }
 
