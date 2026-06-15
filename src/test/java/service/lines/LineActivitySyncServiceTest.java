@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,11 +48,11 @@ class LineActivitySyncServiceTest {
 
         when(plrLcRepository.loadEquipmentPeriods())
                 .thenReturn(List.of(
-                        period("L1", LocalDate.of(2025, 1, 1), LocalDate.of(2025, 12, 31))
+                        period("L1", LocalDate.of(2025, Month.JANUARY, 1), LocalDate.of(2025, Month.DECEMBER, 31))
                 ));
 
-        LocalDate from = LocalDate.of(2025, 6, 1);
-        LocalDate to = LocalDate.of(2025, 6, 30);
+        LocalDate from = LocalDate.of(2025, Month.JUNE, 1);
+        LocalDate to = LocalDate.of(2025, Month.JUNE, 30);
 
         service.syncLines(schedule, from, to);
         assertEquals(1, schedule.getLines().size());
@@ -65,8 +66,8 @@ class LineActivitySyncServiceTest {
 
         when(plrLcRepository.loadEquipmentPeriods())
                 .thenReturn(List.of(
-                        period("L1", LocalDate.of(2025, 1, 1), null), // active
-                        period("L2", LocalDate.of(2025, 1, 1), LocalDate.of(2025, 12, 31))
+                        period("L1", LocalDate.of(2025, Month.JANUARY, 1), null), // active
+                        period("L2", LocalDate.of(2025, Month.JANUARY, 1), LocalDate.of(2025, Month.DECEMBER, 31))
                 ));
 
         when(lineRepository.findLineInfo("L1"))
@@ -75,8 +76,8 @@ class LineActivitySyncServiceTest {
         when(lineRepository.findLineInfo("L2"))
                 .thenReturn(Optional.of(lineEntity("L2", "Line 2")));
 
-        LocalDate from = LocalDate.of(2025, 6, 1);
-        LocalDate to = LocalDate.of(2025, 6, 30);
+        LocalDate from = LocalDate.of(2025, Month.JUNE, 1);
+        LocalDate to = LocalDate.of(2025, Month.JUNE, 30);
 
 
         service.syncLines(schedule, from, to);
@@ -101,11 +102,11 @@ class LineActivitySyncServiceTest {
 
         when(plrLcRepository.loadEquipmentPeriods())
                 .thenReturn(List.of(
-                        period("L1", LocalDate.of(2025, 1, 1), null)
+                        period("L1", LocalDate.of(2025, Month.JANUARY, 1), null)
                 ));
 
-        LocalDate from = LocalDate.of(2025, 6, 1);
-        LocalDate to = LocalDate.of(2025, 6, 30);
+        LocalDate from = LocalDate.of(2025, Month.JUNE, 1);
+        LocalDate to = LocalDate.of(2025, Month.JUNE, 30);
 
         service.syncLines(schedule, from, to);
         assertEquals(1, schedule.getLines().size());
@@ -121,11 +122,11 @@ class LineActivitySyncServiceTest {
 
         when(plrLcRepository.loadEquipmentPeriods())
                 .thenReturn(List.of(
-                        period("L3", LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31))
+                        period("L3", LocalDate.of(2020, Month.JANUARY, 1), LocalDate.of(2020, Month.DECEMBER, 31))
                 ));
 
-        LocalDate from = LocalDate.of(2025, 6, 1);
-        LocalDate to = LocalDate.of(2025, 6, 30);
+        LocalDate from = LocalDate.of(2025, Month.JUNE, 1);
+        LocalDate to = LocalDate.of(2025, Month.JUNE, 30);
         service.syncLines(schedule, from, to);
         assertTrue(schedule.getLines().isEmpty());
     }
