@@ -11,6 +11,7 @@ import org.acme.foodpackaging.repository.jobs.OeePevRepository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @ApplicationScoped
 public class JobSaveService {
@@ -349,10 +350,11 @@ public class JobSaveService {
     }
 
     private int calculateDurationMinutes(LocalDateTime start, LocalDateTime end) {
+        ZoneId zoneId = ZoneId.systemDefault();
         if (start == null || end == null) {
             return 0;
         }
-        return (int) Duration.between(start, end).toMinutes();
+        return (int) Duration.between(start.atZone(zoneId), end.atZone(zoneId)).toMinutes();
     }
 
     private Integer convertToIntDuration(Duration duration){

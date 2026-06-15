@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,7 +159,8 @@ public class CleaningDurationReport {
                 end = job.getStartProductionDateTime();
             }
 
-            duration = Duration.between(start, end).toMinutes();
+            ZoneId zone = ZoneId.systemDefault();
+            duration = Duration.between(start.atZone(zone), end.atZone(zone)).toMinutes();
 
             writeRow(
                     row,

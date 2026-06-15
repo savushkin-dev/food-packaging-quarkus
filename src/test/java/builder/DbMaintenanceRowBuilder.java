@@ -2,11 +2,12 @@ package builder;
 
 import org.acme.foodpackaging.dto.DbMaintenanceRow;
 import java.time.LocalDateTime;
+import java.time.Month;
 
 public class DbMaintenanceRowBuilder {
 
-    private LocalDateTime start = LocalDateTime.of(2025, 1, 15, 9, 34);
-    private LocalDateTime end = LocalDateTime.of(2025, 1, 15, 9, 40);
+    private LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 15, 9, 34);
+    private LocalDateTime end = LocalDateTime.of(2025, Month.JANUARY, 15, 9, 40);
 
     private Integer duration = 6;
 
