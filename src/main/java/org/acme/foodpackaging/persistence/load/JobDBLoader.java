@@ -4,15 +4,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
-import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
-import org.acme.foodpackaging.record.CameraFactRow;
-import org.acme.foodpackaging.record.CameraValue;
 import org.acme.foodpackaging.sql.SqlQueries;
 
 import java.time.LocalDateTime;
@@ -23,7 +20,6 @@ public class JobDBLoader {
 
     private static final String DB_JOB_ROW_MAPPING = "DbJobRowMapping";
     private static final String FACT_PRODUCTION_MAPPING = "FactProductionRowMapping";
-    private static final String CAMERA_FACT_MAPPING = "CameraFactRowMapping";
 
     private final EntityManager em;
     private final SqlQueries queries;
@@ -136,42 +132,6 @@ public class JobDBLoader {
             );
 
             result.putIfAbsent(key, row);
-        }
-
-        return result;
-    }
-
-
-    // ========================= CAMERA =========================
-
-    public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
-
-        Map<String, CameraValue> result = HashMap.newHashMap(jobs.size());
-        Set<String> processedBatches = HashSet.newHashSet(jobs.size());
-
-        for (Job job : jobs) {
-
-            String idBatch = job.getIdBatch();
-            if (idBatch == null || !processedBatches.add(idBatch)) {
-                continue;
-            }
-
-            List<CameraFactRow> rows = getResultList(
-                    queries.loadCameraFact(),
-                    CAMERA_FACT_MAPPING,
-                    idBatch
-            );
-
-            if (!rows.isEmpty()) {
-            CameraFactRow row = rows.getFirst();
-
-            result.put(
-                    idBatch,
-                    new CameraValue(
-                            row.cameraStart(), row.cameraEnd()
-                    )
-            );
-        }
         }
 
         return result;

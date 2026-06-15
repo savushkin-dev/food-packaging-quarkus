@@ -85,6 +85,8 @@ public class AlignSolutionService {
     public void reset(PackagingSchedule solution){
         if(solution == null || solution.getJobs() == null) return;
         for(Job job : solution.getJobs()){
+            job.setDrawCleaningStart(null);
+            job.setDrawCleaningEnd(null);
             job.setCleaningDelay(null);
             job.setDelayDuration(null);
         }

@@ -20,7 +20,6 @@ import org.acme.foodpackaging.repository.jobs.JobRepository;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -123,10 +122,6 @@ public class JobService {
     ) {
 
         for (DbJobRow row : jobRows.values()) {
-
-            if (row.lineId() == null) {
-                continue;
-            }
 
             Job job = createJobById(row);
             Line line = findLineById(solution, job.getLineId());
@@ -271,7 +266,7 @@ public class JobService {
             }
 
         Job job = null;
-        if(row.lineId()!=null) {
+        if(row.lineId() != null) {
             job = Job.fromDbJobRow(row, product, row.startProductionDateTime(),
                     ScheduleUtils::nameCleaner);
         }
@@ -356,18 +351,14 @@ public class JobService {
                 job.setCameraStart(camera.cameraStart());
     
                 msLogRows.add(new MsLogInsertRow(
-                        job, START_CAMERA_EVENT_TYPE,
-                        Timestamp.valueOf(job.getCameraStart())
-                ));
+                        job, START_CAMERA_EVENT_TYPE, job.getCameraStart()));
             }
     
             if (job.getCameraEnd()== null && camera.cameraEnd() != null) {
                 job.setCameraEnd(camera.cameraEnd());
     
                 msLogRows.add(new MsLogInsertRow(
-                        job, END_CAMERA_EVENT_TYPE,
-                        Timestamp.valueOf(job.getCameraEnd())
-                ));
+                        job, END_CAMERA_EVENT_TYPE, job.getCameraEnd()));
             }
         }
     

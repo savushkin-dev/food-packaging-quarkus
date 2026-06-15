@@ -1,81 +1,99 @@
 package org.acme.foodpackaging.repository;
 
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.foodpackaging.entity.jobs.PmLog;
+import org.acme.foodpackaging.exception.service.CameraDataReadException;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.sql.SqlQueries;
 
-import java.sql.Timestamp;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 @ApplicationScoped
-public class PmLogRepository implements PanacheRepository<PmLog> {
+public class PmLogRepository {
 
+    private final AgroalDataSource dataSource;
     private final SqlQueries sqlQueries;
 
     @Inject
-    public PmLogRepository(SqlQueries sqlQueries) {
+    public PmLogRepository(
+            @DataSource("prommark") AgroalDataSource dataSource,
+            SqlQueries sqlQueries) {
+        this.dataSource = dataSource;
         this.sqlQueries = sqlQueries;
     }
 
     public long countByIdBatch(String idBatch) {
-        Number result = (Number) getEntityManager()
-                .createNativeQuery(
-                        "SELECT COUNT(*) FROM [prommark].[dbo].[PM_LOG] WITH (NOLOCK) " +
-                                "WHERE IDBATCH = ? AND KD = 17 AND TP = 0"
-                )
-                .setParameter(1, idBatch)
-                .getSingleResult();
 
-        return result.longValue();
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sqlQueries.countPmLogByBatch())) {
+            ps.setString(1, idBatch);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong(1) : 0L;
+            }
+
+        } catch (SQLException e) {
+            throw new CameraDataReadException(
+                    "Failed to count PM_LOG for batch " + idBatch,
+                    e);
+        }
     }
 
     public CameraFactRow getCameraFactRow(String idBatch) {
-        return (CameraFactRow) getEntityManager()
-                .createNativeQuery(
-                        "SELECT MIN(DTS) as DTSTART, MAX(DTS) as DTEND " +
-                                "FROM [prommark].[dbo].[PM_LOG] WITH (NOLOCK) " +
-                                "WHERE IDBATCH = ? AND KD = 71",
-                        "CameraFactRowMapping"
-                )
-                .setParameter(1, idBatch)
-                .getSingleResult();
+
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sqlQueries.loadCameraFact())) {
+            ps.setString(1, idBatch);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (!rs.next()) {
+                    return null;
+                }
+
+                return new CameraFactRow(
+                        rs.getObject("DTSTART", LocalDateTime.class),
+                        rs.getObject("DTEND", LocalDateTime.class));
+            }
+
+        } catch (SQLException e) {
+            throw new CameraDataReadException(
+                    "Failed to load camera fact for batch " + idBatch,
+                    e);
+        }
     }
 
     public Stream<LocalDateTime> streamMarkingDtsByIdBatch(String idBatch) {
-        return getEntityManager()
-                .createNativeQuery(sqlQueries.loadPmLogMarkingRowsByBatch())
-                .setParameter(1, idBatch)
-                .getResultStream()
-                .map(PmLogRepository::extractDts)
-                .filter(Objects::nonNull);
-    }
 
-    private static LocalDateTime extractDts(Object rowObj) {
-        if (!(rowObj instanceof Object[] row) || row.length < 2) {
-            return null;
-        }
-        return toDts(row[1]);
-    }
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sqlQueries.loadPmLogMarkingRowsByBatch())) {
+            ps.setString(1, idBatch);
 
-    private static LocalDateTime toDts(Object o) {
-        if (o == null) {
-            return null;
-        }
-        if (o instanceof Timestamp t) {
-            return t.toLocalDateTime();
-        }
-        if (o instanceof LocalDateTime ldt) {
-            return ldt;
-        }
-        if (o instanceof java.util.Date d) {
-            return new Timestamp(d.getTime()).toLocalDateTime();
-        }
-        return null;
-    }
+            ResultSet rs = ps.executeQuery();
+            List<LocalDateTime> result = new ArrayList<>();
 
+            while (rs.next()) {
+                LocalDateTime dts = rs.getObject("DTS", LocalDateTime.class);
+                if (dts != null) {
+                    result.add(dts);
+                }
+            }
+
+            return result.stream();
+
+        } catch (SQLException e) {
+            throw new CameraDataReadException(
+                    "Failed to load marking rows for batch " + idBatch,
+                    e);
+        }
+    }
 }
