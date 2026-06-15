@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -216,13 +217,13 @@ class JobTest {
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 50), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 7), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 50), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 7), jobs.getRight().getEndDateTime());
 
     }
 
@@ -235,13 +236,13 @@ class JobTest {
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 0), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 0), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 0), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 0), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 17), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 0), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 0), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 17), jobs.getRight().getEndDateTime());
     }
 
     @Test
@@ -253,13 +254,13 @@ class JobTest {
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getEndDateTime());
     }
 
     @Test
@@ -272,13 +273,13 @@ class JobTest {
         jobs.getRight().updateStartCleaningDateTime();
 
         System.out.println(jobs.getRight().getDuration());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 17), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 17), jobs.getRight().getEndDateTime());
     }
 
     @Test
@@ -291,13 +292,13 @@ class JobTest {
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 15), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 32), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 15), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 32), jobs.getRight().getEndDateTime());
     }
 
     @Test
@@ -309,13 +310,13 @@ class JobTest {
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 20), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 11, 37), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 20), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 11, 37), jobs.getRight().getEndDateTime());
     }
 
     @Test
@@ -327,13 +328,13 @@ class JobTest {
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 40), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 57), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 40), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 57), jobs.getRight().getEndDateTime());
     }
 
     @Test
@@ -345,13 +346,13 @@ class JobTest {
         jobs.getLeft().updateStartCleaningDateTime();
         jobs.getRight().updateStartCleaningDateTime();
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getLeft().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 0), jobs.getLeft().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getLeft().getEndDateTime());
 
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
-        assertEquals(LocalDateTime.of(2026, 5, 9, 10, 47), jobs.getRight().getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartCleaningDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 30), jobs.getRight().getStartProductionDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MAY, 9, 10, 47), jobs.getRight().getEndDateTime());
     }
 
     @Test
@@ -431,8 +432,8 @@ class JobTest {
     // ============================================================
     @Test
     void getFactDuration_WhenCameraDataIsNotNull() {
-        LocalDateTime cameraStart = LocalDateTime.of(2026, 5, 5, 8, 0);
-        LocalDateTime cameraEnd = LocalDateTime.of(2026, 5, 5, 8, 30);
+        LocalDateTime cameraStart = LocalDateTime.of(2026, Month.MAY, 5, 8, 0);
+        LocalDateTime cameraEnd = LocalDateTime.of(2026, Month.MAY, 5, 8, 30);
 
         Job j1 = new Job();
         j1.setCameraStart(cameraStart);
@@ -442,7 +443,7 @@ class JobTest {
 
     @Test
     void getFactDuration_WhenCameraStartIsNull() {
-        LocalDateTime cameraEnd = LocalDateTime.of(2026, 5, 5, 8, 30);
+        LocalDateTime cameraEnd = LocalDateTime.of(2026, Month.MAY, 5, 8, 30);
 
         Job j1 = new Job();
         j1.setCameraEnd(cameraEnd);
@@ -451,7 +452,7 @@ class JobTest {
 
     @Test
     void getFactDuration_WhenCameraEndIsNull() {
-        LocalDateTime cameraStart = LocalDateTime.of(2026, 5, 5, 8, 30);
+        LocalDateTime cameraStart = LocalDateTime.of(2026, Month.MAY, 5, 8, 30);
 
         Job j1 = new Job();
         j1.setCameraStart(cameraStart);
@@ -460,8 +461,8 @@ class JobTest {
 
     @Test
     void getFactDuration_WhenCameraStartIsNotBeforeEnd() {
-        LocalDateTime cameraStart = LocalDateTime.of(2026, 5, 5, 8, 30);
-        LocalDateTime cameraEnd = LocalDateTime.of(2026, 5, 5, 8, 0);
+        LocalDateTime cameraStart = LocalDateTime.of(2026, Month.MAY, 5, 8, 30);
+        LocalDateTime cameraEnd = LocalDateTime.of(2026, Month.MAY, 5, 8, 0);
 
         Job j1 = new Job();
         j1.setCameraStart(cameraStart);
@@ -590,7 +591,7 @@ class JobTest {
     // helper methods
     // ============================================================
     private Pair<Job, Job> buildTestJobsWithCleanings() {
-        LocalDateTime start = LocalDateTime.of(2026, 5, 9, 10, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.MAY, 9, 10, 0);
         Job j1 = JobTestBuilder.aJob().withId("J1").withQuantity(2600).build();
         Job j2 = JobTestBuilder.aJob().withId("J2").withQuantity(2600).build();
 
