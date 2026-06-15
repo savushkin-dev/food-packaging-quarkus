@@ -154,6 +154,19 @@ class AlignCleaningServiceTest {
     }
 
     @Test
+    void alignCleanings_whenWhenLineIsDeleted() {
+        solution.getLines().getFirst().setDeletedLine(true);
+        solution.getJobs().getFirst().setCameraStart(null);
+        solution.getJobs().getFirst().setCameraEnd(null);
+        solution.getJobs().getLast().setCameraStart(null);
+        solution.getJobs().getLast().setCameraEnd(null);
+
+        cleaningService.alignCleanings(solution);
+        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 10, 0),
+                solution.getLines().getFirst().getStartDateTime());
+    }
+
+    @Test
     void alignCleanings_whenJobSizeLessTwo() {
         solution.getJobs().removeLast();
         solution.getLines().getFirst().getJobs().removeLast();

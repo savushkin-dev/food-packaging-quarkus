@@ -138,6 +138,17 @@ class JobTest {
     }
 
     @Test
+    void getDuration_whenLineIsDeleted() {
+        Job j1 = new Job();
+        Line line = new Line();
+        line.setDeletedLine(true);
+        j1.setLine(line);
+        j1.setDuration(Duration.ofMinutes(20));
+     
+        assertEquals(Duration.ofMinutes(20), j1.getDuration());
+    }
+
+    @Test
     void getDuration_whenSpeedLessZero() {
         Pair<Job, Job> jobs = buildTestJobsWithCleanings();
 

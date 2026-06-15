@@ -162,6 +162,15 @@ class AlignDurationServiceTest {
     }
 
     @Test
+    void alignByFactDuration_whenLineIsDeleted() {
+
+        solution.getLines().getFirst().setDeletedLine(true);
+        alignDuration.alignByFactDuration(solution);
+        
+        assertNull(solution.getJobs().getFirst().getDelayDuration());
+    }
+
+    @Test
     void alignByFactDuration_delayDurationIsNotNull() {
         solution.getJobs().getFirst().setDelayDuration(Duration.ofMinutes(20));
 
