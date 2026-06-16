@@ -314,7 +314,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
-        if (solution == null) {
+        if (solution == null || request.getStartLineDateTime() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
