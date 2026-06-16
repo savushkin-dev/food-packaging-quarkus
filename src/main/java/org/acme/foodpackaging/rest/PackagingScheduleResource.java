@@ -27,6 +27,7 @@ import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.*;
 import org.acme.foodpackaging.persistence.load.DowntimePeriodsService;
+import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -43,6 +44,7 @@ public class PackagingScheduleResource {
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final MaintenanceJob maintenanceJob;
     private final JobService jobService;
+    private final LineService lineService;
     private final MoveJobsService moveJobsService;
     private final SortByNpService sortByNpService;
     private final PinService pinService;
@@ -324,6 +326,7 @@ public class PackagingScheduleResource {
             setLineStartDateTime(line, request.getStartLineDateTime());
 
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+            lineService.setMaxEndDateTimeByLastJob(solution);
             repository.writeForSession(sessionId, solution);
             return Response.ok(Map.of(
                     ApiFields.STATUS, ApiFields.SUCCESS,
