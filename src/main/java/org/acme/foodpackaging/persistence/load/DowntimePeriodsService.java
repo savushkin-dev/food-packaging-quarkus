@@ -8,6 +8,7 @@ import org.acme.foodpackaging.repository.PmLogRepository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +31,7 @@ public class DowntimePeriodsService {
     }
 
     public DowntimePeriodsResponse build(String idBatch, Duration minDowntime) {
+        ZoneId zoneId = ZoneId.systemDefault();
         try (Stream<LocalDateTime> dtsStream = pmLogRepository.streamMarkingDtsByIdBatch(idBatch)) {
             Iterator<LocalDateTime> iterator = dtsStream.iterator();
             if (!iterator.hasNext()) {
@@ -44,7 +46,7 @@ public class DowntimePeriodsService {
             while (iterator.hasNext()) {
                 LocalDateTime current = iterator.next();
                 cameraEnd = current;
-                if (!current.isBefore(previous) && Duration.between(previous, current).compareTo(minDowntime) > 0) {
+                if (!current.isBefore(previous) && Duration.between(previous.atZone(zoneId), current.atZone(zoneId)).compareTo(minDowntime) > 0) {
                     downtime.add(new DowntimePeriodItem(previous, current));
                 }
                 previous = current;

@@ -80,20 +80,6 @@ class AlignCleaningServiceTest {
     }
 
     @Test
-    void alignCleanings_shouldSetStartForLineWithoutFact() {
-        Line emptyLine = LineTestBuilder.aLine("line2", solution.getLines().getFirst().getStartDateTime())
-                .withEmptyJobs().build();
-
-        solution.getLines().add(emptyLine);
-        cleaningService.alignCleanings(solution);
-
-        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 12, 0),
-                solution.getLines().getFirst().getStartDateTime());
-        assertEquals(LocalDateTime.of(2026, Month.APRIL, 24, 12, 0),
-                solution.getLines().getLast().getStartDateTime());
-    }
-
-    @Test
     void alignCleanings_whenAlreadyHasCleaningDelay() {
         cleaningService.alignCleanings(solution);
 

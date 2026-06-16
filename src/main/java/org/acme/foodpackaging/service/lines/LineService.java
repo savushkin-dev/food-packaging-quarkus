@@ -8,19 +8,20 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.pinnAllLines;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class LineService {
 
     @Inject
     LoadDataService loadDataService;
-   
+
     public List<Line> getLines() {
         return new ArrayList<>(
                 loadDataService.getLines().entrySet().stream()
@@ -46,82 +47,61 @@ public class LineService {
 
     public void initLineStartEnd(PackagingSchedule solution) {
 
-        if(solution.getJobs().isEmpty()){
-            LocalDateTime startLineDateTime = solution.getWorkCalendar().getMinStartDateTime().plusHours(8);
-            for(Line line : solution.getLines()){
-                line.setStartDateTime(startLineDateTime);
-                line.setMaxEndTime(startLineDateTime.plusDays(1).toLocalDate().atStartOfDay().plusHours(3));
-            }
+        if (solution.getLines() == null) {
+            return;
         }
-        else {
-            pinnAllLines(solution.getLines());
-            //  Найти конец самой длинной линии
-            LocalDateTime lineEndTime = findMaxEndTime(solution.getLines());
 
-            // Проставляет старт всем линиям
-            for (Line line : solution.getLines()) {
+        LocalDateTime defaultStart =
+                solution.getWorkCalendar()
+                        .getPlanningDate()
+                        .atStartOfDay();
 
-                initLineStartDateTime(line, lineEndTime);
+        for (Line line : solution.getLines()) {
 
-                List<Job> jobs = line.getJobs();
-                if (jobs == null || jobs.isEmpty()) {
-                    continue;
-                }
+            List<Job> jobs = line.getJobs();
 
-                jobs.sort(Comparator.comparing(
-                        Job::getStartProductionDateTime,
-                        Comparator.nullsLast(Comparator.naturalOrder())
-                ));
-
-                fixLineJobs(line);
-
-                Job lastJob = jobs.getLast();
-                if (lastJob.getEndDateTime() != null) {
-                    line.setMaxEndTime(
-                            lastJob.getEndDateTime().plusHours(20)
-                    );
-                }
-            }
-        }
-    }
-
-    public void setMaxEndDateTimeByLastJob(PackagingSchedule solution){
-
-        if(solution.getLines() == null) return;
-        for(Line line : solution.getLines()){
-            if(line.getJobs().isEmpty()){
+            if (jobs == null || jobs.isEmpty()) {
+                line.setStartDateTime(defaultStart);
+                line.setMaxEndTime(defaultStart.plusHours(24));
                 continue;
             }
-            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
+
+            jobs.sort(
+                    Comparator.comparing(
+                            Job::getStartProductionDateTime,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    )
+            );
+
+            Job firstJob = jobs.getFirst();
+            Job lastJob = jobs.getLast();
+
+            line.setStartDateTime(firstJob.getStartProductionDateTime());
+
+            fixLineJobs(line);
+            fixPinnedJobs(line);
+
+            if (lastJob.getEndDateTime() != null) {
+                line.setMaxEndTime(lastJob.getEndDateTime().plusHours(24));
+            }
         }
     }
 
-    private LocalDateTime findMaxEndTime(List<Line> lines) {
+    public void setMaxEndDateTimeByLastJob(PackagingSchedule solution) {
 
-        return lines.stream()
-                .map(Line::getJobs)
-                .filter(jobs -> jobs != null && !jobs.isEmpty())
-                .map(List::getLast) // последний job на линии
-                .map(Job::getEndDateTime)
-                .filter(Objects::nonNull)
-                .max(LocalDateTime::compareTo)
-                .orElse(null);
-    }
+        if (solution.getLines() == null) return;
+        for (Line line : solution.getLines()) {
 
-    private void initLineStartDateTime(Line line, LocalDateTime fallbackStartTime) {
+            if(line.getStartDateTime() == null){
+                line.setStartDateTime(solution.getWorkCalendar().getPlanningDate().atStartOfDay());
+            }
 
-        // Если jobs есть — берём самое раннее начало
-        if (line.getJobs() != null && !line.getJobs().isEmpty()) {
+            if (line.getJobs() == null || line.getJobs().isEmpty()) {
+                line.setMaxEndTime(line.getStartDateTime().plusHours(24));
+                continue;
+            }
 
-            line.getJobs().stream()
-                    .map(Job::getStartProductionDateTime)
-                    .filter(Objects::nonNull)
-                    .min(LocalDateTime::compareTo).ifPresent(line::setStartDateTime);
-
-        }
-        // Если jobs нет — берём конец самой длинной линии
-        else if (fallbackStartTime != null) {
-            line.setStartDateTime(fallbackStartTime);
+            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(24));
         }
     }
 }

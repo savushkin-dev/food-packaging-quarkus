@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 import java.util.concurrent.ConcurrentHashMap;
@@ -230,7 +231,7 @@ class MaintenanceJobTest {
     void addMaintenanceAddsExtraWhenDurationAtLeastSixHours_EmptyLineReusesStart() {
         CleaningDurationUtils.init(Map.of("line1", 30));
 
-        LocalDateTime start = LocalDateTime.now();
+        LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 30, 8, 0);
         MaintenanceRequest req = new MaintenanceRequest();
         req.setLineId("line1");
         req.setDurationMinutes(400);
@@ -322,9 +323,9 @@ class MaintenanceJobTest {
 
         Product maintenanceProduct = schedule.getProducts().get(0);
         Product normalProduct = schedule.getProducts().get(1);
-        LocalDateTime day1At10 = LocalDateTime.of(2025, 1, 15, 10, 0);
-        LocalDateTime day2At15 = LocalDateTime.of(2025, 1, 16, 15, 0);
-        LocalDateTime dayAt0920 = LocalDateTime.of(2025, 1, 16, 9, 20);
+        LocalDateTime day1At10 = LocalDateTime.of(2025, Month.JANUARY, 15, 10, 0);
+        LocalDateTime day2At15 = LocalDateTime.of(2025, Month.JANUARY, 16, 15, 0);
+        LocalDateTime dayAt0920 = LocalDateTime.of(2025, Month.JANUARY, 16, 9, 20);
 
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
         line.setStartDateTime(dayAt0920); // so fixLineJobs (after add) places all jobs on Jan 16
@@ -353,7 +354,7 @@ class MaintenanceJobTest {
         assertEquals(2, added.getMaintenanceTypeId());
         assertEquals(30, added.getDuration().toMinutes());
         // fixLineJobs recalculates the new job's start from previous job end + cleaning; assert next day and ~10:00
-        assertEquals(LocalDate.of(2025, 1, 16), added.getStartProductionDateTime().toLocalDate());
+        assertEquals(LocalDate.of(2025, Month.JANUARY, 16), added.getStartProductionDateTime().toLocalDate());
         // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly added job)
         assertNotNull(line.getMaxEndTime());
         assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
@@ -367,9 +368,9 @@ class MaintenanceJobTest {
         when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
 
         Product normalProduct = schedule.getProducts().get(1);
-        LocalDateTime day1At8 = LocalDateTime.of(2025, 1, 15, 8, 0);
-        LocalDateTime day1At830 = LocalDateTime.of(2025, 1, 15, 8, 30);
-        LocalDateTime day2At10 = LocalDateTime.of(2025, 1, 16, 10, 0);
+        LocalDateTime day1At8 = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
+        LocalDateTime day1At830 = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 30);
+        LocalDateTime day2At10 = LocalDateTime.of(2025, Month.JANUARY, 16, 10, 0);
 
         Job prod = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
@@ -395,8 +396,8 @@ class MaintenanceJobTest {
         assertEquals(2, added.getMaintenanceTypeId());
         assertEquals(25, added.getDuration().toMinutes());
         // fixLineJobs recalculates from line start (day1At8): new job ends up after previous; accept same or next day
-        assertTrue(added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, 1, 16))
-                || added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, 1, 15)));
+        assertTrue(added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, Month.JANUARY, 16))
+                || added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, Month.JANUARY, 15)));
         // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly added job)
         assertNotNull(line.getMaxEndTime());
         assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
@@ -409,13 +410,13 @@ class MaintenanceJobTest {
         maintenanceTypes.put(2, "Мойка");
         when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
 
-        Line line2 = new Line("line2", "Line 2", "op2", LocalDateTime.now());
+        Line line2 = new Line("line2", "Line 2", "op2", LocalDateTime.of(2025, Month.JANUARY, 30, 8, 0));
         schedule.setLines(List.of(line, line2));
 
         Product maintenanceProduct = schedule.getProducts().get(0);
         Product normalProduct = schedule.getProducts().get(1);
-        LocalDateTime day1At10 = LocalDateTime.of(2025, 1, 15, 10, 0);
-        LocalDateTime day2At15 = LocalDateTime.of(2025, 1, 16, 15, 0);
+        LocalDateTime day1At10 = LocalDateTime.of(2025, Month.JANUARY, 15, 10, 0);
+        LocalDateTime day2At15 = LocalDateTime.of(2025, Month.JANUARY, 16, 15, 0);
 
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
         // Line1: maint type 2 end 10:00, prod end day2 15:00 (no fixLineJobs so end stays)

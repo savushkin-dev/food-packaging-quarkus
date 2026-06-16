@@ -9,6 +9,7 @@ import org.acme.foodpackaging.record.DowntimeData;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -81,6 +82,14 @@ public class ScheduleUtils {
      */
     public static void setLineStartDateTime(Line line, LocalDateTime lineStartDateTime) {
         line.setStartDateTime(lineStartDateTime);
+        if (line.getJobs() != null
+                && !line.getJobs().isEmpty()
+                && line.getJobs().getLast() != null
+                && line.getJobs().getLast().getEndDateTime() != null) {
+
+            line.setMaxEndTime(
+                    line.getJobs().getLast().getEndDateTime().plusHours(24));
+        }
     }
     /**
      * Меняет максимальное время завершения работы линии
@@ -227,14 +236,15 @@ public class ScheduleUtils {
     }
 
     private static Duration calculateJobDowntime(Job job) {
+        ZoneId zoneId = ZoneId.systemDefault();
         if (job.getStartProductionDateTime() == null
                 || job.getStartCleaningDateTime() == null) {
             return Duration.ZERO;
         }
 
         Duration diff = Duration.between(
-                job.getStartCleaningDateTime(),
-                job.getStartProductionDateTime()
+                job.getStartCleaningDateTime().atZone(zoneId),
+                job.getStartProductionDateTime().atZone(zoneId)
         );
 
         return diff.isNegative() ? Duration.ZERO : diff;
