@@ -60,7 +60,7 @@ public class LineService {
 
             if (jobs == null || jobs.isEmpty()) {
                 line.setStartDateTime(defaultStart);
-                line.setMaxEndTime(defaultStart.plusHours(20));
+                line.setMaxEndTime(defaultStart.plusHours(24));
                 continue;
             }
 
@@ -95,11 +95,11 @@ public class LineService {
             }
 
             if (line.getJobs() == null || line.getJobs().isEmpty()) {
-                line.setMaxEndTime(line.getStartDateTime().plusHours(20));
+                line.setMaxEndTime(line.getStartDateTime().plusHours(24));
                 continue;
             }
 
-            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
+            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(24));
         }
     }
 }
