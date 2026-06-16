@@ -5,6 +5,7 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -145,6 +146,73 @@ class ScheduleUtilsTest {
     }
 
     @Test
+    void shouldSetLineStartDateTime() {
+        Line line = new Line();
+        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 8, 0);
+        setLineStartDateTime(line, start);
+
+        assertEquals(start, line.getStartDateTime());
+    }
+
+    @Test
+    void shouldNotSetMaxEndTimeWhenJobsIsNull() {
+        Line line = new Line();
+        line.setJobs(null);
+
+        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 8, 0);
+
+        setLineStartDateTime(line, start);
+
+        assertNull(line.getMaxEndTime());
+    }
+
+    @Test
+    void shouldNotSetMaxEndTimeWhenJobsIsEmpty() {
+        Line line = new Line();
+        line.setJobs(new ArrayList<>());
+
+        setLineStartDateTime(
+                line,
+                LocalDateTime.now());
+
+        assertNull(line.getMaxEndTime());
+    }
+
+    @Test
+    void shouldNotSetMaxEndTimeWhenLastJobEndDateTimeIsNull() {
+        Job job = new Job();
+        job.setEndDateTime(null);
+
+        Line line = new Line();
+        line.setJobs(new ArrayList<>(List.of(job)));
+
+        setLineStartDateTime(
+                line,
+                LocalDateTime.now());
+
+        assertNull(line.getMaxEndTime());
+    }
+
+    @Test
+    void shouldSetMaxEndTimeFromLastJob() {
+        LocalDateTime end = LocalDateTime.of(2026, 1, 10, 18, 0);
+
+        Job job = new Job();
+        job.setEndDateTime(end);
+
+        Line line = new Line();
+        line.setJobs(new ArrayList<>(List.of(job)));
+
+        setLineStartDateTime(
+                line,
+                LocalDateTime.of(2026, 1, 1, 8, 0));
+
+        assertEquals(
+                end.plusDays(1),
+                line.getMaxEndTime());
+    }
+
+    @Test
     void setLineMaxEndDateTime_shouldUpdateMaxEndTime() {
         LocalDateTime newEnd = LocalDateTime.now().plusDays(1);
         ScheduleUtils.setLineMaxEndDateTime(line, newEnd);
@@ -240,7 +308,7 @@ class ScheduleUtilsTest {
         DbJobRow row1 = new DbJobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
         DbJobRow row2 = new DbJobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
         DbJobRow row3 = new DbJobRow(now, "KMC3", 3, 30, 300.0, now, now, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
-        
+
         Map<Long, DbJobRow> rows = new HashMap<>();
         rows.put(1L, row1);
         rows.put(2L, row2);
@@ -277,7 +345,7 @@ class ScheduleUtilsTest {
     void returnListWithAllValues() {
         DbJobRow row1 = new DbJobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
         DbJobRow row2 = new DbJobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
-        
+
         Map<Long, DbJobRow> rows = Map.of(1L, row1, 2L, row2);
 
         List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);
@@ -461,7 +529,7 @@ class ScheduleUtilsTest {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
         schedule.setOverloadedIds(Set.of("1"));
-       
+
         schedule.getWorkCalendar().setPlanningDate(null);
         DowntimeData result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
