@@ -127,7 +127,7 @@ class LineServiceTest {
         assertEquals(defaultDateTime, solution.getLines().get(1).getStartDateTime()); // when jobs is empty
 
         assertEquals(lineWithJobs.getJobs().getFirst().getStartProductionDateTime(), lineWithJobs.getStartDateTime());  // line should start from first Job
-        assertEquals(lineWithJobs.getJobs().getLast().getEndDateTime().plusHours(20), lineWithJobs.getMaxEndTime());
+        assertEquals(lineWithJobs.getJobs().getLast().getEndDateTime().plusHours(24), lineWithJobs.getMaxEndTime());
     }
 
     // ============================================================
@@ -143,9 +143,9 @@ class LineServiceTest {
     void setMaxEndDateTimeByLastJob_success() {
         PackagingSchedule solution = SolutionFixtures.solutionWithLines();
         LocalDateTime defaultStartDateTime = solution.getWorkCalendar().getPlanningDate().atStartOfDay();
-        LocalDateTime defaultEndDateTime = defaultStartDateTime.plusHours(20);
+        LocalDateTime defaultEndDateTime = defaultStartDateTime.plusHours(24);
         LocalDateTime expectedLineStart = solution.getLines().getLast().getStartDateTime();
-        LocalDateTime expectedLineEnd = solution.getLines().getLast().getJobs().getLast().getEndDateTime().plusHours(20);
+        LocalDateTime expectedLineEnd = solution.getLines().getLast().getJobs().getLast().getEndDateTime().plusHours(24);
 
         lineService.setMaxEndDateTimeByLastJob(solution);
 

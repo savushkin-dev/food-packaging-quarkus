@@ -80,7 +80,7 @@ public class LineService {
             fixPinnedJobs(line);
 
             if (lastJob.getEndDateTime() != null) {
-                line.setMaxEndTime(lastJob.getEndDateTime().plusHours(20));
+                line.setMaxEndTime(lastJob.getEndDateTime().plusHours(24));
             }
         }
     }
