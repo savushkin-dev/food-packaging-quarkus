@@ -139,7 +139,7 @@ class ScheduleUtilsTest {
 
     @Test
     void setLineStartDateTime() {
-        LocalDateTime newStart = LocalDateTime.of(2026, 1, 1, 8, 0).plusDays(1);
+        LocalDateTime newStart = LocalDateTime.of(2026, Month.JANUARY, 1, 8, 0).plusDays(1);
         ScheduleUtils.setLineStartDateTime(line, newStart);
 
         assertEquals(newStart, line.getStartDateTime());
@@ -148,7 +148,7 @@ class ScheduleUtilsTest {
     @Test
     void shouldSetLineStartDateTime() {
         Line line1 = new Line();
-        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 8, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.JANUARY, 1, 8, 0);
         ScheduleUtils.setLineStartDateTime(line1, start);
 
         assertEquals(start, line1.getStartDateTime());
@@ -159,7 +159,7 @@ class ScheduleUtilsTest {
         Line line1 = new Line();
         line1.setJobs(null);
 
-        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 8, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.JANUARY, 1, 8, 0);
         ScheduleUtils.setLineStartDateTime(line1, start);
 
         assertNull(line1.getMaxEndTime());
