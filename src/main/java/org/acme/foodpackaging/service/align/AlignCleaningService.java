@@ -20,6 +20,7 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 public class AlignCleaningService {
 
     private static final String PLUSH_TYPE = "10003";
+    private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 
     public void alignCleanings(PackagingSchedule solution) {
         if (solution == null || solution.getLines() == null) {
@@ -42,6 +43,7 @@ public class AlignCleaningService {
     private void alignLineByStartDateTime(Line line, Job firstFact) {
 
         LocalDateTime planDateTime = firstFact.getStartProductionDateTime();
+
         Product factProduct = firstFact.getProduct();
         Job previous = firstFact.getPreviousJob();
 
@@ -50,11 +52,9 @@ public class AlignCleaningService {
             previous = previous.getPreviousJob();
         }
 
-        ZoneId zone = ZoneId.systemDefault();
-
         long shift = Duration.between(
-                planDateTime.atZone(zone),
-                firstFact.getCameraStart().atZone(zone)).toMinutes();
+                planDateTime.atZone(ZONE_ID),
+                firstFact.getCameraStart().atZone(ZONE_ID)).toMinutes();
         if (line.getStartDateTime() != null) {
             line.setStartDateTime(line.getStartDateTime().plusMinutes(shift));
         }
@@ -163,10 +163,9 @@ public class AlignCleaningService {
             return;
         }
 
-        ZoneId zone = ZoneId.systemDefault();
         long delay = Duration.between(
-                candidate.getStartProductionDateTime().atZone(zone),
-                firstStart.atZone(zone)).toMinutes();
+                candidate.getStartProductionDateTime().atZone(ZONE_ID),
+                firstStart.atZone(ZONE_ID)).toMinutes();
 
         candidate.setCleaningDelay(Duration.ofMinutes(delay));
     }
@@ -206,11 +205,9 @@ public class AlignCleaningService {
             return 0;
         }
 
-        ZoneId zone = ZoneId.systemDefault();
-
         return Duration.between(
-                start.atZone(zone),
-                end.atZone(zone)).toMinutes();
+                start.atZone(ZONE_ID),
+                end.atZone(ZONE_ID)).toMinutes();
     }
 
     private List<Job> getFactJobsSorted(List<Job> lineJobs) {

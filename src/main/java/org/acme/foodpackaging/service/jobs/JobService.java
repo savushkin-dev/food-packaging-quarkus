@@ -184,13 +184,6 @@ public class JobService {
     private void assignJobToLine(Job job, Line line, List<Job> jobs) {
         line.getJobs().add(job);
         jobs.add(job);
-
-        if(job.isMaintenance()) return;
-        try {
-            allJobsById.put(Long.valueOf(job.getId()), job);
-        } catch (NumberFormatException ignored) {
-            // intentionally ignored: job ID is non-numeric, so it cannot be indexed in allJobsById
-        }
     }
 
     private void attachJobToLineIfNeeded(Line line, int size, int lineCount) {

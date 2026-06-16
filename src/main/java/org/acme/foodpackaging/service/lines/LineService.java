@@ -71,13 +71,13 @@ public class LineService {
                     )
             );
 
-            fixLineJobs(line);
-            fixPinnedJobs(line);
-
             Job firstJob = jobs.getFirst();
             Job lastJob = jobs.getLast();
 
             line.setStartDateTime(firstJob.getStartProductionDateTime());
+
+            fixLineJobs(line);
+            fixPinnedJobs(line);
 
             if (lastJob.getEndDateTime() != null) {
                 line.setMaxEndTime(lastJob.getEndDateTime().plusHours(20));
