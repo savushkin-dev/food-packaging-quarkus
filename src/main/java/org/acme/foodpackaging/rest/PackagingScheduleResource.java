@@ -10,6 +10,7 @@ import ai.timefold.solver.core.api.score.analysis.ScoreAnalysis;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
@@ -33,6 +34,7 @@ import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @Path("schedule")
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 @ApplicationScoped
 public class PackagingScheduleResource {
 
@@ -55,38 +57,6 @@ public class PackagingScheduleResource {
     private final AlignSolutionService alignSolutionService;
     private final PlrPlanRepository plrPlanRepository;
     private final DowntimePeriodsService downtimePeriodsService;
-
-    @Inject
-    public PackagingScheduleResource(
-            PackagingScheduleRepository repository, SolverManager<PackagingSchedule, String> solverManager,
-            SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager, MaintenanceJob maintenanceJob,
-            JobService jobService, MoveJobsService moveJobsService, SortByNpService sortByNpService,
-            PinService pinService,
-            ScheduleBuilder scheduleBuilder, ScheduleBuilderByVersion builderByVersion, LoadDataService loadDataService,
-            UploadDataService uploadDataService, JobRefreshService jobRefreshService, JobSaveService jobSaveService,
-            SolutionVersionExportService exportService, JobInfoService jobInfoService,
-            AlignSolutionService alignSolutionService, PlrPlanRepository plrPlanRepository,
-            DowntimePeriodsService downtimePeriodsService) {
-        this.repository = repository;
-        this.solverManager = solverManager;
-        this.solutionManager = solutionManager;
-        this.maintenanceJob = maintenanceJob;
-        this.jobService = jobService;
-        this.moveJobsService = moveJobsService;
-        this.sortByNpService = sortByNpService;
-        this.pinService = pinService;
-        this.scheduleBuilder = scheduleBuilder;
-        this.builderByVersion = builderByVersion;
-        this.loadDataService = loadDataService;
-        this.uploadDataService = uploadDataService;
-        this.jobRefreshService = jobRefreshService;
-        this.jobSaveService = jobSaveService;
-        this.exportService = exportService;
-        this.jobInfoService = jobInfoService;
-        this.alignSolutionService = alignSolutionService;
-        this.plrPlanRepository = plrPlanRepository;
-        this.downtimePeriodsService = downtimePeriodsService;
-    }
 
     @GET
     @Path("downtimePeriods/{idBatch}")

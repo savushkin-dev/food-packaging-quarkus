@@ -2,6 +2,7 @@ package org.acme.foodpackaging.solver;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
@@ -12,6 +13,7 @@ import org.acme.foodpackaging.domain.Line;
 
 public class FoodPackagingConstraintProvider implements ConstraintProvider {
 
+    private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     @Override
     public Constraint[] defineConstraints(ConstraintFactory factory) {
         return new Constraint[] {
@@ -89,7 +91,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
         return factory.forEach(Job.class)
                 .filter(job -> job.getEndDateTime() != null && job.getIdealEndTime().isBefore(job.getEndDateTime()))
                 .penalizeLong(HardMediumSoftLongScore.ONE_MEDIUM,
-                        job -> Duration.between(job.getIdealEndTime(), job.getEndDateTime()).toMinutes())
+                        job -> Duration.between(job.getIdealEndTime().atZone(ZONE_ID), job.getEndDateTime().atZone(ZONE_ID)).toMinutes())
                 .asConstraint("Ideal end date time");
     }
     // ************************************************************************
@@ -99,7 +101,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
         return factory.forEach(Job.class)
                 .filter(job -> job.getLine() != null && job.getNextJob() == null)
                 .penalizeLong(HardMediumSoftLongScore.ONE_SOFT, job -> {
-                    long minutes = Duration.between(job.getLine().getStartDateTime(), job.getEndDateTime()).toMinutes();
+                    long minutes = Duration.between(job.getLine().getStartDateTime().atZone(ZONE_ID), job.getEndDateTime().atZone(ZONE_ID)).toMinutes();
                     return minutes * minutes;
                 })
                 .asConstraint("Minimize make span");
@@ -109,7 +111,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
         return factory.forEach(Job.class)
                 .filter(job -> job.getStartProductionDateTime() != null)
                 .penalizeLong(HardMediumSoftLongScore.ONE_MEDIUM, job -> job.getPriority()
-                        * Duration.between(job.getStartCleaningDateTime(), job.getStartProductionDateTime()).toMinutes())
+                        * Duration.between(job.getStartCleaningDateTime().atZone(ZONE_ID), job.getStartProductionDateTime().atZone(ZONE_ID)).toMinutes())
                 .asConstraint("Minimize cleaning duration");
     }
 }

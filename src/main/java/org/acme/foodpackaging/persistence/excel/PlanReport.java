@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -386,7 +387,8 @@ public class PlanReport {
     }
 
     private long getFactDuration(LocalDateTime start, LocalDateTime end) {
-        return Duration.between(start, end).toMinutes();
+        ZoneId zoneId = ZoneId.systemDefault();
+        return Duration.between(start.atZone(zoneId), end.atZone(zoneId)).toMinutes();
     }
 
     private boolean isYesterdayOrToday(LocalDateTime time) {

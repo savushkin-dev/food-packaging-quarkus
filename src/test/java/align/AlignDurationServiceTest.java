@@ -22,6 +22,7 @@ import builder.ScheduleTestBuilder;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -100,7 +101,7 @@ class AlignDurationServiceTest {
         j2.setStartCleaningDateTime(j2.getEndDateTime()); // 10:30
         j2.setStartProductionDateTime(j2.getEndDateTime()); // 10:30
         j2.setEndDateTime(j2.getStartProductionDateTime().plusMinutes(30)); // 11:00
-        j2.setCameraStart(LocalDateTime.of(2026, 3, 6, 11, 30)); // 11:30-12:30
+        j2.setCameraStart(LocalDateTime.of(2026, Month.MARCH, 6, 11, 30)); // 11:30-12:30
         j2.setCameraEnd(j2.getCameraStart().plusMinutes(60));
 
         return j2;
@@ -177,8 +178,8 @@ class AlignDurationServiceTest {
 
         alignDuration.alignByFactDuration(solution);
 
-        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 30), firstJob.getEndDateTime());
-        assertEquals(LocalDateTime.of(2026, 3, 6, 10, 30), firstJob.getPlanEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MARCH, 6, 10, 30), firstJob.getEndDateTime());
+        assertEquals(LocalDateTime.of(2026, Month.MARCH, 6, 10, 30), firstJob.getPlanEndDateTime());
         assertNull(solution.getJobs().getFirst().getDelayDuration());
     }
 
@@ -203,8 +204,8 @@ class AlignDurationServiceTest {
         Job firstJob = getSolutionFirstJob();
         Job secondJob = getSolutionSecondJob();
 
-        LocalDateTime cameraStart1 = LocalDateTime.of(2026, 3, 6, 10, 10);
-        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, 3, 6, 10, 40);
+        LocalDateTime cameraStart1 = LocalDateTime.of(2026, Month.MARCH, 6, 10, 10);
+        LocalDateTime cameraEnd1 = LocalDateTime.of(2026, Month.MARCH, 6, 10, 40);
 
         secondJob.setCameraStart(cameraStart1);
         secondJob.setCameraEnd(cameraEnd1);
@@ -225,10 +226,10 @@ class AlignDurationServiceTest {
         Job secondJob = getSolutionSecondJob();
 
         secondJob.setCameraStart(
-                LocalDateTime.of(2026, 3, 6, 10, 30));
+                LocalDateTime.of(2026, Month.MARCH, 6, 10, 30));
 
         secondJob.setCameraEnd(
-                LocalDateTime.of(2026, 3, 6, 12, 0));
+                LocalDateTime.of(2026, Month.MARCH, 6, 12, 0));
 
         alignDuration.alignByFactDuration(solution);
 
