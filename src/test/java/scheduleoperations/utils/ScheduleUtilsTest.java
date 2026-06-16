@@ -5,13 +5,13 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
-import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -138,8 +138,8 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void setLinestartDateTime() {
-        LocalDateTime newStart = LocalDateTime.now().plusDays(1);
+    void setLineStartDateTime() {
+        LocalDateTime newStart = LocalDateTime.of(2026, 1, 1, 8, 0).plusDays(1);
         ScheduleUtils.setLineStartDateTime(line, newStart);
 
         assertEquals(newStart, line.getStartDateTime());
@@ -147,35 +147,32 @@ class ScheduleUtilsTest {
 
     @Test
     void shouldSetLineStartDateTime() {
-        Line line = new Line();
+        Line line1 = new Line();
         LocalDateTime start = LocalDateTime.of(2026, 1, 1, 8, 0);
-        setLineStartDateTime(line, start);
+        ScheduleUtils.setLineStartDateTime(line1, start);
 
-        assertEquals(start, line.getStartDateTime());
+        assertEquals(start, line1.getStartDateTime());
     }
 
     @Test
     void shouldNotSetMaxEndTimeWhenJobsIsNull() {
-        Line line = new Line();
-        line.setJobs(null);
+        Line line1 = new Line();
+        line1.setJobs(null);
 
         LocalDateTime start = LocalDateTime.of(2026, 1, 1, 8, 0);
+        ScheduleUtils.setLineStartDateTime(line1, start);
 
-        setLineStartDateTime(line, start);
-
-        assertNull(line.getMaxEndTime());
+        assertNull(line1.getMaxEndTime());
     }
 
     @Test
     void shouldNotSetMaxEndTimeWhenJobsIsEmpty() {
-        Line line = new Line();
-        line.setJobs(new ArrayList<>());
+        Line line1 = new Line();
+        line1.setJobs(new ArrayList<>());
+        LocalDateTime date = LocalDateTime.of(2026, Month.JUNE, 16, 8, 0);
+        ScheduleUtils.setLineStartDateTime(line1, date);
 
-        setLineStartDateTime(
-                line,
-                LocalDateTime.now());
-
-        assertNull(line.getMaxEndTime());
+        assertNull(line1.getMaxEndTime());
     }
 
     @Test
@@ -183,38 +180,35 @@ class ScheduleUtilsTest {
         Job job = new Job();
         job.setEndDateTime(null);
 
-        Line line = new Line();
-        line.setJobs(new ArrayList<>(List.of(job)));
+        Line line1 = new Line();
+        line1.setJobs(new ArrayList<>(List.of(job)));
+        LocalDateTime date = LocalDateTime.of(2026, Month.JUNE, 16, 8, 0);
+        ScheduleUtils.setLineStartDateTime(line1, date);
 
-        setLineStartDateTime(
-                line,
-                LocalDateTime.now());
-
-        assertNull(line.getMaxEndTime());
+        assertNull(line1.getMaxEndTime());
     }
 
     @Test
     void shouldSetMaxEndTimeFromLastJob() {
-        LocalDateTime end = LocalDateTime.of(2026, 1, 10, 18, 0);
+        LocalDateTime end = LocalDateTime.of(2026, Month.JANUARY, 10, 18, 0);
 
         Job job = new Job();
         job.setEndDateTime(end);
 
-        Line line = new Line();
-        line.setJobs(new ArrayList<>(List.of(job)));
+        Line line1 = new Line();
+        line1.setJobs(new ArrayList<>(List.of(job)));
 
-        setLineStartDateTime(
-                line,
-                LocalDateTime.of(2026, 1, 1, 8, 0));
+        ScheduleUtils.setLineStartDateTime(
+                line1, LocalDateTime.of(2026, Month.JANUARY, 1, 8, 0));
 
         assertEquals(
                 end.plusDays(1),
-                line.getMaxEndTime());
+                line1.getMaxEndTime());
     }
 
     @Test
     void setLineMaxEndDateTime_shouldUpdateMaxEndTime() {
-        LocalDateTime newEnd = LocalDateTime.now().plusDays(1);
+        LocalDateTime newEnd = LocalDateTime.of(2026, Month.JANUARY, 10, 18, 0).plusDays(1);
         ScheduleUtils.setLineMaxEndDateTime(line, newEnd);
 
         assertEquals(newEnd, line.getMaxEndTime());
@@ -222,7 +216,7 @@ class ScheduleUtilsTest {
 
     @Test
     void pinnAllLines() {
-        job3.setEndDateTime(LocalDateTime.now().plusHours(3));
+        job3.setEndDateTime(LocalDateTime.of(2026, Month.JANUARY, 10, 18, 0).plusHours(3));
         ScheduleUtils.pinnAllLines(List.of(line));
 
         assertEquals(line.getJobs().size(), line.getFirstUnpinnedIndex());
@@ -384,16 +378,16 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_shouldReturnCorrectDuration_onlyForOverloadedJobs() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1", "2"));
 
         job1.setLine(line);
-        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
-        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 30));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 10, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 9, 30));
 
         job2.setLine(line);
-        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
-        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 30));
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 12, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 30));
 
         DowntimeData result = getDowntimeData(schedule);
 
@@ -404,16 +398,16 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_shouldIgnoreNullIdAndJob() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1", "2"));
 
         job1.setLine(line);
-        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
-        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 30));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 10, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 9, 30));
 
         job2.setLine(line);
-        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
-        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 30));
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 12, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 30));
 
         job2.setId(null);
         line.setJobs(Arrays.asList(job1, job2, null));
@@ -427,14 +421,14 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_shouldIgnoreJobsNotInOverloadedIds() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
 
-        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
-        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 9, 0));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 10, 0));
 
-        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
-        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 0));
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 12, 0));
 
         DowntimeData result = getDowntimeData(schedule);
 
@@ -444,14 +438,14 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_isNegativeCleaning() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1", "2"));
 
-        job1.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 9, 0));
-        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+        job1.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 9, 0));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 10, 0));
 
-        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 12, 0));
-        job2.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 12, 0));
+        job2.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 0));
 
         DowntimeData result = getDowntimeData(schedule);
 
@@ -461,13 +455,13 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_startProductionIsNull_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
 
         job1.setStartCleaningDateTime(null);
-        job1.setStartProductionDateTime(LocalDateTime.of(2026, 4, 6, 10, 0));
+        job1.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 10, 0));
 
-        job2.setStartCleaningDateTime(LocalDateTime.of(2026, 4, 6, 11, 0));
+        job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 0));
         job2.setStartProductionDateTime(null);
 
         DowntimeData result = getDowntimeData(schedule);
@@ -478,7 +472,7 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_emptyOverloadedIds_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of());
 
         DowntimeData result = getDowntimeData(schedule);
@@ -515,7 +509,7 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_lineIsnull_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
         schedule.setLines(Arrays.asList(line, null));
 
@@ -527,7 +521,7 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_PlanningDateIsNull_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
 
         schedule.getWorkCalendar().setPlanningDate(null);
@@ -539,7 +533,7 @@ class ScheduleUtilsTest {
     @Test
     void downtimeData_lineJobsIsNull_shouldReturnZero() {
 
-        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, 4, 6)));
+        schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
         Line line2 = new Line("line2", "Line 2");
         schedule.setLines(Arrays.asList(line, line2));
