@@ -224,14 +224,31 @@ public class Job {
     }
 
     public long getCleaningDurationPlan() {
-        if (product == null || product.getCleaningDurations() == null || previousJob == null
+        if (product == null
+                || product.getCleaningDurations() == null
+                || previousJob == null
                 || previousJob.getProduct() == null
-                || previousJob.getProduct().getCleaningDurations() == null)
+                || previousJob.getProduct().getCleaningDurations() == null
+                || line == null) {
             return 0;
-        CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
-        return meta.isPLRLC()
-                ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
-                : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
+        }
+
+        Duration cleaningDuration =
+                product.getCleaningDurations().get(previousJob.getProduct());
+
+        if (!line.isDeletedLine()) {
+            CleaningResult meta =
+                    product.getCleaningResults().get(previousJob.getProduct());
+
+            if (meta != null && meta.isPLRLC()) {
+                Integer lineCleaning =
+                        CleaningDurationUtils.getLinesCleaning().get(line.getId());
+
+                return lineCleaning == null ? 0 : lineCleaning;
+            }
+        }
+
+        return cleaningDuration == null ? 0 : cleaningDuration.toMinutes();
     }
 
     public long getCleaningDurationFact() {
