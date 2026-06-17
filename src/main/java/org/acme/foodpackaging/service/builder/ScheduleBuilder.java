@@ -2,6 +2,7 @@ package org.acme.foodpackaging.service.builder;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.InitData;
@@ -17,17 +18,8 @@ import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class ScheduleBuilder {
-
-    @Inject
-    public ScheduleBuilder(JobService jobService, LineService lineService, LineActivitySyncService syncService,
-                           ProductService productService, AlignSolutionService alignSolutionService) {
-        this.jobService = jobService;
-        this.lineService = lineService;
-        this.syncService = syncService;
-        this.productService = productService;
-        this.alignSolutionService = alignSolutionService;
-    }
 
     private final JobService jobService;
     private final LineService lineService;

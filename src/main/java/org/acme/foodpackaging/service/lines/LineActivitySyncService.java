@@ -9,6 +9,7 @@ import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.PlrLcRepository;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -63,6 +64,7 @@ public class LineActivitySyncService {
                     line.setId(entity.getLineId().trim());
                     line.setName(entity.getSnm());
                     line.setDeletedLine(true);
+                    line.setJobs(new ArrayList<>());
 
                     schedule.getLines().add(line);
                 });
