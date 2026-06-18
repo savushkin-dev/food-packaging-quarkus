@@ -137,7 +137,7 @@ class JobTest {
         line.setDeletedLine(true);
         j1.setLine(line);
         j1.setDuration(Duration.ofMinutes(20));
-     
+
         assertEquals(Duration.ofMinutes(20), j1.getDuration());
     }
 
@@ -168,7 +168,7 @@ class JobTest {
     }
 
     // ============================================================
-    //  getHandPackagingSpeed
+    // getHandPackagingSpeed
     // ============================================================
     @Test
     void getHandPackagingSpeed_success() {
@@ -528,8 +528,60 @@ class JobTest {
         assertEquals(0, j1.getCleaningDurationPlan());
     }
 
+    @Test
+    void getCleaningDurationPlan_WhenDeletedLine() {
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
+        jobs.getRight().getLine().setDeletedLine(true);
+
+        assertEquals(20, jobs.getRight().getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenCleaningResultIsNull() {
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
+        jobs.getRight().getProduct().getCleaningResults().clear();
+
+        assertEquals(20, jobs.getRight().getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenPLRLCAndLineCleaningMissing() {
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
+
+        jobs.getRight().getProduct().getCleaningResults()
+                .put(jobs.getLeft().getProduct(),
+                        new CleaningResult(60, true));
+
+        jobs.getRight().getLine().setId("-999L");
+
+        assertEquals(0, jobs.getRight().getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenCleaningDurationMissing() {
+        Product currentProduct = new Product();
+        currentProduct.setCleaningDurations(new HashMap<>());
+        currentProduct.setCleaningResults(new HashMap<>());
+
+        Product previousProduct = new Product();
+        previousProduct.setCleaningDurations(new HashMap<>());
+
+        Job previousJob = new Job();
+        previousJob.setProduct(previousProduct);
+
+        Line line = new Line();
+        line.setDeletedLine(true);
+
+        Job job = new Job();
+        job.setProduct(currentProduct);
+        job.setPreviousJob(previousJob);
+        job.setLine(line);
+
+        assertEquals(0, job.getCleaningDurationPlan());
+    }
+
     // ============================================================
-    //  getCleaningDurationFact
+    // getCleaningDurationFact
     // ============================================================
     @Test
     void getCleaningDurationWithFact_whenCleaningDelayIsNotNull() {
@@ -544,6 +596,7 @@ class JobTest {
         Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
         assertEquals(20, jobs.getRight().getCleaningDurationFact());
     }
+
     // ============================================================
     // getPlanDuration
     // ============================================================
@@ -553,6 +606,7 @@ class JobTest {
         job.setMaintenance(true);
         assertNull(job.getPlanDuration());
     }
+
     // ============================================================
     // getPlanEndDateTime
     // ============================================================
@@ -561,6 +615,7 @@ class JobTest {
         Job job = new Job();
         assertNull(job.getPlanEndDateTime());
     }
+
     // ============================================================
     // toString
     // ============================================================
@@ -572,6 +627,7 @@ class JobTest {
         String expected = job.getId() + "(" + job.getProduct().getName() + ")";
         assertEquals(expected, job.toString());
     }
+
     @Test
     void toString_whenProductIsNUll() {
         Job job = new Job();
