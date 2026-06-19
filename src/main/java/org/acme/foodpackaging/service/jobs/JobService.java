@@ -9,6 +9,7 @@ import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.ProductNotFoundException;
+import org.acme.foodpackaging.persistence.constants.EventCode;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
@@ -283,7 +284,7 @@ public class JobService {
         String kmc = job.getProduct().getId();
         Integer np = job.getNp();
 
-        FactProductionRow startFact = factMap.get(new FactKey(kmc, np, START_FACT_EVENT_TYPE));
+        FactProductionRow startFact = factMap.get(new FactKey(kmc, np, EventCode.START_FACT.getCode()));
 
         if (startFact != null) {
             job.setIdBatch(startFact.idBatch());
@@ -292,12 +293,12 @@ public class JobService {
             job.setStartProductionDateTimeFact(startFact.eventTime());
         }
 
-        FactProductionRow startCamera = factMap.get(new FactKey(kmc, np, START_CAMERA_EVENT_TYPE));
+        FactProductionRow startCamera = factMap.get(new FactKey(kmc, np, EventCode.START_CAMERA.getCode()));
         if (startCamera != null) {
             job.setCameraStart(startCamera.eventTime());
         }
 
-        FactProductionRow endCamera = factMap.get(new FactKey(kmc, np, END_CAMERA_EVENT_TYPE));
+        FactProductionRow endCamera = factMap.get(new FactKey(kmc, np, EventCode.END_CAMERA.getCode()));
         if (endCamera != null) {
             job.setCameraEnd(endCamera.eventTime());
         }
@@ -335,14 +336,14 @@ public class JobService {
                 job.setCameraStart(camera.cameraStart());
     
                 msLogRows.add(new MsLogInsertRow(
-                        job, START_CAMERA_EVENT_TYPE, job.getCameraStart()));
+                        job, EventCode.START_CAMERA.getCode(), job.getCameraStart()));
             }
     
             if (job.getCameraEnd()== null && camera.cameraEnd() != null) {
                 job.setCameraEnd(camera.cameraEnd());
     
                 msLogRows.add(new MsLogInsertRow(
-                        job, END_CAMERA_EVENT_TYPE, job.getCameraEnd()));
+                        job,EventCode.END_CAMERA.getCode(), job.getCameraEnd()));
             }
         }
     

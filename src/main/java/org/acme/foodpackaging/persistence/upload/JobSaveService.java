@@ -11,7 +11,7 @@ import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
 import org.acme.foodpackaging.repository.jobs.MsLogRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;
-import org.acme.foodpackaging.scheduleoperations.utils.EventCode;
+import org.acme.foodpackaging.persistence.constants.EventCode;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -270,7 +270,7 @@ public class JobSaveService {
                 .startDateTime(planEndDateTime)
                 .endDateTime(endDateTime)
                 .duration(delayMinutes)
-                .eventTypeId(10)
+                .eventTypeId(EventCode.PACKAGING_DELAY.getCode())
                 .reason(null)
                 .note(job.getDelayNote())
                 .snpz(job.getSnpz())
@@ -287,7 +287,7 @@ public class JobSaveService {
                 .startDateTime(planEndDateTime)
                 .endDateTime(endDateTime)
                 .duration(delayMinutes)
-                .eventTypeId(11)
+                .eventTypeId(EventCode.CLEANING_DELAY.getCode())
                 .reason(null)
                 .note(job.getCleaningDelayNote())
                 .snpz(job.getSnpz())
@@ -317,7 +317,7 @@ public class JobSaveService {
         existing.setStartDateTime(planEndDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setDuration(delayMinutes);
-        existing.setEventTypeId(10);
+        existing.setEventTypeId(EventCode.PACKAGING_DELAY.getCode());
         existing.setReason(null);
         existing.setNote(job.getDelayNote());
     }
@@ -331,7 +331,7 @@ public class JobSaveService {
         existing.setStartDateTime(planEndDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setDuration(delayMinutes);
-        existing.setEventTypeId(11);
+        existing.setEventTypeId(EventCode.CLEANING_DELAY.getCode());
         existing.setReason(null);
         existing.setNote(job.getCleaningDelayNote());
     }

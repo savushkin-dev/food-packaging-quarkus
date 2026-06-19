@@ -15,7 +15,7 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.scheduleoperations.utils.EventCode;
+import org.acme.foodpackaging.persistence.constants.EventCode;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
