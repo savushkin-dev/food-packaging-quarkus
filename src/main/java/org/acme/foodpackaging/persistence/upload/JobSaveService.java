@@ -3,31 +3,31 @@ package org.acme.foodpackaging.persistence.upload;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.entity.jobs.MsLog;
 import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
+import org.acme.foodpackaging.repository.jobs.MsLogRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.UUID;
 
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class JobSaveService {
 
     private static final String CLEANING_NOTE = "Мойка, переналадка";
     private static final short DELETED_FLAG = 1;
+    private static final int DRAW_CLEANING_EVENT = 12;
 
     private final BdVpmcRepository bdVpmcRepository;
     private final OeePevRepository oeePevRepository;
-
-    @Inject
-    public JobSaveService(BdVpmcRepository bdVpmcRepository,
-                          OeePevRepository oeePevRepository) {
-        this.bdVpmcRepository = bdVpmcRepository;
-        this.oeePevRepository = oeePevRepository;
-    }
+    private final MsLogRepository msLogRepository;
 
     @Transactional
     public void saveJobsByType(PackagingSchedule schedule) {
@@ -44,6 +44,7 @@ public class JobSaveService {
             saveRegularJob(job);
             saveDelayDuration(job);
             saveCleaningDelayDuration(job);
+            saveDrawCleaningEvents(job);
         }
     }
 
@@ -166,7 +167,7 @@ public class JobSaveService {
     }
 
 
-    private void saveDelayDuration(Job job){
+    private void saveDelayDuration(Job job) {
 
         OeePev existing = null;
 
@@ -196,7 +197,7 @@ public class JobSaveService {
         updateProductionJob(job);
     }
 
-    private void saveCleaningDelayDuration(Job job){
+    private void saveCleaningDelayDuration(Job job) {
 
         OeePev existing = null;
 
@@ -309,8 +310,8 @@ public class JobSaveService {
 
     private void updateDelayOeePev(OeePev existing, Job job) {
         LocalDateTime planEndDateTime = job.getPlanEndDateTime();
-        LocalDateTime  endDateTime = job.getEndDateTime();
-        if(planEndDateTime == null ) return;
+        LocalDateTime endDateTime = job.getEndDateTime();
+        if (planEndDateTime == null) return;
 
         int delayMinutes = convertToIntDuration(job.getDelayDuration());
         existing.setLineId(job.getLine().getId());
@@ -324,7 +325,7 @@ public class JobSaveService {
 
     private void updateCleaningDelayOeePev(OeePev existing, Job job) {
         LocalDateTime planEndDateTime = job.getStartProductionDateTime().minusMinutes(job.getCleaningDelay().toMinutes());
-        LocalDateTime  endDateTime = job.getStartProductionDateTime();
+        LocalDateTime endDateTime = job.getStartProductionDateTime();
 
         int delayMinutes = convertToIntDuration(job.getCleaningDelay());
         existing.setLineId(job.getLine().getId());
@@ -349,6 +350,66 @@ public class JobSaveService {
         );
     }
 
+    // ============================================================
+    // DrawCleaningEvents
+    // ========================================================
+    private void saveDrawCleaningEvents(Job job) {
+
+        if (job.getDrawCleaningStart() == null
+                && job.getDrawCleaningEnd() == null) {
+            return;
+        }
+
+        saveCleaningInfo(job);
+    }
+
+    private void saveCleaningInfo(Job job) {
+
+        MsLog existing = msLogRepository.findByIdBatchAndEvent(
+                job.getIdBatch(),
+                DRAW_CLEANING_EVENT
+        );
+
+        if (existing == null) {
+            saveNewCleaningInfo(job);
+            return;
+        }
+
+        updateCleaningInfo(existing, job);
+    }
+
+    private void saveNewCleaningInfo(Job job) {
+
+        MsLog entity = buildDrawCleaningMsLog(job);
+
+        msLogRepository.persist(entity);
+    }
+
+    private MsLog buildDrawCleaningMsLog(Job job) {
+
+        return MsLog.builder()
+                .idBatch(job.getIdBatch())
+                .kmc(job.getProduct().getId())
+                .startDateTimeFact(job.getDrawCleaningStart()) // DTV
+                .np(job.getNp())
+                .eventType(DRAW_CLEANING_EVENT)
+                .eventTime(job.getDrawCleaningEnd())           // DT
+                .lineIdFact(job.getLineIdFact())
+                .build();
+    }
+
+    private void updateCleaningInfo(MsLog existing, Job job) {
+        existing.setKmc(job.getProduct().getId());
+        existing.setStartDateTimeFact(job.getDrawCleaningStart()); // DTV
+        existing.setNp(job.getNp());
+        existing.setEventType(DRAW_CLEANING_EVENT);
+        existing.setEventTime(job.getDrawCleaningEnd());           // DT
+        existing.setLineIdFact(job.getLineIdFact());
+    }
+
+    // ============================================================
+    // Help methods
+    // ========================================================
     private int calculateDurationMinutes(LocalDateTime start, LocalDateTime end) {
         ZoneId zoneId = ZoneId.systemDefault();
         if (start == null || end == null) {
@@ -357,8 +418,8 @@ public class JobSaveService {
         return (int) Duration.between(start.atZone(zoneId), end.atZone(zoneId)).toMinutes();
     }
 
-    private Integer convertToIntDuration(Duration duration){
-        if(duration == null) return  null;
+    private Integer convertToIntDuration(Duration duration) {
+        if (duration == null) return null;
         long durationMinutes = duration.toMinutes();
         return (int) durationMinutes;
     }

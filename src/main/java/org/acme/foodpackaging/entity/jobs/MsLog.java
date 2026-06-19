@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.acme.foodpackaging.record.FactProductionRow;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
+@Setter
 @Builder
 @Entity
 @Table(name = "MS_LOG", schema = "dbo")
@@ -34,10 +36,10 @@ import java.util.UUID;
 public class MsLog extends PanacheEntityBase {
 
     @Id
-    @Column(name = "F_GUID", nullable = false)
-    public UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "F_ID")
+    private Long fId;
 
-    @Id
     @Column(name = "IDBATCH")
     public String idBatch;
 
@@ -58,18 +60,4 @@ public class MsLog extends PanacheEntityBase {
 
     @Column(name = "KRC", columnDefinition = "CHAR(12)")
     private String lineIdFact;
-
-    @Override
-    public String toString() {
-        return "MsLog{" +
-                "id=" + id +
-                ", idBatch='" + idBatch + '\'' +
-                ", kmc='" + kmc + '\'' +
-                ", startDateTimeFact=" + startDateTimeFact +
-                ", np=" + np +
-                ", eventType=" + eventType +
-                ", eventTime=" + eventTime +
-                ", lineId='" + lineIdFact + '\'' +
-                '}';
-    }
 }
