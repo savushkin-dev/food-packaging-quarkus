@@ -2,6 +2,7 @@ package org.acme.foodpackaging.service.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.DelayNoteRequest;
 import org.acme.foodpackaging.dto.oeepev.CleaningRow;
@@ -35,19 +36,8 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
  * Handles job creation and initialization from database rows.
  */
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class JobService {
-
-    @Inject
-    public JobService(LoadDataService loadDataService, 
-        UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService,
-                      JobRefreshService refreshService, LineService lineService) {
-        this.loadDataService = loadDataService;
-        this.uploadDataService = uploadDataService;
-        this.jobRepository = jobRepository;
-        this.jobInfoService = jobInfoService;
-        this.refreshService = refreshService;
-        this.lineService = lineService;
-    }
 
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
@@ -67,6 +57,7 @@ public class JobService {
         initIdBatch(schedule);
         refreshService.refreshStaleCameraEndFromPmLog(schedule);
         lineService.initLineStartEnd(schedule);
+        jobRepository.fillJobsFromMsLog(schedule.getJobs());
         return jobRows;
     }
     /**
@@ -387,6 +378,7 @@ public class JobService {
             }
         }
     }
+
     private int safe(Integer v) {
         return v != null ? v : 0;
     }

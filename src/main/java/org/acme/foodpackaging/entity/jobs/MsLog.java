@@ -2,10 +2,7 @@ package org.acme.foodpackaging.entity.jobs;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.acme.foodpackaging.record.FactProductionRow;
 
 import java.time.LocalDateTime;
@@ -14,6 +11,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
+@Getter
 @Builder
 @Entity
 @Table(name = "MS_LOG", schema = "dbo")
