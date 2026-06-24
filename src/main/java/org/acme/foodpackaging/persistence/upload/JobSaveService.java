@@ -11,11 +11,11 @@ import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
 import org.acme.foodpackaging.repository.jobs.MsLogRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;
+import org.acme.foodpackaging.persistence.constants.EventCode;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.UUID;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -23,7 +23,6 @@ public class JobSaveService {
 
     private static final String CLEANING_NOTE = "Мойка, переналадка";
     private static final short DELETED_FLAG = 1;
-    private static final int DRAW_CLEANING_EVENT = 12;
 
     private final BdVpmcRepository bdVpmcRepository;
     private final OeePevRepository oeePevRepository;
@@ -271,7 +270,7 @@ public class JobSaveService {
                 .startDateTime(planEndDateTime)
                 .endDateTime(endDateTime)
                 .duration(delayMinutes)
-                .eventTypeId(10)
+                .eventTypeId(EventCode.PACKAGING_DELAY.getCode())
                 .reason(null)
                 .note(job.getDelayNote())
                 .snpz(job.getSnpz())
@@ -288,7 +287,7 @@ public class JobSaveService {
                 .startDateTime(planEndDateTime)
                 .endDateTime(endDateTime)
                 .duration(delayMinutes)
-                .eventTypeId(11)
+                .eventTypeId(EventCode.CLEANING_DELAY.getCode())
                 .reason(null)
                 .note(job.getCleaningDelayNote())
                 .snpz(job.getSnpz())
@@ -318,7 +317,7 @@ public class JobSaveService {
         existing.setStartDateTime(planEndDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setDuration(delayMinutes);
-        existing.setEventTypeId(10);
+        existing.setEventTypeId(EventCode.PACKAGING_DELAY.getCode());
         existing.setReason(null);
         existing.setNote(job.getDelayNote());
     }
@@ -332,7 +331,7 @@ public class JobSaveService {
         existing.setStartDateTime(planEndDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setDuration(delayMinutes);
-        existing.setEventTypeId(11);
+        existing.setEventTypeId(EventCode.CLEANING_DELAY.getCode());
         existing.setReason(null);
         existing.setNote(job.getCleaningDelayNote());
     }
@@ -367,7 +366,7 @@ public class JobSaveService {
 
         MsLog existing = msLogRepository.findByIdBatchAndEvent(
                 job.getIdBatch(),
-                DRAW_CLEANING_EVENT
+                EventCode.DRAW_CLEANING.getCode()
         );
 
         if (existing == null) {
@@ -392,7 +391,7 @@ public class JobSaveService {
                 .kmc(job.getProduct().getId())
                 .startDateTimeFact(job.getDrawCleaningStart()) // DTV
                 .np(job.getNp())
-                .eventType(DRAW_CLEANING_EVENT)
+                .eventType(EventCode.DRAW_CLEANING.getCode())
                 .eventTime(job.getDrawCleaningEnd())           // DT
                 .lineIdFact(job.getLineIdFact())
                 .build();
@@ -402,7 +401,7 @@ public class JobSaveService {
         existing.setKmc(job.getProduct().getId());
         existing.setStartDateTimeFact(job.getDrawCleaningStart()); // DTV
         existing.setNp(job.getNp());
-        existing.setEventType(DRAW_CLEANING_EVENT);
+        existing.setEventType(EventCode.DRAW_CLEANING.getCode());
         existing.setEventTime(job.getDrawCleaningEnd());           // DT
         existing.setLineIdFact(job.getLineIdFact());
     }

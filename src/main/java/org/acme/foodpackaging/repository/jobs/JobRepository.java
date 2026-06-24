@@ -2,10 +2,12 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.entity.jobs.MsLog;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
 import org.acme.foodpackaging.persistence.load.CameraDataLoader;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
@@ -13,6 +15,7 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.persistence.constants.EventCode;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -24,16 +27,12 @@ import java.util.Map;
  * Handles loading job and maintenance data from the database.
  */
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class JobRepository {
-
-    @Inject
-    public JobRepository(JobDBLoader jobDBLoader, CameraDataLoader cameraDataLoader) {
-        this.jobDBLoader = jobDBLoader;
-        this.cameraDataLoader = cameraDataLoader;
-    }
 
     private final JobDBLoader jobDBLoader;
     private final CameraDataLoader cameraDataLoader;
+    private final MsLogRepository msLogRepository;
 
     @ConfigProperty(name = "ksk")
     String ksk;
@@ -118,7 +117,6 @@ public class JobRepository {
      *
      * @param jobs list with idBatch (inclusive)
      * @return Map of camera start, camera end production rows by idBatch
-     * @throws CameraDataReadException 
      */
     public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
 
@@ -126,5 +124,27 @@ public class JobRepository {
             return Map.of();
         }
         return cameraDataLoader.loadCameraRowMap(jobs);
+    }
+    /**
+     * Загружает карту фактического производства по камере.
+     *
+     * @param jobs list with idBatch (inclusive)
+     */
+    public void fillJobsFromMsLog(List<Job> jobs) {
+
+        for (Job job : jobs) {
+
+            MsLog existing = msLogRepository.findByIdBatchAndEvent(
+                    job.getIdBatch(),
+                    EventCode.DRAW_CLEANING.getCode()
+            );
+
+            if (existing == null) {
+                continue;
+            }
+
+            job.setDrawCleaningStart(existing.getStartDateTimeFact());
+            job.setDrawCleaningEnd(existing.getEventTime());
+        }
     }
 }
