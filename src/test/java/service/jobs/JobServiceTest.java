@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,7 @@ class JobServiceTest {
         @BeforeEach
         void setUp() {
 
-                LocalDateTime lineStartDateTime = LocalDateTime.of(2025, 1, 15, 8, 0);
+                LocalDateTime lineStartDateTime = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
                 job = JobTestBuilder.aJob()
                                 .withId("J1")
                                 .build();
@@ -259,24 +260,23 @@ class JobServiceTest {
         @Test
         void enrichCameraFactsFromPmLog_shouldFillCameraStartAndEnd() {
 
-                PackagingSchedule schedule = SolutionFixtures.solutionWithLines();
+                PackagingSchedule solution = SolutionFixtures.solutionWithLines();
 
-                Job job = schedule.getJobs().getFirst();
-                job.setCameraStart(null);
-                job.setCameraEnd(null);
-
-                LocalDateTime start = LocalDateTime.of(2026, 5, 9, 15, 0);
-                LocalDateTime end = LocalDateTime.of(2026, 5, 9, 16, 0);
+                Job j1 = solution.getJobs().getFirst();
+                j1.setCameraStart(null);
+                j1.setCameraEnd(null);
+                LocalDateTime start = LocalDateTime.of(2026, Month.MAY, 9, 15, 0);
+                LocalDateTime end = LocalDateTime.of(2026, Month.MAY, 9, 16, 0);
 
                 when(jobRepository.getCameraFactRowMap(any()))
                                 .thenReturn(Map.of(
-                                                job.getIdBatch(),
+                                                j1.getIdBatch(),
                                                 new CameraValue(start, end)));
 
-                jobService.enrichCameraFactsFromPmLog(schedule);
+                jobService.enrichCameraFactsFromPmLog(solution);
 
-                assertEquals(start, job.getCameraStart());
-                assertEquals(end, job.getCameraEnd());
+                assertEquals(start, j1.getCameraStart());
+                assertEquals(end, j1.getCameraEnd());
 
                 verify(uploadDataService).fillMsLogTable(argThat(rows -> rows.size() == 2));
         }
@@ -284,28 +284,28 @@ class JobServiceTest {
         @Test
         void enrichCameraFactsFromPmLog_shouldFillOnlyCameraEnd() {
 
-                PackagingSchedule schedule = SolutionFixtures.solutionWithLines();
+                PackagingSchedule solution = SolutionFixtures.solutionWithLines();
 
-                Job job = schedule.getJobs().getFirst();
+                Job j1 = solution.getJobs().getFirst();
 
-                LocalDateTime originalStart = LocalDateTime.of(2026, 5, 9, 10, 0);
+                LocalDateTime originalStart = LocalDateTime.of(2026, Month.MAY, 9, 10, 0);
 
-                LocalDateTime newEnd = LocalDateTime.of(2026, 5, 9, 16, 0);
+                LocalDateTime newEnd = LocalDateTime.of(2026, Month.MAY, 9, 16, 0);
 
-                job.setCameraStart(originalStart);
-                job.setCameraEnd(null);
+                j1.setCameraStart(originalStart);
+                j1.setCameraEnd(null);
 
                 when(jobRepository.getCameraFactRowMap(any()))
                                 .thenReturn(Map.of(
-                                                job.getIdBatch(),
+                                                j1.getIdBatch(),
                                                 new CameraValue(
-                                                                LocalDateTime.of(2026, 5, 9, 15, 0),
+                                                                LocalDateTime.of(2026, Month.MAY, 9, 15, 0),
                                                                 newEnd)));
 
-                jobService.enrichCameraFactsFromPmLog(schedule);
+                jobService.enrichCameraFactsFromPmLog(solution);
 
-                assertEquals(originalStart, job.getCameraStart());
-                assertEquals(newEnd, job.getCameraEnd());
+                assertEquals(originalStart, j1.getCameraStart());
+                assertEquals(newEnd, j1.getCameraEnd());
 
                 verify(uploadDataService).fillMsLogTable(argThat(rows -> rows.size() == 1));
         }
@@ -313,19 +313,19 @@ class JobServiceTest {
         @Test
         void enrichCameraFactsFromPmLog_shouldSkipWhenCameraNotFound() {
 
-                PackagingSchedule schedule = SolutionFixtures.solutionWithLines();
+                PackagingSchedule solution = SolutionFixtures.solutionWithLines();
 
-                Job job = schedule.getJobs().getFirst();
-                job.setCameraStart(null);
-                job.setCameraEnd(null);
+                Job j1 = solution.getJobs().getFirst();
+                j1.setCameraStart(null);
+                j1.setCameraEnd(null);
 
                 when(jobRepository.getCameraFactRowMap(any()))
                                 .thenReturn(Collections.emptyMap());
 
-                jobService.enrichCameraFactsFromPmLog(schedule);
+                jobService.enrichCameraFactsFromPmLog(solution);
 
-                assertNull(job.getCameraStart());
-                assertNull(job.getCameraEnd());
+                assertNull(j1.getCameraStart());
+                assertNull(j1.getCameraEnd());
 
                 verify(uploadDataService, never())
                                 .fillMsLogTable(any());
@@ -334,9 +334,9 @@ class JobServiceTest {
         @Test
         void enrichCameraFactsFromPmLog_shouldReturnWhenAllJobsHaveCamera() {
 
-                PackagingSchedule schedule = SolutionFixtures.solutionWithLines();
+                PackagingSchedule solution = SolutionFixtures.solutionWithLines();
 
-                jobService.enrichCameraFactsFromPmLog(schedule);
+                jobService.enrichCameraFactsFromPmLog(solution);
 
                 verify(jobRepository, never())
                                 .getCameraFactRowMap(any());

@@ -6,7 +6,6 @@ import lombok.*;
 import org.acme.foodpackaging.record.FactProductionRow;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
