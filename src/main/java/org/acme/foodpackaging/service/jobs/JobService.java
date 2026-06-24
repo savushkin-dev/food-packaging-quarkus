@@ -318,7 +318,7 @@ public class JobService {
      *
      * @param solution The packaging schedule to initialize
      */
-    private void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
+    public void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
 
         List<Job> jobsWithoutCamera = solution.getJobs().stream()
                 .filter(j -> j.getIdBatch() != null)

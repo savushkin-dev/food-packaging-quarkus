@@ -22,14 +22,20 @@ public final class JobFixtures {
     public static Pair<Job, Job> jobsWithCleanings() {
 
         LocalDateTime start = LocalDateTime.of(2026, Month.MAY, 9, 10, 0);
+        LocalDateTime cameraStartLeft = LocalDateTime.of(2026, Month.MAY, 9, 11, 0);
+        LocalDateTime cameraStartRight = LocalDateTime.of(2026, Month.MAY, 9, 12, 0);
 
         Job j1 = JobTestBuilder.aJob()
                 .withId("J1")
+                .withIdBatch("12345678")
+                .withCamera(cameraStartLeft, cameraStartLeft.plusHours(1))
                 .withQuantity(2600)
                 .build();
 
         Job j2 = JobTestBuilder.aJob()
                 .withId("J2")
+                .withIdBatch("87654321")
+                .withCamera(cameraStartRight, cameraStartRight.plusHours(1))
                 .withQuantity(2600)
                 .build();
 
