@@ -200,6 +200,26 @@
       <version>${version.assertj}</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.github.albfernandez</groupId>
+      <artifactId>javadbf</artifactId>
+      <version>1.13.1</version>
+    </dependency>
+
+    <!-- Для работы с файлами -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-multipart</artifactId>
+    </dependency>
+
+
   </dependencies>
   <build>
     <plugins>
