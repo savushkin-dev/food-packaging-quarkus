@@ -5,8 +5,10 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.dto.materials.ProductDto;
 import org.acme.foodpackaging.dto.materials.ZinvDto;
+import org.acme.foodpackaging.entity.materials.Pp;
 import org.acme.foodpackaging.entity.materials.Sprog;
 import org.acme.foodpackaging.repository.materials.MaterialRepository;
+import org.acme.foodpackaging.repository.materials.PpRepository;
 import org.acme.foodpackaging.repository.materials.SprogRepository;
 
 
@@ -22,6 +24,9 @@ public class MaterialService {
 
     @Inject
     SprogRepository sprogRepository;
+
+    @Inject
+    PpRepository ppRepository;
 
     @Inject
     ZinvService zinvService;
@@ -62,4 +67,7 @@ public class MaterialService {
         return sprogRepository.findByDate(LocalDate.parse(date));
     }
 
+    public List<Pp> getRecipients(){
+        return ppRepository.findAll().list();
+    }
 }

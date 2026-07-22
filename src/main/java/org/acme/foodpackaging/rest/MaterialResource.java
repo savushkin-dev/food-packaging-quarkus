@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.dto.materials.LoadMaterialReqDto;
 import org.acme.foodpackaging.dto.materials.ProductDto;
+import org.acme.foodpackaging.entity.materials.Pp;
 import org.acme.foodpackaging.service.materials.MaterialService;
 
 import java.util.List;
@@ -42,6 +43,18 @@ public class MaterialResource {
     public Response loadProducts(LoadMaterialReqDto loadMaterialReqDto) {
         materialService.loadProductsToZinv(loadMaterialReqDto.getDate(), loadMaterialReqDto.getKpp());
         return Response.ok().build();
+    }
+
+    @GET
+    @Path("/recipients")
+    public Response getRecipients() {
+        try {
+            List<Pp> products = materialService.getRecipients();
+            return Response.ok(products).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(500).entity(e.getMessage()).build();
+        }
     }
 
 
