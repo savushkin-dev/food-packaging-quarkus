@@ -20,6 +20,8 @@ public class DbfImportResource {
     @Inject
     DbfImportService dbfImportService;
 
+    // ============ SPROG (Справочник производственных программ) ============
+
     @POST
     @Path("/sprog")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -45,6 +47,24 @@ public class DbfImportResource {
                     .build();
         }
     }
+
+    @POST
+    @Path("/sprog/path")
+    public Response importSprogByPath(@QueryParam("path") String path) {
+        try {
+            int count = dbfImportService.importSprog(path);
+            return Response.ok(Map.of(
+                    "success", true,
+                    "imported", count
+            )).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    // ============ RNPP (Справочник расхода материалов по продуктам) ============
 
     @POST
     @Path("/rnpp")
@@ -73,10 +93,10 @@ public class DbfImportResource {
     }
 
     @POST
-    @Path("/sprog/path")
-    public Response importSprogByPath(@QueryParam("path") String path) {
+    @Path("/rnpp/path")
+    public Response importRnppByPath(@QueryParam("path") String path) {
         try {
-            int count = dbfImportService.importSprog(path);
+            int count = dbfImportService.importRnpp(path);
             return Response.ok(Map.of(
                     "success", true,
                     "imported", count
@@ -88,11 +108,83 @@ public class DbfImportResource {
         }
     }
 
+    // ============ MT (Справочник материалов) ============
+
     @POST
-    @Path("/rnpp/path")
-    public Response importRnppByPath(@QueryParam("path") String path) {
+    @Path("/mt")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response importMT(@FormParam("file") InputStream fileStream,
+                             @FormParam("file") String fileName) {
         try {
-            int count = dbfImportService.importRnpp(path);
+            File tempFile = File.createTempFile("mt_", ".dbf");
+            tempFile.deleteOnExit();
+            Files.copy(fileStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+            int count = dbfImportService.importMt(tempFile.getAbsolutePath());
+            tempFile.delete();
+
+            return Response.ok(Map.of(
+                    "success", true,
+                    "table", "PLR_MT",
+                    "imported", count
+            )).build();
+
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("success", false, "error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("/mt/path")
+    public Response importMTByPath(@QueryParam("path") String path) {
+        try {
+            int count = dbfImportService.importMt(path);
+            return Response.ok(Map.of(
+                    "success", true,
+                    "imported", count
+            )).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    // ============ PP (Справочник поставщиков-получателей) ============
+
+    @POST
+    @Path("/pp")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response importPP(@FormParam("file") InputStream fileStream,
+                             @FormParam("file") String fileName) {
+        try {
+            File tempFile = File.createTempFile("pp_", ".dbf");
+            tempFile.deleteOnExit();
+            Files.copy(fileStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+            int count = dbfImportService.importPp(tempFile.getAbsolutePath());
+            tempFile.delete();
+
+            return Response.ok(Map.of(
+                    "success", true,
+                    "table", "PLR_PP",
+                    "imported", count
+            )).build();
+
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("success", false, "error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("/pp/path")
+    public Response importPPByPath(@QueryParam("path") String path) {
+        try {
+            int count = dbfImportService.importPp(path);
             return Response.ok(Map.of(
                     "success", true,
                     "imported", count

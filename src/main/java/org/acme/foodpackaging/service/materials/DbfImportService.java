@@ -7,9 +7,14 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.acme.foodpackaging.entity.materials.Rnpp;
 import org.acme.foodpackaging.entity.materials.Sprog;
+import org.acme.foodpackaging.entity.materials.Mt;
+import org.acme.foodpackaging.entity.materials.Pp;
 import org.acme.foodpackaging.repository.materials.RnppRepository;
 import org.acme.foodpackaging.repository.materials.SprogRepository;
+import org.acme.foodpackaging.repository.materials.MtRepository;
+import org.acme.foodpackaging.repository.materials.PpRepository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,10 +36,17 @@ public class DbfImportService {
     SprogRepository sprogRepository;
 
     @Inject
-    RnppRepository rnppRepository;
+    RnppRepository RnppRepository;
+
+    @Inject
+    MtRepository MtRepository;
+
+    @Inject
+    PpRepository PpRepository;
 
     @Inject
     EntityManager entityManager;
+
 
     /**
      * Импорт SPROG с ПАКЕТНОЙ вставкой
@@ -43,18 +55,15 @@ public class DbfImportService {
         log.info("=== START SPROG IMPORT ===");
         long startTime = System.currentTimeMillis();
 
-        // Используем AtomicInteger для счетчика в лямбде
         AtomicInteger importedCount = new AtomicInteger(0);
         List<Sprog> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
-            // Потоковое чтение
             dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
                 try {
                     Sprog entity = mapToSprog(record);
                     batch.add(entity);
 
-                    // Когда набрали BATCH_SIZE - сохраняем пакетом
                     if (batch.size() >= BATCH_SIZE) {
                         int saved = saveSprogBatch(batch);
                         importedCount.addAndGet(saved);
@@ -66,7 +75,6 @@ public class DbfImportService {
                 }
             });
 
-            // Сохраняем остаток
             if (!batch.isEmpty()) {
                 int saved = saveSprogBatch(batch);
                 importedCount.addAndGet(saved);
@@ -83,18 +91,18 @@ public class DbfImportService {
         }
     }
 
+
     /**
-     * Импорт RNPP с ПАКЕТНОЙ вставкой
+     * Импорт Rnpp с ПАКЕТНОЙ вставкой
      */
     public int importRnpp(String dbfPath) {
-        log.info("=== START RNPP IMPORT ===");
+        log.info("=== START Rnpp IMPORT ===");
         long startTime = System.currentTimeMillis();
 
         AtomicInteger importedCount = new AtomicInteger(0);
         List<Rnpp> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
-            // Ищем memo файл
             String basePath = dbfPath.substring(0, dbfPath.lastIndexOf('.'));
             String dbtPath = basePath + ".DBT";
             String fptPath = basePath + ".FPT";
@@ -106,13 +114,11 @@ public class DbfImportService {
                 memoPath = fptPath;
             }
 
-            // Потоковое чтение с memo файлом
             dbfReaderService.readDbfFileStreaming(dbfPath, memoPath, "CP866", (Map<String, Object> record) -> {
                 try {
                     Rnpp entity = mapToRnpp(record);
                     batch.add(entity);
 
-                    // Когда набрали BATCH_SIZE - сохраняем пакетом
                     if (batch.size() >= BATCH_SIZE) {
                         int saved = saveRnppBatch(batch);
                         importedCount.addAndGet(saved);
@@ -120,11 +126,10 @@ public class DbfImportService {
                     }
 
                 } catch (Exception e) {
-                    log.warn("Failed to map RNPP record", e);
+                    log.warn("Failed to map Rnpp record", e);
                 }
             });
 
-            // Сохраняем остаток
             if (!batch.isEmpty()) {
                 int saved = saveRnppBatch(batch);
                 importedCount.addAndGet(saved);
@@ -132,18 +137,102 @@ public class DbfImportService {
             }
 
             long totalTime = (System.currentTimeMillis() - startTime) / 1000;
-            log.info("=== FINISHED RNPP IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
+            log.info("=== FINISHED Rnpp IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
             return importedCount.get();
 
         } catch (Exception e) {
-            log.error("RNPP import failed", e);
-            throw new RuntimeException("Failed to import RNPP", e);
+            log.error("Rnpp import failed", e);
+            throw new RuntimeException("Failed to import Rnpp", e);
         }
     }
 
     /**
-     * Пакетное сохранение SPROG
+     * Импорт Mt с ПАКЕТНОЙ вставкой
      */
+    public int importMt(String dbfPath) {
+        log.info("=== START Mt IMPORT ===");
+        long startTime = System.currentTimeMillis();
+
+        AtomicInteger importedCount = new AtomicInteger(0);
+        List<Mt> batch = new ArrayList<>(BATCH_SIZE);
+
+        try {
+            dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
+                try {
+                    Mt entity = mapToMt(record);
+                    batch.add(entity);
+
+                    if (batch.size() >= BATCH_SIZE) {
+                        int saved = saveMtBatch(batch);
+                        importedCount.addAndGet(saved);
+                        batch.clear();
+                    }
+
+                } catch (Exception e) {
+                    log.warn("Failed to map Mt record", e);
+                }
+            });
+
+            if (!batch.isEmpty()) {
+                int saved = saveMtBatch(batch);
+                importedCount.addAndGet(saved);
+                batch.clear();
+            }
+
+            long totalTime = (System.currentTimeMillis() - startTime) / 1000;
+            log.info("=== FINISHED Mt IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
+            return importedCount.get();
+
+        } catch (Exception e) {
+            log.error("Mt import failed", e);
+            throw new RuntimeException("Failed to import Mt", e);
+        }
+    }
+
+    /**
+     * Импорт Pp с ПАКЕТНОЙ вставкой
+     */
+    public int importPp(String dbfPath) {
+        log.info("=== START Pp IMPORT ===");
+        long startTime = System.currentTimeMillis();
+
+        AtomicInteger importedCount = new AtomicInteger(0);
+        List<Pp> batch = new ArrayList<>(BATCH_SIZE);
+
+        try {
+            dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
+                try {
+                    Pp entity = mapToPp(record);
+                    batch.add(entity);
+
+                    if (batch.size() >= BATCH_SIZE) {
+                        int saved = savePpBatch(batch);
+                        importedCount.addAndGet(saved);
+                        batch.clear();
+                    }
+
+                } catch (Exception e) {
+                    log.warn("Failed to map Pp record", e);
+                }
+            });
+
+            if (!batch.isEmpty()) {
+                int saved = savePpBatch(batch);
+                importedCount.addAndGet(saved);
+                batch.clear();
+            }
+
+            long totalTime = (System.currentTimeMillis() - startTime) / 1000;
+            log.info("=== FINISHED Pp IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
+            return importedCount.get();
+
+        } catch (Exception e) {
+            log.error("Pp import failed", e);
+            throw new RuntimeException("Failed to import Pp", e);
+        }
+    }
+
+
     @Transactional
     public int saveSprogBatch(List<Sprog> batch) {
         if (batch.isEmpty()) {
@@ -152,10 +241,7 @@ public class DbfImportService {
 
         long startTime = System.currentTimeMillis();
 
-        // 🔥 ПАКЕТНАЯ ВСТАВКА - один вызов на весь список
         sprogRepository.persist(batch);
-
-        // Очищаем кеш
         entityManager.flush();
         entityManager.clear();
 
@@ -165,9 +251,6 @@ public class DbfImportService {
         return batch.size();
     }
 
-    /**
-     * Пакетное сохранение RNPP
-     */
     @Transactional
     public int saveRnppBatch(List<Rnpp> batch) {
         if (batch.isEmpty()) {
@@ -176,20 +259,51 @@ public class DbfImportService {
 
         long startTime = System.currentTimeMillis();
 
-        // 🔥 ПАКЕТНАЯ ВСТАВКА - один вызов на весь список
-        rnppRepository.persist(batch);
-
-        // Очищаем кеш
+        RnppRepository.persist(batch);
         entityManager.flush();
         entityManager.clear();
 
         long duration = System.currentTimeMillis() - startTime;
-        log.debug("Saved RNPP batch of {} records in {} ms", batch.size(), duration);
+        log.debug("Saved Rnpp batch of {} records in {} ms", batch.size(), duration);
 
         return batch.size();
     }
 
-    // ============ МАППИНГИ ============
+    @Transactional
+    public int saveMtBatch(List<Mt> batch) {
+        if (batch.isEmpty()) {
+            return 0;
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        MtRepository.persist(batch);
+        entityManager.flush();
+        entityManager.clear();
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.debug("Saved Mt batch of {} records in {} ms", batch.size(), duration);
+
+        return batch.size();
+    }
+
+    @Transactional
+    public int savePpBatch(List<Pp> batch) {
+        if (batch.isEmpty()) {
+            return 0;
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        PpRepository.persist(batch);
+        entityManager.flush();
+        entityManager.clear();
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.debug("Saved Pp batch of {} records in {} ms", batch.size(), duration);
+
+        return batch.size();
+    }
 
     private Sprog mapToSprog(Map<String, Object> record) {
         Sprog entity = new Sprog();
@@ -222,7 +336,26 @@ public class DbfImportService {
         return entity;
     }
 
-    // ============ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ============
+    private Mt mapToMt(Map<String, Object> record) {
+        Mt entity = new Mt();
+
+        entity.setKgr(getStringOrDefault(record, "KGR", ""));
+        entity.setKmt(getStringOrDefault(record, "KMT", ""));
+        entity.setSnm(getStringOrDefault(record, "SNM", ""));
+        entity.setPers(getBigDecimalOrDefault(record, "PERS", BigDecimal.ZERO));
+        entity.setRnd(getBigDecimalOrDefault(record, "RND", BigDecimal.ZERO));
+
+        return entity;
+    }
+
+    private Pp mapToPp(Map<String, Object> record) {
+        Pp entity = new Pp();
+
+        entity.setKpp(getStringOrDefault(record, "KPP", ""));
+        entity.setSnm(getStringOrDefault(record, "SNM", ""));
+
+        return entity;
+    }
 
     private String getString(Map<String, Object> record, String key) {
         Object value = record.get(key);
@@ -263,6 +396,21 @@ public class DbfImportService {
 
     private Integer getIntegerOrDefault(Map<String, Object> record, String key, Integer defaultValue) {
         Integer value = getInteger(record, key);
+        return value != null ? value : defaultValue;
+    }
+
+    private BigDecimal getBigDecimal(Map<String, Object> record, String key) {
+        Object value = record.get(key);
+        if (value == null) return null;
+        try {
+            return new BigDecimal(value.toString().trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private BigDecimal getBigDecimalOrDefault(Map<String, Object> record, String key, BigDecimal defaultValue) {
+        BigDecimal value = getBigDecimal(record, key);
         return value != null ? value : defaultValue;
     }
 
