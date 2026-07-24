@@ -8,6 +8,7 @@ import org.acme.foodpackaging.entity.materials.Zinv;
 import org.acme.foodpackaging.repository.materials.ZinvRepository;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,28 +19,21 @@ public class ZinvService {
     ZinvRepository zinvRepository;
 
     @Transactional
-    public void save(ZinvDto dto) {
-        Zinv zinv = toEntity(dto);
+    public void save(Zinv zinv) {
         zinvRepository.save(zinv);
     }
 
     @Transactional
-    public void saveAll(List<ZinvDto> dtos) {
-        List<Zinv> entities = dtos.stream()
-                .map(this::toEntity)
-                .collect(Collectors.toList());
+    public void saveAll(List<Zinv> entities) {
         zinvRepository.saveAll(entities);
     }
 
-    public List<ZinvDto> findByDateAndKpp(LocalDate date, String kpp) {
-        return zinvRepository.findByDateAndKpp(date, kpp).stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    public List<Zinv> findByDateAndKpp(LocalDate date, String kpp) {
+        return new ArrayList<>(zinvRepository.findByDateAndKpp(date, kpp));
     }
 
-    public ZinvDto findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
-        Zinv zinv = zinvRepository.findByDateAndKppAndKmc(date, kpp, kmc);
-        return zinv != null ? toDto(zinv) : null;
+    public Zinv findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
+        return zinvRepository.findByDateAndKppAndKmc(date, kpp, kmc);
     }
 
     @Transactional
@@ -52,6 +46,8 @@ public class ZinvService {
                 .dt(entity.getDt())
                 .kpp(entity.getKpp())
                 .kmc(entity.getKmc())
+                .kt(entity.getKt())
+                .emk(entity.getEmk())
                 .ean13(entity.getEan13())
                 .name(entity.getName())
                 .sumMass(entity.getSumMass())
@@ -63,6 +59,8 @@ public class ZinvService {
                 .dt(dto.getDt())
                 .kpp(dto.getKpp())
                 .kmc(dto.getKmc())
+                .kt(dto.getKt())
+                .emk(dto.getEmk())
                 .ean13(dto.getEan13())
                 .name(dto.getName())
                 .sumMass(dto.getSumMass())

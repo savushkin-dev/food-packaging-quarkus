@@ -10,12 +10,12 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "PLR_ZINV")
+@Table(name = "PLR_SINV")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Zinv implements Serializable {
+public class Sinv implements Serializable {
 
     @Id
     @Column(name = "DT", nullable = false)
@@ -33,15 +33,16 @@ public class Zinv implements Serializable {
     @Column(name = "KT", length = 10, nullable = false)
     private String kt;
 
-    @Column(name = "EMK")
-    private Double emk;
+    @Id
+    @Column(name = "KMT", length = 10, nullable = false)
+    private String kmt;
 
-    @Column(name = "EAN13", length = 20)
-    private String ean13;
+    @Column(name = "NORM", nullable = false)
+    private Double norm;
 
-    @Column(name = "NAME", length = 50)
-    private String name;
+    @Column(name = "NORMF", nullable = false)
+    private Double normf;
 
-    @Column(name = "SUM_MASS", nullable = false)
-    private Double sumMass;
+    @Column(name = "KOLF", nullable = false)
+    private Double kolf;
 }

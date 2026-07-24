@@ -11,6 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ProductDto {
     private String kmc;
+    private String kt;
     private String ean13;
     private Double emk;
     private Double sumMass;

@@ -17,18 +17,10 @@ import java.math.BigDecimal;
 public class Mt {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "plr_mt_seq")
-    @SequenceGenerator(
-            name = "plr_mt_seq",
-            sequenceName = "plr_mt_seq",
-            allocationSize = 20
-    )
-    @Column(name = "ID")
-    private Long id;
-
     @Column(name = "KGR", length = 10, nullable = false)
     private String kgr;
 
+    @Id
     @Column(name = "KMT", length = 10, nullable = false)
     private String kmt;
 

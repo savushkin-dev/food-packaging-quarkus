@@ -40,11 +40,10 @@ public class MaterialRepository {
             ProductDto product = new ProductDto();
             product.setKmc((String) row[0]);
             product.setEan13((String) row[1]);
-
             product.setEmk(((BigDecimal) row[2]).doubleValue());
-            product.setSumMass(((BigDecimal) row[3]).doubleValue());
-
-            product.setProductName((String) row[4]);
+            product.setKt((String) row[3]);
+            product.setSumMass(((BigDecimal) row[4]).doubleValue());
+            product.setProductName((String) row[5]);
             products.add(product);
         }
 

@@ -6,12 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ZinvDto {
+public class ProductWithMaterialsDto {
     private LocalDate dt;
     private String kpp;
     private String kmc;
@@ -20,4 +21,5 @@ public class ZinvDto {
     private Double emk;
     private String name;
     private Double sumMass;
+    private List<SinvDto> materials;
 }

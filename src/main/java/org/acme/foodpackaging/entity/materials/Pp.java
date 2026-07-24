@@ -15,15 +15,6 @@ import lombok.NoArgsConstructor;
 public class Pp {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "plr_pp_seq")
-    @SequenceGenerator(
-            name = "plr_pp_seq",
-            sequenceName = "plr_pp_seq",
-            allocationSize = 20
-    )
-    @Column(name = "ID")
-    private Long id;
-
     @Column(name = "KPP", length = 8, nullable = false)
     private String kpp;
 

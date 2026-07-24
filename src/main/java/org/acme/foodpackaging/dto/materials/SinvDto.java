@@ -11,13 +11,15 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ZinvDto {
+public class SinvDto {
     private LocalDate dt;
     private String kpp;
     private String kmc;
     private String kt;
-    private String ean13;
-    private Double emk;
-    private String name;
-    private Double sumMass;
+    private String snmKt; //Наименование упаковки
+    private String kmt;
+    private String snmMt; //Наименование материала
+    private Double norm;
+    private Double normf;
+    private Double kolf;
 }

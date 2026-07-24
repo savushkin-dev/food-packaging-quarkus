@@ -116,6 +116,11 @@ public class DbfImportService {
 
             dbfReaderService.readDbfFileStreaming(dbfPath, memoPath, "CP866", (Map<String, Object> record) -> {
                 try {
+
+                    if(((Number) record.get("SYSN")).intValue() < 39000){
+                        return;
+                    }
+
                     Rnpp entity = mapToRnpp(record);
                     batch.add(entity);
 
@@ -322,6 +327,7 @@ public class DbfImportService {
 
         entity.setSysn(getDoubleOrDefault(record, "SYSN", 0.0));
         entity.setKmc(getStringOrDefault(record, "KMC", "UNKNOWN"));
+        entity.setKt(getStringOrDefault(record, "KT", "UNKNOWN"));
         entity.setEmk(getDoubleOrDefault(record, "EMK", 0.0));
 
         String kkom = getStringOrDefault(record, "KKOM", "UNKNOWN");
