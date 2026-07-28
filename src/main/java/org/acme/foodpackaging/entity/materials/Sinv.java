@@ -1,48 +1,63 @@
 package org.acme.foodpackaging.entity.materials;
 
-import jakarta.persistence.*;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.UuidGenerator;
 
-import java.io.Serializable;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.UUID;
 
-@Entity
-@Table(name = "PLR_SINV")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Sinv implements Serializable {
+@Entity
+@Table(name = "PLR_SINV", schema = "dbo")
+public class Sinv extends PanacheEntityBase {
 
     @Id
+    @UuidGenerator
+    @Column(name = "F_GUID", columnDefinition = "uniqueidentifier")
+    public UUID fGuid;
+
+    @Column(name = "F_ID", nullable = false, insertable = false, updatable = false)
+    public Long fId;
+
+    @Column(name = "F_TM", nullable = false, insertable = false, updatable = false)
+    public byte[] fTm;
+
+    @Column(name = "F_DEL", nullable = false, insertable = false, updatable = false)
+    public Integer fDel = 0;
+
     @Column(name = "DT", nullable = false)
-    private LocalDate dt;
+    public LocalDate dt;
 
-    @Id
     @Column(name = "KPP", length = 10, nullable = false)
-    private String kpp;
+    public String kpp;
 
-    @Id
     @Column(name = "KMC", length = 10, nullable = false)
-    private String kmc;
+    public String kmc;
 
-    @Id
     @Column(name = "KT", length = 10, nullable = false)
-    private String kt;
+    public String kt;
 
-    @Id
     @Column(name = "KMT", length = 10, nullable = false)
-    private String kmt;
+    public String kmt;
 
     @Column(name = "NORM", nullable = false)
-    private Double norm;
+    public Double norm = 0.0;
 
     @Column(name = "NORMF", nullable = false)
-    private Double normf;
+    public Double normf = 0.0;
 
     @Column(name = "KOLF", nullable = false)
-    private Double kolf;
+    public Double kolf = 0.0;
 }

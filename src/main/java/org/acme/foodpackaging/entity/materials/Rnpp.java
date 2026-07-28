@@ -1,51 +1,59 @@
 package org.acme.foodpackaging.entity.materials;
 
-import jakarta.persistence.*;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.UuidGenerator;
 
-@Entity
-@Table(
-        name = "PLR_RNPP",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_rnpp_business",
-                        columnNames = {"ID, SYSN", "KMC", "KT", "EMK", "KKOM"}
-                )
-        }
-)
+import java.sql.Timestamp;
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Rnpp {
+@Entity
+@Table(name = "PLR_RNPP", schema = "dbo")
+public class Rnpp extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "rnpp_seq")
-    @SequenceGenerator(name = "rnpp_seq", sequenceName = "rnpp_seq", allocationSize = 20)
-    @Column(name = "ID")
-    private Long id;
+    @UuidGenerator
+    @Column(name = "F_GUID", columnDefinition = "uniqueidentifier")
+    public UUID fGuid;
+
+    @Column(name = "F_ID", nullable = false, insertable = false, updatable = false)
+    public Long fId;
+
+    @Column(name = "F_TM", nullable = false, insertable = false, updatable = false)
+    public byte[] fTm;
+
+    @Column(name = "F_DEL", nullable = false, insertable = false, updatable = false)
+    public Integer fDel = 0;
 
     @Column(name = "SYSN", nullable = false)
-    private Double sysn;
+    public Double sysn;
 
     @Column(name = "KMC", length = 10, nullable = false)
-    private String kmc;
+    public String kmc;
 
     @Column(name = "KT", length = 10, nullable = false)
-    private String kt;
+    public String kt;
 
     @Column(name = "EMK", nullable = false)
-    private Double emk;
+    public Double emk;
 
     @Column(name = "KKOM", length = 10, nullable = false)
-    private String kkom;
+    public String kkom;
 
     @Column(name = "KOL1T", nullable = false)
-    private Double kol1t;
+    public Double kol1t = 0.0;
 
     @Column(name = "KOLVK", nullable = false)
-    private Double kolvk;
+    public Double kolvk = 0.0;
 }

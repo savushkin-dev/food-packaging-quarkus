@@ -9,10 +9,6 @@ import org.acme.foodpackaging.entity.materials.Rnpp;
 import org.acme.foodpackaging.entity.materials.Sprog;
 import org.acme.foodpackaging.entity.materials.Mt;
 import org.acme.foodpackaging.entity.materials.Pp;
-import org.acme.foodpackaging.repository.materials.RnppRepository;
-import org.acme.foodpackaging.repository.materials.SprogRepository;
-import org.acme.foodpackaging.repository.materials.MtRepository;
-import org.acme.foodpackaging.repository.materials.PpRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,28 +25,17 @@ public class DbfImportService {
     private static final int BATCH_SIZE = 20;
     private static final DateTimeFormatter DBF_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    @Inject
-    DbfReaderService dbfReaderService;
+
+    private final DbfReaderService dbfReaderService;
+    private final EntityManager entityManager;
 
     @Inject
-    SprogRepository sprogRepository;
-
-    @Inject
-    RnppRepository RnppRepository;
-
-    @Inject
-    MtRepository MtRepository;
-
-    @Inject
-    PpRepository PpRepository;
-
-    @Inject
-    EntityManager entityManager;
+    public DbfImportService(DbfReaderService dbfReaderService, EntityManager entityManager) {
+        this.dbfReaderService = dbfReaderService;
+        this.entityManager = entityManager;
+    }
 
 
-    /**
-     * Импорт SPROG с ПАКЕТНОЙ вставкой
-     */
     public int importSprog(String dbfPath) {
         log.info("=== START SPROG IMPORT ===");
         long startTime = System.currentTimeMillis();
@@ -92,9 +77,6 @@ public class DbfImportService {
     }
 
 
-    /**
-     * Импорт Rnpp с ПАКЕТНОЙ вставкой
-     */
     public int importRnpp(String dbfPath) {
         log.info("=== START Rnpp IMPORT ===");
         long startTime = System.currentTimeMillis();
@@ -116,8 +98,7 @@ public class DbfImportService {
 
             dbfReaderService.readDbfFileStreaming(dbfPath, memoPath, "CP866", (Map<String, Object> record) -> {
                 try {
-
-                    if(((Number) record.get("SYSN")).intValue() < 39000){
+                    if (((Number) record.get("SYSN")).intValue() < 39000) {
                         return;
                     }
 
@@ -151,9 +132,6 @@ public class DbfImportService {
         }
     }
 
-    /**
-     * Импорт Mt с ПАКЕТНОЙ вставкой
-     */
     public int importMt(String dbfPath) {
         log.info("=== START Mt IMPORT ===");
         long startTime = System.currentTimeMillis();
@@ -194,9 +172,6 @@ public class DbfImportService {
         }
     }
 
-    /**
-     * Импорт Pp с ПАКЕТНОЙ вставкой
-     */
     public int importPp(String dbfPath) {
         log.info("=== START Pp IMPORT ===");
         long startTime = System.currentTimeMillis();
@@ -246,7 +221,9 @@ public class DbfImportService {
 
         long startTime = System.currentTimeMillis();
 
-        sprogRepository.persist(batch);
+        for (Sprog entity : batch) {
+            entityManager.merge(entity);
+        }
         entityManager.flush();
         entityManager.clear();
 
@@ -264,7 +241,9 @@ public class DbfImportService {
 
         long startTime = System.currentTimeMillis();
 
-        RnppRepository.persist(batch);
+        for (Rnpp entity : batch) {
+            entityManager.merge(entity);
+        }
         entityManager.flush();
         entityManager.clear();
 
@@ -282,7 +261,9 @@ public class DbfImportService {
 
         long startTime = System.currentTimeMillis();
 
-        MtRepository.persist(batch);
+        for (Mt entity : batch) {
+            entityManager.merge(entity);
+        }
         entityManager.flush();
         entityManager.clear();
 
@@ -300,7 +281,9 @@ public class DbfImportService {
 
         long startTime = System.currentTimeMillis();
 
-        PpRepository.persist(batch);
+        for (Pp entity : batch) {
+            entityManager.merge(entity);
+        }
         entityManager.flush();
         entityManager.clear();
 
@@ -348,8 +331,8 @@ public class DbfImportService {
         entity.setKgr(getStringOrDefault(record, "KGR", ""));
         entity.setKmt(getStringOrDefault(record, "KMT", ""));
         entity.setSnm(getStringOrDefault(record, "SNM", ""));
-        entity.setPers(getBigDecimalOrDefault(record, "PERS", BigDecimal.ZERO));
-        entity.setRnd(getBigDecimalOrDefault(record, "RND", BigDecimal.ZERO));
+        entity.setPers(getDoubleOrDefault(record, "PERS", 0.0));
+        entity.setRnd(getDoubleOrDefault(record, "RND", 0.0));
 
         return entity;
     }
