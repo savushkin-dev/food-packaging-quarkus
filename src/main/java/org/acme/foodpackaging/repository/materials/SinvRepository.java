@@ -38,6 +38,11 @@ public class SinvRepository implements PanacheRepository<Sinv> {
         );
     }
 
+    public Sinv findByKmtAndDateAndKpp(String kmt, LocalDate date, String kpp) {
+        return find("kmt = ?1 AND dt = ?2 AND kpp = ?3", kmt, date, kpp)
+                .firstResult();
+    }
+
     public void saveOrUpdate(Sinv sinv) {
         em.merge(sinv);
     }

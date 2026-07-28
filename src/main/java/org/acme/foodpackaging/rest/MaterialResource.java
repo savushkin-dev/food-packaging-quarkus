@@ -1,15 +1,11 @@
 package org.acme.foodpackaging.rest;
 
-
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.acme.foodpackaging.dto.materials.KolfRequest;
-import org.acme.foodpackaging.dto.materials.LoadMaterialReqDto;
-import org.acme.foodpackaging.dto.materials.ProductDto;
-import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
+import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.entity.materials.Pp;
 import org.acme.foodpackaging.service.materials.MaterialService;
 
@@ -22,6 +18,7 @@ import java.util.List;
 public class MaterialResource {
 
     private final MaterialService materialService;
+
 
     @Inject
     public MaterialResource(MaterialService materialService) {
@@ -70,13 +67,21 @@ public class MaterialResource {
     @Transactional
     public Response updateKolf(KolfRequest request) {
         try {
+
             materialService.updateKolf(
                     request.getKmt(),
                     request.getKolf(),
                     request.getDate(),
                     request.getKpp()
             );
-            return Response.ok().build();
+
+            SinvDto updatedMaterial = materialService.getUpdatedMaterial(
+                    request.getKmt(),
+                    request.getDate(),
+                    request.getKpp()
+            );
+
+            return Response.ok(updatedMaterial).build();
         } catch (Exception e) {
             e.printStackTrace();
             return Response.status(500).entity(e.getMessage()).build();

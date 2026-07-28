@@ -140,23 +140,28 @@ public class MaterialService {
                     // Получаем Mt для страховки и округления
                     Mt mt = mtRepository.findByKmt(sinv.getKmt()).orElseThrow();
 
-                    // ===== РАСЧЕТ TRND И ORDER =====
+                    // ===== РАСЧЕТ TRND И ORDER (НОВАЯ ФОРМУЛА) =====
                     double totalNormf = totalNormMap.getOrDefault(sinv.getKmt(), 0.0);
                     double insurancePerc = mt.getPers() != null ? mt.getPers().doubleValue() : 0.0;
-                    // Проверка: если roundStep = 0 или null → устанавливаем 1.0
                     double roundStep = mt.getRnd() != null && mt.getRnd().doubleValue() > 0
                             ? mt.getRnd().doubleValue()
                             : 1.0;
                     double kolf = sinv.getKolf() != null ? sinv.getKolf() : 0.0;
 
-                    // Норма со страховкой
-                    double withInsurance = totalNormf * (1 + (insurancePerc / 100.0));
+                    // 1. Сначала вычитаем остаток (дефицит)
+                    double deficit = totalNormf - kolf;
+                    if (deficit < 0) {
+                        deficit = 0;
+                    }
 
-                    // Округление вверх до шага
+                    // 2. Страховка только на дефицит
+                    double withInsurance = deficit * (1 + (insurancePerc / 100.0));
+
+                    // 3. Округление вверх до шага (минимальная единица заказа)
                     double trnd = Math.ceil(withInsurance / roundStep) * roundStep;
 
-                    // Итоговый дозаказ
-                    double order = trnd - kolf;
+                    // 4. Итоговый дозаказ (KOLF уже вычтен)
+                    double order = trnd;
 
                     SinvDto dto = SinvDto.builder()
                             .dt(sinv.getDt())
@@ -171,8 +176,8 @@ public class MaterialService {
                             .kolf(kolf)
                             .insurancePerc(insurancePerc)
                             .roundStep(roundStep)
-                            .trnd(trnd)                              // ← НОРМА СО СТРАХОВКОЙ И ОКРУГЛЕНИЕМ
-                            .order(order)                            // ← ИТОГОВЫЙ ДОЗАКАЗ
+                            .trnd(trnd)
+                            .order(order)
                             .productCount(productCountMap.getOrDefault(sinv.getKmt(), 0L).intValue())
                             .build();
 
@@ -196,6 +201,81 @@ public class MaterialService {
         }
 
         return result;
+    }
+
+    public SinvDto getUpdatedMaterial(String kmt, String date, String kpp) {
+        LocalDate dt = LocalDate.parse(date);
+
+        // 1. Найти SINV
+        Sinv sinv = sinvRepository.findByKmtAndDateAndKpp(kmt, dt, kpp);
+        if (sinv == null) {
+            return null;
+        }
+
+        // 2. Получить все SINV для расчета totalNormf
+        List<Sinv> allSinv = sinvRepository.findByDateAndKpp(dt, kpp);
+
+        // 3. Рассчитать totalNormf
+        Map<String, Double> totalNormMap = allSinv.stream()
+                .collect(Collectors.groupingBy(
+                        Sinv::getKmt,
+                        Collectors.summingDouble(Sinv::getNormf)
+                ));
+
+        // 4. Рассчитать productCount
+        Map<String, Long> productCountMap = allSinv.stream()
+                .collect(Collectors.groupingBy(
+                        Sinv::getKmt,
+                        Collectors.mapping(Sinv::getKmc, Collectors.toSet())
+                ))
+                .entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> (long) e.getValue().size()
+                ));
+
+        // 5. Получить Mt
+        Mt mt = mtRepository.findByKmt(sinv.getKmt()).orElse(null);
+
+        // 6. Рассчитать TRND и ORDER
+        double totalNormf = totalNormMap.getOrDefault(sinv.getKmt(), 0.0);
+        double insurancePerc = mt != null && mt.getPers() != null ? mt.getPers().doubleValue() : 0.0;
+        double roundStep = mt != null && mt.getRnd() != null && mt.getRnd().doubleValue() > 0
+                ? mt.getRnd().doubleValue()
+                : 1.0;
+        double kolf = sinv.getKolf() != null ? sinv.getKolf() : 0.0;
+
+        // Дефицит
+        double deficit = totalNormf - kolf;
+        if (deficit < 0) deficit = 0;
+
+        // Страховка только на дефицит
+        double withInsurance = deficit * (1 + (insurancePerc / 100.0));
+
+        // Округление вверх до шага
+        double trnd = Math.ceil(withInsurance / roundStep) * roundStep;
+
+        // Итоговый дозаказ
+        double order = trnd;
+
+        // 7. Собрать DTO
+        return SinvDto.builder()
+                .dt(sinv.getDt())
+                .kpp(sinv.getKpp())
+                .kmc(sinv.getKmc())
+                .kt(sinv.getKt())
+                .kmt(sinv.getKmt())
+                .snmMt(mt != null ? mt.getSnm() : null)
+                .norm(sinv.getNorm())
+                .normf(sinv.getNormf())
+                .totalNormf(totalNormf)
+                .kolf(kolf)
+                .insurancePerc(insurancePerc)
+                .roundStep(roundStep)
+                .trnd(trnd)
+                .order(order)
+                .productCount(productCountMap.getOrDefault(sinv.getKmt(), 0L).intValue())
+                .build();
     }
 
     @Transactional
