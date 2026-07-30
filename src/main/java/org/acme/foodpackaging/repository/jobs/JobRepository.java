@@ -148,8 +148,8 @@ public class JobRepository {
                 continue;
             }
 
-            job.setDrawCleaningStart(drawCleaningStart.getStartDateTimeFact());
-            job.setDrawCleaningEnd(drawCleaningEnd.getStartDateTimeFact());
+            job.setDrawCleaningStart(drawCleaningStart.getEventTime());
+            job.setDrawCleaningEnd(drawCleaningEnd.getEventTime());
         }
     }
 }
