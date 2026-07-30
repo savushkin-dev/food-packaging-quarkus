@@ -408,16 +408,16 @@ public class JobSaveService {
     }
 
     private void updateCleaningInfo(MsLog drawCleaningStart, MsLog drawCleaningEnd, Job job) {
-        setExistingDrawData(drawCleaningStart, job, EventCode.DRAW_CLEANING_START.getCode());
-        setExistingDrawData(drawCleaningStart, job, EventCode.DRAW_CLEANING_END.getCode());
+        setExistingDrawData(drawCleaningStart, job, EventCode.DRAW_CLEANING_START.getCode(), job.getDrawCleaningStart());
+        setExistingDrawData(drawCleaningEnd, job, EventCode.DRAW_CLEANING_END.getCode(), job.getDrawCleaningEnd());
     }
 
-    private void setExistingDrawData(MsLog existingDrawData, Job job, Integer eventType){
+    private void setExistingDrawData(MsLog existingDrawData, Job job, Integer eventType, LocalDateTime eventTime){
         existingDrawData.setKmc(job.getProduct().getId());
-        existingDrawData.setStartDateTimeFact(job.getDrawCleaningStart()); // DTV
+        existingDrawData.setStartDateTimeFact(job.getDtv()); // DTV
         existingDrawData.setNp(job.getNp());
         existingDrawData.setEventType(eventType);
-        existingDrawData.setEventTime(job.getDrawCleaningEnd());           // DT
+        existingDrawData.setEventTime(eventTime);           // DT
         existingDrawData.setLineIdFact(job.getLineIdFact());
     }
 
