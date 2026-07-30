@@ -364,46 +364,61 @@ public class JobSaveService {
 
     private void saveCleaningInfo(Job job) {
 
-        MsLog existing = msLogRepository.findByIdBatchAndEvent(
+        MsLog drawCleaningStart = msLogRepository.findByIdBatchAndEvent(
                 job.getIdBatch(),
-                EventCode.DRAW_CLEANING.getCode()
+                EventCode.DRAW_CLEANING_START.getCode()
         );
 
-        if (existing == null) {
+        MsLog drawCleaningEnd = msLogRepository.findByIdBatchAndEvent(
+                job.getIdBatch(),
+                EventCode.DRAW_CLEANING_END.getCode()
+        );
+
+        if (drawCleaningStart == null || drawCleaningEnd == null) {
             saveNewCleaningInfo(job);
             return;
         }
 
-        updateCleaningInfo(existing, job);
+        updateCleaningInfo(drawCleaningStart, drawCleaningEnd, job);
     }
 
     private void saveNewCleaningInfo(Job job) {
 
-        MsLog entity = buildDrawCleaningMsLog(job);
+        MsLog entityDrawStart = buildDrawCleaningMsLog(job,
+                EventCode.DRAW_CLEANING_START.getCode(), job.getDrawCleaningStart());
 
-        msLogRepository.persist(entity);
+        MsLog entityDrawEnd = buildDrawCleaningMsLog(job,
+                EventCode.DRAW_CLEANING_END.getCode(), job.getDrawCleaningEnd());
+
+        msLogRepository.persist(entityDrawStart);
+        msLogRepository.persist(entityDrawEnd);
     }
 
-    private MsLog buildDrawCleaningMsLog(Job job) {
+    private MsLog buildDrawCleaningMsLog(Job job, Integer eventCode, LocalDateTime drawDateTime) {
 
         return MsLog.builder()
                 .idBatch(job.getIdBatch())
                 .kmc(job.getProduct().getId())
-                .startDateTimeFact(job.getDrawCleaningStart()) // DTV
+                .startDateTimeFact(job.getDtv()) // DTV
                 .np(job.getNp())
-                .eventType(EventCode.DRAW_CLEANING.getCode())
-                .eventTime(job.getDrawCleaningEnd())           // DT
+                .eventType(eventCode)
+                .eventTime(drawDateTime)           // DT
                 .lineIdFact(job.getLineIdFact())
                 .build();
     }
 
-    private void updateCleaningInfo(MsLog existing, Job job) {
-        existing.setKmc(job.getProduct().getId());
-        existing.setStartDateTimeFact(job.getDrawCleaningStart()); // DTV
-        existing.setNp(job.getNp());
-        existing.setEventType(EventCode.DRAW_CLEANING.getCode());
-        existing.setEventTime(job.getDrawCleaningEnd());           // DT
-        existing.setLineIdFact(job.getLineIdFact());
+    private void updateCleaningInfo(MsLog drawCleaningStart, MsLog drawCleaningEnd, Job job) {
+        setExistingDrawData(drawCleaningStart, job, EventCode.DRAW_CLEANING_START.getCode());
+        setExistingDrawData(drawCleaningStart, job, EventCode.DRAW_CLEANING_END.getCode());
+    }
+
+    private void setExistingDrawData(MsLog existingDrawData, Job job, Integer eventType){
+        existingDrawData.setKmc(job.getProduct().getId());
+        existingDrawData.setStartDateTimeFact(job.getDrawCleaningStart()); // DTV
+        existingDrawData.setNp(job.getNp());
+        existingDrawData.setEventType(eventType);
+        existingDrawData.setEventTime(job.getDrawCleaningEnd());           // DT
+        existingDrawData.setLineIdFact(job.getLineIdFact());
     }
 
     // ============================================================

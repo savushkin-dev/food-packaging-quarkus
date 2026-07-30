@@ -134,17 +134,22 @@ public class JobRepository {
 
         for (Job job : jobs) {
 
-            MsLog existing = msLogRepository.findByIdBatchAndEvent(
+            MsLog drawCleaningStart= msLogRepository.findByIdBatchAndEvent(
                     job.getIdBatch(),
-                    EventCode.DRAW_CLEANING.getCode()
+                    EventCode.DRAW_CLEANING_START.getCode()
             );
 
-            if (existing == null) {
+            MsLog drawCleaningEnd= msLogRepository.findByIdBatchAndEvent(
+                    job.getIdBatch(),
+                    EventCode.DRAW_CLEANING_END.getCode()
+            );
+
+            if (drawCleaningStart == null || drawCleaningEnd == null) {
                 continue;
             }
 
-            job.setDrawCleaningStart(existing.getStartDateTimeFact());
-            job.setDrawCleaningEnd(existing.getEventTime());
+            job.setDrawCleaningStart(drawCleaningStart.getStartDateTimeFact());
+            job.setDrawCleaningEnd(drawCleaningEnd.getStartDateTimeFact());
         }
     }
 }
