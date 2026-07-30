@@ -33,7 +33,7 @@ public class MaterialService {
     ZinvRepository zinvRepository;
 
     @Inject
-    MtRepository mtRepository;
+    MtService mtService;
 
     @Inject
     ZinvService zinvService;
@@ -77,9 +77,8 @@ public class MaterialService {
                 String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
                 Double kolf = existingKolfMap.getOrDefault(key, 0.0);
 
-                PlrMt plrMt = mtRepository.findByKmt(material.getKkom()).orElse(null);
-                String materialName = plrMt != null ? plrMt.getSnm() : null;
-                String materialEdu = plrMt != null ? plrMt.getEdu() : null;
+                // ===== ИСПОЛЬЗУЕМ MtService С КЭШЕМ =====
+                PlrMt plrMt = mtService.getByKmt(material.getKkom());
 
                 SinvDto dto = SinvDto.builder()
                         .dt(dt)
@@ -87,8 +86,8 @@ public class MaterialService {
                         .kmc(product.getKmc())
                         .kt(material.getKt())
                         .kmt(material.getKkom())
-                        .snmMt(materialName)
-                        .eduMt(materialEdu)
+                        .snmMt(plrMt != null ? plrMt.getSnm() : null)
+                        .eduMt(plrMt != null ? plrMt.getEdu() : null)
                         .norm(material.getKol1t())
                         .normf(normf)
                         .kolf(kolf)
@@ -177,7 +176,6 @@ public class MaterialService {
 
     // ===== РАСЧЕТ =====
     private void calculateTotals(List<ProductWithMaterialsDto> data) {
-        // Группировка по kmt
         Map<String, List<SinvDto>> groupByKmt = new HashMap<>();
 
         for (ProductWithMaterialsDto product : data) {
@@ -186,7 +184,6 @@ public class MaterialService {
             }
         }
 
-        // Расчет productCount (сколько уникальных продуктов используют каждый материал)
         Map<String, Integer> productCountMap = new HashMap<>();
         for (ProductWithMaterialsDto product : data) {
             Set<String> uniqueKmtInProduct = product.getMaterials().stream()
@@ -197,7 +194,6 @@ public class MaterialService {
             }
         }
 
-        // Расчет для каждого kmt
         for (Map.Entry<String, List<SinvDto>> entry : groupByKmt.entrySet()) {
             String kmt = entry.getKey();
             List<SinvDto> materials = entry.getValue();
@@ -213,7 +209,8 @@ public class MaterialService {
 
             if (!materials.isEmpty()) {
                 SinvDto first = materials.get(0);
-                PlrMt plrMt = mtRepository.findByKmt(kmt).orElse(null);
+                // ===== ИСПОЛЬЗУЕМ MtService С КЭШЕМ =====
+                PlrMt plrMt = mtService.getByKmt(kmt);
                 insurancePerc = plrMt != null && plrMt.getPers() != null ? plrMt.getPers() : 0.0;
                 roundStep = plrMt != null && plrMt.getRnd() != null && plrMt.getRnd() > 0 ? plrMt.getRnd() : 1.0;
                 kolf = first.getKolf() != null ? first.getKolf() : 0.0;
@@ -253,19 +250,17 @@ public class MaterialService {
     public List<PpDto> searchRecipients(String query) {
         List<PlrPp> entities = ppRepository.searchByName(query);
         return entities.stream()
-                .map(this::PpToPpDto)
+                .map(this::toPpDto)
                 .collect(Collectors.toList());
     }
 
-    public PpDto PpToPpDto(PlrPp entity) {
+    private PpDto toPpDto(PlrPp entity) {
         if (entity == null) {
             return null;
         }
-
         return PpDto.builder()
                 .kpp(entity.kpp)
                 .snm(entity.snm)
                 .build();
     }
-
 }

@@ -219,6 +219,11 @@
       <artifactId>quarkus-resteasy-multipart</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-cache</artifactId>
+    </dependency>
+
 
   </dependencies>
   <build>
