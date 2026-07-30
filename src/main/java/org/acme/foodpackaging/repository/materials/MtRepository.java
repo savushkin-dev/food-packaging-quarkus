@@ -2,23 +2,23 @@ package org.acme.foodpackaging.repository.materials;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.materials.Mt;
+import org.acme.foodpackaging.entity.materials.PlrMt;
 
 import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
-public class MtRepository implements PanacheRepository<Mt> {
+public class MtRepository implements PanacheRepository<PlrMt> {
 
-    public Optional<Mt> findByKgrAndKmt(String kgr, String kmt) {
+    public Optional<PlrMt> findByKgrAndKmt(String kgr, String kmt) {
         return find("kgr = ?1 and kmt = ?2", kgr, kmt).firstResultOptional();
     }
 
-    public List<Mt> findByKgr(String kgr) {
+    public List<PlrMt> findByKgr(String kgr) {
         return find("kgr = ?1", kgr).list();
     }
 
-    public Optional<Mt> findByKmt(String kmt) {
+    public Optional<PlrMt> findByKmt(String kmt) {
         return find("kmt = ?1", kmt).firstResultOptional();
     }
 

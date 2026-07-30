@@ -4,13 +4,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.dto.materials.ZinvDto;
-import org.acme.foodpackaging.entity.materials.Zinv;
+import org.acme.foodpackaging.entity.materials.PlrZinv;
 import org.acme.foodpackaging.repository.materials.ZinvRepository;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class ZinvService {
@@ -19,20 +18,20 @@ public class ZinvService {
     ZinvRepository zinvRepository;
 
     @Transactional
-    public void save(Zinv zinv) {
-        zinvRepository.save(zinv);
+    public void save(PlrZinv plrZinv) {
+        zinvRepository.save(plrZinv);
     }
 
     @Transactional
-    public void saveAll(List<Zinv> entities) {
+    public void saveAll(List<PlrZinv> entities) {
         zinvRepository.saveAll(entities);
     }
 
-    public List<Zinv> findByDateAndKpp(LocalDate date, String kpp) {
+    public List<PlrZinv> findByDateAndKpp(LocalDate date, String kpp) {
         return new ArrayList<>(zinvRepository.findByDateAndKpp(date, kpp));
     }
 
-    public Zinv findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
+    public PlrZinv findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
         return zinvRepository.findByDateAndKppAndKmc(date, kpp, kmc);
     }
 
@@ -41,7 +40,7 @@ public class ZinvService {
         zinvRepository.deleteByDateAndKpp(date, kpp);
     }
 
-    private ZinvDto toDto(Zinv entity) {
+    private ZinvDto toDto(PlrZinv entity) {
         return ZinvDto.builder()
                 .dt(entity.getDt())
                 .kpp(entity.getKpp())
@@ -54,8 +53,8 @@ public class ZinvService {
                 .build();
     }
 
-    private Zinv toEntity(ZinvDto dto) {
-        return Zinv.builder()
+    private PlrZinv toEntity(ZinvDto dto) {
+        return PlrZinv.builder()
                 .dt(dto.getDt())
                 .kpp(dto.getKpp())
                 .kmc(dto.getKmc())

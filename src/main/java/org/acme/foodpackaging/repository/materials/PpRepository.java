@@ -2,18 +2,21 @@ package org.acme.foodpackaging.repository.materials;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.materials.Pp;
+import org.acme.foodpackaging.entity.materials.PlrPp;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 @ApplicationScoped
-public class PpRepository implements PanacheRepository<Pp> {
+public class PpRepository implements PanacheRepository<PlrPp> {
 
-    public Optional<Pp> findByKpp(String kpp) {
-        return find("kpp = ?1", kpp).firstResultOptional();
-    }
-
-    public long deleteByKpp(String kpp) {
-        return delete("kpp = ?1", kpp);
+    public List<PlrPp> searchByName(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return find(
+                "UPPER(snm) LIKE UPPER(?1) OR UPPER(kpp) LIKE UPPER(?1)",
+                "%" + query.trim() + "%"
+        ).list();
     }
 }

@@ -11,7 +11,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -21,7 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "PLR_SINV", schema = "dbo")
-public class Sinv extends PanacheEntityBase {
+public class PlrSinv extends PanacheEntityBase {
 
     @Id
     @UuidGenerator

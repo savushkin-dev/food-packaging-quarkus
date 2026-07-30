@@ -1,18 +1,13 @@
 package org.acme.foodpackaging.entity.materials;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -20,8 +15,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "PLR_SPROG", schema = "dbo")
-public class Sprog extends PanacheEntityBase {
+@Table(name = "PLR_PP", schema = "dbo")
+public class PlrPp extends PanacheEntityBase {
 
     @Id
     @UuidGenerator
@@ -37,18 +32,9 @@ public class Sprog extends PanacheEntityBase {
     @Column(name = "F_DEL", nullable = false, insertable = false, updatable = false)
     public Integer fDel = 0;
 
-    @Column(name = "SYSN", nullable = false)
-    public Double sysn;
+    @Column(name = "KPP", length = 8, nullable = false)
+    public String kpp;
 
-    @Column(name = "DT1", nullable = false)
-    public LocalDate dt1;
-
-    @Column(name = "DT2", nullable = false)
-    public LocalDate dt2;
-
-    @Column(name = "OBJ", length = 10, nullable = false)
-    public String obj;
-
-    @Column(name = "NP", nullable = false)
-    public Integer np;
+    @Column(name = "SNM", length = 30, nullable = false)
+    public String snm;
 }

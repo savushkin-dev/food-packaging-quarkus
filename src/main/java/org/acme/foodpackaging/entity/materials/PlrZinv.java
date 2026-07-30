@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -19,8 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "PLR_RNPP", schema = "dbo")
-public class Rnpp extends PanacheEntityBase {
+@Table(name = "PLR_ZINV", schema = "dbo")
+public class PlrZinv extends PanacheEntityBase {
 
     @Id
     @UuidGenerator
@@ -36,8 +36,11 @@ public class Rnpp extends PanacheEntityBase {
     @Column(name = "F_DEL", nullable = false, insertable = false, updatable = false)
     public Integer fDel = 0;
 
-    @Column(name = "SYSN", nullable = false)
-    public Double sysn;
+    @Column(name = "DT", nullable = false)
+    public LocalDate dt;
+
+    @Column(name = "KPP", length = 10, nullable = false)
+    public String kpp;
 
     @Column(name = "KMC", length = 10, nullable = false)
     public String kmc;
@@ -45,15 +48,15 @@ public class Rnpp extends PanacheEntityBase {
     @Column(name = "KT", length = 10, nullable = false)
     public String kt;
 
-    @Column(name = "EMK", nullable = false)
+    @Column(name = "EAN13", length = 13)
+    public String ean13;
+
+    @Column(name = "NAME", length = 100)
+    public String name;
+
+    @Column(name = "SUM_MASS", nullable = false)
+    public Double sumMass = 0.0;
+
+    @Column(name = "EMK")
     public Double emk;
-
-    @Column(name = "KKOM", length = 10, nullable = false)
-    public String kkom;
-
-    @Column(name = "KOL1T", nullable = false)
-    public Double kol1t = 0.0;
-
-    @Column(name = "KOLVK", nullable = false)
-    public Double kolvk = 0.0;
 }

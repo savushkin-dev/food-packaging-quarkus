@@ -2,18 +2,18 @@ package org.acme.foodpackaging.repository.materials;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.entity.materials.Sprog;
+import org.acme.foodpackaging.entity.materials.PlrSprog;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 
 @ApplicationScoped
-public class SprogRepository implements PanacheRepository<Sprog> {
+public class SprogRepository implements PanacheRepository<PlrSprog> {
 
     private static final String OBJ = "0101011000";
     private static final Integer NP = 1;
 
-    public Sprog findByDate(LocalDate date) {
+    public PlrSprog findByDate(LocalDate date) {
 
         YearMonth yearMonth = YearMonth.from(date);
         LocalDate firstDay = yearMonth.atDay(1);

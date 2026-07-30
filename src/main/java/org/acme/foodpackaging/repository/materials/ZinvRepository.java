@@ -3,7 +3,7 @@ package org.acme.foodpackaging.repository.materials;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import org.acme.foodpackaging.entity.materials.Zinv;
+import org.acme.foodpackaging.entity.materials.PlrZinv;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,30 +14,30 @@ public class ZinvRepository {
     @Inject
     EntityManager em;
 
-    public void save(Zinv zinv) {
-        em.merge(zinv);
+    public void save(PlrZinv plrZinv) {
+        em.merge(plrZinv);
     }
 
-    public void saveAll(List<Zinv> zinvList) {
-        for (Zinv z : zinvList) {
+    public void saveAll(List<PlrZinv> plrZinvList) {
+        for (PlrZinv z : plrZinvList) {
             em.merge(z);
         }
     }
 
-    public List<Zinv> findByDateAndKpp(LocalDate date, String kpp) {
+    public List<PlrZinv> findByDateAndKpp(LocalDate date, String kpp) {
         return em.createQuery(
-                        "SELECT z FROM Zinv z WHERE z.dt = :dt AND z.kpp = :kpp",
-                        Zinv.class
+                        "SELECT z FROM PlrZinv z WHERE z.dt = :dt AND z.kpp = :kpp",
+                        PlrZinv.class
                 )
                 .setParameter("dt", date)
                 .setParameter("kpp", kpp)
                 .getResultList();
     }
 
-    public Zinv findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
-        List<Zinv> result = em.createQuery(
-                        "SELECT z FROM Zinv z WHERE z.dt = :dt AND z.kpp = :kpp AND z.kmc = :kmc",
-                        Zinv.class
+    public PlrZinv findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
+        List<PlrZinv> result = em.createQuery(
+                        "SELECT z FROM PlrZinv z WHERE z.dt = :dt AND z.kpp = :kpp AND z.kmc = :kmc",
+                        PlrZinv.class
                 )
                 .setParameter("dt", date)
                 .setParameter("kpp", kpp)
@@ -48,7 +48,7 @@ public class ZinvRepository {
     }
 
     public void deleteByDateAndKpp(LocalDate date, String kpp) {
-        em.createQuery("DELETE FROM Zinv z WHERE z.dt = :dt AND z.kpp = :kpp")
+        em.createQuery("DELETE FROM PlrZinv z WHERE z.dt = :dt AND z.kpp = :kpp")
                 .setParameter("dt", date)
                 .setParameter("kpp", kpp)
                 .executeUpdate();

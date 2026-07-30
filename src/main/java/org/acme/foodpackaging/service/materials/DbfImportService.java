@@ -5,10 +5,10 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.acme.foodpackaging.entity.materials.Rnpp;
-import org.acme.foodpackaging.entity.materials.Sprog;
-import org.acme.foodpackaging.entity.materials.Mt;
-import org.acme.foodpackaging.entity.materials.Pp;
+import org.acme.foodpackaging.entity.materials.PlrRnpp;
+import org.acme.foodpackaging.entity.materials.PlrSprog;
+import org.acme.foodpackaging.entity.materials.PlrMt;
+import org.acme.foodpackaging.entity.materials.PlrPp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,12 +41,12 @@ public class DbfImportService {
         long startTime = System.currentTimeMillis();
 
         AtomicInteger importedCount = new AtomicInteger(0);
-        List<Sprog> batch = new ArrayList<>(BATCH_SIZE);
+        List<PlrSprog> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
             dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
                 try {
-                    Sprog entity = mapToSprog(record);
+                    PlrSprog entity = mapToSprog(record);
                     batch.add(entity);
 
                     if (batch.size() >= BATCH_SIZE) {
@@ -82,7 +82,7 @@ public class DbfImportService {
         long startTime = System.currentTimeMillis();
 
         AtomicInteger importedCount = new AtomicInteger(0);
-        List<Rnpp> batch = new ArrayList<>(BATCH_SIZE);
+        List<PlrRnpp> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
             String basePath = dbfPath.substring(0, dbfPath.lastIndexOf('.'));
@@ -102,7 +102,7 @@ public class DbfImportService {
                         return;
                     }
 
-                    Rnpp entity = mapToRnpp(record);
+                    PlrRnpp entity = mapToRnpp(record);
                     batch.add(entity);
 
                     if (batch.size() >= BATCH_SIZE) {
@@ -137,12 +137,12 @@ public class DbfImportService {
         long startTime = System.currentTimeMillis();
 
         AtomicInteger importedCount = new AtomicInteger(0);
-        List<Mt> batch = new ArrayList<>(BATCH_SIZE);
+        List<PlrMt> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
             dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
                 try {
-                    Mt entity = mapToMt(record);
+                    PlrMt entity = mapToMt(record);
                     batch.add(entity);
 
                     if (batch.size() >= BATCH_SIZE) {
@@ -177,12 +177,12 @@ public class DbfImportService {
         long startTime = System.currentTimeMillis();
 
         AtomicInteger importedCount = new AtomicInteger(0);
-        List<Pp> batch = new ArrayList<>(BATCH_SIZE);
+        List<PlrPp> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
             dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
                 try {
-                    Pp entity = mapToPp(record);
+                    PlrPp entity = mapToPp(record);
                     batch.add(entity);
 
                     if (batch.size() >= BATCH_SIZE) {
@@ -214,14 +214,14 @@ public class DbfImportService {
 
 
     @Transactional
-    public int saveSprogBatch(List<Sprog> batch) {
+    public int saveSprogBatch(List<PlrSprog> batch) {
         if (batch.isEmpty()) {
             return 0;
         }
 
         long startTime = System.currentTimeMillis();
 
-        for (Sprog entity : batch) {
+        for (PlrSprog entity : batch) {
             entityManager.merge(entity);
         }
         entityManager.flush();
@@ -234,14 +234,14 @@ public class DbfImportService {
     }
 
     @Transactional
-    public int saveRnppBatch(List<Rnpp> batch) {
+    public int saveRnppBatch(List<PlrRnpp> batch) {
         if (batch.isEmpty()) {
             return 0;
         }
 
         long startTime = System.currentTimeMillis();
 
-        for (Rnpp entity : batch) {
+        for (PlrRnpp entity : batch) {
             entityManager.merge(entity);
         }
         entityManager.flush();
@@ -254,14 +254,14 @@ public class DbfImportService {
     }
 
     @Transactional
-    public int saveMtBatch(List<Mt> batch) {
+    public int saveMtBatch(List<PlrMt> batch) {
         if (batch.isEmpty()) {
             return 0;
         }
 
         long startTime = System.currentTimeMillis();
 
-        for (Mt entity : batch) {
+        for (PlrMt entity : batch) {
             entityManager.merge(entity);
         }
         entityManager.flush();
@@ -274,14 +274,14 @@ public class DbfImportService {
     }
 
     @Transactional
-    public int savePpBatch(List<Pp> batch) {
+    public int savePpBatch(List<PlrPp> batch) {
         if (batch.isEmpty()) {
             return 0;
         }
 
         long startTime = System.currentTimeMillis();
 
-        for (Pp entity : batch) {
+        for (PlrPp entity : batch) {
             entityManager.merge(entity);
         }
         entityManager.flush();
@@ -293,8 +293,8 @@ public class DbfImportService {
         return batch.size();
     }
 
-    private Sprog mapToSprog(Map<String, Object> record) {
-        Sprog entity = new Sprog();
+    private PlrSprog mapToSprog(Map<String, Object> record) {
+        PlrSprog entity = new PlrSprog();
 
         entity.setSysn(getDoubleOrDefault(record, "SYSN", 0.0));
         entity.setDt1(getDateOrDefault(record, "DT1", LocalDate.now()));
@@ -305,8 +305,8 @@ public class DbfImportService {
         return entity;
     }
 
-    private Rnpp mapToRnpp(Map<String, Object> record) {
-        Rnpp entity = new Rnpp();
+    private PlrRnpp mapToRnpp(Map<String, Object> record) {
+        PlrRnpp entity = new PlrRnpp();
 
         entity.setSysn(getDoubleOrDefault(record, "SYSN", 0.0));
         entity.setKmc(getStringOrDefault(record, "KMC", "UNKNOWN"));
@@ -325,20 +325,21 @@ public class DbfImportService {
         return entity;
     }
 
-    private Mt mapToMt(Map<String, Object> record) {
-        Mt entity = new Mt();
+    private PlrMt mapToMt(Map<String, Object> record) {
+        PlrMt entity = new PlrMt();
 
         entity.setKgr(getStringOrDefault(record, "KGR", ""));
         entity.setKmt(getStringOrDefault(record, "KMT", ""));
         entity.setSnm(getStringOrDefault(record, "SNM", ""));
+        entity.setEdu(getStringOrDefault(record, "EDU", ""));
         entity.setPers(getDoubleOrDefault(record, "PERS", 0.0));
         entity.setRnd(getDoubleOrDefault(record, "RND", 0.0));
 
         return entity;
     }
 
-    private Pp mapToPp(Map<String, Object> record) {
-        Pp entity = new Pp();
+    private PlrPp mapToPp(Map<String, Object> record) {
+        PlrPp entity = new PlrPp();
 
         entity.setKpp(getStringOrDefault(record, "KPP", ""));
         entity.setSnm(getStringOrDefault(record, "SNM", ""));

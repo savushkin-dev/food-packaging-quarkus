@@ -4,22 +4,22 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import org.acme.foodpackaging.entity.materials.Sinv;
+import org.acme.foodpackaging.entity.materials.PlrSinv;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @ApplicationScoped
-public class SinvRepository implements PanacheRepository<Sinv> {
+public class SinvRepository implements PanacheRepository<PlrSinv> {
 
     @Inject
     EntityManager em;
 
-    public List<Sinv> findByDateAndKpp(LocalDate date, String kpp) {
+    public List<PlrSinv> findByDateAndKpp(LocalDate date, String kpp) {
         return find("dt = ?1 AND kpp = ?2", date, kpp).list();
     }
 
-    public List<Sinv> findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
+    public List<PlrSinv> findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
         return find("dt = ?1 AND kpp = ?2 AND kmc = ?3", date, kpp, kmc).list();
     }
 
@@ -38,18 +38,18 @@ public class SinvRepository implements PanacheRepository<Sinv> {
         );
     }
 
-    public Sinv findByKmtAndDateAndKpp(String kmt, LocalDate date, String kpp) {
+    public PlrSinv findByKmtAndDateAndKpp(String kmt, LocalDate date, String kpp) {
         return find("kmt = ?1 AND dt = ?2 AND kpp = ?3", kmt, date, kpp)
                 .firstResult();
     }
 
-    public void saveOrUpdate(Sinv sinv) {
-        em.merge(sinv);
+    public void saveOrUpdate(PlrSinv plrSinv) {
+        em.merge(plrSinv);
     }
 
-    public void saveAll(List<Sinv> sinvList) {
-        for (Sinv sinv : sinvList) {
-            em.merge(sinv);
+    public void saveAll(List<PlrSinv> plrSinvList) {
+        for (PlrSinv plrSinv : plrSinvList) {
+            em.merge(plrSinv);
         }
         em.flush();
         em.clear();

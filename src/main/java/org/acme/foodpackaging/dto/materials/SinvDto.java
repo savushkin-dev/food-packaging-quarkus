@@ -21,6 +21,7 @@ public class SinvDto {
 
     // ===== ИНФОРМАЦИЯ О МАТЕРИАЛЕ =====
     private String snmMt;        // Название материала
+    private String eduMt;          // Единица учета материала
     private String snmKt;        // Название упаковки
 
     // ===== РАЗНЫЕ ДЛЯ КАЖДОГО ПРОДУКТА =====

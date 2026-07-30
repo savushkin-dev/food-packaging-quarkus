@@ -11,8 +11,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -20,8 +18,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "PLR_ZINV", schema = "dbo")
-public class Zinv extends PanacheEntityBase {
+@Table(name = "PLR_MT", schema = "dbo")
+public class PlrMt extends PanacheEntityBase {
 
     @Id
     @UuidGenerator
@@ -37,27 +35,21 @@ public class Zinv extends PanacheEntityBase {
     @Column(name = "F_DEL", nullable = false, insertable = false, updatable = false)
     public Integer fDel = 0;
 
-    @Column(name = "DT", nullable = false)
-    public LocalDate dt;
+    @Column(name = "KGR", length = 10, nullable = false)
+    public String kgr;
 
-    @Column(name = "KPP", length = 10, nullable = false)
-    public String kpp;
+    @Column(name = "KMT", length = 10, nullable = false)
+    public String kmt;
 
-    @Column(name = "KMC", length = 10, nullable = false)
-    public String kmc;
+    @Column(name = "SNM", length = 30, nullable = false)
+    public String snm;
 
-    @Column(name = "KT", length = 10, nullable = false)
-    public String kt;
+    @Column(name = "EDU", length = 10, nullable = false)
+    public String edu;
 
-    @Column(name = "EAN13", length = 13)
-    public String ean13;
+    @Column(name = "PERS", nullable = false)
+    public Double pers = 0.0;
 
-    @Column(name = "NAME", length = 100)
-    public String name;
-
-    @Column(name = "SUM_MASS", nullable = false)
-    public Double sumMass = 0.0;
-
-    @Column(name = "EMK")
-    public Double emk;
+    @Column(name = "RND", nullable = false)
+    public Double rnd = 0.0;
 }

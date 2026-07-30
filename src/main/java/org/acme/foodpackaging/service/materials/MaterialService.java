@@ -3,19 +3,12 @@ package org.acme.foodpackaging.service.materials;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.acme.foodpackaging.dto.materials.SinvDto;
-import org.acme.foodpackaging.dto.materials.ProductDto;
-import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
-import org.acme.foodpackaging.dto.materials.ZinvDto;
+import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.entity.materials.*;
 import org.acme.foodpackaging.repository.materials.*;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -37,6 +30,9 @@ public class MaterialService {
     SinvRepository sinvRepository;
 
     @Inject
+    ZinvRepository zinvRepository;
+
+    @Inject
     MtRepository mtRepository;
 
     @Inject
@@ -46,249 +42,230 @@ public class MaterialService {
         return materialRepository.findProductsByDate(date);
     }
 
-    @Transactional
-    public List<ProductWithMaterialsDto> loadProductsToZinv(String date, String kpp) {
+    // ===== ЗАГРУЗКА (БЕЗ СОХРАНЕНИЯ) =====
+    public List<ProductWithMaterialsDto> loadProducts(String date, String kpp) {
         LocalDate dt = LocalDate.parse(date);
 
-        // 1. Получить продукты из BD_VZPMC
         List<ProductDto> products = materialRepository.findProductsByDate(date);
 
-        // 2. Сохранить в PLR_ZINV
-        List<Zinv> zinvList = products.stream()
-                .map(p -> Zinv.builder()
-                        .dt(dt)
-                        .kpp(kpp)
-                        .kmc(p.getKmc())
-                        .kt(p.getKt())
-                        .ean13(p.getEan13())
-                        .emk(p.getEmk())
-                        .name(p.getProductName())
-                        .sumMass(p.getSumMass())
-                        .build())
-                .collect(Collectors.toList());
+        PlrSprog plrSprog = getSprogByDate(date);
+        Double sysn = plrSprog.getSysn();
 
-        zinvService.saveAll(zinvList);
+        List<PlrSinv> existingPlrSinv = sinvRepository.findByDateAndKpp(dt, kpp);
+        Map<String, Double> existingKolfMap = existingPlrSinv.stream()
+                .collect(Collectors.toMap(
+                        s -> s.getKmc() + "|" + s.getKt() + "|" + s.getKmt() + "|" + s.getNorm(),
+                        PlrSinv::getKolf,
+                        (v1, v2) -> v1
+                ));
 
-        // 3. Получить SYSN
-        Sprog sprog = getSprogByDate(date);
-        Double sysn = sprog.getSysn();
+        List<ProductWithMaterialsDto> result = new ArrayList<>();
 
-        // 4. Удалить старые SINV
-        sinvRepository.deleteByDateAndKpp(dt, kpp);
-        sinvRepository.getEntityManager().flush();
-        sinvRepository.getEntityManager().clear();
-
-        // 5. Сохраняем материалы и собираем их в список
-        List<Sinv> allSavedSinv = new ArrayList<>();
-
-        for (Zinv product : zinvList) {
-            List<Rnpp> materials = rnppRepository.findByKmcAndKtAndEmkAndSysn(
+        for (ProductDto product : products) {
+            List<PlrRnpp> materials = rnppRepository.findByKmcAndKtAndEmkAndSysn(
                     sysn,
                     product.getKmc(),
                     product.getKt(),
                     product.getEmk()
             );
 
-            for (Rnpp material : materials) {
-                BigDecimal normf = BigDecimal.valueOf(product.getSumMass())
-                        .divide(BigDecimal.valueOf(1000))
-                        .multiply(BigDecimal.valueOf(material.getKol1t()))
-                        .setScale(2, RoundingMode.HALF_UP);
+            List<SinvDto> materialDtos = new ArrayList<>();
 
-                Sinv sinv = Sinv.builder()
+            for (PlrRnpp material : materials) {
+                double normf = (product.getSumMass() / 1000) * material.getKol1t();
+
+                String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
+                Double kolf = existingKolfMap.getOrDefault(key, 0.0);
+
+                PlrMt plrMt = mtRepository.findByKmt(material.getKkom()).orElse(null);
+                String materialName = plrMt != null ? plrMt.getSnm() : null;
+                String materialEdu = plrMt != null ? plrMt.getEdu() : null;
+
+                SinvDto dto = SinvDto.builder()
                         .dt(dt)
                         .kpp(kpp)
                         .kmc(product.getKmc())
                         .kt(material.getKt())
                         .kmt(material.getKkom())
+                        .snmMt(materialName)
+                        .eduMt(materialEdu)
                         .norm(material.getKol1t())
-                        .normf(normf.doubleValue())
-                        .kolf(0.0)
+                        .normf(normf)
+                        .kolf(kolf)
                         .build();
 
-                sinvRepository.saveOrUpdate(sinv);
-                allSavedSinv.add(sinv);
+                materialDtos.add(dto);
+            }
+
+            result.add(ProductWithMaterialsDto.builder()
+                    .dt(dt)
+                    .kpp(kpp)
+                    .kmc(product.getKmc())
+                    .kt(product.getKt())
+                    .ean13(product.getEan13())
+                    .emk(product.getEmk())
+                    .name(product.getProductName())
+                    .sumMass(product.getSumMass())
+                    .materials(materialDtos)
+                    .build());
+        }
+
+        calculateTotals(result);
+
+        return result;
+    }
+
+    // ===== ПЕРЕСЧЕТ KOLF =====
+    public List<ProductWithMaterialsDto> recalcKolf(KolfRecalcRequest request) {
+        List<ProductWithMaterialsDto> data = request.getData();
+
+        for (ProductWithMaterialsDto product : data) {
+            for (SinvDto material : product.getMaterials()) {
+                if (material.getKmt().equals(request.getKmt())) {
+                    material.setKolf(request.getKolf());
+                }
             }
         }
 
-        // 6. РАССЧИТАТЬ totalNormf по всем материалам
-        Map<String, Double> totalNormMap = allSavedSinv.stream()
-                .collect(Collectors.groupingBy(
-                        Sinv::getKmt,
-                        Collectors.summingDouble(Sinv::getNormf)
-                ));
+        calculateTotals(data);
 
-        Map<String, Long> productCountMap = allSavedSinv.stream()
-                .collect(Collectors.groupingBy(
-                        Sinv::getKmt,
-                        Collectors.mapping(Sinv::getKmc, Collectors.toSet())
-                ))
-                .entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> (long) e.getValue().size()
-                ));
+        return data;
+    }
 
-        // 7. Собрать результат
-        List<ProductWithMaterialsDto> result = new ArrayList<>();
+    // ===== СОХРАНЕНИЕ =====
+    @Transactional
+    public void saveAll(SaveRequest request) {
+        String date = request.getDate();
+        String kpp = request.getKpp();
+        List<ProductWithMaterialsDto> data = request.getData();
 
-        for (Zinv product : zinvList) {
-            List<SinvDto> materialDtos = new ArrayList<>();
+        LocalDate dt = LocalDate.parse(date);
 
-            for (Sinv sinv : allSavedSinv) {
-                if (sinv.getKmc().equals(product.getKmc()) && sinv.getKt().equals(product.getKt())) {
-                    // Получаем Mt для страховки и округления
-                    Mt mt = mtRepository.findByKmt(sinv.getKmt()).orElseThrow();
+        zinvRepository.deleteByDateAndKpp(dt, kpp);
+        sinvRepository.deleteByDateAndKpp(dt, kpp);
 
-                    // ===== РАСЧЕТ TRND И ORDER (НОВАЯ ФОРМУЛА) =====
-                    double totalNormf = totalNormMap.getOrDefault(sinv.getKmt(), 0.0);
-                    double insurancePerc = mt.getPers() != null ? mt.getPers().doubleValue() : 0.0;
-                    double roundStep = mt.getRnd() != null && mt.getRnd().doubleValue() > 0
-                            ? mt.getRnd().doubleValue()
-                            : 1.0;
-                    double kolf = sinv.getKolf() != null ? sinv.getKolf() : 0.0;
-
-                    // 1. Сначала вычитаем остаток (дефицит)
-                    double deficit = totalNormf - kolf;
-                    if (deficit < 0) {
-                        deficit = 0;
-                    }
-
-                    // 2. Страховка только на дефицит
-                    double withInsurance = deficit * (1 + (insurancePerc / 100.0));
-
-                    // 3. Округление вверх до шага (минимальная единица заказа)
-                    double trnd = Math.ceil(withInsurance / roundStep) * roundStep;
-
-                    // 4. Итоговый дозаказ (KOLF уже вычтен)
-                    double order = trnd;
-
-                    SinvDto dto = SinvDto.builder()
-                            .dt(sinv.getDt())
-                            .kpp(sinv.getKpp())
-                            .kmc(sinv.getKmc())
-                            .kt(sinv.getKt())
-                            .kmt(sinv.getKmt())
-                            .snmMt(mt.getSnm())
-                            .norm(sinv.getNorm())
-                            .normf(sinv.getNormf())
-                            .totalNormf(totalNormf)
-                            .kolf(kolf)
-                            .insurancePerc(insurancePerc)
-                            .roundStep(roundStep)
-                            .trnd(trnd)
-                            .order(order)
-                            .productCount(productCountMap.getOrDefault(sinv.getKmt(), 0L).intValue())
-                            .build();
-
-                    materialDtos.add(dto);
-                }
-            }
-
-            ProductWithMaterialsDto productWithMaterials = ProductWithMaterialsDto.builder()
-                    .dt(product.getDt())
-                    .kpp(product.getKpp())
+        for (ProductWithMaterialsDto product : data) {
+            PlrZinv plrZinv = PlrZinv.builder()
+                    .dt(dt)
+                    .kpp(kpp)
                     .kmc(product.getKmc())
                     .kt(product.getKt())
                     .ean13(product.getEan13())
                     .emk(product.getEmk())
                     .name(product.getName())
                     .sumMass(product.getSumMass())
-                    .materials(materialDtos)
                     .build();
-
-            result.add(productWithMaterials);
+            zinvService.save(plrZinv);
         }
 
-        return result;
+        for (ProductWithMaterialsDto product : data) {
+            for (SinvDto material : product.getMaterials()) {
+                PlrSinv plrSinv = PlrSinv.builder()
+                        .dt(dt)
+                        .kpp(kpp)
+                        .kmc(product.getKmc())
+                        .kt(material.getKt())
+                        .kmt(material.getKmt())
+                        .norm(material.getNorm())
+                        .normf(material.getNormf())
+                        .kolf(material.getKolf())
+                        .build();
+                sinvRepository.saveOrUpdate(plrSinv);
+            }
+        }
     }
 
-    public SinvDto getUpdatedMaterial(String kmt, String date, String kpp) {
-        LocalDate dt = LocalDate.parse(date);
+    // ===== РАСЧЕТ =====
+    private void calculateTotals(List<ProductWithMaterialsDto> data) {
+        // Группировка по kmt
+        Map<String, List<SinvDto>> groupByKmt = new HashMap<>();
 
-        // 1. Найти SINV
-        Sinv sinv = sinvRepository.findByKmtAndDateAndKpp(kmt, dt, kpp);
-        if (sinv == null) {
-            return null;
+        for (ProductWithMaterialsDto product : data) {
+            for (SinvDto material : product.getMaterials()) {
+                groupByKmt.computeIfAbsent(material.getKmt(), k -> new ArrayList<>()).add(material);
+            }
         }
 
-        // 2. Получить все SINV для расчета totalNormf
-        List<Sinv> allSinv = sinvRepository.findByDateAndKpp(dt, kpp);
+        // Расчет productCount (сколько уникальных продуктов используют каждый материал)
+        Map<String, Integer> productCountMap = new HashMap<>();
+        for (ProductWithMaterialsDto product : data) {
+            Set<String> uniqueKmtInProduct = product.getMaterials().stream()
+                    .map(SinvDto::getKmt)
+                    .collect(Collectors.toSet());
+            for (String kmt : uniqueKmtInProduct) {
+                productCountMap.put(kmt, productCountMap.getOrDefault(kmt, 0) + 1);
+            }
+        }
 
-        // 3. Рассчитать totalNormf
-        Map<String, Double> totalNormMap = allSinv.stream()
-                .collect(Collectors.groupingBy(
-                        Sinv::getKmt,
-                        Collectors.summingDouble(Sinv::getNormf)
-                ));
+        // Расчет для каждого kmt
+        for (Map.Entry<String, List<SinvDto>> entry : groupByKmt.entrySet()) {
+            String kmt = entry.getKey();
+            List<SinvDto> materials = entry.getValue();
 
-        // 4. Рассчитать productCount
-        Map<String, Long> productCountMap = allSinv.stream()
-                .collect(Collectors.groupingBy(
-                        Sinv::getKmt,
-                        Collectors.mapping(Sinv::getKmc, Collectors.toSet())
-                ))
-                .entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> (long) e.getValue().size()
-                ));
+            double totalNormf = materials.stream()
+                    .mapToDouble(SinvDto::getNormf)
+                    .sum();
 
-        // 5. Получить Mt
-        Mt mt = mtRepository.findByKmt(sinv.getKmt()).orElse(null);
+            double insurancePerc = 0.0;
+            double roundStep = 1.0;
+            double kolf = 0.0;
+            String snmMt = null;
 
-        // 6. Рассчитать TRND и ORDER
-        double totalNormf = totalNormMap.getOrDefault(sinv.getKmt(), 0.0);
-        double insurancePerc = mt != null && mt.getPers() != null ? mt.getPers().doubleValue() : 0.0;
-        double roundStep = mt != null && mt.getRnd() != null && mt.getRnd().doubleValue() > 0
-                ? mt.getRnd().doubleValue()
-                : 1.0;
-        double kolf = sinv.getKolf() != null ? sinv.getKolf() : 0.0;
+            if (!materials.isEmpty()) {
+                SinvDto first = materials.get(0);
+                PlrMt plrMt = mtRepository.findByKmt(kmt).orElse(null);
+                insurancePerc = plrMt != null && plrMt.getPers() != null ? plrMt.getPers() : 0.0;
+                roundStep = plrMt != null && plrMt.getRnd() != null && plrMt.getRnd() > 0 ? plrMt.getRnd() : 1.0;
+                kolf = first.getKolf() != null ? first.getKolf() : 0.0;
+                snmMt = plrMt != null ? plrMt.getSnm() : null;
 
-        // Дефицит
-        double deficit = totalNormf - kolf;
-        if (deficit < 0) deficit = 0;
+                for (SinvDto material : materials) {
+                    material.setInsurancePerc(insurancePerc);
+                    material.setRoundStep(roundStep);
+                    material.setSnmMt(snmMt);
+                    material.setProductCount(productCountMap.getOrDefault(kmt, 1));
+                }
+            }
 
-        // Страховка только на дефицит
-        double withInsurance = deficit * (1 + (insurancePerc / 100.0));
+            double deficit = totalNormf - kolf;
+            if (deficit < 0) deficit = 0;
 
-        // Округление вверх до шага
-        double trnd = Math.ceil(withInsurance / roundStep) * roundStep;
+            double withInsurance = deficit * (1 + (insurancePerc / 100.0));
+            double trnd = Math.ceil(withInsurance / roundStep) * roundStep;
+            double order = trnd;
 
-        // Итоговый дозаказ
-        double order = trnd;
-
-        // 7. Собрать DTO
-        return SinvDto.builder()
-                .dt(sinv.getDt())
-                .kpp(sinv.getKpp())
-                .kmc(sinv.getKmc())
-                .kt(sinv.getKt())
-                .kmt(sinv.getKmt())
-                .snmMt(mt != null ? mt.getSnm() : null)
-                .norm(sinv.getNorm())
-                .normf(sinv.getNormf())
-                .totalNormf(totalNormf)
-                .kolf(kolf)
-                .insurancePerc(insurancePerc)
-                .roundStep(roundStep)
-                .trnd(trnd)
-                .order(order)
-                .productCount(productCountMap.getOrDefault(sinv.getKmt(), 0L).intValue())
-                .build();
+            for (SinvDto material : materials) {
+                material.setTotalNormf(totalNormf);
+                material.setTrnd(trnd);
+                material.setOrder(order);
+            }
+        }
     }
 
-    @Transactional
-    public void updateKolf(String kmt, Double kolf, String date, String kpp) {
-        LocalDate dt = LocalDate.parse(date);
-        sinvRepository.updateKolfByKmt(kmt, kolf, dt, kpp);
-    }
-
-    public Sprog getSprogByDate(String date) {
+    public PlrSprog getSprogByDate(String date) {
         return sprogRepository.findByDate(LocalDate.parse(date));
     }
 
-    public List<Pp> getRecipients(){
+    public List<PlrPp> getRecipients() {
         return ppRepository.findAll().list();
     }
+
+    public List<PpDto> searchRecipients(String query) {
+        List<PlrPp> entities = ppRepository.searchByName(query);
+        return entities.stream()
+                .map(this::PpToPpDto)
+                .collect(Collectors.toList());
+    }
+
+    public PpDto PpToPpDto(PlrPp entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return PpDto.builder()
+                .kpp(entity.kpp)
+                .snm(entity.snm)
+                .build();
+    }
+
 }

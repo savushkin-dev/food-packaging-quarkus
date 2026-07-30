@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -19,8 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "PLR_MT", schema = "dbo")
-public class Mt extends PanacheEntityBase {
+@Table(name = "PLR_SPROG", schema = "dbo")
+public class PlrSprog extends PanacheEntityBase {
 
     @Id
     @UuidGenerator
@@ -36,18 +36,18 @@ public class Mt extends PanacheEntityBase {
     @Column(name = "F_DEL", nullable = false, insertable = false, updatable = false)
     public Integer fDel = 0;
 
-    @Column(name = "KGR", length = 10, nullable = false)
-    public String kgr;
+    @Column(name = "SYSN", nullable = false)
+    public Double sysn;
 
-    @Column(name = "KMT", length = 10, nullable = false)
-    public String kmt;
+    @Column(name = "DT1", nullable = false)
+    public LocalDate dt1;
 
-    @Column(name = "SNM", length = 30, nullable = false)
-    public String snm;
+    @Column(name = "DT2", nullable = false)
+    public LocalDate dt2;
 
-    @Column(name = "PERS", nullable = false)
-    public Double pers = 0.0;
+    @Column(name = "OBJ", length = 10, nullable = false)
+    public String obj;
 
-    @Column(name = "RND", nullable = false)
-    public Double rnd = 0.0;
+    @Column(name = "NP", nullable = false)
+    public Integer np;
 }
