@@ -21,6 +21,10 @@
     <version.io.quarkus>3.15.1</version.io.quarkus>
     <version.ai.timefold.solver>1.15.0</version.ai.timefold.solver>
 
+    <!-- Selenium Versions -->
+    <version.selenium>4.27.0</version.selenium>
+    <version.webdrivermanager>5.9.2</version.webdrivermanager>
+
     <!-- Database Driver Versions -->
     <version.mssql.jdbc>12.8.1.jre11</version.mssql.jdbc>
 
@@ -187,6 +191,18 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>${version.selenium}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.bonigarcia</groupId>
+      <artifactId>webdrivermanager</artifactId>
+      <version>${version.webdrivermanager}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
