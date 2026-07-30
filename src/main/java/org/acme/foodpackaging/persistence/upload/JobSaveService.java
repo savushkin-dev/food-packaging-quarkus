@@ -432,9 +432,8 @@ public class JobSaveService {
         return (int) Duration.between(start.atZone(zoneId), end.atZone(zoneId)).toMinutes();
     }
 
-    private Integer convertToIntDuration(Duration duration) {
-        if (duration == null) return null;
-        long durationMinutes = duration.toMinutes();
-        return (int) durationMinutes;
+    private int convertToIntDuration(Duration duration) {
+        if (duration == null) return 0;
+        return (int) duration.toMinutes();
     }
 }
