@@ -18,13 +18,10 @@ public class MaterialService {
     MaterialRepository materialRepository;
 
     @Inject
-    SprogRepository sprogRepository;
+    SprogService sprogService;
 
     @Inject
-    PpRepository ppRepository;
-
-    @Inject
-    RnppRepository rnppRepository;
+    RnppService rnppService;
 
     @Inject
     SinvRepository sinvRepository;
@@ -38,17 +35,13 @@ public class MaterialService {
     @Inject
     ZinvService zinvService;
 
-    public List<ProductDto> getProductsByDate(String date) {
-        return materialRepository.findProductsByDate(date);
-    }
 
-    // ===== ЗАГРУЗКА (БЕЗ СОХРАНЕНИЯ) =====
     public List<ProductWithMaterialsDto> loadProducts(String date, String kpp) {
         LocalDate dt = LocalDate.parse(date);
 
         List<ProductDto> products = materialRepository.findProductsByDate(date);
 
-        PlrSprog plrSprog = getSprogByDate(date);
+        PlrSprog plrSprog = sprogService.findByDate(LocalDate.parse(date));
         Double sysn = plrSprog.getSysn();
 
         List<PlrSinv> existingPlrSinv = sinvRepository.findByDateAndKpp(dt, kpp);
@@ -62,7 +55,7 @@ public class MaterialService {
         List<ProductWithMaterialsDto> result = new ArrayList<>();
 
         for (ProductDto product : products) {
-            List<PlrRnpp> materials = rnppRepository.findByKmcAndKtAndEmkAndSysn(
+            List<PlrRnpp> materials = rnppService.findByKmcAndKtAndEmkAndSysn(
                     sysn,
                     product.getKmc(),
                     product.getKt(),
@@ -77,7 +70,6 @@ public class MaterialService {
                 String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
                 Double kolf = existingKolfMap.getOrDefault(key, 0.0);
 
-                // ===== ИСПОЛЬЗУЕМ MtService С КЭШЕМ =====
                 PlrMt plrMt = mtService.getByKmt(material.getKkom());
 
                 SinvDto dto = SinvDto.builder()
@@ -114,7 +106,7 @@ public class MaterialService {
         return result;
     }
 
-    // ===== ПЕРЕСЧЕТ KOLF =====
+
     public List<ProductWithMaterialsDto> recalcKolf(KolfRecalcRequest request) {
         List<ProductWithMaterialsDto> data = request.getData();
 
@@ -131,7 +123,7 @@ public class MaterialService {
         return data;
     }
 
-    // ===== СОХРАНЕНИЕ =====
+
     @Transactional
     public void saveAll(SaveRequest request) {
         String date = request.getDate();
@@ -174,7 +166,6 @@ public class MaterialService {
         }
     }
 
-    // ===== РАСЧЕТ =====
     private void calculateTotals(List<ProductWithMaterialsDto> data) {
         Map<String, List<SinvDto>> groupByKmt = new HashMap<>();
 
@@ -209,7 +200,6 @@ public class MaterialService {
 
             if (!materials.isEmpty()) {
                 SinvDto first = materials.get(0);
-                // ===== ИСПОЛЬЗУЕМ MtService С КЭШЕМ =====
                 PlrMt plrMt = mtService.getByKmt(kmt);
                 insurancePerc = plrMt != null && plrMt.getPers() != null ? plrMt.getPers() : 0.0;
                 roundStep = plrMt != null && plrMt.getRnd() != null && plrMt.getRnd() > 0 ? plrMt.getRnd() : 1.0;
@@ -239,28 +229,4 @@ public class MaterialService {
         }
     }
 
-    public PlrSprog getSprogByDate(String date) {
-        return sprogRepository.findByDate(LocalDate.parse(date));
-    }
-
-    public List<PlrPp> getRecipients() {
-        return ppRepository.findAll().list();
-    }
-
-    public List<PpDto> searchRecipients(String query) {
-        List<PlrPp> entities = ppRepository.searchByName(query);
-        return entities.stream()
-                .map(this::toPpDto)
-                .collect(Collectors.toList());
-    }
-
-    private PpDto toPpDto(PlrPp entity) {
-        if (entity == null) {
-            return null;
-        }
-        return PpDto.builder()
-                .kpp(entity.kpp)
-                .snm(entity.snm)
-                .build();
-    }
 }

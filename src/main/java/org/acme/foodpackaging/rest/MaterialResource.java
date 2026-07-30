@@ -9,8 +9,8 @@ import org.acme.foodpackaging.dto.materials.KolfRecalcRequest;
 import org.acme.foodpackaging.dto.materials.PpDto;
 import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
 import org.acme.foodpackaging.dto.materials.SaveRequest;
-import org.acme.foodpackaging.entity.materials.PlrPp;
 import org.acme.foodpackaging.service.materials.MaterialService;
+import org.acme.foodpackaging.service.materials.PpService;
 
 import java.util.List;
 
@@ -22,26 +22,24 @@ public class MaterialResource {
     @Inject
     MaterialService materialService;
 
-    // 1. Получить список получателей
-    @GET
-    @Path("/recipients")
-    public Response getRecipients() {
-        List<PlrPp> recipients = materialService.getRecipients();
-        return Response.ok(recipients).build();
-    }
+    @Inject
+    PpService ppService;
 
     @GET
     @Path("/recipients/search")
     public Response searchRecipients(@QueryParam("query") String query) {
+        if (query == null || query.length() < 2) {
+            return Response.ok(List.of()).build();
+        }
         try {
-            List<PpDto> result = materialService.searchRecipients(query);
+            List<PpDto> result = ppService.searchByName(query);
             return Response.ok(result).build();
         } catch (Exception e) {
+            e.printStackTrace();
             return Response.status(500).entity(e.getMessage()).build();
         }
     }
 
-    // 2. Загрузка продуктов и материалов (БЕЗ СОХРАНЕНИЯ)
     @GET
     @Path("/load")
     public Response loadProducts(
@@ -57,7 +55,6 @@ public class MaterialResource {
         }
     }
 
-    // 3. Пересчет KOLF (БЕЗ СОХРАНЕНИЯ)
     @POST
     @Path("/recalc")
     public Response recalcKolf(KolfRecalcRequest request) {
@@ -70,7 +67,6 @@ public class MaterialResource {
         }
     }
 
-    // 4. Сохранение всех данных
     @POST
     @Path("/save")
     @Transactional

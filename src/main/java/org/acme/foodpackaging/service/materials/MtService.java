@@ -14,28 +14,16 @@ public class MtService {
     @Inject
     MtRepository mtRepository;
 
-    /**
-     * Получить материал по KMT с кэшированием.
-     * Первый запрос — в БД, последующие — из кэша.
-     */
     @CacheResult(cacheName = "material-cache")
     public PlrMt getByKmt(String kmt) {
         return mtRepository.findByKmt(kmt).orElse(null);
     }
 
-    /**
-     * Очистить кэш для конкретного KMT.
-     * Использовать при обновлении материала.
-     */
     @CacheInvalidate(cacheName = "material-cache")
     public void invalidate(String kmt) {
         // метод пустой, аннотация делает всю работу
     }
 
-    /**
-     * Очистить весь кэш материалов.
-     * Использовать при массовом обновлении.
-     */
     @CacheInvalidateAll(cacheName = "material-cache")
     public void invalidateAll() {
         // метод пустой, аннотация делает всю работу

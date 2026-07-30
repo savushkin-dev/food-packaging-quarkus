@@ -4,8 +4,10 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.entity.materials.PlrMt;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @ApplicationScoped
 public class MtRepository implements PanacheRepository<PlrMt> {
@@ -28,5 +30,12 @@ public class MtRepository implements PanacheRepository<PlrMt> {
 
     public long deleteByKmt(String kmt) {
         return delete("kmt = ?1", kmt);
+    }
+
+    public List<PlrMt> findByKmtIn(Set<String> kmtList) {
+        if (kmtList == null || kmtList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return find("kmt IN ?1", kmtList).list();
     }
 }
