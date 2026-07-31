@@ -1,17 +1,12 @@
 package org.acme.foodpackaging.selenium;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.openqa.selenium.WebDriver;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
+@Tag("selenium")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SchedulerEmptyDayTest {
 

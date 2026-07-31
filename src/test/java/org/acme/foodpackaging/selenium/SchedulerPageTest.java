@@ -2,11 +2,12 @@ package org.acme.foodpackaging.selenium;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.WebDriver;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
+@Tag("selenium")
 class SchedulerPageTest {
 
     static WebDriver driver;
