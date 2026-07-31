@@ -25,7 +25,6 @@ public class SinvDto {
     private Double kolf;         // Остаток (общий)
     private Double insurancePerc;// % страховки
     private Double roundStep;    // Шаг округления
-    private Double trnd;         // Норма со страховкой и округлением
     private Double order;        // Итоговый дозаказ
     private Integer productCount;// Количество продуктов с этим материалом
 }

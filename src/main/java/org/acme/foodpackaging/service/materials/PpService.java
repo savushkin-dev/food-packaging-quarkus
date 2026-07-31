@@ -14,8 +14,13 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class PpService {
 
+
+    private final PpRepository ppRepository;
+
     @Inject
-    PpRepository ppRepository;
+    public PpService(PpRepository ppRepository) {
+        this.ppRepository = ppRepository;
+    }
 
     @CacheResult(cacheName = "pp-search-cache")
     public List<PpDto> searchByName(String query) {

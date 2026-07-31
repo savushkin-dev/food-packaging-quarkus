@@ -59,4 +59,13 @@ public class PlrSinv extends PanacheEntityBase {
 
     @Column(name = "KOLF", nullable = false)
     public Double kolf = 0.0;
+
+    @Column(name = "PERS", nullable = false)
+    public Double pers = 0.0;
+
+    @Column(name = "RND", nullable = false)
+    public Double rnd = 1.0;
+
+    @Column(name = "[ORDER]", nullable = false)
+    public Double order = 0.0;
 }

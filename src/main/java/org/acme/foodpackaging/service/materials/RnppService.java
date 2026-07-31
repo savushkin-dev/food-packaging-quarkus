@@ -12,8 +12,12 @@ import java.util.List;
 @ApplicationScoped
 public class RnppService {
 
+    private final RnppRepository rnppRepository;
+
     @Inject
-    RnppRepository rnppRepository;
+    public RnppService(RnppRepository rnppRepository) {
+        this.rnppRepository = rnppRepository;
+    }
 
     @CacheResult(cacheName = "rnpp-cache")
     public List<PlrRnpp> findByKmcAndKtAndEmkAndSysn(Double sysn, String kmc, String kt, Double emk) {

@@ -12,8 +12,12 @@ import java.time.LocalDate;
 @ApplicationScoped
 public class SprogService {
 
+    private final SprogRepository sprogRepository;
+
     @Inject
-    SprogRepository sprogRepository;
+    public SprogService(SprogRepository sprogRepository) {
+        this.sprogRepository = sprogRepository;
+    }
 
     @CacheResult(cacheName = "sprog-cache")
     public PlrSprog findByDate(LocalDate date) {

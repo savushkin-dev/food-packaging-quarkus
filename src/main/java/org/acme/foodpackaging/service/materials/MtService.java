@@ -11,8 +11,13 @@ import org.acme.foodpackaging.repository.materials.MtRepository;
 @ApplicationScoped
 public class MtService {
 
+
+    private final MtRepository mtRepository;
+
     @Inject
-    MtRepository mtRepository;
+    public MtService(MtRepository mtRepository) {
+        this.mtRepository = mtRepository;
+    }
 
     @CacheResult(cacheName = "material-cache")
     public PlrMt getByKmt(String kmt) {
