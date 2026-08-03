@@ -366,6 +366,24 @@ public class PackagingScheduleResource {
     }
 
     @POST
+    @Path("dailyProductions")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response dailyProductions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule solution = repository.readForSession(sessionId);
+
+        if (solution == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+
+        Map<String, Double> productions = (lineService.calculateLineProductions(solution.getLines(), loadDTO.getStartDate()));
+        return Response.ok(productions).build();
+    }
+
+    @POST
     @Path("updateOrderList")
     @Produces(MediaType.TEXT_PLAIN)
     public Response updateOrderList(@HeaderParam("X-Session-Id") String sessionId) {

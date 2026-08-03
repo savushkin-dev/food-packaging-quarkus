@@ -1,6 +1,7 @@
 package service.lines;
 
 import fixtures.SolutionFixtures;
+import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
@@ -11,7 +12,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -162,5 +166,41 @@ class LineServiceTest {
 
         assertEquals(expectedLineStart, lineWithJobs.getStartDateTime()); // should not change
         assertEquals(expectedLineEnd, lineWithJobs.getMaxEndTime());
+    }
+
+    // ============================================================
+    // calculateLineProductions
+    // ============================================================
+    @Test
+    void calculateLineProductions_success() {
+        Job j1 = new Job();
+        Job j2 = new Job();
+        Job j3 = new Job();
+        Job j4 = new Job();
+
+        j1.setMass(227.0);
+        j2.setMass(227.0);
+
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+        j1.setCameraStart(date.atStartOfDay().plusHours(15));
+        j1.setCameraEnd(j1.getCameraStart().plusHours(2));
+
+        j2.setCameraStart(j1.getCameraEnd().plusHours(2));
+        j2.setCameraEnd(j2.getCameraStart().plusHours(2));
+
+        j3.setCameraStart(j2.getCameraEnd().plusDays(2));
+        j3.setCameraEnd(j2.getCameraStart().plusHours(2));
+
+        Line l1 = new Line("L1", "Line 1");
+        Line l2 =  new Line("L2", "line2");
+        Line l3 = new Line("L3", "line3");
+
+        l1.setJobs(List.of(j1, j2, j3, j4));
+        l2.setJobs(new ArrayList<>());
+
+        Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1, l2, l3), date);
+
+        double result = j1.getMass() + j2.getMass();
+        assertEquals(result, dailyProductions.get(l1.getName()));
     }
 }

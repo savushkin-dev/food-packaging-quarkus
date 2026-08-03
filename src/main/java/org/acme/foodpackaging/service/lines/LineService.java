@@ -7,8 +7,10 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -101,6 +103,28 @@ public class LineService {
 
             line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(24));
         }
+    }
+
+    public Map<String, Double> calculateLineProductions(List<Line> lines, LocalDate selectedDate) {
+        Map<String, Double> lineProductionsMap = new LinkedHashMap<>(lines.size());
+        for (Line line : lines) {
+            if (line.getJobs() == null || line.getJobs().isEmpty()) {
+                lineProductionsMap.put(line.getName(), 0.0);
+                continue;
+            }
+            List<Job> jobsByDate = line.getJobs().stream()
+                    .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null
+                            && j.getCameraStart().toLocalDate().isEqual(selectedDate)
+                            && j.getCameraEnd().toLocalDate().isEqual(selectedDate)).toList();
+            double lineProduction = 0;
+
+            for(Job j : jobsByDate){
+                lineProduction += j.getMass();
+            }
+
+            lineProductionsMap.put(line.getName(), lineProduction);
+        }
+         return lineProductionsMap;
     }
 }
 
