@@ -15,7 +15,7 @@ public class PpRepository implements PanacheRepository<PlrPp> {
             return new ArrayList<>();
         }
         return find(
-                "UPPER(snm) LIKE UPPER(?1) OR UPPER(kpp) LIKE UPPER(?1)",
+                "kpp LIKE '0102%' AND UPPER(snm) LIKE UPPER(?1)",
                 "%" + query.trim() + "%"
         ).list();
     }
