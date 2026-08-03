@@ -17,6 +17,6 @@ public class ProductDto {
     private Double sumMass;
     private Double sumKolev;
     private String productName;
-
+    private Double krkmc;
 
 }

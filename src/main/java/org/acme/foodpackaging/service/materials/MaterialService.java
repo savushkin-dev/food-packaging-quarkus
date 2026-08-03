@@ -130,6 +130,7 @@ public class MaterialService {
                     .name(product.getProductName())
                     .sumMass(product.getSumMass())
                     .sumKolev(product.getSumKolev())
+                    .krkmc(product.getKrkmc())
                     .materials(materialDtos)
                     .build());
         }

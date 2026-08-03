@@ -45,6 +45,7 @@ public class MaterialRepository {
             product.setSumMass(((BigDecimal) row[4]).doubleValue());
             product.setSumKolev(((BigDecimal) row[5]).doubleValue());
             product.setProductName((String) row[6]);
+            product.setKrkmc(((BigDecimal) row[7]).doubleValue());
             products.add(product);
         }
 

@@ -28,7 +28,8 @@ public class SqlQueries {
                     v.KT,
                     SUM(v.MASSA) as SUM_MASS,
                     SUM(v.KOLEV) as SUM_KOLEV,
-                    m.SNM as PRODUCT_NAME
+                    m.SNM as PRODUCT_NAME,
+                    m.KRKMC
                 FROM %s.dbo.BD_VZPMC AS v
                     JOIN %s.dbo.NS_MC AS m ON v.KMC = m.KMC
                 WHERE
@@ -36,7 +37,7 @@ public class SqlQueries {
                     AND v.KSK = ?
                     AND v.F_DEL = 0
                     AND v.NP > 0
-                GROUP BY v.KMC, m.EAN13, v.EMK, m.SNM, v.KT
+                GROUP BY v.KMC, m.EAN13, v.EMK, m.SNM, m.KRKMC, v.KT
                 ORDER BY v.KMC
                 """.formatted(mesSchema, mesSchema);
     }
