@@ -106,7 +106,7 @@ public class LineService {
     }
 
     public Map<String, Double> calculateLineProductions(List<Line> lines, LocalDate selectedDate) {
-        Map<String, Double> lineProductionsMap = new LinkedHashMap<>(lines.size());
+        Map<String, Double> lineProductionsMap = LinkedHashMap.newLinkedHashMap(lines.size());
         for (Line line : lines) {
             if (line.getJobs() == null || line.getJobs().isEmpty()) {
                 lineProductionsMap.put(line.getName(), 0.0);

@@ -297,6 +297,13 @@ public class PackagingScheduleResource {
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelection dto) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
+
+        if (solution == null ) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+
         solution.getOverloadedIds().clear();
 
         PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
