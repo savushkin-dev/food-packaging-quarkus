@@ -27,6 +27,7 @@ public class SqlQueries {
                     v.EMK,
                     v.KT,
                     SUM(v.MASSA) as SUM_MASS,
+                    SUM(v.KOLEV) as SUM_KOLEV,
                     m.SNM as PRODUCT_NAME
                 FROM %s.dbo.BD_VZPMC AS v
                     JOIN %s.dbo.NS_MC AS m ON v.KMC = m.KMC

@@ -43,7 +43,8 @@ public class MaterialRepository {
             product.setEmk(((BigDecimal) row[2]).doubleValue());
             product.setKt((String) row[3]);
             product.setSumMass(((BigDecimal) row[4]).doubleValue());
-            product.setProductName((String) row[5]);
+            product.setSumKolev(((BigDecimal) row[5]).doubleValue());
+            product.setProductName((String) row[6]);
             products.add(product);
         }
 

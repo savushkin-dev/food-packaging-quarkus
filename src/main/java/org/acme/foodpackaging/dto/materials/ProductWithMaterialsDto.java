@@ -21,5 +21,6 @@ public class ProductWithMaterialsDto {
     private Double emk;
     private String name;
     private Double sumMass;
+    private Double sumKolev;
     private List<SinvDto> materials;
 }

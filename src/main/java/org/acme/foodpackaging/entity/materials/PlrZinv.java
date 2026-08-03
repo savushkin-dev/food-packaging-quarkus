@@ -57,6 +57,9 @@ public class PlrZinv extends PanacheEntityBase {
     @Column(name = "SUM_MASS", nullable = false)
     public Double sumMass = 0.0;
 
+    @Column(name = "SUM_KOLEV", nullable = false)
+    public Double sumKolev = 0.0;
+
     @Column(name = "EMK")
     public Double emk;
 }

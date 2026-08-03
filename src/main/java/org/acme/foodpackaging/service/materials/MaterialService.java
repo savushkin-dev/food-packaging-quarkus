@@ -129,6 +129,7 @@ public class MaterialService {
                     .emk(product.getEmk())
                     .name(product.getProductName())
                     .sumMass(product.getSumMass())
+                    .sumKolev(product.getSumKolev())
                     .materials(materialDtos)
                     .build());
         }
@@ -194,6 +195,7 @@ public class MaterialService {
                     .emk(product.getEmk())
                     .name(product.getName())
                     .sumMass(product.getSumMass())
+                    .sumKolev(product.getSumKolev())
                     .build();
             zinvRepository.save(plrZinv);
         }
