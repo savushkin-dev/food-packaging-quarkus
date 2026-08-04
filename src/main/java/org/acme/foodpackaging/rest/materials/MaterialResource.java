@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.rest;
+package org.acme.foodpackaging.rest.materials;
 
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

@@ -112,9 +112,9 @@ public class MaterialService {
                         .norm(material.getKol1t())
                         .normf(normf)
                         .kolf(kolf)
-                        .insurancePerc(pers)      // % страховки
-                        .roundStep(rnd)           // шаг округления
-                        .order(order)             // сохраненный дозаказ
+                        .insurancePerc(pers)
+                        .roundStep(rnd)
+                        .order(order)
                         .build();
 
                 materialDtos.add(dto);
@@ -158,7 +158,7 @@ public class MaterialService {
             for (SinvDto material : product.getMaterials()) {
                 if (material.getKmt().equals(request.getKmt())) {
                     material.setKolf(request.getKolf());
-                    material.setOrder(null); // сбрасываем, чтобы пересчитался
+                    material.setOrder(null);
                 }
             }
         }
@@ -225,6 +225,11 @@ public class MaterialService {
     /**
      * Полный пересчет всех полей.
      * Используется при первой загрузке или после изменения остатка
+     *
+     * Формула расчета:
+     * 1. Норма со страховкой = totalNormf × (1 + insurancePerc / 100)
+     * 2. Дефицит = Норма со страховкой - Остаток (если < 0 → 0)
+     * 3. Заказ = Округлить_вверх(Дефицит / Шаг) × Шаг
      */
     private void calculateTotals(List<ProductWithMaterialsDto> data) {
         Map<String, List<SinvDto>> groupByKmt = groupByKmt(data);
@@ -234,11 +239,10 @@ public class MaterialService {
             String kmt = entry.getKey();
             List<SinvDto> materials = entry.getValue();
 
-            double totalNormf = BigDecimal.valueOf(materials.stream()
-                            .mapToDouble(SinvDto::getNormf)
-                            .sum())
-                    .setScale(3, RoundingMode.HALF_UP)
-                    .doubleValue();
+            // Суммируем все нормы
+            double totalNormfRaw = materials.stream()
+                    .mapToDouble(SinvDto::getNormf)
+                    .sum();
 
             SinvDto first = materials.get(0);
             PlrMt plrMt = mtService.getByKmt(kmt);
@@ -248,11 +252,35 @@ public class MaterialService {
             double kolf = first.getKolf() != null ? first.getKolf() : 0.0;
             String snmMt = plrMt != null ? plrMt.getSnm() : null;
 
-            double deficit = totalNormf - kolf;
-            if (deficit < 0) deficit = 0;
+            // Округляем totalNormf до 2 знаков
+            double totalNormf = BigDecimal.valueOf(totalNormfRaw)
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .doubleValue();
 
-            double withInsurance = deficit * (1 + (insurancePerc / 100.0));
-            double order = Math.ceil(withInsurance / roundStep) * roundStep;
+            // Расчет с BigDecimal
+            BigDecimal totalNormfBD = BigDecimal.valueOf(totalNormf);
+            BigDecimal insurancePercBD = BigDecimal.valueOf(insurancePerc);
+            BigDecimal roundStepBD = BigDecimal.valueOf(roundStep);
+            BigDecimal kolfBD = BigDecimal.valueOf(kolf);
+
+            // 1. Норма со страховкой
+            BigDecimal insuranceFactor = BigDecimal.ONE.add(insurancePercBD.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP));
+            BigDecimal totalWithInsurance = totalNormfBD.multiply(insuranceFactor)
+                    .setScale(3, RoundingMode.HALF_UP);
+
+            // 2. Дефицит
+            BigDecimal deficit = totalWithInsurance.subtract(kolfBD);
+            if (deficit.compareTo(BigDecimal.ZERO) < 0) {
+                deficit = BigDecimal.ZERO;
+            }
+
+            // 3. Заказ
+            BigDecimal orderBD = deficit.divide(roundStepBD, 10, RoundingMode.HALF_UP)
+                    .setScale(0, RoundingMode.CEILING)
+                    .multiply(roundStepBD)
+                    .setScale(3, RoundingMode.HALF_UP);
+
+            double order = orderBD.doubleValue();
 
             for (SinvDto material : materials) {
                 material.setTotalNormf(totalNormf);
