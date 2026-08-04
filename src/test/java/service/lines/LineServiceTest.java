@@ -172,11 +172,13 @@ class LineServiceTest {
     // calculateLineProductions
     // ============================================================
     @Test
-    void calculateLineProductions_success() {
+    void calculateLineProductions() {
         Job j1 = new Job();
         Job j2 = new Job();
         Job j3 = new Job();
         Job j4 = new Job();
+        Job j5 = new Job();
+        Job j6 = new Job();
 
         j1.setMass(227.0);
         j2.setMass(227.0);
@@ -191,12 +193,18 @@ class LineServiceTest {
         j3.setCameraStart(j2.getCameraEnd().plusDays(2));
         j3.setCameraEnd(j2.getCameraStart().plusHours(2));
 
+        j5.setCameraStart(date.atStartOfDay().plusHours(9));
+        j5.setCameraEnd(null);
+
+        j6.setCameraStart(date.atStartOfDay().plusHours(10));
+        j6.setCameraEnd(date.plusDays(1).atStartOfDay().plusHours(10));
+
         Line l1 = new Line("L1", "Line 1");
         Line l2 =  new Line("L2", "line2");
         Line l3 = new Line("L3", "line3");
 
-        l1.setJobs(List.of(j1, j2, j3, j4));
-        l2.setJobs(new ArrayList<>());
+        l1.setJobs(List.of(j1, j2, j3, j4, j5, j6));
+        l2.setJobs(null);
 
         Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1, l2, l3), date);
 
