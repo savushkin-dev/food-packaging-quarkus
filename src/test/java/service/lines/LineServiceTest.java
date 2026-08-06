@@ -52,8 +52,7 @@ class LineServiceTest {
                 "L3", "Линия № 3",
                 "L1", "Линия № 1",
                 "L2", "Линия № 2",
-                "L10", "Линия № 10"
-        );
+                "L10", "Линия № 10");
         when(loadDataService.getLines())
                 .thenReturn(new ConcurrentHashMap<>(linesMap));
 
@@ -73,8 +72,7 @@ class LineServiceTest {
                 "L3", "Линия № 3",
                 "L_NO_NUM", "Линия без номера",
                 "L1", "Линия № 1",
-                "L_ANOTHER", "Другая линия"
-        );
+                "L_ANOTHER", "Другая линия");
         when(loadDataService.getLines())
                 .thenReturn(new ConcurrentHashMap<>(linesMap));
 
@@ -93,8 +91,7 @@ class LineServiceTest {
         Map<String, String> linesMap = Map.of(
                 "L1", "Линия №1",
                 "L2", "Линия № 2",
-                "L3", "Линия №  3"
-        );
+                "L3", "Линия №  3");
         when(loadDataService.getLines())
                 .thenReturn(new ConcurrentHashMap<>(linesMap));
 
@@ -129,7 +126,12 @@ class LineServiceTest {
         assertEquals(defaultDateTime, solution.getLines().getFirst().getStartDateTime()); // when jobs is null
         assertEquals(defaultDateTime, solution.getLines().get(1).getStartDateTime()); // when jobs is empty
 
-        assertEquals(lineWithJobs.getJobs().getFirst().getStartProductionDateTime(), lineWithJobs.getStartDateTime());  // line should start from first Job
+        assertEquals(lineWithJobs.getJobs().getFirst().getStartProductionDateTime(), lineWithJobs.getStartDateTime()); // line
+                                                                                                                       // should
+                                                                                                                       // start
+                                                                                                                       // from
+                                                                                                                       // first
+                                                                                                                       // Job
         assertEquals(lineWithJobs.getJobs().getLast().getEndDateTime().plusHours(24), lineWithJobs.getMaxEndTime());
     }
 
@@ -148,7 +150,8 @@ class LineServiceTest {
         LocalDateTime defaultStartDateTime = solution.getWorkCalendar().getPlanningDate().atStartOfDay();
         LocalDateTime defaultEndDateTime = defaultStartDateTime.plusHours(24);
         LocalDateTime expectedLineStart = solution.getLines().getLast().getStartDateTime();
-        LocalDateTime expectedLineEnd = solution.getLines().getLast().getJobs().getLast().getEndDateTime().plusHours(24);
+        LocalDateTime expectedLineEnd = solution.getLines().getLast().getJobs().getLast().getEndDateTime()
+                .plusHours(24);
 
         lineService.setMaxEndDateTimeByLastJob(solution);
 
@@ -178,36 +181,90 @@ class LineServiceTest {
         Job j4 = new Job();
         Job j5 = new Job();
         Job j6 = new Job();
+        Job j7 = new Job();
 
         j1.setMass(227.0);
         j2.setMass(227.0);
+        j7.setMass(500.0);
 
         LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        // Внутри окна [03.08 08:00, 04.08 08:00)
         j1.setCameraStart(date.atStartOfDay().plusHours(15));
         j1.setCameraEnd(j1.getCameraStart().plusHours(2));
 
         j2.setCameraStart(j1.getCameraEnd().plusHours(2));
         j2.setCameraEnd(j2.getCameraStart().plusHours(2));
 
+        // Далеко за пределами окна
         j3.setCameraStart(j2.getCameraEnd().plusDays(2));
         j3.setCameraEnd(j2.getCameraStart().plusHours(2));
 
+        // j4 без установленных данных (null) — не попадёт в фильтр
+
+        // cameraEnd == null — должен быть отброшен
         j5.setCameraStart(date.atStartOfDay().plusHours(9));
         j5.setCameraEnd(null);
 
+        // Начало внутри окна, конец уже в следующем окне (после 08:00 следующего дня) —
+        // отброшен
         j6.setCameraStart(date.atStartOfDay().plusHours(10));
         j6.setCameraEnd(date.plusDays(1).atStartOfDay().plusHours(10));
 
+        // Ровно на границе начала окна — должен попасть (включительно)
+        j7.setCameraStart(date.atStartOfDay().plusHours(8));
+        j7.setCameraEnd(j7.getCameraStart().plusHours(1));
+
         Line l1 = new Line("L1", "Line 1");
-        Line l2 =  new Line("L2", "line2");
+        Line l2 = new Line("L2", "line2");
         Line l3 = new Line("L3", "line3");
 
-        l1.setJobs(List.of(j1, j2, j3, j4, j5, j6));
+        l1.setJobs(List.of(j1, j2, j3, j4, j5, j6, j7));
         l2.setJobs(null);
 
         Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1, l2, l3), date);
 
-        double result = j1.getMass() + j2.getMass();
+        double result = j1.getMass() + j2.getMass() + j7.getMass();
         assertEquals(result, dailyProductions.get(l1.getName()));
+        assertEquals(0.0, dailyProductions.get(l2.getName()));
+        assertEquals(0.0, dailyProductions.get(l3.getName()));
+    }
+
+    @Test
+    void calculateLineProductions_jobBeforeWindowStart_excluded() {
+        Job j1 = new Job();
+        j1.setMass(100.0);
+
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        // Заканчивается за минуту до начала окна (07:59) — не входит
+        j1.setCameraStart(date.atStartOfDay().plusHours(7).plusMinutes(30));
+        j1.setCameraEnd(date.atStartOfDay().plusHours(7).plusMinutes(59));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1), date);
+
+        assertEquals(0.0, dailyProductions.get(l1.getName()));
+    }
+
+    @Test
+    void calculateLineProductions_jobAtWindowEnd_excluded() {
+        Job j1 = new Job();
+        j1.setMass(100.0);
+
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        // Начинается ровно в 08:00 следующего дня — уже следующее окно, исключается
+        j1.setCameraStart(date.plusDays(1).atStartOfDay().plusHours(8));
+        j1.setCameraEnd(j1.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1), date);
+
+        assertEquals(0.0, dailyProductions.get(l1.getName()));
     }
 }

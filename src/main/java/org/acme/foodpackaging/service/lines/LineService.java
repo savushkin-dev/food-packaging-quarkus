@@ -51,10 +51,9 @@ public class LineService {
             return;
         }
 
-        LocalDateTime defaultStart =
-                solution.getWorkCalendar()
-                        .getPlanningDate()
-                        .atStartOfDay();
+        LocalDateTime defaultStart = solution.getWorkCalendar()
+                .getPlanningDate()
+                .atStartOfDay();
 
         for (Line line : solution.getLines()) {
 
@@ -69,9 +68,7 @@ public class LineService {
             jobs.sort(
                     Comparator.comparing(
                             Job::getStartProductionDateTime,
-                            Comparator.nullsLast(Comparator.naturalOrder())
-                    )
-            );
+                            Comparator.nullsLast(Comparator.naturalOrder())));
 
             Job firstJob = jobs.getFirst();
             Job lastJob = jobs.getLast();
@@ -89,10 +86,11 @@ public class LineService {
 
     public void setMaxEndDateTimeByLastJob(PackagingSchedule solution) {
 
-        if (solution.getLines() == null) return;
+        if (solution.getLines() == null)
+            return;
         for (Line line : solution.getLines()) {
 
-            if(line.getStartDateTime() == null){
+            if (line.getStartDateTime() == null) {
                 line.setStartDateTime(solution.getWorkCalendar().getPlanningDate().atStartOfDay());
             }
 
@@ -107,6 +105,10 @@ public class LineService {
 
     public Map<String, Double> calculateLineProductions(List<Line> lines, LocalDate selectedDate) {
         Map<String, Double> lineProductionsMap = LinkedHashMap.newLinkedHashMap(lines.size());
+
+        LocalDateTime windowStart = selectedDate.atTime(8, 0);
+        LocalDateTime windowEnd = windowStart.plusDays(1);
+
         for (Line line : lines) {
             if (line.getJobs() == null || line.getJobs().isEmpty()) {
                 lineProductionsMap.put(line.getName(), 0.0);
@@ -114,17 +116,17 @@ public class LineService {
             }
             List<Job> jobsByDate = line.getJobs().stream()
                     .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null
-                            && j.getCameraStart().toLocalDate().isEqual(selectedDate)
-                            && j.getCameraEnd().toLocalDate().isEqual(selectedDate)).toList();
-            double lineProduction = 0;
+                            && !j.getCameraStart().isBefore(windowStart) && j.getCameraStart().isBefore(windowEnd)
+                            && !j.getCameraEnd().isBefore(windowStart) && j.getCameraEnd().isBefore(windowEnd))
+                    .toList();
 
-            for(Job j : jobsByDate){
+            double lineProduction = 0;
+            for (Job j : jobsByDate) {
                 lineProduction += j.getMass();
             }
 
             lineProductionsMap.put(line.getName(), lineProduction);
         }
-         return lineProductionsMap;
+        return lineProductionsMap;
     }
 }
-
