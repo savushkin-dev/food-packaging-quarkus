@@ -80,7 +80,9 @@ public class MaterialService {
 
             for (PlrRnpp material : materials) {
                 // Рассчитываем норму на заказ
-                double normf = (product.getSumMass() / 1000) * material.getKol1t();
+                Double normf = BigDecimal.valueOf((product.getSumMass() / 1000) * material.getKol1t())
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .doubleValue();
 
                 String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
                 PlrSinv existing = existingDataMap.get(key);
@@ -239,48 +241,21 @@ public class MaterialService {
             String kmt = entry.getKey();
             List<SinvDto> materials = entry.getValue();
 
-            // Суммируем все нормы
-            double totalNormfRaw = materials.stream()
+            double totalNormf = roundToTwo(materials.stream()
                     .mapToDouble(SinvDto::getNormf)
-                    .sum();
+                    .sum());
 
             SinvDto first = materials.get(0);
             PlrMt plrMt = mtService.getByKmt(kmt);
 
-            double insurancePerc = plrMt != null && plrMt.getPers() != null ? plrMt.getPers() : 0.0;
-            double roundStep = plrMt != null && plrMt.getRnd() != null && plrMt.getRnd() > 0 ? plrMt.getRnd() : 1.0;
-            double kolf = first.getKolf() != null ? first.getKolf() : 0.0;
+            double insurancePerc = plrMt != null && plrMt.getPers() != null ? roundToTwo(plrMt.getPers()) : 0.0;
+            double roundStep = plrMt != null && plrMt.getRnd() != null && plrMt.getRnd() > 0 ? roundToTwo(plrMt.getRnd()) : 1.0;
+            double kolf = first.getKolf() != null ? roundToTwo(first.getKolf()) : 0.0;
             String snmMt = plrMt != null ? plrMt.getSnm() : null;
 
-            // Округляем totalNormf до 2 знаков
-            double totalNormf = BigDecimal.valueOf(totalNormfRaw)
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .doubleValue();
-
-            // Расчет с BigDecimal
-            BigDecimal totalNormfBD = BigDecimal.valueOf(totalNormf);
-            BigDecimal insurancePercBD = BigDecimal.valueOf(insurancePerc);
-            BigDecimal roundStepBD = BigDecimal.valueOf(roundStep);
-            BigDecimal kolfBD = BigDecimal.valueOf(kolf);
-
-            // 1. Норма со страховкой
-            BigDecimal insuranceFactor = BigDecimal.ONE.add(insurancePercBD.divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP));
-            BigDecimal totalWithInsurance = totalNormfBD.multiply(insuranceFactor)
-                    .setScale(3, RoundingMode.HALF_UP);
-
-            // 2. Дефицит
-            BigDecimal deficit = totalWithInsurance.subtract(kolfBD);
-            if (deficit.compareTo(BigDecimal.ZERO) < 0) {
-                deficit = BigDecimal.ZERO;
-            }
-
-            // 3. Заказ
-            BigDecimal orderBD = deficit.divide(roundStepBD, 10, RoundingMode.HALF_UP)
-                    .setScale(0, RoundingMode.CEILING)
-                    .multiply(roundStepBD)
-                    .setScale(3, RoundingMode.HALF_UP);
-
-            double order = orderBD.doubleValue();
+            double totalWithInsurance = roundToTwo(totalNormf * (1 + (insurancePerc / 100.0)));
+            double deficit = roundToTwo(Math.max(0, totalWithInsurance - kolf));
+            double order = roundToTwo(Math.ceil(deficit / roundStep) * roundStep);
 
             for (SinvDto material : materials) {
                 material.setTotalNormf(totalNormf);
@@ -354,6 +329,25 @@ public class MaterialService {
         }
 
         return productCountMap;
+    }
+
+    /**
+     * Округляет число до 2 знаков после запятой
+     */
+    private double roundToTwo(Double value) {
+        if (value == null) return 0.0;
+        return BigDecimal.valueOf(value)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    /**
+     * Округляет число до 2 знаков после запятой
+     */
+    private double roundToTwo(double value) {
+        return BigDecimal.valueOf(value)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
     }
 
 }
