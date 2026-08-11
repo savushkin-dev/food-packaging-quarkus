@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 @Consumes(MediaType.APPLICATION_JSON)
 public class DbfImportResource {
 
+    private static final String ERROR_IMPORT_FAILED = "Import failed: ";
+
     private final DbfImportService dbfImportService;
 
     @Inject
@@ -98,12 +100,12 @@ public class DbfImportResource {
         } catch (IOException e) {
             log.error("IO error importing {}", prefix, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Import failed: " + e.getMessage())
+                    .entity(ERROR_IMPORT_FAILED + e.getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Error importing {}", prefix, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Import failed: " + e.getMessage())
+                    .entity(ERROR_IMPORT_FAILED + e.getMessage())
                     .build();
         } finally {
             if (tempFile != null) {
@@ -133,7 +135,7 @@ public class DbfImportResource {
         } catch (Exception e) {
             log.error("Error importing from path: {}", path, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Import failed: " + e.getMessage())
+                    .entity(ERROR_IMPORT_FAILED + e.getMessage())
                     .build();
         }
     }
