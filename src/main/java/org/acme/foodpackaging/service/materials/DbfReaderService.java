@@ -2,15 +2,15 @@ package org.acme.foodpackaging.service.materials;
 
 import com.linuxense.javadbf.DBFReader;
 import com.linuxense.javadbf.DBFField;
-import com.linuxense.javadbf.DBFUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -31,31 +31,39 @@ public class DbfReaderService {
      */
     public void readDbfFileStreaming(String dbfPath, String memoPath, String charsetName,
                                      Consumer<Map<String, Object>> recordConsumer) {
-        DBFReader reader = null;
 
-        try {
-            File dbfFile = new File(dbfPath);
-            if (!dbfFile.exists()) {
-                throw new RuntimeException("DBF file not found: " + dbfPath);
-            }
+        // Валидация входных параметров
+        if (dbfPath == null || dbfPath.trim().isEmpty()) {
+            throw new IllegalArgumentException("DBF file path cannot be null or empty");
+        }
+        if (recordConsumer == null) {
+            throw new IllegalArgumentException("Record consumer cannot be null");
+        }
 
-            log.info("Opening DBF file: " + dbfFile.getName() + " (" + dbfFile.length() + " bytes)");
+        Path dbfFilePath = Paths.get(dbfPath);
 
-            reader = new DBFReader(new FileInputStream(dbfFile));
+        // Проверка существования файла
+        if (!Files.exists(dbfFilePath) || !Files.isRegularFile(dbfFilePath)) {
+            throw new IllegalArgumentException("DBF file not found: " + dbfPath);
+        }
+
+        log.info("Opening DBF file: {}", dbfFilePath.getFileName());
+
+        try (FileInputStream fis = new FileInputStream(dbfFilePath.toFile());
+             DBFReader reader = new DBFReader(fis)) {
 
             // Устанавливаем кодировку
             String encoding = charsetName != null ? charsetName : DEFAULT_ENCODING;
             reader.setCharactersetName(encoding);
-            log.info("Using encoding: " + encoding);
 
             // Подключаем memo файл если есть
-            if (memoPath != null) {
-                File memoFile = new File(memoPath);
-                if (memoFile.exists()) {
-                    reader.setMemoFile(memoFile);
-                    log.info("Memo file loaded: " + memoPath);
+            if (memoPath != null && !memoPath.trim().isEmpty()) {
+                Path memoFilePath = Paths.get(memoPath);
+                if (Files.exists(memoFilePath) && Files.isRegularFile(memoFilePath)) {
+                    reader.setMemoFile(memoFilePath.toFile());
+                    log.info("Memo file loaded: {}", memoPath);
                 } else {
-                    log.warn("Memo file not found: " + memoPath);
+                    log.warn("Memo file not found: {}", memoPath);
                 }
             }
 
@@ -63,12 +71,14 @@ public class DbfReaderService {
             int fieldCount = reader.getFieldCount();
             DBFField[] fields = new DBFField[fieldCount];
 
-            log.info("=== DBF Structure: " + dbfFile.getName() + " ===");
+            log.info("=== DBF Structure: {} ===", dbfFilePath.getFileName());
             for (int i = 0; i < fieldCount; i++) {
                 fields[i] = reader.getField(i);
-                log.info("Field " + i + ": " +
-                        fields[i].getName() + " (" + fields[i].getType().name() +
-                        ") length: " + fields[i].getLength());
+                log.info("Field {}: {} ({}) length: {}",
+                        i,
+                        fields[i].getName(),
+                        fields[i].getType().name(),
+                        fields[i].getLength());
             }
 
             // Читаем записи ПО ОДНОЙ и сразу передаем в callback
@@ -84,24 +94,21 @@ public class DbfReaderService {
                     row.put(fieldName, value != null ? value : null);
                 }
 
-                // 🔥 Передаем запись в consumer (без накопления в памяти)
                 recordConsumer.accept(row);
                 rowCount++;
-
-                // Логируем прогресс каждые 1000 записей
-                if (rowCount % 1000 == 0) {
-                    log.info("Processed " + rowCount + " records from " + dbfFile.getName());
-                }
             }
 
-            log.info("Total records processed from " + dbfFile.getName() + ": " + rowCount);
+            log.info("Total records processed from {}: {}", dbfFilePath.getFileName(), rowCount);
 
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid argument: {}", e.getMessage());
+            throw e;
+        } catch (IOException e) {
+            log.error("IO error reading DBF file: {}", dbfPath, e);
+            throw new RuntimeException("Failed to read DBF file: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Error reading DBF file: " + dbfPath, e);
-            throw new RuntimeException("Failed to read DBF file", e);
-        } finally {
-            DBFUtils.close(reader);
-            log.info("DBF reader closed");
+            log.error("Unexpected error reading DBF file: {}", dbfPath, e);
+            throw new RuntimeException("Failed to read DBF file: " + e.getMessage(), e);
         }
     }
 
@@ -109,27 +116,35 @@ public class DbfReaderService {
      * Упрощенный метод - ищет memo файл рядом с dbf
      */
     public void readDbfFileStreaming(String dbfPath, Consumer<Map<String, Object>> recordConsumer) {
+        if (dbfPath == null || dbfPath.trim().isEmpty()) {
+            throw new IllegalArgumentException("DBF file path cannot be null or empty");
+        }
+
+        // Проверяем существование основного файла
+        Path dbfFilePath = Paths.get(dbfPath);
+        if (!Files.exists(dbfFilePath) || !Files.isRegularFile(dbfFilePath)) {
+            throw new IllegalArgumentException("DBF file not found: " + dbfPath);
+        }
+
         // Ищем файлы memo в той же папке
         String basePath = dbfPath.substring(0, dbfPath.lastIndexOf('.'));
         String dbtPath = basePath + ".DBT";
         String fptPath = basePath + ".FPT";
 
         String memoPath = null;
-        File dbtFile = new File(dbtPath);
-        File fptFile = new File(fptPath);
+        Path dbtFilePath = Paths.get(dbtPath);
+        Path fptFilePath = Paths.get(fptPath);
 
-        if (dbtFile.exists()) {
+        if (Files.exists(dbtFilePath) && Files.isRegularFile(dbtFilePath)) {
             memoPath = dbtPath;
-            log.info("Found DBT memo file: " + dbtPath);
-        } else if (fptFile.exists()) {
+            log.info("Found DBT memo file: {}", dbtPath);
+        } else if (Files.exists(fptFilePath) && Files.isRegularFile(fptFilePath)) {
             memoPath = fptPath;
-            log.info("Found FPT memo file: " + fptPath);
+            log.info("Found FPT memo file: {}", fptPath);
         } else {
-            log.info("No memo file found for: " + dbfPath);
+            log.info("No memo file found for: {}", dbfPath);
         }
 
         readDbfFileStreaming(dbfPath, memoPath, DEFAULT_ENCODING, recordConsumer);
     }
-
-
 }
