@@ -16,12 +16,4 @@ public class RnppRepository implements PanacheRepository<PlrRnpp> {
         ).list();
     }
 
-    // загружает ВСЕ материалы для SYSN за один запрос
-    public List<PlrRnpp> findBySysn(Double sysn) {
-        return find(
-                "sysn = ?1 AND kkom LIKE '1002%'",
-                sysn
-        ).list();
-    }
-
 }
