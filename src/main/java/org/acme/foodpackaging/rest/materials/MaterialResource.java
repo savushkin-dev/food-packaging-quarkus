@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import lombok.extern.log4j.Log4j2;
 import org.acme.foodpackaging.dto.materials.KolfRecalcRequest;
 import org.acme.foodpackaging.dto.materials.PpDto;
 import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
@@ -14,16 +15,20 @@ import org.acme.foodpackaging.service.materials.PpService;
 
 import java.util.List;
 
+@Log4j2
 @Path("/api/material")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class MaterialResource {
 
-    @Inject
-    MaterialService materialService;
+    private final MaterialService materialService;
+    private final PpService ppService;
 
     @Inject
-    PpService ppService;
+    public MaterialResource(MaterialService materialService, PpService ppService) {
+        this.materialService = materialService;
+        this.ppService = ppService;
+    }
 
     @GET
     @Path("/recipients/search")
@@ -35,8 +40,10 @@ public class MaterialResource {
             List<PpDto> result = ppService.searchByName(query);
             return Response.ok(result).build();
         } catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(500).entity(e.getMessage()).build();
+            log.error("Error searching recipients with query: {}", query, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error searching recipients: " + e.getMessage())
+                    .build();
         }
     }
 
@@ -50,8 +57,10 @@ public class MaterialResource {
             List<ProductWithMaterialsDto> data = materialService.loadProducts(date, kpp);
             return Response.ok(data).build();
         } catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(500).entity(e.getMessage()).build();
+            log.error("Error loading products for date: {}, kpp: {}", date, kpp, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error loading products: " + e.getMessage())
+                    .build();
         }
     }
 
@@ -62,8 +71,10 @@ public class MaterialResource {
             List<ProductWithMaterialsDto> updated = materialService.recalcKolf(request);
             return Response.ok(updated).build();
         } catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(500).entity(e.getMessage()).build();
+            log.error("Error recalculating KOLF for request: {}", request, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error recalculating KOLF: " + e.getMessage())
+                    .build();
         }
     }
 
@@ -75,8 +86,10 @@ public class MaterialResource {
             materialService.saveAll(request);
             return Response.ok().build();
         } catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(500).entity(e.getMessage()).build();
+            log.error("Error saving data for request: {}", request, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error saving data: " + e.getMessage())
+                    .build();
         }
     }
 }

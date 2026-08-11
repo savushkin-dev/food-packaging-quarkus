@@ -11,11 +11,16 @@ import java.util.List;
 @ApplicationScoped
 public class ZinvRepository {
 
-    @Inject
-    EntityManager em;
 
-    public void save(PlrZinv plrZinv) {
-        em.merge(plrZinv);
+    private final EntityManager em;
+
+    @Inject
+    public ZinvRepository(EntityManager em) {
+        this.em = em;
+    }
+
+    public PlrZinv save(PlrZinv plrZinv) {
+        return em.merge(plrZinv);
     }
 
     public void saveAll(List<PlrZinv> plrZinvList) {

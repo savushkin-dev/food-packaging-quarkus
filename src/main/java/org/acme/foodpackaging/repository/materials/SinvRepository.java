@@ -12,8 +12,12 @@ import java.util.List;
 @ApplicationScoped
 public class SinvRepository implements PanacheRepository<PlrSinv> {
 
+    private final EntityManager em;
+
     @Inject
-    EntityManager em;
+    public SinvRepository(EntityManager em) {
+        this.em = em;
+    }
 
     public List<PlrSinv> findByDateAndKpp(LocalDate date, String kpp) {
         return find("dt = ?1 AND kpp = ?2", date, kpp).list();
@@ -43,8 +47,8 @@ public class SinvRepository implements PanacheRepository<PlrSinv> {
                 .firstResult();
     }
 
-    public void saveOrUpdate(PlrSinv plrSinv) {
-        em.merge(plrSinv);
+    public PlrSinv saveOrUpdate(PlrSinv plrSinv) {
+        return em.merge(plrSinv);
     }
 
     public void saveAll(List<PlrSinv> plrSinvList) {

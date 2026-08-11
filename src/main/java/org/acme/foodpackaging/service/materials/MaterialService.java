@@ -44,17 +44,23 @@ public class MaterialService {
      * Если заказ уже был сохранен — берем из базы сохраненные значения.
      * Если заказ новый — рассчитываем все заново.
      */
+    /**
+     * Загружает данные для выбранной даты и МОЛ.
+     */
     public List<ProductWithMaterialsDto> loadProducts(String date, String kpp) {
         LocalDate dt = LocalDate.parse(date);
 
         // 1. Получаем список продуктов на дату
         List<ProductDto> products = materialRepository.findProductsByDate(date);
+        if (products.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         // 2. Получаем производственную программу
         PlrSprog plrSprog = sprogService.findByDate(LocalDate.parse(date));
         Double sysn = plrSprog.getSysn();
 
-        // 3. Загружаем сохраненные данные (если есть)
+        // 3. Загружаем сохраненные данные
         List<PlrSinv> existingPlrSinv = sinvRepository.findByDateAndKpp(dt, kpp);
         Map<String, PlrSinv> existingDataMap = existingPlrSinv.stream()
                 .collect(Collectors.toMap(
@@ -63,89 +69,144 @@ public class MaterialService {
                         (v1, v2) -> v1
                 ));
 
-        boolean hasSavedData = !existingPlrSinv.isEmpty();
+        // 4. Загружаем кэш материалов
+        Map<String, PlrMt> mtCache = loadMaterialCache(products, sysn);
 
-        List<ProductWithMaterialsDto> result = new ArrayList<>();
+        // 5. Собираем результат
+        List<ProductWithMaterialsDto> result = buildResult(products, sysn, existingDataMap, mtCache, dt, kpp);
 
-        // 4. Для каждого продукта собираем материалы
-        for (ProductDto product : products) {
-            List<PlrRnpp> materials = rnppService.findByKmcAndKtAndEmkAndSysn(
-                    sysn,
-                    product.getKmc(),
-                    product.getKt(),
-                    product.getEmk()
-            );
-
-            List<SinvDto> materialDtos = new ArrayList<>();
-
-            for (PlrRnpp material : materials) {
-                // Рассчитываем норму на заказ
-                Double normf = BigDecimal.valueOf((product.getSumMass() / 1000) * material.getKol1t())
-                        .setScale(2, RoundingMode.HALF_UP)
-                        .doubleValue();
-
-                String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
-                PlrSinv existing = existingDataMap.get(key);
-
-                // Берем значения из базы, если есть
-                Double kolf = existing != null ? existing.kolf : 0.0;
-                Double pers = existing != null ? existing.pers : null;
-                Double rnd = existing != null ? existing.rnd : null;
-                Double order = existing != null ? existing.order : null;
-
-                // Если в базе нет — берем из справочника материалов
-                PlrMt plrMt = mtService.getByKmt(material.getKkom());
-                if (pers == null && plrMt != null) {
-                    pers = plrMt.getPers() != null ? plrMt.getPers() : 0.0;
-                }
-                if (rnd == null && plrMt != null) {
-                    rnd = plrMt.getRnd() != null && plrMt.getRnd() > 0 ? plrMt.getRnd() : 1.0;
-                }
-
-                // Собираем DTO
-                SinvDto dto = SinvDto.builder()
-                        .dt(dt)
-                        .kpp(kpp)
-                        .kmc(product.getKmc())
-                        .kt(material.getKt())
-                        .kmt(material.getKkom())
-                        .snmMt(plrMt != null ? plrMt.getSnm() : null)
-                        .eduMt(plrMt != null ? plrMt.getEdu() : null)
-                        .norm(material.getKol1t())
-                        .normf(normf)
-                        .kolf(kolf)
-                        .insurancePerc(pers)
-                        .roundStep(rnd)
-                        .order(order)
-                        .build();
-
-                materialDtos.add(dto);
-            }
-
-            result.add(ProductWithMaterialsDto.builder()
-                    .dt(dt)
-                    .kpp(kpp)
-                    .kmc(product.getKmc())
-                    .kt(product.getKt())
-                    .ean13(product.getEan13())
-                    .emk(product.getEmk())
-                    .name(product.getProductName())
-                    .sumMass(product.getSumMass())
-                    .sumKolev(product.getSumKolev())
-                    .krkmc(product.getKrkmc())
-                    .materials(materialDtos)
-                    .build());
-        }
-
-        // 5. Если данных нет — полностью пересчитываем
-        //    Если данные есть — просто досчитываем недостающие поля
-        if (!hasSavedData) {
+        // 6. Пересчет
+        if (existingPlrSinv.isEmpty()) {
             calculateTotals(result);
         } else {
             fillAdditionalFields(result);
         }
 
         return result;
+    }
+
+    /**
+     * Загружает кэш материалов
+     */
+    private Map<String, PlrMt> loadMaterialCache(List<ProductDto> products, Double sysn) {
+        Map<String, PlrMt> mtCache = new HashMap<>();
+
+        for (ProductDto product : products) {
+            List<PlrRnpp> norms = rnppService.findByKmcAndKtAndEmkAndSysn(
+                    sysn, product.getKmc(), product.getKt(), product.getEmk()
+            );
+            for (PlrRnpp norm : norms) {
+                String kmt = norm.getKkom();
+                if (!mtCache.containsKey(kmt)) {
+                    PlrMt mt = mtService.getByKmt(kmt);
+                    if (mt != null) {
+                        mtCache.put(kmt, mt);
+                    }
+                }
+            }
+        }
+        return mtCache;
+    }
+
+    /**
+     * Собирает результат
+     */
+    private List<ProductWithMaterialsDto> buildResult(
+            List<ProductDto> products,
+            Double sysn,
+            Map<String, PlrSinv> existingDataMap,
+            Map<String, PlrMt> mtCache,
+            LocalDate dt,
+            String kpp
+    ) {
+        List<ProductWithMaterialsDto> result = new ArrayList<>();
+
+        for (ProductDto product : products) {
+            List<PlrRnpp> materials = rnppService.findByKmcAndKtAndEmkAndSysn(
+                    sysn, product.getKmc(), product.getKt(), product.getEmk()
+            );
+
+            List<SinvDto> materialDtos = new ArrayList<>();
+
+            for (PlrRnpp material : materials) {
+                SinvDto dto = buildSinvDto(product, material, existingDataMap, mtCache, dt, kpp);
+                materialDtos.add(dto);
+            }
+
+            result.add(buildProductDto(product, materialDtos, dt, kpp));
+        }
+
+        return result;
+    }
+
+    /**
+     * Создает SinvDto
+     */
+    private SinvDto buildSinvDto(
+            ProductDto product,
+            PlrRnpp material,
+            Map<String, PlrSinv> existingDataMap,
+            Map<String, PlrMt> mtCache,
+            LocalDate dt,
+            String kpp
+    ) {
+        Double normf = BigDecimal.valueOf((product.getSumMass() / 1000) * material.getKol1t())
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+
+        String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
+        PlrSinv existing = existingDataMap.get(key);
+        PlrMt plrMt = mtCache.get(material.getKkom());
+
+        Double pers = existing != null ? existing.pers : null;
+        if (pers == null && plrMt != null) {
+            pers = plrMt.getPers() != null ? plrMt.getPers() : 0.0;
+        }
+
+        Double rnd = existing != null ? existing.rnd : null;
+        if (rnd == null && plrMt != null) {
+            rnd = plrMt.getRnd() != null && plrMt.getRnd() > 0 ? plrMt.getRnd() : 1.0;
+        }
+
+        return SinvDto.builder()
+                .dt(dt)
+                .kpp(kpp)
+                .kmc(product.getKmc())
+                .kt(material.getKt())
+                .kmt(material.getKkom())
+                .snmMt(plrMt != null ? plrMt.getSnm() : null)
+                .eduMt(plrMt != null ? plrMt.getEdu() : null)
+                .norm(material.getKol1t())
+                .normf(normf)
+                .kolf(existing != null ? existing.kolf : 0.0)
+                .insurancePerc(pers)
+                .roundStep(rnd)
+                .order(existing != null ? existing.order : null)
+                .build();
+    }
+
+    /**
+     * Создает ProductWithMaterialsDto
+     */
+    private ProductWithMaterialsDto buildProductDto(
+            ProductDto product,
+            List<SinvDto> materialDtos,
+            LocalDate dt,
+            String kpp
+    ) {
+        return ProductWithMaterialsDto.builder()
+                .dt(dt)
+                .kpp(kpp)
+                .kmc(product.getKmc())
+                .kt(product.getKt())
+                .ean13(product.getEan13())
+                .emk(product.getEmk())
+                .name(product.getProductName())
+                .sumMass(product.getSumMass())
+                .sumKolev(product.getSumKolev())
+                .krkmc(product.getKrkmc())
+                .materials(materialDtos)
+                .build();
     }
 
 
