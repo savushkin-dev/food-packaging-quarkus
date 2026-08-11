@@ -303,10 +303,15 @@ class MaterialServiceTest {
                 .data(data)
                 .build();
 
+        // ✅ Исправлено: when().thenReturn() вместо doNothing()
         doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
         doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(zinvRepository).save(any(PlrZinv.class));
-        doNothing().when(sinvRepository).saveOrUpdate(any(PlrSinv.class));
+
+        PlrZinv savedZinv = new PlrZinv();
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
+
+        PlrSinv savedSinv = new PlrSinv();
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(savedSinv);
 
         // Act
         materialService.saveAll(request);
@@ -353,8 +358,13 @@ class MaterialServiceTest {
 
         doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
         doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(zinvRepository).save(any(PlrZinv.class));
-        doNothing().when(sinvRepository).saveOrUpdate(any(PlrSinv.class));
+
+        PlrZinv savedZinv = new PlrZinv();
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
+
+        // ✅ Исправлено: захватываем аргумент для проверки
+        PlrSinv savedSinv = new PlrSinv();
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(savedSinv);
 
         // Act
         materialService.saveAll(request);
@@ -379,8 +389,12 @@ class MaterialServiceTest {
 
         doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
         doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(zinvRepository).save(any(PlrZinv.class));
-        doNothing().when(sinvRepository).saveOrUpdate(any(PlrSinv.class));
+
+        PlrZinv savedZinv = new PlrZinv();
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
+
+        PlrSinv savedSinv = new PlrSinv();
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(savedSinv);
 
         // Act
         materialService.saveAll(request);
@@ -405,8 +419,12 @@ class MaterialServiceTest {
 
         doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
         doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(zinvRepository).save(any(PlrZinv.class));
-        doNothing().when(sinvRepository).saveOrUpdate(any(PlrSinv.class));
+
+        PlrZinv savedZinv = new PlrZinv();
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
+
+        PlrSinv savedSinv = new PlrSinv();
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(savedSinv);
 
         // Act
         materialService.saveAll(request);
