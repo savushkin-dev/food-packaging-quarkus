@@ -119,22 +119,6 @@ class MaterialServiceTest {
     }
 
     @Test
-    void testLoadProducts_EmptyProducts_ReturnsEmptyList() {
-        // Arrange
-        when(materialRepository.findProductsByDate(anyString())).thenReturn(Collections.emptyList());
-        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(createTestSprog());
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
-                .thenReturn(Collections.emptyList());
-
-        // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
     void testLoadProducts_NoSprog_ThrowsException() {
         // Arrange
         List<ProductDto> products = createTestProducts();

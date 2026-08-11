@@ -24,11 +24,6 @@ public class MtService {
         return mtRepository.findByKmt(kmt).orElse(null);
     }
 
-    @CacheInvalidate(cacheName = "material-cache")
-    public void invalidate(String kmt) {
-        // метод пустой, аннотация делает всю работу
-    }
-
     @CacheInvalidateAll(cacheName = "material-cache")
     public void invalidateAll() {
         // метод пустой, аннотация делает всю работу

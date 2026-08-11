@@ -334,16 +334,6 @@ public class MaterialService {
     /**
      * Округляет число до 2 знаков после запятой
      */
-    private double roundToTwo(Double value) {
-        if (value == null) return 0.0;
-        return BigDecimal.valueOf(value)
-                .setScale(2, RoundingMode.HALF_UP)
-                .doubleValue();
-    }
-
-    /**
-     * Округляет число до 2 знаков после запятой
-     */
     private double roundToTwo(double value) {
         return BigDecimal.valueOf(value)
                 .setScale(2, RoundingMode.HALF_UP)
