@@ -27,7 +27,7 @@ public class PpService {
         List<PlrPp> entities = ppRepository.searchByName(query);
         return entities.stream()
                 .map(this::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @CacheInvalidateAll(cacheName = "pp-search-cache")

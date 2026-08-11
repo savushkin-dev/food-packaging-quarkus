@@ -15,14 +15,18 @@ import java.util.List;
 @ApplicationScoped
 public class MaterialRepository {
 
-    @Inject
-    EntityManager em;
 
-    @Inject
-    SqlQueries sqlQueries;
+    private final EntityManager em;
+    private final SqlQueries sqlQueries;
 
     @ConfigProperty(name = "ksk")
     String defaultKsk;
+
+    @Inject
+    public MaterialRepository(EntityManager em, SqlQueries sqlQueries) {
+        this.em = em;
+        this.sqlQueries = sqlQueries;
+    }
 
     @SuppressWarnings("unchecked")
     public List<ProductDto> findProductsByDate(String date) {

@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,7 @@ class MaterialServiceTest {
     @Mock
     private MtService mtService;
 
-    private final LocalDate testDate = LocalDate.of(2026, 2, 15);
+    private final LocalDate testDate = LocalDate.of(2026, Month.FEBRUARY, 15);
     private final String testDateStr = "2026-02-15";
     private final String testKpp = "01020391";
 

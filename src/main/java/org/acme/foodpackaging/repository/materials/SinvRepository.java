@@ -19,6 +19,10 @@ public class SinvRepository implements PanacheRepository<PlrSinv> {
         this.em = em;
     }
 
+    public PlrSinv saveOrUpdate(PlrSinv plrSinv) {
+        return em.merge(plrSinv);
+    }
+
     public List<PlrSinv> findByDateAndKpp(LocalDate date, String kpp) {
         return find("dt = ?1 AND kpp = ?2", date, kpp).list();
     }
@@ -31,31 +35,5 @@ public class SinvRepository implements PanacheRepository<PlrSinv> {
         delete("dt = ?1 AND kpp = ?2", date, kpp);
     }
 
-    public void deleteByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
-        delete("dt = ?1 AND kpp = ?2 AND kmc = ?3", date, kpp, kmc);
-    }
 
-    public void updateKolfByKmt(String kmt, Double kolf, LocalDate date, String kpp) {
-        update(
-                "UPDATE Sinv s SET s.kolf = ?1 WHERE s.kmt = ?2 AND s.dt = ?3 AND s.kpp = ?4",
-                kolf, kmt, date, kpp
-        );
-    }
-
-    public PlrSinv findByKmtAndDateAndKpp(String kmt, LocalDate date, String kpp) {
-        return find("kmt = ?1 AND dt = ?2 AND kpp = ?3", kmt, date, kpp)
-                .firstResult();
-    }
-
-    public PlrSinv saveOrUpdate(PlrSinv plrSinv) {
-        return em.merge(plrSinv);
-    }
-
-    public void saveAll(List<PlrSinv> plrSinvList) {
-        for (PlrSinv plrSinv : plrSinvList) {
-            em.merge(plrSinv);
-        }
-        em.flush();
-        em.clear();
-    }
 }

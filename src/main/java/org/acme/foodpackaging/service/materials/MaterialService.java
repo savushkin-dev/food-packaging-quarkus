@@ -44,9 +44,6 @@ public class MaterialService {
      * Если заказ уже был сохранен — берем из базы сохраненные значения.
      * Если заказ новый — рассчитываем все заново.
      */
-    /**
-     * Загружает данные для выбранной даты и МОЛ.
-     */
     public List<ProductWithMaterialsDto> loadProducts(String date, String kpp) {
         LocalDate dt = LocalDate.parse(date);
 

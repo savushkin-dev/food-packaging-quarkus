@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.rest.materials;
 
+import java.nio.file.Files;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -7,7 +8,7 @@ import jakarta.ws.rs.core.Response;
 import org.acme.foodpackaging.dto.materials.FileUploadDto;
 import org.acme.foodpackaging.service.materials.DbfImportService;
 import org.jboss.resteasy.annotations.providers.multipart.MultipartForm;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.nio.file.StandardCopyOption;
 import lombok.extern.slf4j.Slf4j;
 
@@ -80,42 +81,65 @@ public class DbfImportResource {
 
     private Response importFile(FileUploadDto form, String prefix, ImportFunction importer) {
         if (form.file == null) {
-            return Response.status(400).entity("File is required").build();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("File is required")
+                    .build();
         }
 
         java.nio.file.Path tempFile = null;
         try {
-            tempFile = Files.createTempFile(prefix + "_", ".dbf");
+
+            String tempDir = System.getProperty("java.io.tmpdir");
+            tempFile = Files.createTempFile(java.nio.file.Path.of(tempDir), prefix + "_", ".dbf");
             Files.copy(form.file, tempFile, StandardCopyOption.REPLACE_EXISTING);
             importer.importFile(tempFile.toString());
             return Response.ok().build();
+
+        } catch (IOException e) {
+            log.error("IO error importing {}", prefix, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Import failed: " + e.getMessage())
+                    .build();
         } catch (Exception e) {
             log.error("Error importing {}", prefix, e);
-            return Response.status(500).entity("Import failed: " + e.getMessage()).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Import failed: " + e.getMessage())
+                    .build();
         } finally {
             if (tempFile != null) {
                 try {
                     Files.deleteIfExists(tempFile);
-                } catch (Exception ignored) {}
+                } catch (IOException e) {
+                    log.warn("Failed to delete temporary file: {}", tempFile, e);
+                }
             }
         }
     }
 
     private Response importByPath(String path, ImportFunction importer) {
         if (path == null || path.trim().isEmpty()) {
-            return Response.status(400).entity("Path is required").build();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Path is required")
+                    .build();
         }
         try {
             importer.importFile(path);
             return Response.ok().build();
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid path: {}", path, e);
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Invalid path: " + e.getMessage())
+                    .build();
         } catch (Exception e) {
             log.error("Error importing from path: {}", path, e);
-            return Response.status(500).entity("Import failed: " + e.getMessage()).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Import failed: " + e.getMessage())
+                    .build();
         }
     }
 
     @FunctionalInterface
     private interface ImportFunction {
-        void importFile(String path) throws Exception;
+        void importFile(String path) throws IOException, IllegalArgumentException;
     }
 }
