@@ -131,56 +131,5 @@ public class DbfReaderService {
         readDbfFileStreaming(dbfPath, memoPath, DEFAULT_ENCODING, recordConsumer);
     }
 
-    /**
-     * Чтение DBF с маппингом в объекты (потоково)
-     */
-    public <T> void readDbfFileStreaming(String dbfPath, DbfRowMapper<T> mapper, Consumer<T> recordConsumer) {
-        readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
-            T mapped = mapper.map(record);
-            if (mapped != null) {
-                recordConsumer.accept(mapped);
-            }
-        });
-    }
 
-    // ============ СТАРЫЕ МЕТОДЫ ДЛЯ СОВМЕСТИМОСТИ ============
-
-    /**
-     * @deprecated Используйте потоковый метод readDbfFileStreaming()
-     * Этот метод загружает ВЕСЬ файл в память!
-     */
-    @Deprecated
-    public List<Map<String, Object>> readDbfFile(String dbfPath) {
-        List<Map<String, Object>> result = new ArrayList<>();
-        readDbfFileStreaming(dbfPath, result::add);
-        return result;
-    }
-
-    /**
-     * @deprecated Используйте потоковый метод readDbfFileStreaming()
-     */
-    @Deprecated
-    public List<Map<String, Object>> readDbfFile(String dbfPath, String memoPath, String charsetName) {
-        List<Map<String, Object>> result = new ArrayList<>();
-        readDbfFileStreaming(dbfPath, memoPath, charsetName, result::add);
-        return result;
-    }
-
-    /**
-     * @deprecated Используйте потоковый метод readDbfFileStreaming()
-     */
-    @Deprecated
-    public <T> List<T> readDbfFile(String dbfPath, DbfRowMapper<T> mapper) {
-        List<T> result = new ArrayList<>();
-        readDbfFileStreaming(dbfPath, mapper, result::add);
-        return result;
-    }
-
-    /**
-     * Интерфейс для маппинга записей
-     */
-    @FunctionalInterface
-    public interface DbfRowMapper<T> {
-        T map(Map<String, Object> row);
-    }
 }
