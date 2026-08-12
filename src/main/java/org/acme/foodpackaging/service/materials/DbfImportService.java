@@ -363,7 +363,7 @@ public class DbfImportService {
             log.warn("Invalid DBF file path: {}", dbfPath);
             return null;
         }
-        
+
         if (!dbfPath.toLowerCase().endsWith(".dbf")) {
             log.warn("File is not a DBF: {}", dbfPath);
             return null;
