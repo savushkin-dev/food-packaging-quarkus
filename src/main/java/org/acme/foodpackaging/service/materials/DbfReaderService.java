@@ -19,7 +19,6 @@ import java.util.function.Consumer;
  */
 @Slf4j
 @ApplicationScoped
-@SuppressWarnings({"java:S2078", "java:S2083", "java:S5145"})
 public class DbfReaderService {
 
     private static final String DEFAULT_ENCODING = "CP866";
@@ -31,10 +30,7 @@ public class DbfReaderService {
                                      Consumer<Map<String, Object>> recordConsumer) {
         validateInput(dbfPath, recordConsumer);
 
-        Path dbfFilePath = Paths.get(dbfPath);
-        if (!Files.exists(dbfFilePath) || !Files.isRegularFile(dbfFilePath)) {
-            throw new IllegalArgumentException("DBF file not found: " + dbfPath);
-        }
+        Path dbfFilePath = normalizeAndValidatePath(dbfPath, "DBF");
 
         log.info("Opening DBF file: {}", dbfFilePath.getFileName());
 
@@ -45,10 +41,10 @@ public class DbfReaderService {
             processRecords(reader, fields, recordConsumer);
 
         } catch (IOException e) {
-            log.error("IO error reading DBF file: {}", dbfPath, e);
+            log.error("IO error reading DBF file: {}", dbfFilePath.getFileName(), e);
             throw new RuntimeException("Failed to read DBF file: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Unexpected error reading DBF file: {}", dbfPath, e);
+            log.error("Unexpected error reading DBF file: {}", dbfFilePath.getFileName(), e);
             throw new RuntimeException("Failed to read DBF file: " + e.getMessage(), e);
         }
     }
@@ -73,20 +69,71 @@ public class DbfReaderService {
         }
     }
 
-    private String findMemoFile(String dbfPath) {
-        String basePath = dbfPath.substring(0, dbfPath.lastIndexOf('.'));
-        String dbtPath = basePath + ".DBT";
-        String fptPath = basePath + ".FPT";
-
-        if (Files.exists(Paths.get(dbtPath)) && Files.isRegularFile(Paths.get(dbtPath))) {
-            log.info("Found DBT memo file: {}", dbtPath);
-            return dbtPath;
-        } else if (Files.exists(Paths.get(fptPath)) && Files.isRegularFile(Paths.get(fptPath))) {
-            log.info("Found FPT memo file: {}", fptPath);
-            return fptPath;
+    private Path normalizeAndValidatePath(String path, String fileType) {
+        if (path == null || path.trim().isEmpty()) {
+            throw new IllegalArgumentException(fileType + " file path cannot be null or empty");
         }
-        log.info("No memo file found for: {}", dbfPath);
-        return null;
+
+        try {
+            // Проверяем на path traversal ДО нормализации
+            String normalizedPathStr = path.replace('\\', '/');
+            if (normalizedPathStr.contains("..")) {
+                throw new IllegalArgumentException("Invalid file path: path traversal detected");
+            }
+
+            Path normalizedPath = Paths.get(path).normalize().toAbsolutePath();
+
+            // Проверяем, что файл существует и доступен
+            if (!Files.exists(normalizedPath)) {
+                throw new IllegalArgumentException(fileType + " file not found: " + normalizedPath);
+            }
+
+            if (!Files.isRegularFile(normalizedPath)) {
+                throw new IllegalArgumentException(fileType + " path is not a regular file: " + normalizedPath);
+            }
+
+            if (!Files.isReadable(normalizedPath)) {
+                throw new IllegalArgumentException(fileType + " file is not readable: " + normalizedPath);
+            }
+
+            return normalizedPath;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid " + fileType + " file path: " + path, e);
+        }
+    }
+
+    private String findMemoFile(String dbfPath) {
+        try {
+            Path dbfPathObj = Paths.get(dbfPath).normalize();
+            String basePath = dbfPathObj.toString();
+            int lastDot = basePath.lastIndexOf('.');
+            if (lastDot > 0) {
+                basePath = basePath.substring(0, lastDot);
+            }
+
+            String dbtPath = basePath + ".DBT";
+            String fptPath = basePath + ".FPT";
+
+            Path dbtPathObj = Paths.get(dbtPath).normalize().toAbsolutePath();
+            if (Files.exists(dbtPathObj) && Files.isRegularFile(dbtPathObj) && Files.isReadable(dbtPathObj)) {
+                log.info("Found DBT memo file: {}", dbtPathObj.getFileName());
+                return dbtPathObj.toString();
+            }
+
+            Path fptPathObj = Paths.get(fptPath).normalize().toAbsolutePath();
+            if (Files.exists(fptPathObj) && Files.isRegularFile(fptPathObj) && Files.isReadable(fptPathObj)) {
+                log.info("Found FPT memo file: {}", fptPathObj.getFileName());
+                return fptPathObj.toString();
+            }
+
+            log.info("No memo file found for: {}", dbfPathObj.getFileName());
+            return null;
+        } catch (Exception e) {
+            log.warn("Error finding memo file: {}", e.getMessage());
+            return null;
+        }
     }
 
     private void setupReader(DBFReader reader, String charsetName, String memoPath) throws IOException {
@@ -94,12 +141,23 @@ public class DbfReaderService {
         reader.setCharactersetName(encoding);
 
         if (memoPath != null && !memoPath.trim().isEmpty()) {
-            Path memoFilePath = Paths.get(memoPath);
-            if (Files.exists(memoFilePath) && Files.isRegularFile(memoFilePath)) {
-                reader.setMemoFile(memoFilePath.toFile());
-                log.info("Memo file loaded: {}", memoPath);
-            } else {
-                log.warn("Memo file not found: {}", memoPath);
+            try {
+                // Проверяем, что memo файл существует и доступен для чтения
+                Path memoFilePath = Paths.get(memoPath).normalize().toAbsolutePath();
+                if (Files.exists(memoFilePath) && Files.isRegularFile(memoFilePath) && Files.isReadable(memoFilePath)) {
+                    // Пытаемся установить memo файл, но если он поврежден - игнорируем
+                    try {
+                        reader.setMemoFile(memoFilePath.toFile());
+                        log.info("Memo file loaded: {}", memoFilePath.getFileName());
+                    } catch (Exception e) {
+                        log.warn("Memo file is corrupted or invalid: {}", memoFilePath.getFileName());
+                        // Продолжаем без memo файла
+                    }
+                } else {
+                    log.warn("Memo file not found or not accessible: {}", memoPath);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to load memo file: {}", memoPath, e);
             }
         }
     }
