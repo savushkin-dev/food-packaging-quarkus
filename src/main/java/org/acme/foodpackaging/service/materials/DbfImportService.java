@@ -355,6 +355,20 @@ public class DbfImportService {
      * Находит файл memo (DBT или FPT) по пути DBF файла
      */
     private String findMemoFile(String dbfPath) {
+        if (dbfPath == null || dbfPath.trim().isEmpty()) {
+            return null;
+        }
+
+        if (!dbfPath.matches("^[a-zA-Z0-9._/\\\\-]+$")) {
+            log.warn("Invalid DBF file path: {}", dbfPath);
+            return null;
+        }
+        
+        if (!dbfPath.toLowerCase().endsWith(".dbf")) {
+            log.warn("File is not a DBF: {}", dbfPath);
+            return null;
+        }
+
         String basePath = dbfPath.substring(0, dbfPath.lastIndexOf('.'));
         String dbtPath = basePath + ".DBT";
         String fptPath = basePath + ".FPT";
@@ -362,9 +376,9 @@ public class DbfImportService {
         java.nio.file.Path dbtFilePath = java.nio.file.Paths.get(dbtPath);
         java.nio.file.Path fptFilePath = java.nio.file.Paths.get(fptPath);
 
-        if (java.nio.file.Files.exists(dbtFilePath)) {
+        if (java.nio.file.Files.exists(dbtFilePath) && java.nio.file.Files.isRegularFile(dbtFilePath)) {
             return dbtPath;
-        } else if (java.nio.file.Files.exists(fptFilePath)) {
+        } else if (java.nio.file.Files.exists(fptFilePath) && java.nio.file.Files.isRegularFile(fptFilePath)) {
             return fptPath;
         }
         return null;
