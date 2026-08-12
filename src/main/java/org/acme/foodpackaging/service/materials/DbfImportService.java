@@ -55,7 +55,6 @@ public class DbfImportService {
         log.info("=== START SPROG IMPORT ===");
         long startTime = System.currentTimeMillis();
 
-        // Очищаем таблицу перед импортом
         sprogService.deleteAll();
 
         AtomicInteger importedCount = new AtomicInteger(0);
@@ -97,7 +96,6 @@ public class DbfImportService {
         log.info("=== START Rnpp IMPORT ===");
         long startTime = System.currentTimeMillis();
 
-        // Очищаем таблицу перед импортом
         rnppService.deleteAll();
 
         AtomicInteger importedCount = new AtomicInteger(0);
@@ -193,7 +191,6 @@ public class DbfImportService {
         log.info("=== START Pp IMPORT ===");
         long startTime = System.currentTimeMillis();
 
-        // Очищаем таблицу перед импортом
         ppService.deleteAll();
 
         AtomicInteger importedCount = new AtomicInteger(0);
@@ -273,7 +270,7 @@ public class DbfImportService {
         }
 
         for (PlrMt entity : batch) {
-            entityManager.merge(entity);
+            PlrMt merged = entityManager.merge(entity);
         }
         entityManager.flush();
         entityManager.clear();
@@ -354,17 +351,20 @@ public class DbfImportService {
 
     // ==================== HELPER METHODS ====================
 
+    /**
+     * Находит файл memo (DBT или FPT) по пути DBF файла
+     */
     private String findMemoFile(String dbfPath) {
         String basePath = dbfPath.substring(0, dbfPath.lastIndexOf('.'));
         String dbtPath = basePath + ".DBT";
         String fptPath = basePath + ".FPT";
 
-        java.io.File dbtFile = new java.io.File(dbtPath);
-        java.io.File fptFile = new java.io.File(fptPath);
+        java.nio.file.Path dbtFilePath = java.nio.file.Paths.get(dbtPath);
+        java.nio.file.Path fptFilePath = java.nio.file.Paths.get(fptPath);
 
-        if (dbtFile.exists()) {
+        if (java.nio.file.Files.exists(dbtFilePath)) {
             return dbtPath;
-        } else if (fptFile.exists()) {
+        } else if (java.nio.file.Files.exists(fptFilePath)) {
             return fptPath;
         }
         return null;
