@@ -386,7 +386,9 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Map<String, Double> productions = (lineService.calculateLineProductions(solution.getLines(), loadDTO.getStartDate()));
+        Map<String, LineProductionDto> productions =
+                lineService.calculateLineProductions(solution.getLines(), loadDTO.getStartDate());
+
         return Response.ok(productions).build();
     }
 

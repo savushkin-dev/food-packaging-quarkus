@@ -2,10 +2,13 @@ package org.acme.foodpackaging.service.lines;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.record.LineProductionDto;
+import org.acme.foodpackaging.repository.PmLogRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,10 +22,11 @@ import java.util.regex.Pattern;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class LineService {
 
-    @Inject
-    LoadDataService loadDataService;
+    private final LoadDataService loadDataService;
+    private final PmLogRepository pmLogRepository;
 
     public List<Line> getLines() {
         return loadDataService.getLines().entrySet().stream()
@@ -103,30 +107,66 @@ public class LineService {
         }
     }
 
-    public Map<String, Double> calculateLineProductions(List<Line> lines, LocalDate selectedDate) {
-        Map<String, Double> lineProductionsMap = LinkedHashMap.newLinkedHashMap(lines.size());
+    // ============================================================
+    // LineProduction
+    // ============================================================
+    public Map<String, LineProductionDto> calculateLineProductions(List<Line> lines, LocalDate selectedDate) {
+        ShiftWindow window = ShiftWindow.forDate(selectedDate);
 
-        LocalDateTime windowStart = selectedDate.atTime(8, 0);
-        LocalDateTime windowEnd = windowStart.plusDays(1);
-
+        Map<String, LineProductionDto> result = LinkedHashMap.newLinkedHashMap(lines.size());
         for (Line line : lines) {
-            if (line.getJobs() == null || line.getJobs().isEmpty()) {
-                lineProductionsMap.put(line.getName(), 0.0);
+            result.put(String.valueOf(line.getId()), buildLineProduction(line, window));
+        }
+        return result;
+    }
+
+    private LineProductionDto buildLineProduction(Line line, ShiftWindow window) {
+        String lineKey = String.valueOf(line.getId());
+
+        if (line.getJobs() == null || line.getJobs().isEmpty()) {
+            return new LineProductionDto(lineKey, 0.0, line.getName(), Map.of());
+        }
+
+        Map<String, Double> snpz = new LinkedHashMap<>();
+        double totalMass = 0.0;
+
+        for (Job job : line.getJobs()) {
+            double mass = calculateJobMass(job, window);
+            if (mass <= 0) {
                 continue;
             }
-            List<Job> jobsByDate = line.getJobs().stream()
-                    .filter(j -> j.getCameraStart() != null && j.getCameraEnd() != null
-                            && !j.getCameraStart().isBefore(windowStart) && j.getCameraStart().isBefore(windowEnd)
-                            && !j.getCameraEnd().isBefore(windowStart) && j.getCameraEnd().isBefore(windowEnd))
-                    .toList();
-
-            double lineProduction = 0;
-            for (Job j : jobsByDate) {
-                lineProduction += j.getMass();
-            }
-
-            lineProductionsMap.put(line.getName(), lineProduction);
+            totalMass += mass;
+            snpz.put(String.valueOf(job.getId()), mass);
         }
-        return lineProductionsMap;
+
+        return new LineProductionDto(lineKey, totalMass, line.getName(), snpz);
     }
+
+    private double calculateJobMass(Job job, ShiftWindow window) {
+        LocalDateTime start = job.getCameraStart();
+        LocalDateTime end = job.getCameraEnd();
+
+        if (start == null || end == null || !window.overlaps(start, end)) {
+            return 0.0;
+        }
+
+        return window.fullyContains(start, end)
+                ? job.getMass()
+                : calculatePartialMass(job, window);
+    }
+
+    private double calculatePartialMass(Job job, ShiftWindow window) {
+        String idBatch = job.getIdBatch();
+        if (idBatch == null) {
+            return 0.0;
+        }
+
+        Double successRate = switch (window.crossingType(job.getCameraStart(), job.getCameraEnd())) {
+            case CROSSES_START -> pmLogRepository.getSuccessRateFromStart(idBatch, window.start());
+            case CROSSES_END -> pmLogRepository.getSuccessRateUntilEnd(idBatch, window.end());
+        };
+
+        return successRate == null ? 0.0 : job.getMass() * successRate;
+    }
+
 }

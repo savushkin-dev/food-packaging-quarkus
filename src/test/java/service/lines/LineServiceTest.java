@@ -5,6 +5,8 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.record.LineProductionDto;
+import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,9 @@ class LineServiceTest {
 
     @Mock
     LoadDataService loadDataService;
+
+    @Mock
+    PmLogRepository pmLogRepository;
 
     @Test
     void getLines() {
@@ -174,97 +179,53 @@ class LineServiceTest {
     // calculateLineProductions
     // ============================================================
     @Test
-    void calculateLineProductions() {
-        Job j1 = new Job();
-        Job j2 = new Job();
-        Job j3 = new Job();
-        Job j4 = new Job();
-        Job j5 = new Job();
-        Job j6 = new Job();
-        Job j7 = new Job();
-
-        j1.setMass(227.0);
-        j2.setMass(227.0);
-        j7.setMass(500.0);
-
+    void calculateLineProductions_jobCrossesWindowStart_callsFromStartQuery() {
         LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
 
-        // Внутри окна [03.08 08:00, 04.08 08:00)
-        j1.setCameraStart(date.atStartOfDay().plusHours(15));
-        j1.setCameraEnd(j1.getCameraStart().plusHours(2));
-
-        j2.setCameraStart(j1.getCameraEnd().plusHours(2));
-        j2.setCameraEnd(j2.getCameraStart().plusHours(2));
-
-        // Далеко за пределами окна
-        j3.setCameraStart(j2.getCameraEnd().plusDays(2));
-        j3.setCameraEnd(j2.getCameraStart().plusHours(2));
-
-        // j4 без установленных данных (null) — не попадёт в фильтр
-
-        // cameraEnd == null — должен быть отброшен
-        j5.setCameraStart(date.atStartOfDay().plusHours(9));
-        j5.setCameraEnd(null);
-
-        // Начало внутри окна, конец уже в следующем окне (после 08:00 следующего дня) —
-        // отброшен
-        j6.setCameraStart(date.atStartOfDay().plusHours(10));
-        j6.setCameraEnd(date.plusDays(1).atStartOfDay().plusHours(10));
-
-        // Ровно на границе начала окна — должен попасть (включительно)
-        j7.setCameraStart(date.atStartOfDay().plusHours(8));
-        j7.setCameraEnd(j7.getCameraStart().plusHours(1));
-
-        Line l1 = new Line("L1", "Line 1");
-        Line l2 = new Line("L2", "line2");
-        Line l3 = new Line("L3", "line3");
-
-        l1.setJobs(List.of(j1, j2, j3, j4, j5, j6, j7));
-        l2.setJobs(null);
-
-        Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1, l2, l3), date);
-
-        double result = j1.getMass() + j2.getMass() + j7.getMass();
-        assertEquals(result, dailyProductions.get(l1.getName()));
-        assertEquals(0.0, dailyProductions.get(l2.getName()));
-        assertEquals(0.0, dailyProductions.get(l3.getName()));
-    }
-
-    @Test
-    void calculateLineProductions_jobBeforeWindowStart_excluded() {
         Job j1 = new Job();
-        j1.setMass(100.0);
-
-        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
-
-        // Заканчивается за минуту до начала окна (07:59) — не входит
-        j1.setCameraStart(date.atStartOfDay().plusHours(7).plusMinutes(30));
-        j1.setCameraEnd(date.atStartOfDay().plusHours(7).plusMinutes(59));
+        j1.setId("1");
+        j1.setMass(300.0);
+        j1.setIdBatch("BATCH_START");
+        j1.setCameraStart(date.atStartOfDay().plusHours(7).plusMinutes(50));
+        j1.setCameraEnd(date.atStartOfDay().plusHours(8).plusMinutes(20));
 
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1));
 
-        Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1), date);
+        LocalDateTime windowStart = date.atTime(8, 0);
 
-        assertEquals(0.0, dailyProductions.get(l1.getName()));
+        when(pmLogRepository.getSuccessRateFromStart("BATCH_START", windowStart)).thenReturn(0.4);
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        assertEquals(120.0, result.get(String.valueOf(l1.getId())).massa()); // 300 * 0.4
+        verify(pmLogRepository).getSuccessRateFromStart("BATCH_START", windowStart);
+        verify(pmLogRepository, never()).getSuccessRateUntilEnd(any(), any());
     }
 
     @Test
-    void calculateLineProductions_jobAtWindowEnd_excluded() {
-        Job j1 = new Job();
-        j1.setMass(100.0);
-
+    void calculateLineProductions_jobCrossesWindowEnd_callsUntilEndQuery() {
         LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
 
-        // Начинается ровно в 08:00 следующего дня — уже следующее окно, исключается
-        j1.setCameraStart(date.plusDays(1).atStartOfDay().plusHours(8));
-        j1.setCameraEnd(j1.getCameraStart().plusHours(1));
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(200.0);
+        j1.setIdBatch("BATCH_END");
+        j1.setCameraStart(date.plusDays(1).atStartOfDay().plusHours(7).plusMinutes(30));
+        j1.setCameraEnd(date.plusDays(1).atStartOfDay().plusHours(8).plusMinutes(30));
 
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1));
 
-        Map<String, Double> dailyProductions = lineService.calculateLineProductions(List.of(l1), date);
+        LocalDateTime windowEnd = date.atTime(8, 0).plusDays(1);
 
-        assertEquals(0.0, dailyProductions.get(l1.getName()));
+        when(pmLogRepository.getSuccessRateUntilEnd("BATCH_END", windowEnd)).thenReturn(0.75);
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        assertEquals(150.0, result.get(String.valueOf(l1.getId())).massa()); // 200 * 0.75
+        verify(pmLogRepository).getSuccessRateUntilEnd("BATCH_END", windowEnd);
+        verify(pmLogRepository, never()).getSuccessRateFromStart(any(), any());
     }
+
 }
