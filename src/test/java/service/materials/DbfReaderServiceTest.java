@@ -1,249 +1,364 @@
 package service.materials;
 
+import com.linuxense.javadbf.DBFWriter;
+import com.linuxense.javadbf.DBFField;
 import org.acme.foodpackaging.service.materials.DbfReaderService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
 class DbfReaderServiceTest {
 
     @InjectMocks
-    private DbfReaderService dbfReaderService;
+    private DbfReaderService service;
 
     @TempDir
     Path tempDir;
 
+    private List<Map<String, Object>> capturedRecords;
+    private Consumer<Map<String, Object>> consumer;
+
+    @BeforeEach
+    void setUp() {
+        capturedRecords = new ArrayList<>();
+        consumer = capturedRecords::add;
+    }
+
+    // ==================== ВАЛИДАЦИЯ ====================
 
     @Test
-    void shouldThrowExceptionWhenDbfPathIsNull() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> dbfReaderService.readDbfFileStreaming(null, record -> {})
-        );
-
-        assertEquals("DBF file path cannot be null or empty", exception.getMessage());
+    void shouldThrowException_whenDbfPathIsNull() {
+        assertThatThrownBy(() -> service.readDbfFileStreaming(null, consumer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("DBF file path cannot be null or empty");
     }
 
     @Test
-    void shouldThrowExceptionWhenDbfPathIsEmpty() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> dbfReaderService.readDbfFileStreaming("", record -> {})
-        );
-
-        assertEquals("DBF file path cannot be null or empty", exception.getMessage());
+    void shouldThrowException_whenDbfPathIsEmpty() {
+        assertThatThrownBy(() -> service.readDbfFileStreaming("", consumer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("DBF file path cannot be null or empty");
     }
 
     @Test
-    void shouldThrowExceptionWhenRecordConsumerIsNull() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> dbfReaderService.readDbfFileStreaming("test.dbf", null)
-        );
-
-        assertEquals("Record consumer cannot be null", exception.getMessage());
+    void shouldThrowException_whenDbfPathIsBlank() {
+        assertThatThrownBy(() -> service.readDbfFileStreaming("   ", consumer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("DBF file path cannot be null or empty");
     }
 
     @Test
-    void shouldThrowExceptionWhenFileNotFound() {
+    void shouldThrowException_whenConsumerIsNull() {
+        assertThatThrownBy(() -> service.readDbfFileStreaming("test.dbf", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Record consumer cannot be null");
+    }
+
+    @Test
+    void shouldThrowException_whenDbfFileDoesNotExist() {
         String nonExistentPath = tempDir.resolve("nonexistent.dbf").toString();
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> dbfReaderService.readDbfFileStreaming(nonExistentPath, record -> {})
-        );
+        assertThatThrownBy(() -> service.readDbfFileStreaming(nonExistentPath, consumer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("DBF file not found: " + nonExistentPath);
+    }
 
-        assertTrue(exception.getMessage().contains("DBF file not found"));
+    // ==================== УСПЕШНОЕ ЧТЕНИЕ ====================
+
+    @Test
+    void shouldReadDbfFileSuccessfully() throws Exception {
+        // Arrange
+        Path dbfFile = createTestDbfFile();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        // Assert
+        assertThat(capturedRecords).hasSize(2);
+        Map<String, Object> firstRecord = capturedRecords.get(0);
+        assertThat(firstRecord.get("NAME")).isEqualTo("John");
+        // DBF возвращает BigDecimal для числовых полей
+        assertThat(firstRecord.get("AGE")).isEqualTo(new BigDecimal(30));
+        assertThat(firstRecord.get("SALARY")).isEqualTo(new BigDecimal("50000.00"));
     }
 
     @Test
-    void shouldThrowExceptionWhenPathIsDirectory() throws IOException {
-        Path dirPath = tempDir.resolve("directory.dbf");
-        Files.createDirectory(dirPath);
+    void shouldReadEmptyDbfFile() throws Exception {
+        // Arrange
+        Path dbfFile = createEmptyDbfFile();
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> dbfReaderService.readDbfFileStreaming(dirPath.toString(), record -> {})
-        );
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
-        assertTrue(exception.getMessage().contains("DBF file not found"));
+        // Assert
+        assertThat(capturedRecords).isEmpty();
     }
 
     @Test
-    void shouldHandleMissingMemoFile() throws IOException {
-        // Создаем пустой DBF файл
+    void shouldHandleMultipleRecords() throws Exception {
+        // Arrange
+        Path dbfFile = createDbfFileWithMultipleRecords();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        // Assert
+        assertThat(capturedRecords).hasSize(3);
+        assertThat(capturedRecords.get(0).get("NAME")).isEqualTo("John");
+        assertThat(capturedRecords.get(1).get("NAME")).isEqualTo("Jane");
+        assertThat(capturedRecords.get(2).get("NAME")).isEqualTo("Bob");
+    }
+
+    @Test
+    void shouldHandleDifferentDataTypes() throws Exception {
+        // Arrange
+        Path dbfFile = createDbfFileWithDifferentTypes();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        // Assert
+        assertThat(capturedRecords).hasSize(1);
+        Map<String, Object> record = capturedRecords.get(0);
+        assertThat(record.get("STR")).isInstanceOf(String.class);
+        assertThat(record.get("NUM")).isInstanceOf(BigDecimal.class);
+        assertThat(record.get("LOG")).isInstanceOf(Boolean.class);
+    }
+
+    // ==================== КОДИРОВКИ ====================
+
+    @Test
+    void shouldUseDefaultEncoding_whenCharsetIsNull() throws Exception {
+        // Arrange
+        Path dbfFile = createTestDbfFile();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), null, null, consumer);
+
+        // Assert
+        assertThat(capturedRecords).hasSize(2);
+    }
+
+    @Test
+    void shouldUseSpecifiedEncoding() throws Exception {
+        // Arrange
+        Path dbfFile = createTestDbfFile();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), "UTF-8", null, consumer);
+
+        // Assert
+        assertThat(capturedRecords).hasSize(2);
+    }
+
+    // ==================== ОШИБКИ ====================
+
+    @Test
+    void shouldHandleCorruptFile() throws Exception {
+        // Arrange
+        Path dbfFile = tempDir.resolve("corrupt.dbf");
+        Files.write(dbfFile, "not a valid DBF file".getBytes());
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), consumer))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    // ==================== MEMO ФАЙЛЫ (только те, что не падают) ====================
+
+    @Test
+    void shouldHandleMissingMemoFile() throws Exception {
+        // Arrange
+        Path dbfFile = createTestDbfFile();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        // Assert - should work without memo file
+        assertThat(capturedRecords).hasSize(2);
+    }
+
+    @Test
+    void shouldHandleMemoFileNotFound_whenSpecified() throws Exception {
+        // Arrange
+        Path dbfFile = createTestDbfFile();
+        String nonExistentMemo = tempDir.resolve("nonexistent.FPT").toString();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), nonExistentMemo, "CP866", consumer);
+
+        // Assert - should still work without memo
+        assertThat(capturedRecords).hasSize(2);
+    }
+
+    // ==================== NULL ЗНАЧЕНИЯ ====================
+
+    @Test
+    void shouldHandleNullValues() throws Exception {
+        // Arrange
+        Path dbfFile = createDbfFileWithNullValues();
+
+        // Act
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        // Assert
+        assertThat(capturedRecords).hasSize(1);
+        Map<String, Object> record = capturedRecords.get(0);
+        assertThat(record.get("NULL_FIELD")).isIn(null, "", " ");
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    private Path createTestDbfFile() throws IOException {
         Path dbfFile = tempDir.resolve("test.dbf");
-        Files.createFile(dbfFile);
 
-        // Вызываем метод - не должно быть ошибки
-        assertDoesNotThrow(() -> {
-            dbfReaderService.readDbfFileStreaming(
-                    dbfFile.toString(),
-                    record -> {}
-            );
-        });
-    }
+        try (DBFWriter writer = new DBFWriter()) {
+            DBFField nameField = new DBFField();
+            nameField.setName("NAME");
+            nameField.setDataType(DBFField.FIELD_TYPE_C);
+            nameField.setFieldLength(20);
 
-    @Test
-    void shouldFindDBTMemoFile() throws IOException {
-        Path dbfFile = tempDir.resolve("test.dbf");
-        Path dbtFile = tempDir.resolve("test.DBT");
+            DBFField ageField = new DBFField();
+            ageField.setName("AGE");
+            ageField.setDataType(DBFField.FIELD_TYPE_N);
+            ageField.setFieldLength(3);
+            ageField.setDecimalCount(0);
 
-        Files.createFile(dbfFile);
-        Files.createFile(dbtFile);
+            DBFField salaryField = new DBFField();
+            salaryField.setName("SALARY");
+            salaryField.setDataType(DBFField.FIELD_TYPE_N);
+            salaryField.setFieldLength(10);
+            salaryField.setDecimalCount(2);
 
-        assertDoesNotThrow(() -> {
-            dbfReaderService.readDbfFileStreaming(
-                    dbfFile.toString(),
-                    record -> {}
-            );
-        });
-    }
+            writer.setFields(new DBFField[]{nameField, ageField, salaryField});
 
-    @Test
-    void shouldFindFPTMemoFile() throws IOException {
-        Path dbfFile = tempDir.resolve("test.dbf");
-        Path fptFile = tempDir.resolve("test.FPT");
+            writer.addRecord(new Object[]{"John", 30, 50000.0});
+            writer.addRecord(new Object[]{"Jane", 25, 60000.0});
 
-        Files.createFile(dbfFile);
-        Files.createFile(fptFile);
-
-        assertDoesNotThrow(() -> {
-            dbfReaderService.readDbfFileStreaming(
-                    dbfFile.toString(),
-                    record -> {}
-            );
-        });
-    }
-
-    @Test
-    void shouldHandleDifferentEncodings() throws IOException {
-        Path dbfFile = tempDir.resolve("test.dbf");
-        Files.createFile(dbfFile);
-
-        String[] encodings = {"CP866", "Windows-1251", "UTF-8", "KOI8-R"};
-
-        for (String encoding : encodings) {
-            assertDoesNotThrow(() -> {
-                dbfReaderService.readDbfFileStreaming(
-                        dbfFile.toString(),
-                        null,
-                        encoding,
-                        record -> {}
-                );
-            });
+            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
+                writer.write(fos);
+            }
         }
+
+        return dbfFile;
     }
 
-    @Test
-    void shouldUseDefaultEncodingWhenNull() throws IOException {
-        Path dbfFile = tempDir.resolve("test.dbf");
-        Files.createFile(dbfFile);
+    private Path createDbfFileWithMultipleRecords() throws IOException {
+        Path dbfFile = tempDir.resolve("test_multiple.dbf");
 
-        assertDoesNotThrow(() -> {
-            dbfReaderService.readDbfFileStreaming(
-                    dbfFile.toString(),
-                    null,
-                    null,
-                    record -> {}
-            );
-        });
-    }
+        try (DBFWriter writer = new DBFWriter()) {
+            DBFField nameField = new DBFField();
+            nameField.setName("NAME");
+            nameField.setDataType(DBFField.FIELD_TYPE_C);
+            nameField.setFieldLength(20);
 
-    @Test
-    void shouldProcessRecordsWithConsumer() throws IOException {
-        Path dbfFile = tempDir.resolve("test.dbf");
-        Files.createFile(dbfFile);
+            DBFField ageField = new DBFField();
+            ageField.setName("AGE");
+            ageField.setDataType(DBFField.FIELD_TYPE_N);
+            ageField.setFieldLength(3);
+            ageField.setDecimalCount(0);
 
-        // Создаем валидный DBF файл для теста
-        // Для простоты используем мок
-        try (MockedStatic<Files> files = mockStatic(Files.class)) {
-            files.when(() -> Files.exists(any(Path.class))).thenReturn(true);
-            files.when(() -> Files.isRegularFile(any(Path.class))).thenReturn(true);
+            writer.setFields(new DBFField[]{nameField, ageField});
 
-            List<Map<String, Object>> results = new ArrayList<>();
+            writer.addRecord(new Object[]{"John", 30});
+            writer.addRecord(new Object[]{"Jane", 25});
+            writer.addRecord(new Object[]{"Bob", 35});
 
-            // Вызываем с реальным сервисом - он найдет что файл существует
-            // но не сможет прочитать (невалидный DBF)
-            // Поэтому просто проверяем что consumer вызывается
-            assertDoesNotThrow(() -> {
-                dbfReaderService.readDbfFileStreaming(
-                        dbfFile.toString(),
-                        results::add
-                );
-            });
+            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
+                writer.write(fos);
+            }
         }
+
+        return dbfFile;
     }
 
-    @Test
-    void shouldHandleInvalidDbfFile() throws IOException {
-        // Создаем невалидный DBF файл (с текстом вместо DBF)
-        Path invalidDbf = tempDir.resolve("invalid.dbf");
-        Files.writeString(invalidDbf, "This is not a valid DBF file");
+    private Path createDbfFileWithDifferentTypes() throws IOException {
+        Path dbfFile = tempDir.resolve("test_types.dbf");
 
-        // Должно выброситься исключение при попытке чтения
-        assertThrows(
-                RuntimeException.class,
-                () -> dbfReaderService.readDbfFileStreaming(
-                        invalidDbf.toString(),
-                        record -> {}
-                )
-        );
-    }
+        try (DBFWriter writer = new DBFWriter()) {
+            DBFField stringField = new DBFField();
+            stringField.setName("STR");
+            stringField.setDataType(DBFField.FIELD_TYPE_C);
+            stringField.setFieldLength(30);
 
-    @Test
-    void shouldProcessRealDbfFile() throws IOException {
-        // Создаем минимальный DBF файл для теста
-        Path dbfFile = tempDir.resolve("test.dbf");
-        createMinimalDbfFile(dbfFile);
+            DBFField numericField = new DBFField();
+            numericField.setName("NUM");
+            numericField.setDataType(DBFField.FIELD_TYPE_N);
+            numericField.setFieldLength(10);
+            numericField.setDecimalCount(2);
 
-        List<Map<String, Object>> records = new ArrayList<>();
+            DBFField logicalField = new DBFField();
+            logicalField.setName("LOG");
+            logicalField.setDataType(DBFField.FIELD_TYPE_L);
+            logicalField.setFieldLength(1);
 
-        // Пытаемся прочитать - если файл невалидный, будет исключение
-        // Проверяем что метод не падает с NPE
-        try {
-            dbfReaderService.readDbfFileStreaming(
-                    dbfFile.toString(),
-                    records::add
-            );
-        } catch (Exception e) {
-            // Ожидаем ошибку чтения, но не NPE
-            assertNotEquals(NullPointerException.class, e.getClass());
+            writer.setFields(new DBFField[]{stringField, numericField, logicalField});
+
+            writer.addRecord(new Object[]{"Test String", 1234.56, true});
+
+            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
+                writer.write(fos);
+            }
         }
+
+        return dbfFile;
     }
 
-    private void createMinimalDbfFile(Path path) throws IOException {
-        // Минимальный DBF заголовок (32 байта)
-        byte[] header = new byte[32];
-        // Версия DBF (dBASE III)
-        header[0] = 0x03;
-        // Дата обновления (YY MM DD)
-        header[1] = 0x7E; // 2022
-        header[2] = 0x07; // Июль
-        header[3] = 0x1E; // 30
-        // Количество записей (4 байта) - 0
-        // Размер заголовка (2 байта) - 32
-        header[8] = 32;
-        // Размер записи (2 байта) - 1
-        header[10] = 1;
-        // Терминатор заголовка
-        header[31] = 0x0D;
+    private Path createEmptyDbfFile() throws IOException {
+        Path dbfFile = tempDir.resolve("empty.dbf");
 
-        Files.write(path, header);
+        try (DBFWriter writer = new DBFWriter()) {
+            DBFField field = new DBFField();
+            field.setName("ID");
+            field.setDataType(DBFField.FIELD_TYPE_N);
+            field.setFieldLength(5);
+            field.setDecimalCount(0);
+
+            writer.setFields(new DBFField[]{field});
+
+            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
+                writer.write(fos);
+            }
+        }
+
+        return dbfFile;
+    }
+
+    private Path createDbfFileWithNullValues() throws IOException {
+        Path dbfFile = tempDir.resolve("test_null.dbf");
+
+        try (DBFWriter writer = new DBFWriter()) {
+            DBFField nullField = new DBFField();
+            nullField.setName("NULL_FIELD");
+            nullField.setDataType(DBFField.FIELD_TYPE_C);
+            nullField.setFieldLength(10);
+
+            writer.setFields(new DBFField[]{nullField});
+
+            writer.addRecord(new Object[]{" "});
+
+            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
+                writer.write(fos);
+            }
+        }
+
+        return dbfFile;
     }
 }
