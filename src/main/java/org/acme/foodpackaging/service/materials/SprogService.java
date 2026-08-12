@@ -28,4 +28,9 @@ public class SprogService {
     public void invalidateAll() {
         // Очищает весь кэш программ
     }
+
+    public void deleteAll(){
+        invalidateAll();
+        sprogRepository.deleteAll();
+    }
 }

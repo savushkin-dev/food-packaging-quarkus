@@ -28,4 +28,9 @@ public class RnppService {
     public void invalidateAll() {
         // Очищает весь кэш норм
     }
+
+    public void deleteAll(){
+        invalidateAll();
+        rnppRepository.deleteAll();
+    }
 }

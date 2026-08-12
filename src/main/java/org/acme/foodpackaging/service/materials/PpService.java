@@ -34,6 +34,11 @@ public class PpService {
         // Очищает кэш поиска получателей
     }
 
+    public void deleteAll(){
+        invalidateSearchCache();
+        ppRepository.deleteAll();
+    }
+
     private PpDto toDto(PlrPp entity) {
         if (entity == null) {
             return null;
