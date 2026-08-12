@@ -4,10 +4,8 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.entity.materials.PlrMt;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class MtRepository implements PanacheRepository<PlrMt> {
@@ -37,5 +35,25 @@ public class MtRepository implements PanacheRepository<PlrMt> {
             return Collections.emptyList();
         }
         return find("kmt IN ?1", kmtList).list();
+    }
+
+    /**
+     * Загружает все материалы для импорта
+     */
+    public List<PlrMt> findAllForImport() {
+        return find("ORDER BY kmt").list();
+    }
+
+    /**
+     * Загружает все материалы в Map по KMT
+     */
+    public Map<String, PlrMt> findAllAsMapByKmt() {
+        return find("ORDER BY kmt")
+                .stream()
+                .collect(Collectors.toMap(
+                        PlrMt::getKmt,
+                        m -> m,
+                        (v1, v2) -> v1
+                ));
     }
 }

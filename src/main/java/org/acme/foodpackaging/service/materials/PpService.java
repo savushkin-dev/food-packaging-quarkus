@@ -9,7 +9,6 @@ import org.acme.foodpackaging.entity.materials.PlrPp;
 import org.acme.foodpackaging.repository.materials.PpRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class PpService {

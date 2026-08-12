@@ -28,11 +28,13 @@ public class DbfImportService {
 
     private final DbfReaderService dbfReaderService;
     private final EntityManager entityManager;
+    private final MtService mtService;
 
     @Inject
-    public DbfImportService(DbfReaderService dbfReaderService, EntityManager entityManager) {
+    public DbfImportService(DbfReaderService dbfReaderService, EntityManager entityManager, MtService mtService) {
         this.dbfReaderService = dbfReaderService;
         this.entityManager = entityManager;
+        this.mtService = mtService;
     }
 
 
@@ -132,23 +134,34 @@ public class DbfImportService {
         }
     }
 
-    public int importMt(String dbfPath) {
+    @Transactional
+    public void importMt(String dbfPath) {
         log.info("=== START Mt IMPORT ===");
         long startTime = System.currentTimeMillis();
 
-        AtomicInteger importedCount = new AtomicInteger(0);
-        List<PlrMt> batch = new ArrayList<>(BATCH_SIZE);
+        // 1. Загружаем существующие записи (это внутри транзакции)
+        Map<String, PlrMt> existingMap = mtService.findAllAsMapByKmt();
+
+        // 2. Собираем все сущности для сохранения в список
+        List<PlrMt> allEntitiesToSave = new ArrayList<>();
 
         try {
             dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> record) -> {
                 try {
-                    PlrMt entity = mapToMt(record);
-                    batch.add(entity);
+                    PlrMt newEntity = mapToMt(record);
+                    String kmt = newEntity.getKmt();
 
-                    if (batch.size() >= BATCH_SIZE) {
-                        int saved = saveMtBatch(batch);
-                        importedCount.addAndGet(saved);
-                        batch.clear();
+                    PlrMt existing = existingMap.get(kmt);
+
+                    if (existing != null) {
+                        // Обновляем только системные поля
+                        existing.setKgr(newEntity.getKgr());
+                        existing.setSnm(newEntity.getSnm());
+                        existing.setEdu(newEntity.getEdu());
+                        // pers и rnd не трогаем
+                        allEntitiesToSave.add(existing);
+                    } else {
+                        allEntitiesToSave.add(newEntity);
                     }
 
                 } catch (Exception e) {
@@ -156,15 +169,16 @@ public class DbfImportService {
                 }
             });
 
-            if (!batch.isEmpty()) {
-                int saved = saveMtBatch(batch);
-                importedCount.addAndGet(saved);
-                batch.clear();
+            // 3. Сохраняем все собранные сущности ОДНИМ БАТЧОМ
+            if (!allEntitiesToSave.isEmpty()) {
+                saveMtBatch(allEntitiesToSave);
             }
 
+            // 4. Очищаем кэш после импорта
+            mtService.invalidateAll();
+
             long totalTime = (System.currentTimeMillis() - startTime) / 1000;
-            log.info("=== FINISHED Mt IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
-            return importedCount.get();
+            log.info("=== FINISHED Mt IMPORT: {} records in {} sec ===", allEntitiesToSave.size(), totalTime);
 
         } catch (Exception e) {
             log.error("Mt import failed", e);
@@ -253,24 +267,14 @@ public class DbfImportService {
         return batch.size();
     }
 
-    @Transactional
-    public int saveMtBatch(List<PlrMt> batch) {
-        if (batch.isEmpty()) {
-            return 0;
-        }
-
-        long startTime = System.currentTimeMillis();
+    private void saveMtBatch(List<PlrMt> batch) {
+        if (batch.isEmpty()) return;
 
         for (PlrMt entity : batch) {
             entityManager.merge(entity);
         }
         entityManager.flush();
         entityManager.clear();
-
-        long duration = System.currentTimeMillis() - startTime;
-        log.debug("Saved Mt batch of {} records in {} ms", batch.size(), duration);
-
-        return batch.size();
     }
 
     @Transactional
