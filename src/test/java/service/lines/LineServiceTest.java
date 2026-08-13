@@ -228,4 +228,92 @@ class LineServiceTest {
         verify(pmLogRepository, never()).getSuccessRateFromStart(any(), any());
     }
 
+    @Test
+    void buildLineProduction_jobWithZeroMass_isSkippedButOthersCounted() {
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        Job zeroMassJob = new Job();
+        zeroMassJob.setId("1");
+        zeroMassJob.setMass(500.0);
+        zeroMassJob.setIdBatch("BATCH_ZERO");
+        zeroMassJob.setCameraStart(date.atStartOfDay().plusHours(7).plusMinutes(50));
+        zeroMassJob.setCameraEnd(date.atStartOfDay().plusHours(8).plusMinutes(20));
+
+        Job normalJob = new Job();
+        normalJob.setId("2");
+        normalJob.setMass(150.0);
+        normalJob.setCameraStart(date.atStartOfDay().plusHours(15));
+        normalJob.setCameraEnd(normalJob.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(zeroMassJob, normalJob));
+
+        LocalDateTime windowStart = date.atTime(8, 0);
+        when(pmLogRepository.getSuccessRateFromStart("BATCH_ZERO", windowStart)).thenReturn(0.0);
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
+        assertEquals(150.0, dto.massa()); // только normalJob
+        assertEquals(Map.of("2", 150.0), dto.snpz()); // zeroMassJob не попал в snpz
+    }
+
+    @Test
+    void calculateLineProductions_jobWithNullCameraStart_massIsZero() {
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(100.0);
+        j1.setCameraStart(null);
+        j1.setCameraEnd(date.atStartOfDay().plusHours(10));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        assertEquals(0.0, result.get(String.valueOf(l1.getId())).massa());
+    }
+
+    @Test
+    void calculateLineProductions_jobOutsideWindow_massIsZero() {
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(100.0);
+        j1.setCameraStart(date.plusDays(5).atStartOfDay());
+        j1.setCameraEnd(j1.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        assertEquals(0.0, result.get(String.valueOf(l1.getId())).massa());
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void calculatePartialMass_successRateNull_returnsZero() {
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(300.0);
+        j1.setIdBatch("BATCH_NULL");
+        j1.setCameraStart(date.atStartOfDay().plusHours(7).plusMinutes(50));
+        j1.setCameraEnd(date.atStartOfDay().plusHours(8).plusMinutes(20));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        LocalDateTime windowStart = date.atTime(8, 0);
+        when(pmLogRepository.getSuccessRateFromStart("BATCH_NULL", windowStart)).thenReturn(null);
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        assertEquals(0.0, result.get(String.valueOf(l1.getId())).massa());
+    }
 }
