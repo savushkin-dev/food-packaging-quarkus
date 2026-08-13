@@ -161,12 +161,11 @@ public class LineService {
             return 0.0;
         }
 
-        Double successRate = switch (window.crossingType(job.getCameraStart(), job.getCameraEnd())) {
+        Double successRate = switch (window.crossingType(job.getCameraStart())) {
             case CROSSES_START -> pmLogRepository.getSuccessRateFromStart(idBatch, window.start());
             case CROSSES_END -> pmLogRepository.getSuccessRateUntilEnd(idBatch, window.end());
         };
 
         return successRate == null ? 0.0 : job.getMass() * successRate;
     }
-
 }

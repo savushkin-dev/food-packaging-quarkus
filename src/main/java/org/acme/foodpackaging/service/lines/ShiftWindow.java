@@ -21,10 +21,8 @@ public record ShiftWindow(LocalDateTime start, LocalDateTime end) {
                 && !jobEnd.isBefore(start) && jobEnd.isBefore(end);
     }
 
-    public WindowCrossing crossingType(LocalDateTime jobStart, LocalDateTime jobEnd) {
-        if (jobStart.isBefore(start)) {
-            return WindowCrossing.CROSSES_START; // начался до окна, закончился внутри
-        }
-        return WindowCrossing.CROSSES_END; // начался внутри, закончился после окна
+    public WindowCrossing crossingType(LocalDateTime jobStart) {
+        return jobStart.isBefore(start) ? WindowCrossing.CROSSES_START : WindowCrossing.CROSSES_END;
     }
+
 }
