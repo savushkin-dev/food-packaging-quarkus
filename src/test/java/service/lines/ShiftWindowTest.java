@@ -57,6 +57,22 @@ class ShiftWindowTest {
         assertTrue(window.overlaps(start, end));
     }
 
+    @Test
+    void overlaps_jobEndsJustAfterWindowStartBySeconds_ignoredAsSameMinute() {
+        // 8:00:23 после округления до минут == window.start (8:00:00), пересечения нет
+        LocalDateTime start = date.atStartOfDay().plusHours(7).plusMinutes(29);
+        LocalDateTime end = date.atTime(8, 0, 23);
+        assertFalse(window.overlaps(start, end));
+    }
+
+    @Test
+    void overlaps_jobEndsFullMinuteAfterWindowStart_trueOverlap() {
+        // 8:01:00 после округления остаётся 8:01:00, это уже после window.start
+        LocalDateTime start = date.atStartOfDay().plusHours(7).plusMinutes(50);
+        LocalDateTime end = date.atTime(8, 1, 0);
+        assertTrue(window.overlaps(start, end));
+    }
+
     // --- fullyContains ---
 
     @Test
