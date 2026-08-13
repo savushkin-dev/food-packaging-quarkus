@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.service.materials;
 
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -51,6 +52,7 @@ public class DbfImportService {
     // ==================== PUBLIC IMPORT METHODS ====================
 
     @Transactional
+    @TransactionConfiguration(timeout = 1800)
     public void importSprog(String dbfPath) {
         log.info("=== START SPROG IMPORT ===");
         long startTime = System.currentTimeMillis();
@@ -91,7 +93,8 @@ public class DbfImportService {
         }
     }
 
-    @Transactional
+    @Transactional()
+    @TransactionConfiguration(timeout = 1800)
     public void importRnpp(String dbfPath) {
         log.info("=== START Rnpp IMPORT ===");
         long startTime = System.currentTimeMillis();
@@ -140,6 +143,7 @@ public class DbfImportService {
     }
 
     @Transactional
+    @TransactionConfiguration(timeout = 1800)
     public void importMt(String dbfPath) {
         log.info("=== START Mt IMPORT ===");
         long startTime = System.currentTimeMillis();
@@ -187,6 +191,7 @@ public class DbfImportService {
     }
 
     @Transactional
+    @TransactionConfiguration(timeout = 1800)
     public void importPp(String dbfPath) {
         log.info("=== START Pp IMPORT ===");
         long startTime = System.currentTimeMillis();
