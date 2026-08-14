@@ -10,6 +10,8 @@ import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.record.LineProductionDto;
 import org.acme.foodpackaging.repository.PmLogRepository;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -27,6 +29,8 @@ public class LineService {
 
     private final LoadDataService loadDataService;
     private final PmLogRepository pmLogRepository;
+
+    private static final int MASS_SCALE = 2;
 
     public List<Line> getLines() {
         return loadDataService.getLines().entrySet().stream()
@@ -135,11 +139,19 @@ public class LineService {
             if (mass <= 0) {
                 continue;
             }
-            totalMass += mass;
-            snpz.put(String.valueOf(job.getId()), mass);
+
+            double roundedMass = round(mass);
+            totalMass += roundedMass;
+            snpz.put(String.valueOf(job.getId()), roundedMass);
         }
 
-        return new LineProductionDto(lineKey, totalMass, line.getName(), snpz);
+        return new LineProductionDto(lineKey, round(totalMass), line.getName(), snpz);
+    }
+
+    private static double round(double value) {
+        return BigDecimal.valueOf(value)
+                .setScale(MASS_SCALE, RoundingMode.HALF_UP)
+                .doubleValue();
     }
 
     private double calculateJobMass(Job job, ShiftWindow window) {

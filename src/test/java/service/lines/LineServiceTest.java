@@ -316,4 +316,57 @@ class LineServiceTest {
 
         assertEquals(0.0, result.get(String.valueOf(l1.getId())).massa());
     }
+
+    @Test
+    void calculateLineProductions_massIsRoundedToTwoDecimals() {
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(300.0);
+        j1.setIdBatch("BATCH_ROUND");
+        j1.setCameraStart(date.atStartOfDay().plusHours(7).plusMinutes(50));
+        j1.setCameraEnd(date.atStartOfDay().plusHours(8).plusMinutes(20));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        LocalDateTime windowStart = date.atTime(8, 0);
+        // 300 * 0.333333 = 99.9999 -> должно округлиться до 100.0
+        when(pmLogRepository.getSuccessRateFromStart("BATCH_ROUND", windowStart)).thenReturn(0.333333);
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
+        assertEquals(100.0, dto.massa());
+        assertEquals(Map.of("1", 100.0), dto.snpz());
+    }
+
+    @Test
+    void calculateLineProductions_totalMassIsSumOfRoundedJobs() {
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(100.005); // округлится до 100.01 (HALF_UP)
+
+        Job j2 = new Job();
+        j2.setId("2");
+        j2.setMass(50.004); // округлится до 50.0
+
+        j1.setCameraStart(date.atStartOfDay().plusHours(10));
+        j1.setCameraEnd(j1.getCameraStart().plusHours(1));
+
+        j2.setCameraStart(date.atStartOfDay().plusHours(12));
+        j2.setCameraEnd(j2.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1, j2));
+
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+
+        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
+        assertEquals(150.01, dto.massa()); // 100.01 + 50.0
+        assertEquals(Map.of("1", 100.01, "2", 50.0), dto.snpz());
+    }
 }
