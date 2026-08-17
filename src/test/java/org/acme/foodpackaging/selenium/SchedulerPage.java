@@ -186,7 +186,7 @@ public class SchedulerPage {
             okButton.click();
             waitForOverlayToDisappear(Duration.ofSeconds(10));
         } catch (TimeoutException ignored) {
-            // Кнопки "ОК" нет - дальнейшие клики разберутся сами через повторы.
+
         }
     }
 
@@ -199,7 +199,7 @@ public class SchedulerPage {
                     )).isEmpty()
             );
         } catch (TimeoutException ignored) {
-            // Возможно на эту дату нет заданий.
+            // Допустимо: возможно на эту дату действительно нет заданий.
         }
     }
 
@@ -209,7 +209,7 @@ public class SchedulerPage {
                     d.findElements(OVERLAY_LOCATOR).isEmpty()
             );
         } catch (TimeoutException ignored) {
-            // Обработается в clickByText через повторные  клики
+            // Обработается в clickByText через повторные попытки клика.
         }
     }
 
