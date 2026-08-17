@@ -9,13 +9,12 @@ import java.time.LocalDateTime;
 import java.time.Month;
 
 import static io.smallrye.common.constraint.Assert.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ShiftWindowTest {
 
     private final LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
-    private final ShiftWindow window = ShiftWindow.forDate(date);
+    private final ShiftWindow window = ShiftWindow.forDate(date, null);
 
     // --- crossingType ---
 
@@ -114,5 +113,31 @@ class ShiftWindowTest {
         LocalDateTime start = date.atStartOfDay().plusHours(20);
         LocalDateTime end = date.plusDays(1).atTime(8, 0);
         assertFalse(window.fullyContains(start, end));
+    }
+
+    @Test
+    void forDate_shiftNumberNull_fullDayWindow() {
+        ShiftWindow window = ShiftWindow.forDate(date, null);
+        assertEquals(date.atTime(8, 0), window.start());
+        assertEquals(date.plusDays(1).atTime(8, 0), window.end());
+    }
+
+    @Test
+    void forDate_shiftNumber1_firstShiftWindow() {
+        ShiftWindow window = ShiftWindow.forDate(date, 1);
+        assertEquals(date.atTime(8, 0), window.start());
+        assertEquals(date.atTime(20, 0), window.end());
+    }
+
+    @Test
+    void forDate_shiftNumber2_secondShiftWindow() {
+        ShiftWindow window = ShiftWindow.forDate(date, 2);
+        assertEquals(date.atTime(20, 0), window.start());
+        assertEquals(date.plusDays(1).atTime(8, 0), window.end());
+    }
+
+    @Test
+    void forDate_unsupportedshiftNumber_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> ShiftWindow.forDate(date, 3));
     }
 }

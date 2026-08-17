@@ -196,7 +196,7 @@ class LineServiceTest {
 
         when(pmLogRepository.getSuccessRateFromStart("BATCH_START", windowStart)).thenReturn(0.4);
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         assertEquals(120.0, result.get(String.valueOf(l1.getId())).massa()); // 300 * 0.4
         verify(pmLogRepository).getSuccessRateFromStart("BATCH_START", windowStart);
@@ -221,7 +221,7 @@ class LineServiceTest {
 
         when(pmLogRepository.getSuccessRateUntilEnd("BATCH_END", windowEnd)).thenReturn(0.75);
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         assertEquals(150.0, result.get(String.valueOf(l1.getId())).massa()); // 200 * 0.75
         verify(pmLogRepository).getSuccessRateUntilEnd("BATCH_END", windowEnd);
@@ -251,7 +251,7 @@ class LineServiceTest {
         LocalDateTime windowStart = date.atTime(8, 0);
         when(pmLogRepository.getSuccessRateFromStart("BATCH_ZERO", windowStart)).thenReturn(0.0);
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         LineProductionDto dto = result.get(String.valueOf(l1.getId()));
         assertEquals(150.0, dto.massa()); // только normalJob
@@ -271,7 +271,7 @@ class LineServiceTest {
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1));
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         assertEquals(0.0, result.get(String.valueOf(l1.getId())).massa());
     }
@@ -289,7 +289,7 @@ class LineServiceTest {
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1));
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         assertEquals(0.0, result.get(String.valueOf(l1.getId())).massa());
         verifyNoInteractions(pmLogRepository);
@@ -312,7 +312,7 @@ class LineServiceTest {
         LocalDateTime windowStart = date.atTime(8, 0);
         when(pmLogRepository.getSuccessRateFromStart("BATCH_NULL", windowStart)).thenReturn(null);
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         assertEquals(0.0, result.get(String.valueOf(l1.getId())).massa());
     }
@@ -335,7 +335,7 @@ class LineServiceTest {
         // 300 * 0.333333 = 99.9999 -> должно округлиться до 100.0
         when(pmLogRepository.getSuccessRateFromStart("BATCH_ROUND", windowStart)).thenReturn(0.333333);
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         LineProductionDto dto = result.get(String.valueOf(l1.getId()));
         assertEquals(100.0, dto.massa());
@@ -363,7 +363,7 @@ class LineServiceTest {
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1, j2));
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date, null);
 
         LineProductionDto dto = result.get(String.valueOf(l1.getId()));
         assertEquals(150.01, dto.massa()); // 100.01 + 50.0

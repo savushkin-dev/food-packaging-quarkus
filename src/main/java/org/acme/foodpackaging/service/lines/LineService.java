@@ -114,8 +114,8 @@ public class LineService {
     // ============================================================
     // LineProduction
     // ============================================================
-    public Map<String, LineProductionDto> calculateLineProductions(List<Line> lines, LocalDate selectedDate) {
-        ShiftWindow window = ShiftWindow.forDate(selectedDate);
+    public Map<String, LineProductionDto> calculateLineProductions(List<Line> lines, LocalDate selectedDate, Integer shiftNumber) {
+        ShiftWindow window = ShiftWindow.forDate(selectedDate, shiftNumber);
 
         Map<String, LineProductionDto> result = LinkedHashMap.newLinkedHashMap(lines.size());
         for (Line line : lines) {

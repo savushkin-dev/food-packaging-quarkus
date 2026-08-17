@@ -8,9 +8,35 @@ import java.time.temporal.ChronoUnit;
 
 public record ShiftWindow(LocalDateTime start, LocalDateTime end) {
 
-    public static ShiftWindow forDate(LocalDate date) {
-        LocalDateTime start = date.atTime(8, 0);
+    private static final int SHIFT_START_HOUR = 8;
+    private static final int SHIFT_SPLIT_HOUR = 20;
+
+    public static ShiftWindow forDate(LocalDate date, Integer smena) {
+        if (smena == null) {
+            return fullDay(date);
+        }
+        return switch (smena) {
+            case 1 -> firstShift(date);
+            case 2 -> secondShift(date);
+            default -> throw new IllegalArgumentException("Unsupported smena value: " + smena);
+        };
+    }
+
+    private static ShiftWindow fullDay(LocalDate date) {
+        LocalDateTime start = date.atTime(SHIFT_START_HOUR, 0);
         return new ShiftWindow(start, start.plusDays(1));
+    }
+
+    private static ShiftWindow firstShift(LocalDate date) {
+        LocalDateTime start = date.atTime(SHIFT_START_HOUR, 0);
+        LocalDateTime end = date.atTime(SHIFT_SPLIT_HOUR, 0);
+        return new ShiftWindow(start, end);
+    }
+
+    private static ShiftWindow secondShift(LocalDate date) {
+        LocalDateTime start = date.atTime(SHIFT_SPLIT_HOUR, 0);
+        LocalDateTime end = date.plusDays(1).atTime(SHIFT_START_HOUR, 0);
+        return new ShiftWindow(start, end);
     }
 
     public boolean overlaps(LocalDateTime jobStart, LocalDateTime jobEnd) {

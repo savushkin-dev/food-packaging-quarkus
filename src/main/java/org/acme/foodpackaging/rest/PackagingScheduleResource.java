@@ -31,6 +31,7 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -372,11 +373,17 @@ public class PackagingScheduleResource {
                 ApiFields.MESSAGE, "Line end time updated")).build();
     }
 
-    @POST
+    @GET
     @Path("dailyProductions")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response dailyProductions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response dailyProductions(
+            @HeaderParam("X-Session-Id") String sessionId, DailyProductionsDto request) {
+
+        if (request  == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, "date query parameter is required"))
+                    .build();
+        }
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -387,7 +394,7 @@ public class PackagingScheduleResource {
         }
 
         Map<String, LineProductionDto> productions =
-                lineService.calculateLineProductions(solution.getLines(), loadDTO.getStartDate());
+                lineService.calculateLineProductions(solution.getLines(), request.selectedDate(), request.shiftNumber());
 
         return Response.ok(productions).build();
     }
