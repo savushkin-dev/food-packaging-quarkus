@@ -1,7 +1,6 @@
 package org.acme.foodpackaging.selenium;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.JavascriptExecutor;
@@ -13,22 +12,12 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class SchedulerPage {
-
-    private static final String URL;
-
-    static {
-        System.setProperty("smallrye.config.locations",
-                Paths.get(System.getProperty("user.dir"), ".env").toUri().toString());
-
-        URL = ConfigProvider.getConfig().getValue("scheduler.url", String.class);
-    }
 
     private static final String COLOR_YELLOW_UNPACKED = "rgb(255, 252, 210)";
     private static final String COLOR_PURPLE_PACKED = "rgb(249, 239, 255)";
@@ -44,6 +33,8 @@ public class SchedulerPage {
     private static final By ANY_DIALOG_OK_BUTTON = By.xpath(
             "//button[normalize-space(text())='ОК' or .//span[normalize-space(text())='ОК']]"
     );
+
+    private static final String DEFAULT_URL = "http://10.30.0.5:7980/scheduler";
 
     private final WebDriver driver;
     private final WebDriverWait wait;
@@ -73,8 +64,20 @@ public class SchedulerPage {
         return new ChromeDriver(options);
     }
 
+    private static String resolveUrl() {
+        String fromEnv = System.getenv("SCHEDULER_URL");
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            return fromEnv;
+        }
+        String fromProperty = System.getProperty("scheduler.test.url");
+        if (fromProperty != null && !fromProperty.isBlank()) {
+            return fromProperty;
+        }
+        return DEFAULT_URL;
+    }
+
     public void open() {
-        driver.get(URL);
+        driver.get(resolveUrl());
     }
 
     public void clickSelectAll() { clickByText("Отметить все"); }
@@ -195,7 +198,7 @@ public class SchedulerPage {
             okButton.click();
             waitForOverlayToDisappear(Duration.ofSeconds(10));
         } catch (TimeoutException ignored) {
-
+            // Кнопки "ОК" не нашлось - дальнейшие клики разберутся сами через повторы.
         }
     }
 
