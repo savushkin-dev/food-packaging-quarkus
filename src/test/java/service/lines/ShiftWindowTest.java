@@ -117,23 +117,23 @@ class ShiftWindowTest {
 
     @Test
     void forDate_shiftNumberNull_fullDayWindow() {
-        ShiftWindow window = ShiftWindow.forDate(date, null);
-        assertEquals(date.atTime(8, 0), window.start());
-        assertEquals(date.plusDays(1).atTime(8, 0), window.end());
+        ShiftWindow noShiftWindow = ShiftWindow.forDate(date, null);
+        assertEquals(date.atTime(8, 0), noShiftWindow.start());
+        assertEquals(date.plusDays(1).atTime(8, 0), noShiftWindow.end());
     }
 
     @Test
     void forDate_shiftNumber1_firstShiftWindow() {
-        ShiftWindow window = ShiftWindow.forDate(date, 1);
-        assertEquals(date.atTime(8, 0), window.start());
-        assertEquals(date.atTime(20, 0), window.end());
+        ShiftWindow firstWindow = ShiftWindow.forDate(date, 1);
+        assertEquals(date.atTime(8, 0), firstWindow.start());
+        assertEquals(date.atTime(20, 0), firstWindow.end());
     }
 
     @Test
     void forDate_shiftNumber2_secondShiftWindow() {
-        ShiftWindow window = ShiftWindow.forDate(date, 2);
-        assertEquals(date.atTime(20, 0), window.start());
-        assertEquals(date.plusDays(1).atTime(8, 0), window.end());
+        ShiftWindow secondWindow = ShiftWindow.forDate(date, 2);
+        assertEquals(date.atTime(20, 0),  secondWindow.start());
+        assertEquals(date.plusDays(1).atTime(8, 0),  secondWindow.end());
     }
 
     @Test
