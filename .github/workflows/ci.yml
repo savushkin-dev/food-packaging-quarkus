@@ -20,8 +20,13 @@ jobs:
           java-version: 21
           cache: maven
 
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
       - name: Build & run tests
         run: mvn clean verify
+        env:
+          CI: true
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
