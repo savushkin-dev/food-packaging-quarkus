@@ -11,7 +11,7 @@ import org.acme.foodpackaging.dto.materials.PpDto;
 import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
 import org.acme.foodpackaging.dto.materials.SaveRequest;
 import org.acme.foodpackaging.service.materials.MaterialService;
-import org.acme.foodpackaging.service.materials.PpService;
+import org.acme.foodpackaging.service.materials.config.PpService;
 
 import java.util.List;
 

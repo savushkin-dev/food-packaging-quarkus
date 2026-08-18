@@ -10,6 +10,10 @@ import org.acme.foodpackaging.entity.materials.PlrMt;
 import org.acme.foodpackaging.entity.materials.PlrPp;
 import org.acme.foodpackaging.entity.materials.PlrRnpp;
 import org.acme.foodpackaging.entity.materials.PlrSprog;
+import org.acme.foodpackaging.service.materials.config.MtService;
+import org.acme.foodpackaging.service.materials.config.PpService;
+import org.acme.foodpackaging.service.materials.config.RnppService;
+import org.acme.foodpackaging.service.materials.config.SprogService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

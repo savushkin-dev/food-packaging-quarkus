@@ -6,6 +6,9 @@ import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.entity.materials.*;
 import org.acme.foodpackaging.repository.materials.*;
+import org.acme.foodpackaging.service.materials.config.MtService;
+import org.acme.foodpackaging.service.materials.config.RnppService;
+import org.acme.foodpackaging.service.materials.config.SprogService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

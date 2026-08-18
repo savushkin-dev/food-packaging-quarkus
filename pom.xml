@@ -15,7 +15,7 @@
     <!-- SonarQube  -->
     <sonar.organization>savushkin-dev</sonar.organization>
     <!-- Sonar coverage exclusions -->
-    <sonar.coverage.exclusions>**/repository/**,**/entity/**,**/record/**,**/rest/**,**/persistence/**,**/sql/**,**/dto/**,**/exception/**,**/config/**,**/solver/**</sonar.coverage.exclusions>
+    <sonar.coverage.exclusions>**/repository/**,**/entity/**,**/record/**,**/rest/**,**/persistence/**,**/sql/**,**/dto/**,**/exception/**,**/config/**,**/solver/**,**/service/materials/config/**</sonar.coverage.exclusions>
 
     <!-- Framework Versions -->
     <version.io.quarkus>3.15.1</version.io.quarkus>
@@ -258,6 +258,7 @@
                 <exclude>**/dto/**</exclude>
                 <exclude>**/config/**</exclude>
                 <exclude>**/solver/**</exclude>
+                <exclude>**/service/materials/config/**</exclude>
               </excludes>
             </configuration>
           </execution>

@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.service.materials;
+package org.acme.foodpackaging.service.materials.config;
 
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheResult;
