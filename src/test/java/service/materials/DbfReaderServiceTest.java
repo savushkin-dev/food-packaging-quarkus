@@ -1,6 +1,7 @@
 package service.materials;
 
 import com.linuxense.javadbf.DBFWriter;
+import com.linuxense.javadbf.DBFDataType;
 import com.linuxense.javadbf.DBFField;
 import org.acme.foodpackaging.service.materials.DbfReaderService;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,9 +11,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -133,8 +135,7 @@ class DbfReaderServiceTest {
                 dbfFile.toString(),
                 null, // memoPath
                 "CP866", // charsetName
-                consumer
-        );
+                consumer);
 
         assertThat(capturedRecords).hasSize(2);
         Map<String, Object> firstRecord = capturedRecords.get(0);
@@ -348,7 +349,7 @@ class DbfReaderServiceTest {
         Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
         Path fptFile = tempDir.resolve("test.FPT");
         // Пишем случайные данные, которые не являются валидным memo
-        Files.write(fptFile, new byte[]{0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03});
+        Files.write(fptFile, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03 });
 
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
@@ -406,32 +407,17 @@ class DbfReaderServiceTest {
     // ==================== HELPER METHODS ====================
 
     private Path createTestDbfFile(Path dbfFile) throws IOException {
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField nameField = new DBFField();
-            nameField.setName("NAME");
-            nameField.setDataType(DBFField.FIELD_TYPE_C);
-            nameField.setFieldLength(20);
+        DBFField nameField = new DBFField("NAME", DBFDataType.CHARACTER, 20);
+        DBFField ageField = new DBFField("AGE", DBFDataType.NUMERIC, 3, 0);
+        DBFField salaryField = new DBFField("SALARY", DBFDataType.NUMERIC, 10, 2);
 
-            DBFField ageField = new DBFField();
-            ageField.setName("AGE");
-            ageField.setDataType(DBFField.FIELD_TYPE_N);
-            ageField.setFieldLength(3);
-            ageField.setDecimalCount(0);
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
 
-            DBFField salaryField = new DBFField();
-            salaryField.setName("SALARY");
-            salaryField.setDataType(DBFField.FIELD_TYPE_N);
-            salaryField.setFieldLength(10);
-            salaryField.setDecimalCount(2);
+            writer.setFields(new DBFField[] { nameField, ageField, salaryField });
 
-            writer.setFields(new DBFField[]{nameField, ageField, salaryField});
-
-            writer.addRecord(new Object[]{"John", 30, 50000.0});
-            writer.addRecord(new Object[]{"Jane", 25, 60000.0});
-
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
-            }
+            writer.addRecord(new Object[] { "John", 30, 50000.0 });
+            writer.addRecord(new Object[] { "Jane", 25, 60000.0 });
         }
 
         return dbfFile;
@@ -440,27 +426,17 @@ class DbfReaderServiceTest {
     private Path createDbfFileWithMultipleRecords() throws IOException {
         Path dbfFile = tempDir.resolve("test_multiple.dbf");
 
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField nameField = new DBFField();
-            nameField.setName("NAME");
-            nameField.setDataType(DBFField.FIELD_TYPE_C);
-            nameField.setFieldLength(20);
+        DBFField nameField = new DBFField("NAME", DBFDataType.CHARACTER, 20);
+        DBFField ageField = new DBFField("AGE", DBFDataType.NUMERIC, 3, 0);
 
-            DBFField ageField = new DBFField();
-            ageField.setName("AGE");
-            ageField.setDataType(DBFField.FIELD_TYPE_N);
-            ageField.setFieldLength(3);
-            ageField.setDecimalCount(0);
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
 
-            writer.setFields(new DBFField[]{nameField, ageField});
+            writer.setFields(new DBFField[] { nameField, ageField });
 
-            writer.addRecord(new Object[]{"John", 30});
-            writer.addRecord(new Object[]{"Jane", 25});
-            writer.addRecord(new Object[]{"Bob", 35});
-
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
-            }
+            writer.addRecord(new Object[] { "John", 30 });
+            writer.addRecord(new Object[] { "Jane", 25 });
+            writer.addRecord(new Object[] { "Bob", 35 });
         }
 
         return dbfFile;
@@ -469,30 +445,16 @@ class DbfReaderServiceTest {
     private Path createDbfFileWithDifferentTypes() throws IOException {
         Path dbfFile = tempDir.resolve("test_types.dbf");
 
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField stringField = new DBFField();
-            stringField.setName("STR");
-            stringField.setDataType(DBFField.FIELD_TYPE_C);
-            stringField.setFieldLength(30);
+        DBFField stringField = new DBFField("STR", DBFDataType.CHARACTER, 30);
+        DBFField numericField = new DBFField("NUM", DBFDataType.NUMERIC, 10, 2);
+        DBFField logicalField = new DBFField("LOG", DBFDataType.LOGICAL, 1);
 
-            DBFField numericField = new DBFField();
-            numericField.setName("NUM");
-            numericField.setDataType(DBFField.FIELD_TYPE_N);
-            numericField.setFieldLength(10);
-            numericField.setDecimalCount(2);
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
 
-            DBFField logicalField = new DBFField();
-            logicalField.setName("LOG");
-            logicalField.setDataType(DBFField.FIELD_TYPE_L);
-            logicalField.setFieldLength(1);
+            writer.setFields(new DBFField[] { stringField, numericField, logicalField });
 
-            writer.setFields(new DBFField[]{stringField, numericField, logicalField});
-
-            writer.addRecord(new Object[]{"Test String", 1234.56, true});
-
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
-            }
+            writer.addRecord(new Object[] { "Test String", 1234.56, true });
         }
 
         return dbfFile;
@@ -501,18 +463,12 @@ class DbfReaderServiceTest {
     private Path createEmptyDbfFile() throws IOException {
         Path dbfFile = tempDir.resolve("empty.dbf");
 
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField field = new DBFField();
-            field.setName("ID");
-            field.setDataType(DBFField.FIELD_TYPE_N);
-            field.setFieldLength(5);
-            field.setDecimalCount(0);
+        DBFField field = new DBFField("ID", DBFDataType.NUMERIC, 5, 0);
 
-            writer.setFields(new DBFField[]{field});
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
 
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
-            }
+            writer.setFields(new DBFField[] { field });
         }
 
         return dbfFile;
@@ -521,19 +477,13 @@ class DbfReaderServiceTest {
     private Path createDbfFileWithNullValues() throws IOException {
         Path dbfFile = tempDir.resolve("test_null.dbf");
 
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField nullField = new DBFField();
-            nullField.setName("NULL_FIELD");
-            nullField.setDataType(DBFField.FIELD_TYPE_C);
-            nullField.setFieldLength(10);
+        DBFField nullField = new DBFField("NULL_FIELD", DBFDataType.CHARACTER, 10);
 
-            writer.setFields(new DBFField[]{nullField});
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
 
-            writer.addRecord(new Object[]{null});
-
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
-            }
+            writer.setFields(new DBFField[] { nullField });
+            writer.addRecord(new Object[] { null });
         }
 
         return dbfFile;
@@ -542,74 +492,100 @@ class DbfReaderServiceTest {
     private Path createDbfFileWithAllNullValues() throws IOException {
         Path dbfFile = tempDir.resolve("test_all_null.dbf");
 
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField nameField = new DBFField();
-            nameField.setName("NAME");
-            nameField.setDataType(DBFField.FIELD_TYPE_C);
-            nameField.setFieldLength(20);
+        DBFField nameField = new DBFField("NAME", DBFDataType.CHARACTER, 20);
+        DBFField ageField = new DBFField("AGE", DBFDataType.NUMERIC, 3, 0);
 
-            DBFField ageField = new DBFField();
-            ageField.setName("AGE");
-            ageField.setDataType(DBFField.FIELD_TYPE_N);
-            ageField.setFieldLength(3);
-            ageField.setDecimalCount(0);
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
 
-            writer.setFields(new DBFField[]{nameField, ageField});
-
-            writer.addRecord(new Object[]{null, null});
-
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
-            }
+            writer.setFields(new DBFField[] { nameField, ageField });
+            writer.addRecord(new Object[] { null, null });
         }
 
         return dbfFile;
     }
 
     private void createLargeDbfFile(Path dbfFile, int recordCount) throws IOException {
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField idField = new DBFField();
-            idField.setName("ID");
-            idField.setDataType(DBFField.FIELD_TYPE_N);
-            idField.setFieldLength(10);
-            idField.setDecimalCount(0);
+        DBFField idField = new DBFField("ID", DBFDataType.NUMERIC, 10, 0);
+        DBFField nameField = new DBFField("NAME", DBFDataType.CHARACTER, 50);
 
-            DBFField nameField = new DBFField();
-            nameField.setName("NAME");
-            nameField.setDataType(DBFField.FIELD_TYPE_C);
-            nameField.setFieldLength(50);
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
 
-            writer.setFields(new DBFField[]{idField, nameField});
+            writer.setFields(new DBFField[] { idField, nameField });
 
             for (int i = 1; i <= recordCount; i++) {
-                writer.addRecord(new Object[]{i, "Record_" + i});
-            }
-
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
+                writer.addRecord(new Object[] { i, "Record_" + i });
             }
         }
     }
 
     private void createDbfFileWithLargeValues(Path dbfFile) throws IOException {
-        try (DBFWriter writer = new DBFWriter()) {
-            DBFField largeTextField = new DBFField();
-            largeTextField.setName("LARGE_TEXT");
-            largeTextField.setDataType(DBFField.FIELD_TYPE_C);
-            largeTextField.setFieldLength(254);
+        DBFField largeTextField = new DBFField("LARGE_TEXT", DBFDataType.CHARACTER, 254);
 
-            writer.setFields(new DBFField[]{largeTextField});
+        try (OutputStream os = Files.newOutputStream(dbfFile);
+                DBFWriter writer = new DBFWriter(os, StandardCharsets.UTF_8)) {
+
+            writer.setFields(new DBFField[] { largeTextField });
 
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < 250; i++) {
                 sb.append('X');
             }
 
-            writer.addRecord(new Object[]{sb.toString()});
-
-            try (FileOutputStream fos = new FileOutputStream(dbfFile.toFile())) {
-                writer.write(fos);
-            }
+            writer.addRecord(new Object[] { sb.toString() });
         }
+    }
+
+    @Test
+    void shouldWrapInvalidPathException_whenPathContainsNulCharacter() {
+        // NUL-байт вызывает InvalidPathException внутри Paths.get(...),
+        // что не является IllegalArgumentException и должно попасть во внешний catch
+        assertThatThrownBy(() -> service.readDbfFileStreaming("test\u0000.dbf", consumer))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldLogAndContinue_whenMemoPathIsInvalid() throws Exception {
+        Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
+
+        // NUL-байт в пути к memo-файлу вызывает InvalidPathException внутри
+        // Paths.get(memoPath) в setupReader — должно попасть во внешний catch
+        // и не прервать чтение самого DBF
+        service.readDbfFileStreaming(dbfFile.toString(), "bad\u0000memo.FPT", "CP866", consumer);
+
+        assertThat(capturedRecords).hasSize(2);
+    }
+
+    @Test
+    void shouldWrapNonIOExceptionAsRuntimeException() throws Exception {
+        Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
+
+        Consumer<Map<String, Object>> throwingConsumer = record -> {
+            throw new IllegalStateException("boom");
+        };
+
+        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), throwingConsumer))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to read DBF file")
+                .hasMessageContaining("boom");
+    }
+
+    @Test
+    void shouldLogWarning_whenMemoFileSetupThrows() throws Exception {
+        Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
+        Path fptFile = tempDir.resolve("test.FPT");
+        // заведомо некорректная структура memo-файла:
+        // javadbf при setMemoFile валидирует заголовок и должен бросить исключение
+        Files.write(fptFile, new byte[] { (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF });
+
+        // если тестовая среда позволяет перехватывать логи (logback-classic
+        // ListAppender) —
+        // здесь стоит явно проверить, что WARN "Memo file is corrupted or invalid" был
+        // залогирован,
+        // а не просто что чтение не упало
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        assertThat(capturedRecords).hasSize(2);
     }
 }

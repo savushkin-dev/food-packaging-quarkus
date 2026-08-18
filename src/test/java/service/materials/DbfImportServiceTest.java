@@ -13,6 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -414,5 +417,97 @@ class DbfImportServiceTest {
         // Тест с невалидным расширением
         String result3 = (String) method.invoke(dbfImportService, "test.txt");
         assertNull(result3);
+    }
+
+    @Test
+    void testImportSprog_BatchSizeTriggersMultipleFlushes() throws Exception {
+        // 25 записей -> первый flush на 20-й, второй на оставшихся 5
+        List<Map<String, Object>> records = createSprogRecords(25);
+
+        doAnswer(invocation -> {
+            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
+            for (Map<String, Object> record : records) {
+                consumer.accept(record);
+            }
+            return null;
+        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+
+        doNothing().when(sprogService).deleteAll();
+        doNothing().when(entityManager).persist(any(PlrSprog.class));
+        doNothing().when(entityManager).flush();
+        doNothing().when(entityManager).clear();
+
+        dbfImportService.importSprog(testDbfPath);
+
+        verify(entityManager, times(25)).persist(any(PlrSprog.class));
+        // один flush внутри цикла (на 20-й записи) + один после цикла на оставшихся 5
+        verify(entityManager, times(2)).flush();
+        verify(entityManager, times(2)).clear();
+    }
+
+    @Test
+    void testImportPp_BatchSizeTriggersMultipleFlushes() throws Exception {
+        List<Map<String, Object>> records = createPpRecords(23);
+
+        doAnswer(invocation -> {
+            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
+            for (Map<String, Object> record : records) {
+                consumer.accept(record);
+            }
+            return null;
+        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+
+        doNothing().when(ppService).deleteAll();
+        doNothing().when(entityManager).persist(any(PlrPp.class));
+        doNothing().when(entityManager).flush();
+        doNothing().when(entityManager).clear();
+
+        dbfImportService.importPp(testDbfPath);
+
+        verify(entityManager, times(23)).persist(any(PlrPp.class));
+        verify(entityManager, times(2)).flush();
+        verify(entityManager, times(2)).clear();
+    }
+
+    @Test
+    void testGetBigDecimal_ValidAndInvalidAndNull() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod(
+                "getBigDecimal", Map.class, String.class);
+        method.setAccessible(true);
+
+        Map<String, Object> record = new HashMap<>();
+        record.put("AMT", "123.45");
+        record.put("BAD", "not-a-number");
+
+        BigDecimal valid = (BigDecimal) method.invoke(dbfImportService, record, "AMT");
+        assertEquals(new BigDecimal("123.45"), valid);
+
+        BigDecimal invalid = (BigDecimal) method.invoke(dbfImportService, record, "BAD");
+        assertNull(invalid);
+
+        BigDecimal missing = (BigDecimal) method.invoke(dbfImportService, record, "MISSING");
+        assertNull(missing);
+    }
+
+    @Test
+    void testGetDate_ParsesValidStringAndJavaUtilDateAndInvalid() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod(
+                "getDate", Map.class, String.class);
+        method.setAccessible(true);
+
+        Map<String, Object> record = new HashMap<>();
+        record.put("DT_STR", "20260215");
+        record.put("DT_DATE", java.util.Date.from(
+                LocalDate.of(2026, 2, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        record.put("DT_BAD", "not-a-date");
+
+        LocalDate fromString = (LocalDate) method.invoke(dbfImportService, record, "DT_STR");
+        assertEquals(LocalDate.of(2026, 2, 15), fromString);
+
+        LocalDate fromDate = (LocalDate) method.invoke(dbfImportService, record, "DT_DATE");
+        assertEquals(LocalDate.of(2026, 2, 15), fromDate);
+
+        LocalDate fromBad = (LocalDate) method.invoke(dbfImportService, record, "DT_BAD");
+        assertNull(fromBad);
     }
 }
