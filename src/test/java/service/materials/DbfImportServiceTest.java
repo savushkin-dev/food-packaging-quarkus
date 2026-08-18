@@ -12,6 +12,7 @@ import org.acme.foodpackaging.service.materials.config.RnppService;
 import org.acme.foodpackaging.service.materials.config.SprogService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -49,6 +50,9 @@ class DbfImportServiceTest {
 
     @Mock
     private RnppService rnppService;
+
+    @TempDir
+    java.nio.file.Path tempDir;
 
     private final String testDbfPath = "C:/test/file.dbf";
 
@@ -513,5 +517,58 @@ class DbfImportServiceTest {
 
         LocalDate fromBad = (LocalDate) method.invoke(dbfImportService, record, "DT_BAD");
         assertNull(fromBad);
+    }
+
+    @Test
+    void testFindMemoFile_ReturnsDbtWhenDbtExists() throws Exception {
+        java.nio.file.Path dbf = tempDir.resolve("data.dbf");
+        java.nio.file.Files.createFile(dbf);
+        java.nio.file.Path dbt = tempDir.resolve("data.DBT");
+        java.nio.file.Files.createFile(dbt);
+
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(dbfImportService, dbf.toString());
+
+        assertEquals(dbt.toString(), result);
+    }
+
+    @Test
+    void testFindMemoFile_ReturnsFptWhenOnlyFptExists() throws Exception {
+        java.nio.file.Path dbf = tempDir.resolve("data2.dbf");
+        java.nio.file.Files.createFile(dbf);
+        java.nio.file.Path fpt = tempDir.resolve("data2.FPT");
+        java.nio.file.Files.createFile(fpt);
+
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(dbfImportService, dbf.toString());
+
+        assertEquals(fpt.toString(), result);
+    }
+
+    @Test
+    void testFindMemoFile_ReturnsNullWhenNoMemoFileExists() throws Exception {
+        java.nio.file.Path dbf = tempDir.resolve("data3.dbf");
+        java.nio.file.Files.createFile(dbf);
+
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(dbfImportService, dbf.toString());
+
+        assertNull(result);
+    }
+
+    @Test
+    void testFindMemoFile_ReturnsNullForPathWithInvalidCharacters() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(dbfImportService, "bad path with spaces!.dbf");
+
+        assertNull(result);
     }
 }
