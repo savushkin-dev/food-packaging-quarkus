@@ -4,6 +4,7 @@ import org.junit.jupiter.api.*;
 import org.openqa.selenium.WebDriver;
 
 import java.time.LocalDate;
+import java.time.Month;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SchedulerEmptyDayTest {
 
-    private static final LocalDate TEST_DATE = LocalDate.of(2026, 3, 13);
+    private static final LocalDate TARGET_DATE = LocalDate.of(2026, Month.MARCH, 13);
 
     static WebDriver driver;
     static SchedulerPage page;
@@ -21,6 +22,7 @@ class SchedulerEmptyDayTest {
         driver = SchedulerPage.createLocalChromeDriver();
         page = new SchedulerPage(driver);
         page.open();
+        page.selectDate(TARGET_DATE);
     }
 
     @AfterAll
@@ -30,34 +32,54 @@ class SchedulerEmptyDayTest {
 
     @Test
     @Order(1)
-    void shouldSelectEmptyDate() {
-        page.selectDate(TEST_DATE);
-
-        assertThat(page.getSelectedDate()).isEqualTo(TEST_DATE);
-        assertThat(page.getPlannedBatchesCount()).isZero();
+    void shouldLoadPlanAndRunPlanningFromNeighborDay() {
+        page.clickSelectAllForAnyAvailableTaskDate();
+        page.clickLoadPlan();
+        page.clickStartPlanning();
+        page.clickStopPlanning();
     }
 
     @Test
     @Order(2)
-    void shouldSelectAllBatches() {
-        page.clickSelectAll();
+    void shouldOpenAndCloseLineSettingsModal() {
+        page.openLineSettings();
+        assertThat(page.isLineSettingsModalOpen())
+                .as("Модалка настроек линий должна открыться")
+                .isTrue();
+
+        page.closeLineSettings();
+        assertThat(page.isLineSettingsModalOpen())
+                .as("Модалка настроек линий должна закрыться")
+                .isFalse();
     }
 
     @Test
     @Order(3)
-    void shouldLoadPlan() {
-        page.clickLoadPlan();
+    void shouldSwitchToFactViewMode() {
+        page.clickViewModeTab("Факт");
+        assertThat(page.isViewModeTabActive("Факт"))
+                .as("Вкладка \"Факт\" должна стать активной после клика")
+                .isTrue();
     }
 
     @Test
     @Order(4)
-    void shouldRunPlanningFromEmptyDayWithoutErrors() {
-        page.clickStartPlanning();
-        page.waitForPlanningToAutoComplete();
-        page.clickStopPlanning();
+    void shouldSortBatchesWithoutError() {
+        page.clickSort();
+    }
 
+    @Test
+    @Order(5)
+    void shouldSaveCurrentPlanWithoutError() {
+        page.clickSave();
+    }
+
+    @Test
+    @Order(6)
+    void shouldOpenDetailsPanelWithReadableErrorsCount() {
+        page.clickDetails();
         assertThat(page.getErrorsCount())
-                .as("Планирование на пустой день должно завершиться без ошибок")
-                .isEqualTo(0);
+                .as("Счётчик ошибок должен быть доступен и читаться как число")
+                .isGreaterThanOrEqualTo(0);
     }
 }

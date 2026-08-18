@@ -59,3 +59,4 @@ CORS_ORIGIN=
 # Scheduler page URL used by Selenium UI tests (SchedulerPage.java).
 # Run tests with: mvn clean test -Pselenium
 SCHEDULER_URL=http://10.30.0.5:7980/scheduler
+scheduler.url=http://10.30.0.5:7980/scheduler

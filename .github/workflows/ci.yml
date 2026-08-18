@@ -21,7 +21,7 @@ jobs:
           cache: maven
 
       - name: Set up Chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@c785b87c3f3fd58c46bf3a0d13ac8f4c1a04ad06 # v1.7.3
 
       - name: Build & run tests
         run: mvn clean verify
