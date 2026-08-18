@@ -588,4 +588,41 @@ class DbfReaderServiceTest {
 
         assertThat(capturedRecords).hasSize(2);
     }
+
+    @Test
+    void shouldThrowException_whenFileIsNotReadable() throws Exception {
+        Path dbfFile = createTestDbfFile(tempDir.resolve("unreadable.dbf"));
+
+        // работает только на POSIX-совместимых FS (Linux/macOS); на Windows-раннере
+        // будет пропущено
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+
+        java.nio.file.attribute.PosixFileAttributeView view = Files.getFileAttributeView(
+                dbfFile, java.nio.file.attribute.PosixFileAttributeView.class);
+        view.setPermissions(java.util.Set.of()); // убираем все права
+
+        try {
+            assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), consumer))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("not readable");
+        } finally {
+            // восстанавливаем права, чтобы @TempDir мог удалить файл после теста
+            view.setPermissions(java.util.Set.of(
+                    java.nio.file.attribute.PosixFilePermission.OWNER_READ,
+                    java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+        }
+    }
+
+    @Test
+    void shouldExposeFieldNamesInOrder() throws Exception {
+        Path dbfFile = createDbfFileWithDifferentTypes();
+
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        Map<String, Object> record = capturedRecords.get(0);
+        // LinkedHashMap должен сохранять порядок полей как в DBF-структуре
+        List<String> keysInOrder = new ArrayList<>(record.keySet());
+        assertThat(keysInOrder).containsExactly("STR", "NUM", "LOG");
+    }
 }

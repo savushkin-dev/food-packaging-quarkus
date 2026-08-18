@@ -571,4 +571,105 @@ class DbfImportServiceTest {
 
         assertNull(result);
     }
+
+    @Test
+    void testImportRnpp_TruncatesLongKkom() throws Exception {
+        Map<String, Object> record = new HashMap<>();
+        record.put("SYSN", 39001);
+        record.put("KMC", "TEST001");
+        record.put("KT", "KT001");
+        record.put("EMK", 18.0);
+        record.put("KKOM", "VERYLONGKKOMVALUE"); // 17 символов, должно обрезаться до 10
+        record.put("KOL1T", 10.0);
+        record.put("KOLVK", 5.0);
+        List<Map<String, Object>> records = List.of(record);
+
+        doAnswer(invocation -> {
+            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
+            for (Map<String, Object> r : records) {
+                consumer.accept(r);
+            }
+            return null;
+        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any(), eq("CP866"), any());
+
+        doNothing().when(rnppService).deleteAll();
+        ArgumentCaptor<PlrRnpp> captor = ArgumentCaptor.forClass(PlrRnpp.class);
+        doNothing().when(entityManager).persist(captor.capture());
+        doNothing().when(entityManager).flush();
+        doNothing().when(entityManager).clear();
+
+        dbfImportService.importRnpp(testDbfPath);
+
+        assertEquals("VERYLONGKK", captor.getValue().getKkom()); // ровно 10 символов
+    }
+
+    @Test
+    void testGetDouble_ReturnsNullOnInvalidFormat() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod(
+                "getDouble", Map.class, String.class);
+        method.setAccessible(true);
+
+        Map<String, Object> record = new HashMap<>();
+        record.put("BAD", "not-a-number");
+
+        Double result = (Double) method.invoke(dbfImportService, record, "BAD");
+
+        assertNull(result);
+    }
+
+    @Test
+    void testGetInteger_ReturnsNullOnInvalidFormat() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod(
+                "getInteger", Map.class, String.class);
+        method.setAccessible(true);
+
+        Map<String, Object> record = new HashMap<>();
+        record.put("BAD", "not-a-number");
+
+        Integer result = (Integer) method.invoke(dbfImportService, record, "BAD");
+
+        assertNull(result);
+    }
+
+    @Test
+    void testGetString_ReturnsNullForBlankValue() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod(
+                "getString", Map.class, String.class);
+        method.setAccessible(true);
+
+        Map<String, Object> record = new HashMap<>();
+        record.put("BLANK", "   ");
+
+        String result = (String) method.invoke(dbfImportService, record, "BLANK");
+
+        assertNull(result);
+    }
+
+    @Test
+    void testGetStringOrDefault_UsesDefaultForMissingKey() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod(
+                "getStringOrDefault", Map.class, String.class, String.class);
+        method.setAccessible(true);
+
+        Map<String, Object> record = new HashMap<>();
+
+        String result = (String) method.invoke(dbfImportService, record, "MISSING", "FALLBACK");
+
+        assertEquals("FALLBACK", result);
+    }
+
+    @Test
+    void testMapToPp_MapsFieldsCorrectly() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("mapToPp", Map.class);
+        method.setAccessible(true);
+
+        Map<String, Object> record = new HashMap<>();
+        record.put("KPP", "PP123");
+        record.put("SNM", "Test Recipient");
+
+        PlrPp result = (PlrPp) method.invoke(dbfImportService, record);
+
+        assertEquals("PP123", result.getKpp());
+        assertEquals("Test Recipient", result.getSnm());
+    }
 }
