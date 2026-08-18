@@ -31,6 +31,7 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -297,6 +298,13 @@ public class PackagingScheduleResource {
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelection dto) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
+
+        if (solution == null ) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+
         solution.getOverloadedIds().clear();
 
         PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
@@ -363,6 +371,32 @@ public class PackagingScheduleResource {
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.SESSION_ID, sessionId,
                 ApiFields.MESSAGE, "Line end time updated")).build();
+    }
+
+    @GET
+    @Path("dailyProductions")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response dailyProductions(
+            @HeaderParam("X-Session-Id") String sessionId, DailyProductionsDto request) {
+
+        if (request  == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, "date query parameter is required"))
+                    .build();
+        }
+
+        PackagingSchedule solution = repository.readForSession(sessionId);
+
+        if (solution == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                    .build();
+        }
+
+        Map<String, LineProductionDto> productions =
+                lineService.calculateLineProductions(solution.getLines(), request.selectedDate(), request.shiftNumber());
+
+        return Response.ok(productions).build();
     }
 
     @POST
