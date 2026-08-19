@@ -77,18 +77,19 @@ public class SchedulerPage {
             List<WebElement> buttons = d.findElements(By.xpath(
                     "//span[starts-with(normalize-space(.), 'Задание ')]" +
                             "/ancestor::div[contains(@class,'justify-between')][1]" +
-                            "//button[contains(., 'Отметить все') or contains(., 'Снять все')]"));
+                            "//button[contains(., 'Отметить все') or contains(., 'Снять все') or contains(., 'Нет доступных')]"));
             return buttons.isEmpty() ? null : buttons;
         });
 
         for (WebElement button : candidateButtons) {
-            if (button.isEnabled()) {
+            String text = button.getText().trim();
+            if (!text.contains("Нет доступных") && button.isEnabled()) {
                 button.click();
                 return;
             }
         }
         throw new IllegalStateException(
-                "Не найдено ни одного блока \"Задание ...\" со свободными партиями.");
+                "Не найдено ни одного блока \"Задание ...\" со свободными партиями (везде \"Нет доступных\").");
     }
 
     public void clickLoadPlan() {
