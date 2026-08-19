@@ -131,16 +131,24 @@ public class DbfImportResource {
             importer.importFile(path);
             return Response.ok().build();
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid path: {}", path, e);
+            log.warn("Invalid import path: {}", safeForLog(path), e);
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Invalid path: " + e.getMessage())
+                    .entity("Invalid path")
                     .build();
         } catch (Exception e) {
-            log.error("Error importing from path: {}", path, e);
+            log.error("Error importing from path: {}", safeForLog(path), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(ERROR_IMPORT_FAILED + e.getMessage())
+                    .entity(ERROR_IMPORT_FAILED)
                     .build();
         }
+    }
+
+    private static String safeForLog(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.replaceAll("[\\r\\n\\t]", "_");
     }
 
     @FunctionalInterface
