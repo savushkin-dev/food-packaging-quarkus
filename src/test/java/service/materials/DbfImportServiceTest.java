@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZoneId;
 import java.util.*;
 
@@ -506,14 +507,14 @@ class DbfImportServiceTest {
         Map<String, Object> recordMap = new HashMap<>();
         recordMap.put("DT_STR", "20260215");
         recordMap.put("DT_DATE", java.util.Date.from(
-                LocalDate.of(2026, 2, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                LocalDate.of(2026, Month.FEBRUARY, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
         recordMap.put("DT_BAD", "not-a-date");
 
         LocalDate fromString = (LocalDate) method.invoke(dbfImportService, recordMap, "DT_STR");
-        assertEquals(LocalDate.of(2026, 2, 15), fromString);
+        assertEquals(LocalDate.of(2026, Month.FEBRUARY, 15), fromString);
 
         LocalDate fromDate = (LocalDate) method.invoke(dbfImportService, recordMap, "DT_DATE");
-        assertEquals(LocalDate.of(2026, 2, 15), fromDate);
+        assertEquals(LocalDate.of(2026, Month.FEBRUARY, 15), fromDate);
 
         LocalDate fromBad = (LocalDate) method.invoke(dbfImportService, recordMap, "DT_BAD");
         assertNull(fromBad);
