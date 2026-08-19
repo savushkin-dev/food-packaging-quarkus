@@ -31,7 +31,6 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 

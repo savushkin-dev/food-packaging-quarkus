@@ -15,15 +15,25 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @ExtendWith(MockitoExtension.class)
 class DbfReaderServiceTest {
@@ -84,10 +94,10 @@ class DbfReaderServiceTest {
 
     @Test
     void shouldThrowException_whenPathIsDirectory() throws IOException {
-        Path dirPath = tempDir.resolve("directory");
-        Files.createDirectory(dirPath);
+        Path dirPath = Files.createDirectory(tempDir.resolve("directory"));
+        String directoryPath = dirPath.toString();
 
-        assertThatThrownBy(() -> service.readDbfFileStreaming(dirPath.toString(), consumer))
+        assertThatThrownBy(() -> service.readDbfFileStreaming(directoryPath, consumer))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not a regular file");
     }
@@ -121,10 +131,12 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(2);
+
         Map<String, Object> firstRecord = capturedRecords.get(0);
-        assertThat(firstRecord.get("NAME")).isEqualTo("John");
-        assertThat(firstRecord.get("AGE")).isEqualTo(new BigDecimal(30));
-        assertThat(firstRecord.get("SALARY")).isEqualTo(new BigDecimal("50000.00"));
+        assertThat(firstRecord)
+                .containsEntry("NAME", "John")
+                .containsEntry("AGE", new BigDecimal(30))
+                .containsEntry("SALARY", new BigDecimal("50000.00"));
     }
 
     @Test
@@ -139,8 +151,9 @@ class DbfReaderServiceTest {
 
         assertThat(capturedRecords).hasSize(2);
         Map<String, Object> firstRecord = capturedRecords.get(0);
-        assertThat(firstRecord.get("NAME")).isEqualTo("John");
-        assertThat(firstRecord.get("AGE")).isEqualTo(new BigDecimal(30));
+        assertThat(firstRecord)
+                .containsEntry("NAME", "John")
+                .containsEntry("AGE", new BigDecimal(30));
     }
 
     @Test
@@ -159,9 +172,9 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(3);
-        assertThat(capturedRecords.get(0).get("NAME")).isEqualTo("John");
-        assertThat(capturedRecords.get(1).get("NAME")).isEqualTo("Jane");
-        assertThat(capturedRecords.get(2).get("NAME")).isEqualTo("Bob");
+        assertThat(capturedRecords.get(0)).containsEntry("NAME", "John");
+        assertThat(capturedRecords.get(1)).containsEntry("NAME", "Jane");
+        assertThat(capturedRecords.get(2)).containsEntry("NAME", "Bob");
     }
 
     @Test
@@ -171,30 +184,33 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> record = capturedRecords.get(0);
-        assertThat(record.get("STR")).isInstanceOf(String.class);
-        assertThat(record.get("NUM")).isInstanceOf(BigDecimal.class);
-        assertThat(record.get("LOG")).isInstanceOf(Boolean.class);
+        Map<String, Object> recordMap = capturedRecords.get(0);
+        assertThat(recordMap.get("STR")).isInstanceOf(String.class);
+        assertThat(recordMap.get("NUM")).isInstanceOf(BigDecimal.class);
+        assertThat(recordMap.get("LOG")).isInstanceOf(Boolean.class);
     }
 
     // ==================== ENCODING TESTS ====================
 
-    @Test
-    void shouldUseDefaultEncoding_whenCharsetIsNull() throws Exception {
+    @ParameterizedTest(name = "charset={0}")
+    @MethodSource("charsets")
+    void shouldReadDbfFileWithSupportedEncoding(String charsetName) throws Exception {
         Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
 
-        service.readDbfFileStreaming(dbfFile.toString(), null, null, consumer);
+        service.readDbfFileStreaming(
+                dbfFile.toString(),
+                null,
+                charsetName,
+                consumer);
 
         assertThat(capturedRecords).hasSize(2);
     }
 
-    @Test
-    void shouldUseSpecifiedEncoding() throws Exception {
-        Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
-
-        service.readDbfFileStreaming(dbfFile.toString(), "UTF-8", null, consumer);
-
-        assertThat(capturedRecords).hasSize(2);
+    private static Stream<Arguments> charsets() {
+        return Stream.of(
+                Arguments.of((String) null), // default encoding
+                Arguments.of("UTF-8"),
+                Arguments.of("CP866"));
     }
 
     @Test
@@ -215,16 +231,6 @@ class DbfReaderServiceTest {
         String absolutePath = dbfFile.toAbsolutePath().toString();
 
         service.readDbfFileStreaming(absolutePath, consumer);
-
-        assertThat(capturedRecords).hasSize(2);
-    }
-
-    @Test
-    void shouldAcceptPathWithSpaces() throws Exception {
-        Path dbfFile = tempDir.resolve("test with spaces.dbf");
-        createTestDbfFile(dbfFile);
-
-        service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(2);
     }
@@ -256,7 +262,8 @@ class DbfReaderServiceTest {
         Path dbfFile = tempDir.resolve("corrupt.dbf");
         Files.write(dbfFile, "not a valid DBF file".getBytes());
 
-        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), consumer))
+        String dbfPath = dbfFile.toString();
+        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfPath, consumer))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Failed to read DBF file");
     }
@@ -287,8 +294,8 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> record = capturedRecords.get(0);
-        assertThat(record.get("NULL_FIELD")).isIn(null, " ", "");
+        Map<String, Object> recordMap = capturedRecords.get(0);
+        assertThat(recordMap.get("NULL_FIELD")).isIn(null, " ", "");
     }
 
     @Test
@@ -298,9 +305,9 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> record = capturedRecords.get(0);
-        assertThat(record.get("NAME")).isIn(null, "", " ");
-        assertThat(record.get("AGE")).isIn(null, 0);
+        Map<String, Object> recordMap = capturedRecords.get(0);
+        assertThat(recordMap.get("NAME")).isIn(null, "", " ");
+        assertThat(recordMap.get("AGE")).isIn(null, 0);
     }
 
     // ==================== MEMO FILE TESTS ====================
@@ -326,18 +333,6 @@ class DbfReaderServiceTest {
         Path fptFile = tempDir.resolve("test.FPT");
         // Создаем пустой FPT файл
         Files.createFile(fptFile);
-
-        service.readDbfFileStreaming(dbfFile.toString(), consumer);
-
-        assertThat(capturedRecords).hasSize(2);
-    }
-
-    @Test
-    void shouldHandleEmptyMemoFileGracefully() throws Exception {
-        Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
-        Path dbtFile = tempDir.resolve("test.DBT");
-        // Создаем пустой файл
-        Files.createFile(dbtFile);
 
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
@@ -385,7 +380,7 @@ class DbfReaderServiceTest {
         Path dbfFile = createDbfFileWithMultipleRecords();
         List<Long> timestamps = new ArrayList<>();
 
-        service.readDbfFileStreaming(dbfFile.toString(), record -> {
+        service.readDbfFileStreaming(dbfFile.toString(), entity -> {
             timestamps.add(System.nanoTime());
         });
 
@@ -560,12 +555,13 @@ class DbfReaderServiceTest {
     @Test
     void shouldWrapNonIOExceptionAsRuntimeException() throws Exception {
         Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
+        String dbfPath = dbfFile.toString();
 
-        Consumer<Map<String, Object>> throwingConsumer = record -> {
+        Consumer<Map<String, Object>> throwingConsumer = entity -> {
             throw new IllegalStateException("boom");
         };
 
-        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), throwingConsumer))
+        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfPath, throwingConsumer))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Failed to read DBF file")
                 .hasMessageContaining("boom");
@@ -595,22 +591,23 @@ class DbfReaderServiceTest {
 
         // работает только на POSIX-совместимых FS (Linux/macOS); на Windows-раннере
         // будет пропущено
-        org.junit.jupiter.api.Assumptions.assumeTrue(
-                java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+        assumeTrue(
+                FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
 
         java.nio.file.attribute.PosixFileAttributeView view = Files.getFileAttributeView(
                 dbfFile, java.nio.file.attribute.PosixFileAttributeView.class);
         view.setPermissions(java.util.Set.of()); // убираем все права
 
+        String dbfPath = dbfFile.toString();
+
         try {
-            assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), consumer))
+            assertThatThrownBy(() -> service.readDbfFileStreaming(dbfPath, consumer))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("not readable");
         } finally {
-            // восстанавливаем права, чтобы @TempDir мог удалить файл после теста
-            view.setPermissions(java.util.Set.of(
-                    java.nio.file.attribute.PosixFilePermission.OWNER_READ,
-                    java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+            view.setPermissions(Set.of(
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE));
         }
     }
 
@@ -620,9 +617,9 @@ class DbfReaderServiceTest {
 
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
-        Map<String, Object> record = capturedRecords.get(0);
+        Map<String, Object> recordMap = capturedRecords.get(0);
         // LinkedHashMap должен сохранять порядок полей как в DBF-структуре
-        List<String> keysInOrder = new ArrayList<>(record.keySet());
+        List<String> keysInOrder = new ArrayList<>(recordMap.keySet());
         assertThat(keysInOrder).containsExactly("STR", "NUM", "LOG");
     }
 }

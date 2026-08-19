@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.time.Clock;
 
 @Slf4j
 @ApplicationScoped
@@ -40,17 +41,19 @@ public class DbfImportService {
     private final PpService ppService;
     private final SprogService sprogService;
     private final RnppService rnppService;
+    private final Clock clock;
 
     @Inject
     public DbfImportService(DbfReaderService dbfReaderService, EntityManager entityManager,
-                            MtService mtService, PpService ppService,
-                            SprogService sprogService, RnppService rnppService) {
+            MtService mtService, PpService ppService,
+            SprogService sprogService, RnppService rnppService) {
         this.dbfReaderService = dbfReaderService;
         this.entityManager = entityManager;
         this.mtService = mtService;
         this.ppService = ppService;
         this.sprogService = sprogService;
         this.rnppService = rnppService;
+        this.clock = Clock.systemDefaultZone();
     }
 
     // ==================== PUBLIC IMPORT METHODS ====================
@@ -278,9 +281,11 @@ public class DbfImportService {
             return;
         }
 
-        for (PlrMt entity : batch) {
-            entityManager.merge(entity);
+        for (int index = 0; index < batch.size(); index++) {
+            PlrMt mergedEntity = entityManager.merge(batch.get(index));
+            batch.set(index, mergedEntity);
         }
+
         entityManager.flush();
         entityManager.clear();
     }
@@ -308,8 +313,8 @@ public class DbfImportService {
         PlrSprog entity = new PlrSprog();
 
         entity.setSysn(getDoubleOrDefault(recordMap, "SYSN", 0.0));
-        entity.setDt1(getDateOrDefault(recordMap, "DT1", LocalDate.now(ZoneId.systemDefault())));
-        entity.setDt2(getDateOrDefault(recordMap, "DT2", LocalDate.now(ZoneId.systemDefault()).plusDays(1)));
+        entity.setDt1(getDateOrDefault(recordMap, "DT1", LocalDate.now(clock)));
+        entity.setDt2(getDateOrDefault(recordMap, "DT2", LocalDate.now(clock).plusDays(1)));
         entity.setObj(getStringOrDefault(recordMap, "OBJ", DEFAULT_UNKNOWN));
         entity.setNp(getIntegerOrDefault(recordMap, "NP", 0));
 

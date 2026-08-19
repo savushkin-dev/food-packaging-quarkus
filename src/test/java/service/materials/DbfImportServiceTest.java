@@ -59,13 +59,13 @@ class DbfImportServiceTest {
     // ==================== ТЕСТЫ importSprog() ====================
 
     @Test
-    void testImportSprog_Success() throws Exception {
+    void testImportSprog_Success() {
         List<Map<String, Object>> records = createSprogRecords(5);
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
@@ -84,7 +84,7 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportSprog_EmptyFile() throws Exception {
+    void testImportSprog_EmptyFile() {
         doAnswer(invocation -> null)
                 .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
 
@@ -97,7 +97,7 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportSprog_WithException() throws Exception {
+    void testImportSprog_WithException() {
         doThrow(new RuntimeException("DBF read error"))
                 .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
 
@@ -111,13 +111,13 @@ class DbfImportServiceTest {
     // ==================== ТЕСТЫ importRnpp() ====================
 
     @Test
-    void testImportRnpp_Success() throws Exception {
+    void testImportRnpp_Success() {
         List<Map<String, Object>> records = createRnppRecords();
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(
@@ -137,7 +137,7 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportRnpp_FiltersByMinSysn() throws Exception {
+    void testImportRnpp_FiltersByMinSysn() {
         List<Map<String, Object>> records = new ArrayList<>();
 
         Map<String, Object> recordLow = new HashMap<>();
@@ -162,8 +162,8 @@ class DbfImportServiceTest {
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(
@@ -180,7 +180,7 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportRnpp_WithException() throws Exception {
+    void testImportRnpp_WithException() {
         doThrow(new RuntimeException("DBF read error"))
                 .when(dbfReaderService).readDbfFileStreaming(
                         eq(testDbfPath), any(), eq("CP866"), any());
@@ -195,7 +195,7 @@ class DbfImportServiceTest {
     // ==================== ТЕСТЫ importMt() ====================
 
     @Test
-    void testImportMt_UpdateExisting_Success() throws Exception {
+    void testImportMt_UpdateExisting_Success() {
         List<Map<String, Object>> records = createMtRecordsForUpdate();
 
         Map<String, PlrMt> existingMap = new HashMap<>();
@@ -212,8 +212,8 @@ class DbfImportServiceTest {
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
@@ -242,15 +242,15 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportMt_InsertNew_Success() throws Exception {
+    void testImportMt_InsertNew_Success() {
         List<Map<String, Object>> records = createMtRecords();
 
         when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
@@ -278,7 +278,7 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportMt_WithException() throws Exception {
+    void testImportMt_WithException() {
         when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
         doThrow(new RuntimeException("DBF read error"))
                 .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
@@ -291,13 +291,13 @@ class DbfImportServiceTest {
     // ==================== ТЕСТЫ importPp() ====================
 
     @Test
-    void testImportPp_Success() throws Exception {
+    void testImportPp_Success() {
         List<Map<String, Object>> records = createPpRecords(3);
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
@@ -316,7 +316,7 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportPp_WithException() throws Exception {
+    void testImportPp_WithException() {
         doThrow(new RuntimeException("DBF read error"))
                 .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
 
@@ -428,14 +428,14 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportSprog_BatchSizeTriggersMultipleFlushes() throws Exception {
+    void testImportSprog_BatchSizeTriggersMultipleFlushes() {
         // 25 записей -> первый flush на 20-й, второй на оставшихся 5
         List<Map<String, Object>> records = createSprogRecords(25);
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
@@ -454,13 +454,13 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportPp_BatchSizeTriggersMultipleFlushes() throws Exception {
+    void testImportPp_BatchSizeTriggersMultipleFlushes() {
         List<Map<String, Object>> records = createPpRecords(23);
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> record : records) {
-                consumer.accept(record);
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
             }
             return null;
         }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
@@ -483,17 +483,17 @@ class DbfImportServiceTest {
                 "getBigDecimal", Map.class, String.class);
         method.setAccessible(true);
 
-        Map<String, Object> record = new HashMap<>();
-        record.put("AMT", "123.45");
-        record.put("BAD", "not-a-number");
+        Map<String, Object> recordMap = new HashMap<>();
+        recordMap.put("AMT", "123.45");
+        recordMap.put("BAD", "not-a-number");
 
-        BigDecimal valid = (BigDecimal) method.invoke(dbfImportService, record, "AMT");
+        BigDecimal valid = (BigDecimal) method.invoke(dbfImportService, recordMap, "AMT");
         assertEquals(new BigDecimal("123.45"), valid);
 
-        BigDecimal invalid = (BigDecimal) method.invoke(dbfImportService, record, "BAD");
+        BigDecimal invalid = (BigDecimal) method.invoke(dbfImportService, recordMap, "BAD");
         assertNull(invalid);
 
-        BigDecimal missing = (BigDecimal) method.invoke(dbfImportService, record, "MISSING");
+        BigDecimal missing = (BigDecimal) method.invoke(dbfImportService, recordMap, "MISSING");
         assertNull(missing);
     }
 
@@ -573,7 +573,7 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testImportRnpp_TruncatesLongKkom() throws Exception {
+    void testImportRnpp_TruncatesLongKkom() {
         Map<String, Object> recordMap = new HashMap<>();
         recordMap.put("SYSN", 39001);
         recordMap.put("KMC", "TEST001");

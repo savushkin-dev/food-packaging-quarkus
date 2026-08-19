@@ -110,7 +110,10 @@ public class DbfImportResource {
         } finally {
             if (tempFile != null) {
                 try {
-                    Files.deleteIfExists(tempFile);
+                    boolean deleted = Files.deleteIfExists(tempFile);
+                    if (!deleted) {
+                        log.debug("Temporary file was already absent: {}", tempFile);
+                    }
                 } catch (IOException e) {
                     log.warn("Failed to delete temporary file: {}", tempFile, e);
                 }
