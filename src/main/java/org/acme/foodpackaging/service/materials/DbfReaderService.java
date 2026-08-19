@@ -7,6 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,12 +33,15 @@ public class DbfReaderService {
                                      Consumer<Map<String, Object>> recordConsumer) {
         validateInput(dbfPath, recordConsumer);
 
-        Path dbfFilePath = normalizeAndValidatePath(dbfPath, "DBF");
+        Path dbfFilePath = normalizeAndValidatePath(dbfPath);
+        Charset encoding = resolveCharset(charsetName);
 
         log.info("Opening DBF file: {}", dbfFilePath.getFileName());
 
-        try (DBFReader reader = new DBFReader(new FileInputStream(dbfFilePath.toFile()))) {
-            setupReader(reader, charsetName, memoPath);
+        // Кодировка теперь передаётся сразу в конструктор DBFReader,
+        // а не выставляется постфактум через deprecated-сеттер.
+        try (DBFReader reader = new DBFReader(new FileInputStream(dbfFilePath.toFile()), encoding, false)) {
+            loadMemoFileIfPresent(reader, memoPath);
 
             DBFField[] fields = readStructure(reader, dbfFilePath);
             processRecords(reader, fields, recordConsumer);
@@ -69,9 +75,9 @@ public class DbfReaderService {
         }
     }
 
-    private Path normalizeAndValidatePath(String path, String fileType) {
+    private Path normalizeAndValidatePath(String path) {
         if (path == null || path.trim().isEmpty()) {
-            throw new IllegalArgumentException(fileType + " file path cannot be null or empty");
+            throw new IllegalArgumentException("DBF" + " file path cannot be null or empty");
         }
 
         try {
@@ -85,22 +91,23 @@ public class DbfReaderService {
 
             // Проверяем, что файл существует и доступен
             if (!Files.exists(normalizedPath)) {
-                throw new IllegalArgumentException(fileType + " file not found: " + normalizedPath);
+                throw new IllegalArgumentException("DBF" + " file not found: " + normalizedPath);
             }
 
             if (!Files.isRegularFile(normalizedPath)) {
-                throw new IllegalArgumentException(fileType + " path is not a regular file: " + normalizedPath);
+                throw new IllegalArgumentException("DBF" + " path is not a regular file: " + normalizedPath);
             }
 
+
             if (!Files.isReadable(normalizedPath)) {
-                throw new IllegalArgumentException(fileType + " file is not readable: " + normalizedPath);
+                throw new IllegalArgumentException("DBF" + " file is not readable: " + normalizedPath);
             }
 
             return normalizedPath;
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid " + fileType + " file path: " + path, e);
+            throw new IllegalArgumentException("Invalid " + "DBF" + " file path: " + path, e);
         }
     }
 
@@ -136,35 +143,55 @@ public class DbfReaderService {
         }
     }
 
-    private void setupReader(DBFReader reader, String charsetName, String memoPath) throws IOException {
-        String encoding = charsetName != null ? charsetName : DEFAULT_ENCODING;
-        reader.setCharactersetName(encoding);
+    /**
+     * Превращает строковое имя кодировки в объект Charset.
+     * Если имя некорректно или не поддерживается - откатываемся на кодировку по умолчанию.
+     */
+    private Charset resolveCharset(String charsetName) {
+        String name = charsetName != null ? charsetName : DEFAULT_ENCODING;
+        try {
+            return Charset.forName(name);
+        } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
+            log.warn("Unsupported or invalid charset '{}', falling back to default '{}'", name, DEFAULT_ENCODING);
+            return Charset.forName(DEFAULT_ENCODING);
+        }
+    }
 
+    private void loadMemoFileIfPresent(DBFReader reader, String memoPath) {
         if (memoPath != null && !memoPath.trim().isEmpty()) {
-            try {
-                // Проверяем, что memo файл существует и доступен для чтения
-                Path memoFilePath = Paths.get(memoPath).normalize().toAbsolutePath();
-                if (Files.exists(memoFilePath) && Files.isRegularFile(memoFilePath) && Files.isReadable(memoFilePath)) {
-                    // Пытаемся установить memo файл, но если он поврежден - игнорируем
-                    try {
-                        reader.setMemoFile(memoFilePath.toFile());
-                        log.info("Memo file loaded: {}", memoFilePath.getFileName());
-                    } catch (Exception e) {
-                        log.warn("Memo file is corrupted or invalid: {}", memoFilePath.getFileName());
-                        // Продолжаем без memo файла
-                    }
-                } else {
-                    log.warn("Memo file not found or not accessible: {}", memoPath);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to load memo file: {}", memoPath, e);
+            loadMemoFile(reader, memoPath);
+        }
+    }
+
+    private void loadMemoFile(DBFReader reader, String memoPath) {
+        try {
+            // Проверяем, что memo файл существует и доступен для чтения
+            Path memoFilePath = Paths.get(memoPath).normalize().toAbsolutePath();
+            if (Files.exists(memoFilePath) && Files.isRegularFile(memoFilePath) && Files.isReadable(memoFilePath)) {
+                setMemoFileSafely(reader, memoFilePath);
+            } else {
+                log.warn("Memo file not found or not accessible: {}", memoPath);
             }
+        } catch (Exception e) {
+            log.warn("Failed to load memo file: {}", memoPath, e);
+        }
+    }
+
+    private void setMemoFileSafely(DBFReader reader, Path memoFilePath) {
+        // Пытаемся установить memo файл, но если он поврежден - игнорируем
+        try {
+            reader.setMemoFile(memoFilePath.toFile());
+            log.info("Memo file loaded: {}", memoFilePath.getFileName());
+        } catch (Exception e) {
+            log.warn("Memo file is corrupted or invalid: {}", memoFilePath.getFileName());
+            // Продолжаем без memo файла
         }
     }
 
     private DBFField[] readStructure(DBFReader reader, Path dbfFilePath) {
         int fieldCount = reader.getFieldCount();
         DBFField[] fields = new DBFField[fieldCount];
+
 
         log.info("=== DBF Structure: {} ===", dbfFilePath.getFileName());
         for (int i = 0; i < fieldCount; i++) {

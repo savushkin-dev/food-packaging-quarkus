@@ -112,7 +112,7 @@ class DbfImportServiceTest {
 
     @Test
     void testImportRnpp_Success() throws Exception {
-        List<Map<String, Object>> records = createRnppRecords(5);
+        List<Map<String, Object>> records = createRnppRecords();
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
@@ -243,7 +243,7 @@ class DbfImportServiceTest {
 
     @Test
     void testImportMt_InsertNew_Success() throws Exception {
-        List<Map<String, Object>> records = createMtRecords(2);
+        List<Map<String, Object>> records = createMtRecords();
 
         when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
 
@@ -332,44 +332,44 @@ class DbfImportServiceTest {
     private List<Map<String, Object>> createSprogRecords(int count) {
         List<Map<String, Object>> records = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Map<String, Object> record = new HashMap<>();
-            record.put("SYSN", 39000.0 + i);
-            record.put("DT1", "2026-02-15");
-            record.put("DT2", "2026-03-15");
-            record.put("OBJ", "OBJ00" + i);
-            record.put("NP", i);
-            records.add(record);
+            Map<String, Object> recordMap = new HashMap<>();
+            recordMap.put("SYSN", 39000.0 + i);
+            recordMap.put("DT1", "2026-02-15");
+            recordMap.put("DT2", "2026-03-15");
+            recordMap.put("OBJ", "OBJ00" + i);
+            recordMap.put("NP", i);
+            records.add(recordMap);
         }
         return records;
     }
 
-    private List<Map<String, Object>> createRnppRecords(int count) {
+    private List<Map<String, Object>> createRnppRecords() {
         List<Map<String, Object>> records = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            Map<String, Object> record = new HashMap<>();
-            record.put("SYSN", 39000.0 + i);
-            record.put("KMC", "KMC00" + i);
-            record.put("KT", "KT00" + i);
-            record.put("EMK", 18.0 + i);
-            record.put("KKOM", "MT00" + i);
-            record.put("KOL1T", 10.0 + i);
-            record.put("KOLVK", 5.0 + i);
-            records.add(record);
+        for (int i = 0; i < 5; i++) {
+            Map<String, Object> recordMap = new HashMap<>();
+            recordMap.put("SYSN", 39000.0 + i);
+            recordMap.put("KMC", "KMC00" + i);
+            recordMap.put("KT", "KT00" + i);
+            recordMap.put("EMK", 18.0 + i);
+            recordMap.put("KKOM", "MT00" + i);
+            recordMap.put("KOL1T", 10.0 + i);
+            recordMap.put("KOLVK", 5.0 + i);
+            records.add(recordMap);
         }
         return records;
     }
 
-    private List<Map<String, Object>> createMtRecords(int count) {
+    private List<Map<String, Object>> createMtRecords() {
         List<Map<String, Object>> records = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            Map<String, Object> record = new HashMap<>();
-            record.put("KGR", "GRP" + i);
-            record.put("KMT", "MT00" + i);
-            record.put("SNM", "Material " + i);
-            record.put("EDU", "pcs");
-            record.put("PERS", 20.5 + i);
-            record.put("RND", 5.0 + i);
-            records.add(record);
+        for (int i = 0; i < 2; i++) {
+            Map<String, Object> recordMap = new HashMap<>();
+            recordMap.put("KGR", "GRP" + i);
+            recordMap.put("KMT", "MT00" + i);
+            recordMap.put("SNM", "Material " + i);
+            recordMap.put("EDU", "pcs");
+            recordMap.put("PERS", 20.5 + i);
+            recordMap.put("RND", 5.0 + i);
+            records.add(recordMap);
         }
         return records;
     }
@@ -400,10 +400,10 @@ class DbfImportServiceTest {
     private List<Map<String, Object>> createPpRecords(int count) {
         List<Map<String, Object>> records = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Map<String, Object> record = new HashMap<>();
-            record.put("KPP", "PP00" + i);
-            record.put("SNM", "Recipient " + i);
-            records.add(record);
+            Map<String, Object> recordMap = new HashMap<>();
+            recordMap.put("KPP", "PP00" + i);
+            recordMap.put("SNM", "Recipient " + i);
+            records.add(recordMap);
         }
         return records;
     }
@@ -503,19 +503,19 @@ class DbfImportServiceTest {
                 "getDate", Map.class, String.class);
         method.setAccessible(true);
 
-        Map<String, Object> record = new HashMap<>();
-        record.put("DT_STR", "20260215");
-        record.put("DT_DATE", java.util.Date.from(
+        Map<String, Object> recordMap = new HashMap<>();
+        recordMap.put("DT_STR", "20260215");
+        recordMap.put("DT_DATE", java.util.Date.from(
                 LocalDate.of(2026, 2, 15).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-        record.put("DT_BAD", "not-a-date");
+        recordMap.put("DT_BAD", "not-a-date");
 
-        LocalDate fromString = (LocalDate) method.invoke(dbfImportService, record, "DT_STR");
+        LocalDate fromString = (LocalDate) method.invoke(dbfImportService, recordMap, "DT_STR");
         assertEquals(LocalDate.of(2026, 2, 15), fromString);
 
-        LocalDate fromDate = (LocalDate) method.invoke(dbfImportService, record, "DT_DATE");
+        LocalDate fromDate = (LocalDate) method.invoke(dbfImportService, recordMap, "DT_DATE");
         assertEquals(LocalDate.of(2026, 2, 15), fromDate);
 
-        LocalDate fromBad = (LocalDate) method.invoke(dbfImportService, record, "DT_BAD");
+        LocalDate fromBad = (LocalDate) method.invoke(dbfImportService, recordMap, "DT_BAD");
         assertNull(fromBad);
     }
 
@@ -574,15 +574,15 @@ class DbfImportServiceTest {
 
     @Test
     void testImportRnpp_TruncatesLongKkom() throws Exception {
-        Map<String, Object> record = new HashMap<>();
-        record.put("SYSN", 39001);
-        record.put("KMC", "TEST001");
-        record.put("KT", "KT001");
-        record.put("EMK", 18.0);
-        record.put("KKOM", "VERYLONGKKOMVALUE"); // 17 символов, должно обрезаться до 10
-        record.put("KOL1T", 10.0);
-        record.put("KOLVK", 5.0);
-        List<Map<String, Object>> records = List.of(record);
+        Map<String, Object> recordMap = new HashMap<>();
+        recordMap.put("SYSN", 39001);
+        recordMap.put("KMC", "TEST001");
+        recordMap.put("KT", "KT001");
+        recordMap.put("EMK", 18.0);
+        recordMap.put("KKOM", "VERYLONGKKOMVALUE"); // 17 символов, должно обрезаться до 10
+        recordMap.put("KOL1T", 10.0);
+        recordMap.put("KOLVK", 5.0);
+        List<Map<String, Object>> records = List.of(recordMap);
 
         doAnswer(invocation -> {
             java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
@@ -609,10 +609,10 @@ class DbfImportServiceTest {
                 "getDouble", Map.class, String.class);
         method.setAccessible(true);
 
-        Map<String, Object> record = new HashMap<>();
-        record.put("BAD", "not-a-number");
+        Map<String, Object> recordMap = new HashMap<>();
+        recordMap.put("BAD", "not-a-number");
 
-        Double result = (Double) method.invoke(dbfImportService, record, "BAD");
+        Double result = (Double) method.invoke(dbfImportService, recordMap, "BAD");
 
         assertNull(result);
     }
@@ -623,10 +623,10 @@ class DbfImportServiceTest {
                 "getInteger", Map.class, String.class);
         method.setAccessible(true);
 
-        Map<String, Object> record = new HashMap<>();
-        record.put("BAD", "not-a-number");
+        Map<String, Object> recordMap = new HashMap<>();
+        recordMap.put("BAD", "not-a-number");
 
-        Integer result = (Integer) method.invoke(dbfImportService, record, "BAD");
+        Integer result = (Integer) method.invoke(dbfImportService, recordMap, "BAD");
 
         assertNull(result);
     }
@@ -637,10 +637,10 @@ class DbfImportServiceTest {
                 "getString", Map.class, String.class);
         method.setAccessible(true);
 
-        Map<String, Object> record = new HashMap<>();
-        record.put("BLANK", "   ");
+        Map<String, Object> recordMap = new HashMap<>();
+        recordMap.put("BLANK", "   ");
 
-        String result = (String) method.invoke(dbfImportService, record, "BLANK");
+        String result = (String) method.invoke(dbfImportService, recordMap, "BLANK");
 
         assertNull(result);
     }
@@ -651,9 +651,9 @@ class DbfImportServiceTest {
                 "getStringOrDefault", Map.class, String.class, String.class);
         method.setAccessible(true);
 
-        Map<String, Object> record = new HashMap<>();
+        Map<String, Object> recordMap = new HashMap<>();
 
-        String result = (String) method.invoke(dbfImportService, record, "MISSING", "FALLBACK");
+        String result = (String) method.invoke(dbfImportService, recordMap, "MISSING", "FALLBACK");
 
         assertEquals("FALLBACK", result);
     }
@@ -663,13 +663,14 @@ class DbfImportServiceTest {
         java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("mapToPp", Map.class);
         method.setAccessible(true);
 
-        Map<String, Object> record = new HashMap<>();
-        record.put("KPP", "PP123");
-        record.put("SNM", "Test Recipient");
+        Map<String, Object> recordMap = new HashMap<>();
+        recordMap.put("KPP", "PP123");
+        recordMap.put("SNM", "Test Recipient");
 
-        PlrPp result = (PlrPp) method.invoke(dbfImportService, record);
+        PlrPp result = (PlrPp) method.invoke(dbfImportService, recordMap);
 
         assertEquals("PP123", result.getKpp());
         assertEquals("Test Recipient", result.getSnm());
     }
+
 }

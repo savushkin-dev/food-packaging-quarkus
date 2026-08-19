@@ -279,7 +279,7 @@ public class DbfImportService {
         }
 
         for (PlrMt entity : batch) {
-            PlrMt merged = entityManager.merge(entity);
+            entityManager.merge(entity);
         }
         entityManager.flush();
         entityManager.clear();
@@ -368,7 +368,7 @@ public class DbfImportService {
             return null;
         }
 
-        if (!dbfPath.matches("^[a-zA-Z0-9._/\\\\-]+$")) {
+        if (!dbfPath.matches("^[a-zA-Z0-9._/\\\\:\\-]+$")) {
             log.warn("Invalid DBF file path: {}", dbfPath);
             return null;
         }
