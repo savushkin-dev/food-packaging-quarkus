@@ -17,9 +17,16 @@ import java.util.List;
 public class SchedulerPage {
 
     private static final String URL = "http://10.30.0.5:7980/scheduler";
+
     private static final By ANY_OVERLAY = By.xpath(
             "//div[contains(@class,'fixed') and (contains(@class,'bg-black/50') or contains(@class,'bg-black/40'))]");
     private static final By STOP_BUTTON = By.xpath("//button[contains(., 'Остановить')]");
+    private static final By DATE_INPUT = By.xpath("//input[@type='date']");
+    private static final By TASK_SELECT_BUTTONS = By.xpath(
+            "//span[starts-with(normalize-space(.), 'Задание ')]" +
+                    "/ancestor::div[contains(@class,'justify-between')][1]" +
+                    "//button[contains(., 'Отметить все') or contains(., 'Снять все') or contains(., 'Нет доступных')]");
+    private static final String NO_BATCHES_AVAILABLE = "Нет доступных";
 
     private final WebDriver driver;
     private final WebDriverWait wait;
@@ -32,7 +39,6 @@ public class SchedulerPage {
     public static WebDriver createLocalChromeDriver() {
         WebDriverManager.chromedriver().setup();
         ChromeOptions options = new ChromeOptions();
-        // options.addArguments("--headless=new"); // раскомментировать для CI
         options.addArguments("--window-size=1600,900");
         return new ChromeDriver(options);
     }
@@ -42,10 +48,9 @@ public class SchedulerPage {
     }
 
     public void selectDate(LocalDate date) {
-        WebElement dateInput = wait.until(d -> d.findElement(By.xpath("//input[@type='date']")));
+        WebElement dateInput = wait.until(d -> d.findElement(DATE_INPUT));
         String isoValue = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        js.executeScript(
+        ((JavascriptExecutor) driver).executeScript(
                 "var input = arguments[0];" +
                         "var value = arguments[1];" +
                         "var nativeSetter = Object.getOwnPropertyDescriptor(" +
@@ -54,42 +59,48 @@ public class SchedulerPage {
                         "input.dispatchEvent(new Event('input', { bubbles: true }));" +
                         "input.dispatchEvent(new Event('change', { bubbles: true }));",
                 dateInput, isoValue);
-        wait.until(d -> isoValue.equals(
-                d.findElement(By.xpath("//input[@type='date']")).getAttribute("value")));
+
+        wait.until(d -> isoValue.equals(d.findElement(DATE_INPUT).getAttribute("value")));
+
+        // Приложение сначала рендерит блоки "Задание N" с кнопками-заглушками
+        // "Нет доступных" и только после ответа сервера обновляет их на
+        // актуальное состояние. Ждём, пока хотя бы одна кнопка выйдет из
+        // заглушки, иначе последующий код читает переходный DOM.
+        wait.until(d -> {
+            List<WebElement> buttons = d.findElements(TASK_SELECT_BUTTONS);
+            return !buttons.isEmpty() && buttons.stream()
+                    .anyMatch(b -> !b.getText().trim().contains(NO_BATCHES_AVAILABLE) || b.isEnabled());
+        });
     }
 
     public void clickSelectAllForTaskDate(LocalDate taskDate) {
         String label = "Задание " + taskDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-        WebElement anyButton = wait.until(d -> d.findElement(By.xpath(
+        WebElement button = wait.until(d -> d.findElement(By.xpath(
                 "//span[normalize-space(.)='" + label + "']" +
                         "/ancestor::div[contains(@class,'justify-between')][1]" +
-                        "//button[contains(., 'Отметить все') or contains(., 'Снять все') or contains(., 'Нет доступных')]")));
+                        "//button[contains(., 'Отметить все') or contains(., 'Снять все') or contains(., '" + NO_BATCHES_AVAILABLE + "')]")));
 
-        if (anyButton.getText().trim().contains("Нет доступных")) {
+        if (button.getText().trim().contains(NO_BATCHES_AVAILABLE)) {
             throw new IllegalStateException(
-                    "У блока \"" + label + "\" нет свободных партий (кнопка \"Нет доступных\").");
+                    "У блока \"" + label + "\" нет свободных партий (кнопка \"" + NO_BATCHES_AVAILABLE + "\").");
         }
-        anyButton.click();
+        button.click();
     }
 
     public void clickSelectAllForAnyAvailableTaskDate() {
-        List<WebElement> candidateButtons = wait.until(d -> {
-            List<WebElement> buttons = d.findElements(By.xpath(
-                    "//span[starts-with(normalize-space(.), 'Задание ')]" +
-                            "/ancestor::div[contains(@class,'justify-between')][1]" +
-                            "//button[contains(., 'Отметить все') or contains(., 'Снять все') or contains(., 'Нет доступных')]"));
-            return buttons.isEmpty() ? null : buttons;
+        List<WebElement> buttons = wait.until(d -> {
+            List<WebElement> found = d.findElements(TASK_SELECT_BUTTONS);
+            return found.isEmpty() ? null : found;
         });
 
-        for (WebElement button : candidateButtons) {
-            String text = button.getText().trim();
-            if (!text.contains("Нет доступных") && button.isEnabled()) {
+        for (WebElement button : buttons) {
+            if (button.isEnabled() && !button.getText().trim().contains(NO_BATCHES_AVAILABLE)) {
                 button.click();
                 return;
             }
         }
         throw new IllegalStateException(
-                "Не найдено ни одного блока \"Задание ...\" со свободными партиями (везде \"Нет доступных\").");
+                "Не найдено ни одного блока \"Задание ...\" со свободными партиями (везде \"" + NO_BATCHES_AVAILABLE + "\").");
     }
 
     public void clickLoadPlan() {
@@ -104,55 +115,49 @@ public class SchedulerPage {
     }
 
     public void clickStopPlanning() {
-        wait.until(d -> {
-            List<WebElement> buttons = d.findElements(STOP_BUTTON);
-            if (buttons.isEmpty()) {
-                return false;
-            }
-            WebElement el = buttons.get(0);
-            String classAttr = el.getAttribute("class");
-            return el.isEnabled() && classAttr != null && classAttr.contains("bg-red");
-        });
+        wait.until(d -> isStopButtonActive(d.findElements(STOP_BUTTON)));
 
         wait.until(d -> {
             List<WebElement> buttons = d.findElements(STOP_BUTTON);
             if (buttons.isEmpty()) {
                 return true;
             }
-            WebElement el = buttons.get(0);
-            String classAttr = el.getAttribute("class");
-            boolean isEnabled = el.isEnabled();
-            boolean looksActive = classAttr != null && classAttr.contains("bg-red");
-            if (isEnabled && looksActive) {
-                el.click();
+            if (isStopButtonActive(buttons)) {
+                buttons.get(0).click();
                 return true;
             }
             return false;
         });
     }
 
+    private boolean isStopButtonActive(List<WebElement> stopButtons) {
+        if (stopButtons.isEmpty()) {
+            return false;
+        }
+        WebElement button = stopButtons.get(0);
+        String classAttr = button.getAttribute("class");
+        return button.isEnabled() && classAttr != null && classAttr.contains("bg-red");
+    }
 
     public void openLineSettings() {
         waitUntilOverlayGone();
         clickByText("Настройка линий");
-        wait.until(d -> !d.findElements(By.xpath(
-                "//*[contains(text(),'Настройки даты и времени планировщика')]")).isEmpty());
+        wait.until(d -> !d.findElements(lineSettingsModalTitle()).isEmpty());
     }
 
     public boolean isLineSettingsModalOpen() {
-        return !driver.findElements(By.xpath(
-                "//*[contains(text(),'Настройки даты и времени планировщика')]")).isEmpty();
+        return !driver.findElements(lineSettingsModalTitle()).isEmpty();
     }
 
     public void closeLineSettings() {
-        WebElement closeButton = wait.until(d -> d.findElement(
-                By.xpath("//button[normalize-space(.)='Закрыть']")));
-        closeButton.click();
-        wait.until(d -> d.findElements(By.xpath(
-                "//*[contains(text(),'Настройки даты и времени планировщика')]")).isEmpty());
+        wait.until(d -> d.findElement(By.xpath("//button[normalize-space(.)='Закрыть']"))).click();
+        wait.until(d -> d.findElements(lineSettingsModalTitle()).isEmpty());
         waitUntilOverlayGone();
     }
 
+    private By lineSettingsModalTitle() {
+        return By.xpath("//*[contains(text(),'Настройки даты и времени планировщика')]");
+    }
 
     public void clickViewModeTab(String tabLabel) {
         waitUntilOverlayGone();
@@ -162,7 +167,6 @@ public class SchedulerPage {
     public boolean isViewModeTabActive(String tabLabel) {
         WebElement tab = driver.findElement(By.xpath("//button[contains(., '" + tabLabel + "')]"));
         String classAttr = tab.getAttribute("class");
-        String ariaSelected = tab.getAttribute("aria-selected");
         boolean byClass = classAttr != null && (
                 classAttr.contains("bg-blue") ||
                         classAttr.contains("bg-cyan") ||
@@ -170,10 +174,8 @@ public class SchedulerPage {
                         classAttr.contains("underline") ||
                         classAttr.contains("active") ||
                         classAttr.contains("text-white"));
-        boolean byAria = "true".equals(ariaSelected);
-        return byClass || byAria;
+        return byClass || "true".equals(tab.getAttribute("aria-selected"));
     }
-
 
     public void clickSort() {
         waitUntilOverlayGone();
@@ -182,14 +184,12 @@ public class SchedulerPage {
         dismissResultDialogIfPresent();
     }
 
-
     public void clickSave() {
         waitUntilOverlayGone();
         clickByText("Сохранить");
         confirmActionDialogIfPresent();
         dismissResultDialogIfPresent();
     }
-
 
     public void clickSendToWork() {
         waitUntilOverlayGone();
@@ -215,23 +215,21 @@ public class SchedulerPage {
         return digits.isEmpty() ? 0 : Integer.parseInt(digits);
     }
 
-
     private void confirmActionDialogIfPresent() {
         try {
-            WebElement yesButton = new WebDriverWait(driver, Duration.ofSeconds(5)).until(d ->
-                    d.findElement(By.xpath("//button[normalize-space(.)='Да']")));
-            yesButton.click();
-            wait.until(d -> d.findElements(By.xpath(
-                    "//*[contains(text(),'Подтверждение действия')]")).isEmpty());
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(d -> d.findElement(By.xpath("//button[normalize-space(.)='Да']")))
+                    .click();
+            wait.until(d -> d.findElements(By.xpath("//*[contains(text(),'Подтверждение действия')]")).isEmpty());
         } catch (Exception ignored) {
         }
     }
 
     private void dismissResultDialogIfPresent() {
         try {
-            WebElement okButton = new WebDriverWait(driver, Duration.ofSeconds(5)).until(d ->
-                    d.findElement(By.xpath("//div[contains(., 'Результат операции')]//button[contains(., 'ОК')]")));
-            okButton.click();
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(d -> d.findElement(By.xpath("//div[contains(., 'Результат операции')]//button[contains(., 'ОК')]")))
+                    .click();
         } catch (Exception ignored) {
         }
         waitUntilOverlayGone();
@@ -242,9 +240,7 @@ public class SchedulerPage {
     }
 
     private void clickByText(String text) {
-        WebElement el = wait.until(d ->
-                d.findElement(By.xpath("//button[contains(., '" + text + "')]")));
-        el.click();
+        wait.until(d -> d.findElement(By.xpath("//button[contains(., '" + text + "')]"))).click();
     }
 
     public void quit() {

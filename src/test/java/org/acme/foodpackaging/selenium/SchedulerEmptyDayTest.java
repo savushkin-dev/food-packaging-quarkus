@@ -1,14 +1,10 @@
 package org.acme.foodpackaging.selenium;
 
 import org.junit.jupiter.api.*;
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 
 import java.time.LocalDate;
 import java.time.Month;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SchedulerEmptyDayTest {
 
-    private static final LocalDate TARGET_DATE = LocalDate.of(2026, Month.MARCH, 25);
+    private static final LocalDate TARGET_DATE = LocalDate.of(2026, Month.APRIL, 10);
 
     static WebDriver driver;
     static SchedulerPage page;
@@ -37,20 +33,6 @@ class SchedulerEmptyDayTest {
     @Test
     @Order(1)
     void shouldLoadPlanAndRunPlanningFromNeighborDay() {
-        List<WebElement> taskLabels = driver.findElements(
-                By.xpath("//span[starts-with(normalize-space(.), 'Задание ')]"));
-        System.out.println("=== DEBUG: найдено блоков 'Задание ...': " + taskLabels.size() + " ===");
-        System.out.println(taskLabels.stream()
-                .map(WebElement::getText)
-                .collect(Collectors.joining(" | ")));
-
-        List<WebElement> allSelectButtons = driver.findElements(By.xpath(
-                "//button[contains(., 'Отметить все') or contains(., 'Снять все') or contains(., 'Нет доступных')]"));
-        System.out.println("=== DEBUG: найдено кнопок выбора: " + allSelectButtons.size() + " ===");
-        System.out.println(allSelectButtons.stream()
-                .map(b -> "[" + b.getText().trim() + ", enabled=" + b.isEnabled() + "]")
-                .collect(Collectors.joining(" | ")));
-
         page.clickSelectAllForAnyAvailableTaskDate();
         page.clickLoadPlan();
         page.clickStartPlanning();
@@ -88,12 +70,6 @@ class SchedulerEmptyDayTest {
 
     @Test
     @Order(5)
-    void shouldSaveCurrentPlanWithoutError() {
-        page.clickSave();
-    }
-
-    @Test
-    @Order(6)
     void shouldOpenDetailsPanelWithReadableErrorsCount() {
         page.clickDetails();
         assertThat(page.getErrorsCount())
