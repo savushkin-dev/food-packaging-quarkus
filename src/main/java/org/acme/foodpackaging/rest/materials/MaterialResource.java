@@ -40,7 +40,8 @@ public class MaterialResource {
             List<PpDto> result = ppService.searchByName(query);
             return Response.ok(result).build();
         } catch (Exception e) {
-            log.error("Error searching recipients with query: {}", query, e);
+            String safeQuery = sanitizeForLog(query);
+            log.error("Error searching recipients with query: {}", safeQuery, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error searching recipients: " + e.getMessage())
                     .build();
