@@ -51,13 +51,14 @@ public class MaterialResource {
     @Path("/load")
     public Response loadProducts(
             @QueryParam("date") String date,
-            @QueryParam("kpp") String kpp
-    ) {
+            @QueryParam("kpp") String kpp) {
         try {
             List<ProductWithMaterialsDto> data = materialService.loadProducts(date, kpp);
             return Response.ok(data).build();
         } catch (Exception e) {
-            log.error("Error loading products for date: {}, kpp: {}", date, kpp, e);
+            String safeDate = sanitizeForLog(date);
+            String safeKpp = sanitizeForLog(kpp);
+            log.error("Error loading products for date: {}, kpp: {}", safeDate, safeKpp, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error loading products: " + e.getMessage())
                     .build();
@@ -71,7 +72,10 @@ public class MaterialResource {
             List<ProductWithMaterialsDto> updated = materialService.recalcKolf(request);
             return Response.ok(updated).build();
         } catch (Exception e) {
-            log.error("Error recalculating KOLF for request: {}", request, e);
+            String sanitizedRequest = String.valueOf(request)
+                    .replace('\n', '_')
+                    .replace('\r', '_');
+            log.error("Error recalculating KOLF for request: {}", sanitizedRequest, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error recalculating KOLF: " + e.getMessage())
                     .build();
@@ -86,10 +90,17 @@ public class MaterialResource {
             materialService.saveAll(request);
             return Response.ok().build();
         } catch (Exception e) {
-            log.error("Error saving data for request: {}", request, e);
+            log.error("Error saving data for request", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error saving data: " + e.getMessage())
                     .build();
         }
+    }
+
+    private String sanitizeForLog(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replaceAll("[\\r\\n\\t\\f\\u007F]", "_");
     }
 }
