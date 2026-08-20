@@ -10,14 +10,15 @@ import org.acme.foodpackaging.service.materials.config.MtService;
 import org.acme.foodpackaging.service.materials.config.PpService;
 import org.acme.foodpackaging.service.materials.config.RnppService;
 import org.acme.foodpackaging.service.materials.config.SprogService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
@@ -27,13 +28,12 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.Consumer;
 
 @ExtendWith(MockitoExtension.class)
 class DbfImportServiceTest {
-
-    @InjectMocks
-    private DbfImportService dbfImportService;
-
     @Mock
     private DbfReaderService dbfReaderService;
 
@@ -52,61 +52,89 @@ class DbfImportServiceTest {
     @Mock
     private RnppService rnppService;
 
+    private DbfImportService dbfImportService;
+
     @TempDir
-    java.nio.file.Path tempDir;
+    Path tempDir;
 
-    private final String testDbfPath = "C:/test/file.dbf";
+    private Path sprogFile;
+    private Path rnppFile;
+    private Path mtFile;
+    private Path ppFile;
 
+    @BeforeEach
+    void setUp() throws IOException {
+        sprogFile = Files.createFile(tempDir.resolve("BD_SPROG.DBF"));
+        rnppFile = Files.createFile(tempDir.resolve("BD_RNPP.DBF"));
+        mtFile = Files.createFile(tempDir.resolve("NS_MT.DBF"));
+        ppFile = Files.createFile(tempDir.resolve("NS_PP.DBF"));
+
+        dbfImportService = new DbfImportService(
+                dbfReaderService,
+                entityManager,
+                mtService,
+                ppService,
+                sprogService,
+                rnppService,
+                tempDir);
+    }
+
+    private void simulateRead(Path file, List<Map<String, Object>> records) {
+        doAnswer(invocation -> {
+            Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
+
+            for (Map<String, Object> recordMap : records) {
+                consumer.accept(recordMap);
+            }
+
+            return null;
+        }).when(dbfReaderService).readDbfFileStreaming(
+                eq(file.toAbsolutePath().normalize().toString()),
+                any());
+    }
+
+    private void simulateReadFailure(Path file) {
+        doThrow(new RuntimeException("DBF read error"))
+                .when(dbfReaderService)
+                .readDbfFileStreaming(
+                        eq(file.toAbsolutePath().normalize().toString()),
+                        any());
+    }
     // ==================== ТЕСТЫ importSprog() ====================
 
     @Test
     void testImportSprog_Success() {
         List<Map<String, Object>> records = createSprogRecords(5);
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateRead(sprogFile, records);
 
-        doNothing().when(sprogService).deleteAll();
-        doNothing().when(entityManager).persist(any(PlrSprog.class));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
+        dbfImportService.importSprog();
 
-        dbfImportService.importSprog(testDbfPath);
-
-        verify(sprogService, times(1)).deleteAll();
+        verify(sprogService).deleteAll();
         verify(entityManager, times(5)).persist(any(PlrSprog.class));
-        verify(entityManager, times(1)).flush();
-        verify(entityManager, times(1)).clear();
+        verify(entityManager).flush();
+        verify(entityManager).clear();
     }
 
     @Test
     void testImportSprog_EmptyFile() {
-        doAnswer(invocation -> null)
-                .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateRead(sprogFile, List.of());
 
-        doNothing().when(sprogService).deleteAll();
+        dbfImportService.importSprog();
 
-        dbfImportService.importSprog(testDbfPath);
-
-        verify(sprogService, times(1)).deleteAll();
+        verify(sprogService).deleteAll();
         verify(entityManager, never()).persist(any(PlrSprog.class));
+        verify(entityManager, never()).flush();
+        verify(entityManager, never()).clear();
     }
 
     @Test
     void testImportSprog_WithException() {
-        doThrow(new RuntimeException("DBF read error"))
-                .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateReadFailure(sprogFile);
 
-        doNothing().when(sprogService).deleteAll();
+        assertThrows(RuntimeException.class, () -> dbfImportService.importSprog());
 
-        assertThrows(RuntimeException.class, () -> {
-            dbfImportService.importSprog(testDbfPath);
-        });
+        verify(sprogService).deleteAll();
     }
 
     // ==================== ТЕСТЫ importRnpp() ====================
@@ -115,26 +143,14 @@ class DbfImportServiceTest {
     void testImportRnpp_Success() {
         List<Map<String, Object>> records = createRnppRecords();
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(
-                eq(testDbfPath), any(), eq("CP866"), any());
+        simulateRead(rnppFile, records);
 
-        doNothing().when(rnppService).deleteAll();
-        doNothing().when(entityManager).persist(any(PlrRnpp.class));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
+        dbfImportService.importRnpp();
 
-        dbfImportService.importRnpp(testDbfPath);
-
-        verify(rnppService, times(1)).deleteAll();
+        verify(rnppService).deleteAll();
         verify(entityManager, times(5)).persist(any(PlrRnpp.class));
-        verify(entityManager, times(1)).flush();
-        verify(entityManager, times(1)).clear();
+        verify(entityManager).flush();
+        verify(entityManager).clear();
     }
 
     @Test
@@ -161,36 +177,23 @@ class DbfImportServiceTest {
         recordHigh.put("KOLVK", 8.0);
         records.add(recordHigh);
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(
-                eq(testDbfPath), any(), eq("CP866"), any());
+        simulateRead(rnppFile, records);
 
-        doNothing().when(rnppService).deleteAll();
-        doNothing().when(entityManager).persist(any(PlrRnpp.class));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
+        dbfImportService.importRnpp();
 
-        dbfImportService.importRnpp(testDbfPath);
-
+        verify(rnppService).deleteAll();
         verify(entityManager, times(1)).persist(any(PlrRnpp.class));
+        verify(entityManager).flush();
+        verify(entityManager).clear();
     }
 
     @Test
     void testImportRnpp_WithException() {
-        doThrow(new RuntimeException("DBF read error"))
-                .when(dbfReaderService).readDbfFileStreaming(
-                        eq(testDbfPath), any(), eq("CP866"), any());
+        simulateReadFailure(rnppFile);
 
-        doNothing().when(rnppService).deleteAll();
+        assertThrows(RuntimeException.class, () -> dbfImportService.importRnpp());
 
-        assertThrows(RuntimeException.class, () -> {
-            dbfImportService.importRnpp(testDbfPath);
-        });
+        verify(rnppService).deleteAll();
     }
 
     // ==================== ТЕСТЫ importMt() ====================
@@ -210,36 +213,29 @@ class DbfImportServiceTest {
         existingMap.put("MT000", existing);
 
         when(mtService.findAllAsMapByKmt()).thenReturn(existingMap);
+        when(entityManager.merge(any(PlrMt.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateRead(mtFile, records);
 
-        when(entityManager.merge(any(PlrMt.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
-        doNothing().when(mtService).invalidateAll();
+        dbfImportService.importMt();
 
-        dbfImportService.importMt(testDbfPath);
-
-        verify(mtService, times(1)).findAllAsMapByKmt();
+        verify(mtService).findAllAsMapByKmt();
 
         ArgumentCaptor<PlrMt> captor = ArgumentCaptor.forClass(PlrMt.class);
         verify(entityManager, times(2)).merge(captor.capture());
 
-        List<PlrMt> mergedEntities = captor.getAllValues();
-        PlrMt updated = mergedEntities.get(0);
-
+        PlrMt updated = captor.getAllValues().get(0);
         assertEquals("New Name", updated.getSnm());
         assertEquals("pcs", updated.getEdu());
+
+        // При обновлении PERS и RND не должны изменяться.
         assertEquals(15.0, updated.getPers());
         assertEquals(3.0, updated.getRnd());
 
-        verify(mtService, times(1)).invalidateAll();
+        verify(entityManager).flush();
+        verify(entityManager).clear();
+        verify(mtService).invalidateAll();
     }
 
     @Test
@@ -247,46 +243,38 @@ class DbfImportServiceTest {
         List<Map<String, Object>> records = createMtRecords();
 
         when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
+        when(entityManager.merge(any(PlrMt.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateRead(mtFile, records);
 
-        when(entityManager.merge(any(PlrMt.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
-        doNothing().when(mtService).invalidateAll();
-
-        dbfImportService.importMt(testDbfPath);
+        dbfImportService.importMt();
 
         ArgumentCaptor<PlrMt> captor = ArgumentCaptor.forClass(PlrMt.class);
         verify(entityManager, times(2)).merge(captor.capture());
 
-        List<PlrMt> mergedEntities = captor.getAllValues();
-        PlrMt newEntity = mergedEntities.get(0);
-
+        PlrMt newEntity = captor.getAllValues().get(0);
         assertEquals("MT000", newEntity.getKmt());
         assertEquals("Material 0", newEntity.getSnm());
         assertEquals("pcs", newEntity.getEdu());
         assertEquals(20.5, newEntity.getPers());
         assertEquals(5.0, newEntity.getRnd());
 
-        verify(mtService, times(1)).invalidateAll();
+        verify(entityManager).flush();
+        verify(entityManager).clear();
+        verify(mtService).invalidateAll();
     }
 
     @Test
     void testImportMt_WithException() {
         when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
-        doThrow(new RuntimeException("DBF read error"))
-                .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
 
-        assertThrows(RuntimeException.class, () -> {
-            dbfImportService.importMt(testDbfPath);
-        });
+        simulateReadFailure(mtFile);
+
+        assertThrows(RuntimeException.class, () -> dbfImportService.importMt());
+
+        verify(mtService).findAllAsMapByKmt();
+        verify(mtService, never()).invalidateAll();
     }
 
     // ==================== ТЕСТЫ importPp() ====================
@@ -295,37 +283,23 @@ class DbfImportServiceTest {
     void testImportPp_Success() {
         List<Map<String, Object>> records = createPpRecords(3);
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateRead(ppFile, records);
 
-        doNothing().when(ppService).deleteAll();
-        doNothing().when(entityManager).persist(any(PlrPp.class));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
+        dbfImportService.importPp();
 
-        dbfImportService.importPp(testDbfPath);
-
-        verify(ppService, times(1)).deleteAll();
+        verify(ppService).deleteAll();
         verify(entityManager, times(3)).persist(any(PlrPp.class));
-        verify(entityManager, times(1)).flush();
-        verify(entityManager, times(1)).clear();
+        verify(entityManager).flush();
+        verify(entityManager).clear();
     }
 
     @Test
     void testImportPp_WithException() {
-        doThrow(new RuntimeException("DBF read error"))
-                .when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateReadFailure(ppFile);
 
-        doNothing().when(ppService).deleteAll();
+        assertThrows(RuntimeException.class, () -> dbfImportService.importPp());
 
-        assertThrows(RuntimeException.class, () -> {
-            dbfImportService.importPp(testDbfPath);
-        });
+        verify(ppService).deleteAll();
     }
 
     // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
@@ -410,46 +384,15 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testFindMemoFile_ShouldReturnNullForInvalidPath() throws Exception {
-        // Используем рефлексию для доступа к приватному методу
-        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
-        method.setAccessible(true);
-
-        // Тест с null
-        String result1 = (String) method.invoke(dbfImportService, (String) null);
-        assertNull(result1);
-
-        // Тест с пустым путем
-        String result2 = (String) method.invoke(dbfImportService, "");
-        assertNull(result2);
-
-        // Тест с невалидным расширением
-        String result3 = (String) method.invoke(dbfImportService, "test.txt");
-        assertNull(result3);
-    }
-
-    @Test
     void testImportSprog_BatchSizeTriggersMultipleFlushes() {
-        // 25 записей -> первый flush на 20-й, второй на оставшихся 5
         List<Map<String, Object>> records = createSprogRecords(25);
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateRead(sprogFile, records);
 
-        doNothing().when(sprogService).deleteAll();
-        doNothing().when(entityManager).persist(any(PlrSprog.class));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
+        dbfImportService.importSprog();
 
-        dbfImportService.importSprog(testDbfPath);
-
+        verify(sprogService).deleteAll();
         verify(entityManager, times(25)).persist(any(PlrSprog.class));
-        // один flush внутри цикла (на 20-й записи) + один после цикла на оставшихся 5
         verify(entityManager, times(2)).flush();
         verify(entityManager, times(2)).clear();
     }
@@ -458,21 +401,11 @@ class DbfImportServiceTest {
     void testImportPp_BatchSizeTriggersMultipleFlushes() {
         List<Map<String, Object>> records = createPpRecords(23);
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(1);
-            for (Map<String, Object> recordMap : records) {
-                consumer.accept(recordMap);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any());
+        simulateRead(ppFile, records);
 
-        doNothing().when(ppService).deleteAll();
-        doNothing().when(entityManager).persist(any(PlrPp.class));
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
+        dbfImportService.importPp();
 
-        dbfImportService.importPp(testDbfPath);
-
+        verify(ppService).deleteAll();
         verify(entityManager, times(23)).persist(any(PlrPp.class));
         verify(entityManager, times(2)).flush();
         verify(entityManager, times(2)).clear();
@@ -521,87 +454,24 @@ class DbfImportServiceTest {
     }
 
     @Test
-    void testFindMemoFile_ReturnsDbtWhenDbtExists() throws Exception {
-        java.nio.file.Path dbf = tempDir.resolve("data.dbf");
-        java.nio.file.Files.createFile(dbf);
-        java.nio.file.Path dbt = tempDir.resolve("data.DBT");
-        java.nio.file.Files.createFile(dbt);
-
-        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(dbfImportService, dbf.toString());
-
-        assertEquals(dbt.toString(), result);
-    }
-
-    @Test
-    void testFindMemoFile_ReturnsFptWhenOnlyFptExists() throws Exception {
-        java.nio.file.Path dbf = tempDir.resolve("data2.dbf");
-        java.nio.file.Files.createFile(dbf);
-        java.nio.file.Path fpt = tempDir.resolve("data2.FPT");
-        java.nio.file.Files.createFile(fpt);
-
-        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(dbfImportService, dbf.toString());
-
-        assertEquals(fpt.toString(), result);
-    }
-
-    @Test
-    void testFindMemoFile_ReturnsNullWhenNoMemoFileExists() throws Exception {
-        java.nio.file.Path dbf = tempDir.resolve("data3.dbf");
-        java.nio.file.Files.createFile(dbf);
-
-        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(dbfImportService, dbf.toString());
-
-        assertNull(result);
-    }
-
-    @Test
-    void testFindMemoFile_ReturnsNullForPathWithInvalidCharacters() throws Exception {
-        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("findMemoFile", String.class);
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(dbfImportService, "bad path with spaces!.dbf");
-
-        assertNull(result);
-    }
-
-    @Test
     void testImportRnpp_TruncatesLongKkom() {
         Map<String, Object> recordMap = new HashMap<>();
         recordMap.put("SYSN", 39001);
         recordMap.put("KMC", "TEST001");
         recordMap.put("KT", "KT001");
         recordMap.put("EMK", 18.0);
-        recordMap.put("KKOM", "VERYLONGKKOMVALUE"); // 17 символов, должно обрезаться до 10
+        recordMap.put("KKOM", "VERYLONGKKOMVALUE");
         recordMap.put("KOL1T", 10.0);
         recordMap.put("KOLVK", 5.0);
-        List<Map<String, Object>> records = List.of(recordMap);
 
-        doAnswer(invocation -> {
-            java.util.function.Consumer<Map<String, Object>> consumer = invocation.getArgument(3);
-            for (Map<String, Object> r : records) {
-                consumer.accept(r);
-            }
-            return null;
-        }).when(dbfReaderService).readDbfFileStreaming(eq(testDbfPath), any(), eq("CP866"), any());
+        simulateRead(rnppFile, List.of(recordMap));
 
-        doNothing().when(rnppService).deleteAll();
+        dbfImportService.importRnpp();
+
         ArgumentCaptor<PlrRnpp> captor = ArgumentCaptor.forClass(PlrRnpp.class);
-        doNothing().when(entityManager).persist(captor.capture());
-        doNothing().when(entityManager).flush();
-        doNothing().when(entityManager).clear();
+        verify(entityManager).persist(captor.capture());
 
-        dbfImportService.importRnpp(testDbfPath);
-
-        assertEquals("VERYLONGKK", captor.getValue().getKkom()); // ровно 10 символов
+        assertEquals("VERYLONGKK", captor.getValue().getKkom());
     }
 
     @Test

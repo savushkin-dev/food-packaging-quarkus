@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.time.Clock;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import java.nio.file.Path;
+import java.nio.file.Files;
 
 @Slf4j
 @ApplicationScoped
@@ -42,17 +45,25 @@ public class DbfImportService {
     private final SprogService sprogService;
     private final RnppService rnppService;
     private final Clock clock;
+    private final Path importDirectory;
+
+    private static final String SPROG_FILE = "BD_SPROG.DBF";
+    private static final String RNPP_FILE = "BD_RNPP.DBF";
+    private static final String MT_FILE = "NS_MT.DBF";
+    private static final String PP_FILE = "NS_PP.DBF";
 
     @Inject
     public DbfImportService(DbfReaderService dbfReaderService, EntityManager entityManager,
             MtService mtService, PpService ppService,
-            SprogService sprogService, RnppService rnppService) {
+            SprogService sprogService, RnppService rnppService,
+        @ConfigProperty(name = "dbf.import.directory") Path importDirectory) {
         this.dbfReaderService = dbfReaderService;
         this.entityManager = entityManager;
         this.mtService = mtService;
         this.ppService = ppService;
         this.sprogService = sprogService;
         this.rnppService = rnppService;
+        this.importDirectory = importDirectory;
         this.clock = Clock.systemDefaultZone();
     }
 
@@ -60,7 +71,9 @@ public class DbfImportService {
 
     @Transactional
     @TransactionConfiguration(timeout = 1800)
-    public void importSprog(String dbfPath) {
+    public void importSprog() {
+
+        Path dbfFile = getImportFile(SPROG_FILE);
         log.info("=== START SPROG IMPORT ===");
         long startTime = System.currentTimeMillis();
 
@@ -70,7 +83,7 @@ public class DbfImportService {
         List<PlrSprog> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
-            dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> recordMap) -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
                 try {
                     PlrSprog entity = mapToSprog(recordMap);
                     batch.add(entity);
@@ -102,7 +115,8 @@ public class DbfImportService {
 
     @Transactional()
     @TransactionConfiguration(timeout = 1800)
-    public void importRnpp(String dbfPath) {
+    public void importRnpp() {
+        Path dbfFile = getImportFile(RNPP_FILE);
         log.info("=== START Rnpp IMPORT ===");
         long startTime = System.currentTimeMillis();
 
@@ -112,9 +126,8 @@ public class DbfImportService {
         List<PlrRnpp> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
-            String memoPath = findMemoFile(dbfPath);
 
-            dbfReaderService.readDbfFileStreaming(dbfPath, memoPath, "CP866", (Map<String, Object> recordMap) -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
                 try {
                     if (((Number) recordMap.get("SYSN")).intValue() < MIN_SYSN) {
                         return;
@@ -151,7 +164,8 @@ public class DbfImportService {
 
     @Transactional
     @TransactionConfiguration(timeout = 1800)
-    public void importMt(String dbfPath) {
+    public void importMt() {
+        Path dbfFile = getImportFile(MT_FILE);
         log.info("=== START Mt IMPORT ===");
         long startTime = System.currentTimeMillis();
 
@@ -159,7 +173,7 @@ public class DbfImportService {
         List<PlrMt> allEntitiesToSave = new ArrayList<>();
 
         try {
-            dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> recordMap) -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
                 try {
                     PlrMt newEntity = mapToMt(recordMap);
                     String kmt = newEntity.getKmt();
@@ -199,7 +213,8 @@ public class DbfImportService {
 
     @Transactional
     @TransactionConfiguration(timeout = 1800)
-    public void importPp(String dbfPath) {
+    public void importPp() {
+        Path dbfFile = getImportFile(PP_FILE);
         log.info("=== START Pp IMPORT ===");
         long startTime = System.currentTimeMillis();
 
@@ -209,7 +224,7 @@ public class DbfImportService {
         List<PlrPp> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
-            dbfReaderService.readDbfFileStreaming(dbfPath, (Map<String, Object> recordMap) -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
                 try {
                     PlrPp entity = mapToPp(recordMap);
                     batch.add(entity);
@@ -365,39 +380,25 @@ public class DbfImportService {
 
     // ==================== HELPER METHODS ====================
 
+    private Path getImportFile(String fileName) {
+        Path importRoot = importDirectory.toAbsolutePath().normalize();
+        Path dbfFile = importRoot.resolve(fileName).normalize();
+
+        if (!dbfFile.startsWith(importRoot)) {
+            throw new IllegalArgumentException("Invalid DBF import file");
+        }
+
+        if (!Files.isRegularFile(dbfFile) || !Files.isReadable(dbfFile)) {
+            throw new IllegalArgumentException("DBF import file is unavailable");
+        }
+
+        return dbfFile;
+    }
+
     /**
      * Находит файл memo (DBT или FPT) по пути DBF файла
      */
-    private String findMemoFile(String dbfPath) {
-        if (dbfPath == null || dbfPath.trim().isEmpty()) {
-            return null;
-        }
-
-        if (!dbfPath.matches("^[a-zA-Z0-9._/\\\\:\\-]+$")) {
-            log.warn("Invalid DBF file path: {}", dbfPath);
-            return null;
-        }
-
-        if (!dbfPath.toLowerCase().endsWith(".dbf")) {
-            log.warn("File is not a DBF: {}", dbfPath);
-            return null;
-        }
-
-        String basePath = dbfPath.substring(0, dbfPath.lastIndexOf('.'));
-        String dbtPath = basePath + ".DBT";
-        String fptPath = basePath + ".FPT";
-
-        java.nio.file.Path dbtFilePath = java.nio.file.Paths.get(dbtPath);
-        java.nio.file.Path fptFilePath = java.nio.file.Paths.get(fptPath);
-
-        if (java.nio.file.Files.exists(dbtFilePath) && java.nio.file.Files.isRegularFile(dbtFilePath)) {
-            return dbtPath;
-        } else if (java.nio.file.Files.exists(fptFilePath) && java.nio.file.Files.isRegularFile(fptFilePath)) {
-            return fptPath;
-        }
-        return null;
-    }
-
+    
     private String getString(Map<String, Object> recordMap, String key) {
         Object value = recordMap.get(key);
         if (value == null) {
