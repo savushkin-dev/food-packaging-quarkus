@@ -113,7 +113,7 @@ class DbfReaderServiceTest {
         }
 
         // Формируем путь с path traversal
-        String separator = System.getProperty("file.separator");
+        String separator = FileSystems.getDefault().getSeparator();
         String pathWithTraversal = tempDir.toString() + separator + ".." + separator + "test.dbf";
 
         // Проверяем, что выбрасывается исключение с сообщением о path traversal
@@ -132,7 +132,7 @@ class DbfReaderServiceTest {
 
         assertThat(capturedRecords).hasSize(2);
 
-        Map<String, Object> firstRecord = capturedRecords.get(0);
+        Map<String, Object> firstRecord = capturedRecords.getFirst();
         assertThat(firstRecord)
                 .containsEntry("NAME", "John")
                 .containsEntry("AGE", new BigDecimal(30))
@@ -150,7 +150,7 @@ class DbfReaderServiceTest {
                 consumer);
 
         assertThat(capturedRecords).hasSize(2);
-        Map<String, Object> firstRecord = capturedRecords.get(0);
+        Map<String, Object> firstRecord = capturedRecords.getFirst();
         assertThat(firstRecord)
                 .containsEntry("NAME", "John")
                 .containsEntry("AGE", new BigDecimal(30));
@@ -184,7 +184,7 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> recordMap = capturedRecords.get(0);
+        Map<String, Object> recordMap = capturedRecords.getFirst();
         assertThat(recordMap.get("STR")).isInstanceOf(String.class);
         assertThat(recordMap.get("NUM")).isInstanceOf(BigDecimal.class);
         assertThat(recordMap.get("LOG")).isInstanceOf(Boolean.class);
@@ -294,7 +294,7 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> recordMap = capturedRecords.get(0);
+        Map<String, Object> recordMap = capturedRecords.getFirst();
         assertThat(recordMap.get("NULL_FIELD")).isIn(null, " ", "");
     }
 
@@ -305,7 +305,7 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> recordMap = capturedRecords.get(0);
+        Map<String, Object> recordMap = capturedRecords.getFirst();
         assertThat(recordMap.get("NAME")).isIn(null, "", " ");
         assertThat(recordMap.get("AGE")).isIn(null, 0);
     }
@@ -395,7 +395,7 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        String largeText = (String) capturedRecords.get(0).get("LARGE_TEXT");
+        String largeText = (String) capturedRecords.getFirst().get("LARGE_TEXT");
         assertThat(largeText).hasSize(250);
     }
 
@@ -617,7 +617,7 @@ class DbfReaderServiceTest {
 
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
-        Map<String, Object> recordMap = capturedRecords.get(0);
+        Map<String, Object> recordMap = capturedRecords.getFirst();
         // LinkedHashMap должен сохранять порядок полей как в DBF-структуре
         List<String> keysInOrder = new ArrayList<>(recordMap.keySet());
         assertThat(keysInOrder).containsExactly("STR", "NUM", "LOG");
