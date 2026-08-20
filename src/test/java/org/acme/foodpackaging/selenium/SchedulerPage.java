@@ -191,13 +191,6 @@ public class SchedulerPage {
         dismissResultDialogIfPresent();
     }
 
-    public void clickSendToWork() {
-        waitUntilOverlayGone();
-        clickByText("Отправить в работу");
-        confirmActionDialogIfPresent();
-        dismissResultDialogIfPresent();
-    }
-
     public boolean isConfirmationDialogPresent(String expectedTextFragment) {
         return !driver.findElements(By.xpath("//*[contains(text(),'" + expectedTextFragment + "')]")).isEmpty();
     }
