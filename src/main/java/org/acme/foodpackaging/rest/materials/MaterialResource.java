@@ -101,6 +101,12 @@ public class MaterialResource {
         if (value == null) {
             return null;
         }
-        return value.replaceAll("[\\r\\n\\t\\f\\u007F]", "_");
+        String normalized = value.replace('\r', '_').replace('\n', '_');
+        StringBuilder sanitized = new StringBuilder(normalized.length());
+        for (int i = 0; i < normalized.length(); i++) {
+            char c = normalized.charAt(i);
+            sanitized.append(Character.isISOControl(c) ? '_' : c);
+        }
+        return sanitized.toString();
     }
 }
