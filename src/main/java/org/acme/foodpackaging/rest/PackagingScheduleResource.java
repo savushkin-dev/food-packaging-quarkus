@@ -213,8 +213,7 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, schedule);
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, ApiFields.REFRESH_OK
-        )).build();
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK)).build();
     }
 
     @POST
@@ -298,7 +297,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
-        if (solution == null ) {
+        if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
@@ -376,11 +375,13 @@ public class PackagingScheduleResource {
     @Path("dailyProductions")
     @Produces(MediaType.APPLICATION_JSON)
     public Response dailyProductions(
-            @HeaderParam("X-Session-Id") String sessionId, DailyProductionsDto request) {
+            @HeaderParam("X-Session-Id") String sessionId,
+            @QueryParam("selectedDate") String selectedDate,
+            @QueryParam("shiftNumber") Integer shiftNumber) {
 
-        if (request  == null) {
+        if (selectedDate == null || selectedDate.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, "date query parameter is required"))
+                    .entity(Map.of(ApiFields.ERROR, "selectedDate is required"))
                     .build();
         }
 
@@ -392,8 +393,10 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Map<String, LineProductionDto> productions =
-                lineService.calculateLineProductions(solution.getLines(), request.selectedDate(), request.shiftNumber());
+        Map<String, LineProductionDto> productions = lineService.calculateLineProductions(
+                solution.getLines(),
+                LocalDate.parse(selectedDate),
+                shiftNumber);
 
         return Response.ok(productions).build();
     }
