@@ -1,7 +1,7 @@
 package scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
@@ -299,16 +299,16 @@ class ScheduleUtilsTest {
 
     @Test
     void convertsMapToList() {
-        DbJobRow row1 = new DbJobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
-        DbJobRow row2 = new DbJobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
-        DbJobRow row3 = new DbJobRow(now, "KMC3", 3, 30, 300.0, now, now, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
+        JobRow row1 = new JobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        JobRow row2 = new JobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        JobRow row3 = new JobRow(now, "KMC3", 3, 30, 300.0, now, now, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
 
-        Map<Long, DbJobRow> rows = new HashMap<>();
+        Map<Long, JobRow> rows = new HashMap<>();
         rows.put(1L, row1);
         rows.put(2L, row2);
         rows.put(3L, row3);
 
-        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);
+        List<JobRow> result = ScheduleUtils.getJobRowList(rows);
 
         assertNotNull(result);
         assertEquals(3, result.size());
@@ -319,7 +319,7 @@ class ScheduleUtilsTest {
 
     @Test
     void returnEmptyListForNullMap() {
-        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(null);
+        List<JobRow> result = ScheduleUtils.getJobRowList(null);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -327,9 +327,9 @@ class ScheduleUtilsTest {
 
     @Test
     void returnEmptyListForEmptyMap() {
-        Map<Long, DbJobRow> emptyMap = new HashMap<>();
+        Map<Long, JobRow> emptyMap = new HashMap<>();
 
-        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(emptyMap);
+        List<JobRow> result = ScheduleUtils.getJobRowList(emptyMap);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -337,12 +337,12 @@ class ScheduleUtilsTest {
 
     @Test
     void returnListWithAllValues() {
-        DbJobRow row1 = new DbJobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
-        DbJobRow row2 = new DbJobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        JobRow row1 = new JobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
+        JobRow row2 = new JobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
 
-        Map<Long, DbJobRow> rows = Map.of(1L, row1, 2L, row2);
+        Map<Long, JobRow> rows = Map.of(1L, row1, 2L, row2);
 
-        List<DbJobRow> result = ScheduleUtils.getDbJobRowList(rows);
+        List<JobRow> result = ScheduleUtils.getJobRowList(rows);
 
         assertEquals(2, result.size());
         // Verify all values from map are in the list

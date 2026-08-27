@@ -3,7 +3,7 @@ package service.builder;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
@@ -45,7 +45,7 @@ class ScheduleBuilderTest {
 
         List<Line> lines = List.of(new Line(), new Line());
         List<Product> products = List.of(new Product("VAN", "Vanilla"));
-        List<DbJobRow> jobRows = List.of();
+        List<JobRow> jobRows = List.of();
 
         when(lineService.getLines()).thenReturn(lines);
         when(jobService.buildJobsOnLines(any())).thenReturn(jobRows);

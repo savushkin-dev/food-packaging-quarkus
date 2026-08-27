@@ -1,9 +1,10 @@
 package builder;
 
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+
 import java.time.LocalDateTime;
 
-public class DbJobRowBuilder {
+public class JobRowBuilder {
 
     private final LocalDateTime dti = LocalDateTime.of(2025, 1, 15, 9, 0);
     private String kmc = "KMC1";
@@ -20,65 +21,65 @@ public class DbJobRowBuilder {
     private Integer placePlan = 100;
     private Integer shift = 1;
 
-    public static DbJobRowBuilder aRow() {
-        return new DbJobRowBuilder();
+    public static JobRowBuilder aRow() {
+        return new JobRowBuilder();
     }
 
-    public DbJobRowBuilder withLineId(String lineId) {
+    public JobRowBuilder withLineId(String lineId) {
         this.lineId = lineId;
         return this;
     }
 
-    public DbJobRowBuilder withSnpz(Long snpz) {
+    public JobRowBuilder withSnpz(Long snpz) {
         this.snpz = snpz;
         return this;
     }
 
-    public DbJobRowBuilder withKmc(String kmc) {
+    public JobRowBuilder withKmc(String kmc) {
         this.kmc = kmc;
         return this;
     }
 
-    public DbJobRowBuilder withEmk(Integer emk) {
+    public JobRowBuilder withEmk(Integer emk) {
         this.emk = emk;
         return this;
     }
 
-    public DbJobRowBuilder withNp(Integer np) {
+    public JobRowBuilder withNp(Integer np) {
         this.np = np;
         return this;
     }
 
-    public DbJobRowBuilder withQuantity(Integer quantity) {
+    public JobRowBuilder withQuantity(Integer quantity) {
         this.quantity = quantity;
         return this;
     }
 
-    public DbJobRowBuilder withPriority(Integer priority) {
+    public JobRowBuilder withPriority(Integer priority) {
         this.priority = priority;
         return this;
     }
 
-    public DbJobRowBuilder withDuration(Integer duration) {
+    public JobRowBuilder withDuration(Integer duration) {
         this.duration = duration;
         return this;
     }
 
-    public DbJobRowBuilder withPlacePlan(Integer placePlan) {
+    public JobRowBuilder withPlacePlan(Integer placePlan) {
         this.placePlan = placePlan;
         return this;
     }
 
-    public DbJobRowBuilder withShift(Integer shift) {
+    public JobRowBuilder withShift(Integer shift) {
         this.shift = shift;
         return this;
     }
 
-    public DbJobRow build() {
+    public JobRow build() {
         String shortName = "Test Job";
         double mass = 2.0;
 
-        return new DbJobRow(
+        return new JobRow(
                 dti, kmc, np, quantity, mass,
                 start, end, duration,
                 snpz, priority,
@@ -87,3 +88,4 @@ public class DbJobRowBuilder {
         );
     }
 }
+

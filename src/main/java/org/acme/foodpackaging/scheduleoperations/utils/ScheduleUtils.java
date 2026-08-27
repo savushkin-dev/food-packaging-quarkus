@@ -3,7 +3,7 @@ package org.acme.foodpackaging.scheduleoperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.DowntimeData;
 
 import java.time.Duration;
@@ -159,7 +159,7 @@ public class ScheduleUtils {
      * @param rows Map of job rows
      * @return List of job rows
      */
-     public static List<DbJobRow> getDbJobRowList(Map<Long, DbJobRow> rows) {
+     public static List<JobRow> getJobRowList(Map<Long, JobRow> rows) {
         if (rows == null || rows.isEmpty()) {
             return List.of();
         }

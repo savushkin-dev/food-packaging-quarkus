@@ -3,8 +3,8 @@ package service.jobs;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.CameraFactRow;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,13 +43,13 @@ class JobInfoServiceTest {
         product.setEan13("4810268053150");
         product.setMass(2.5);
 
-        DbJobRow dbJobRow = new DbJobRow(
+        JobRow dbJobRow = new JobRow(
                 NOW, "KMC001", 111, 100, 2.5,
                 NOW, NOW, 60, SNPZ, 1,
                 "L1", "Product Name", 19, 100, 0
         );
 
-        job = Job.fromDbJobRow(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
+        job = Job.fromJobRow(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
         job.setEmk(EMK);
         job.setDti(NOW);
         schedule = new PackagingSchedule();

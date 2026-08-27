@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.persistence.converter.BooleanToIntegerConverter;
-import org.acme.foodpackaging.record.DbJobRow;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,9 +17,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "BD_VZPMC", schema = "dbo")
 @SqlResultSetMapping(
-        name = "DbJobRowMapping",
+        name = "JobRowMapping",
         classes = @ConstructorResult(
-                targetClass = DbJobRow.class,
+                targetClass = JobRow.class,
                 columns = {
                         @ColumnResult(name = "DTI", type = LocalDateTime.class),
                         @ColumnResult(name = "KMC", type = String.class),
