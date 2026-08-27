@@ -21,8 +21,6 @@ class SchedulerEmptyDayTest {
     static void setUp() {
         driver = SchedulerPage.createLocalChromeDriver();
         page = new SchedulerPage(driver);
-        page.open();
-        page.selectDate(TARGET_DATE);
     }
 
     @AfterAll
@@ -32,48 +30,91 @@ class SchedulerEmptyDayTest {
 
     @Test
     @Order(1)
-    void shouldLoadPlanAndRunPlanningFromNeighborDay() {
-        page.clickSelectAllForAnyAvailableTaskDate();
-        page.clickLoadPlan();
-        page.clickStartPlanning();
-        page.clickStopPlanning();
+    void shouldLoadSchedulerPageWithoutErrorsAndWithPlanningArea() {
+        page.open();
+        assertThat(page.hasNoErrorMessages())
+                .as("При загрузке страницы не должно быть сообщений об ошибке")
+                .isTrue();
+        assertThat(page.isPlanningAreaWithLinesLoaded())
+                .as("Должна быть загружена область планирования с линиями")
+                .isTrue();
     }
 
     @Test
     @Order(2)
-    void shouldOpenAndCloseLineSettingsModal() {
-        page.openLineSettings();
-        assertThat(page.isLineSettingsModalOpen())
-                .as("Модалка настроек линий должна открыться")
+    void shouldSelectDateAndShowSelectAllButtons() {
+        page.selectDate(TARGET_DATE);
+        assertThat(page.isDateSelected(TARGET_DATE))
+                .as("Дата " + TARGET_DATE + " должна быть выбрана")
                 .isTrue();
-
-        page.closeLineSettings();
-        assertThat(page.isLineSettingsModalOpen())
-                .as("Модалка настроек линий должна закрыться")
-                .isFalse();
+        assertThat(page.areSelectAllButtonsPresent())
+                .as("Должны быть в наличии кнопки \"Отметить все\"")
+                .isTrue();
     }
 
     @Test
     @Order(3)
-    void shouldSwitchToFactViewMode() {
-        page.clickViewModeTab("Факт");
-        assertThat(page.isViewModeTabActive("Факт"))
-                .as("Вкладка \"Факт\" должна стать активной после клика")
+    void shouldOpenLineSettingsWithStartAndMaxTimeThenClose() {
+        page.openLineSettings();
+        assertThat(page.isLineSettingsModalOpen())
+                .as("Диалог настройки линий должен открыться")
                 .isTrue();
+        assertThat(page.lineSettingsHaveStartAndMaxTimeForEachLine())
+                .as("Для каждой линии должны быть заданы дата начала и максимальное время")
+                .isTrue();
+
+        page.closeLineSettings();
+        assertThat(page.isLineSettingsModalOpen())
+                .as("Диалог настройки линий должен закрыться")
+                .isFalse();
     }
 
     @Test
     @Order(4)
-    void shouldSortBatchesWithoutError() {
-        page.clickSort();
+    void shouldSelectAllProductsForTargetDate() {
+        page.clickSelectAllForTaskDateAndWait(TARGET_DATE);
+        assertThat(page.areAllRowCheckboxesCheckedForTaskDate(TARGET_DATE))
+                .as("Все галочки продуктов за " + TARGET_DATE + " должны быть установлены")
+                .isTrue();
     }
 
     @Test
     @Order(5)
-    void shouldOpenDetailsPanelWithReadableErrorsCount() {
-        page.clickDetails();
-        assertThat(page.getErrorsCount())
-                .as("Счётчик ошибок должен быть доступен и читаться как число")
-                .isGreaterThanOrEqualTo(0);
+    void shouldLoadPlanSuccessfully() {
+        page.clickLoadPlan();
+        assertThat(page.isLoadPlanSuccessful())
+                .as("Дозагрузка плана должна пройти без ошибок")
+                .isTrue();
+    }
+
+    @Test
+    @Order(6)
+    void shouldStartPlanningAndShowDisabledStopButton() {
+        page.clickStartPlanning();
+        assertThat(page.isStopButtonShownAndInitiallyDisabled())
+                .as("После нажатия \"Планировать\" кнопка должна стать \"Остановить\" и быть неактивной")
+                .isTrue();
+    }
+
+    @Test
+    @Order(7)
+    void shouldWaitAndStopPlanningThenShowStartButtonAgain() {
+        page.waitUntilStopButtonActive();
+        page.clickStopPlanning();
+        assertThat(page.isStartButtonShownAfterStop())
+                .as("После остановки кнопка должна снова называться \"Планировать\"")
+                .isTrue();
+    }
+
+    @Test
+    @Order(8)
+    void shouldReadResultIndicatorsAfterPlanning() {
+        int errors = page.getErrorsCount();
+        int downtime = page.getDowntimeMinutes();
+        int executionTime = page.getExecutionTimeMinutes();
+
+        assertThat(errors).as("Количество ошибок должно быть читаемым числом").isGreaterThanOrEqualTo(0);
+        assertThat(downtime).as("Время простоя должно быть читаемым числом").isGreaterThanOrEqualTo(0);
+        assertThat(executionTime).as("Время выполнения должно быть читаемым числом").isGreaterThanOrEqualTo(0);
     }
 }
