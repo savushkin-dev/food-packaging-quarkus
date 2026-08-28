@@ -2,6 +2,7 @@ package service.jobs;
 
 import builder.*;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
@@ -59,17 +60,18 @@ class JobListAssemblerTest {
 
     @Test
     void assemble_buildsProductionJob() {
-        JobRow dbRow = JobRowBuilder.aRow().withSnpz(123L).withKmc("P1").withLineId("L1").build();
-        Job producedJob = JobTestBuilder.aJob().withId("123").build();
+        JobRow jobRow = JobRowBuilder.aRow().withSnpz(123L).withKmc("P1").withLineId("L1").build();
+        Line line = new Line("L1", "Line1");
+        Job producedJob = JobTestBuilder.aJob().withLineId("L1").withId("123").withLine(line).withLineIdFact("L1").build();
 
-        when(jobRepository.getJobRowMap(any(), any())).thenReturn(Map.of(123L, dbRow));
+        when(jobRepository.getJobRowMap(any(), any())).thenReturn(Map.of(123L, jobRow));
         when(jobRepository.getMaintenanceData(any(), any())).thenReturn(Collections.emptyList());
         when(jobRepository.loadDelayDurationRows(any(), any()))
                 .thenReturn(Map.of(123L, new DelayRow(2L, 123L, "Delay note", 22)));
         when(jobRepository.loadCleaningDelayDurationRows(any(), any()))
                 .thenReturn(Map.of(123L, new DelayRow(2L, 123L, "Cleaning delay note", 12)));
         when(jobRepository.getCleaningData(any(), any())).thenReturn(Collections.emptyMap());
-        when(jobFactory.createProductionJob(eq(dbRow), any())).thenReturn(producedJob);
+        when(jobFactory.createProductionJob(eq(jobRow), any())).thenReturn(producedJob);
 
         JobListAssembler.JobAssemblyResult result = jobListAssembler.assemble(schedule);
 
@@ -86,7 +88,7 @@ class JobListAssemblerTest {
     void assemble_buildsMaintenanceJob() {
         MaintenanceRow maintenanceRow = MaintenanceRowBuilder.aRow()
                 .withFId(111L).withEventTypeId(7).withDuration(60).withNote("Maintenance note").build();
-        Job maintenanceJob = JobTestBuilder.aJob().withId("111").asMaintenance().build();
+        Job maintenanceJob = JobTestBuilder.aJob().withId("111").withLineId("L1").withLineIdFact("L1").asMaintenance().build();
 
         when(jobRepository.getMaintenanceData(any(), any())).thenReturn(List.of(maintenanceRow));
         when(jobRepository.getJobRowMap(any(), any())).thenReturn(Collections.emptyMap());

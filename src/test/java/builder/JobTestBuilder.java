@@ -22,6 +22,11 @@ public class JobTestBuilder {
         return this;
     }
 
+    public JobTestBuilder withLineId(String id) {
+        job.setLineId(id);
+        return this;
+    }
+
     public JobTestBuilder withProduct(Product product) {
         job.setProduct(product);
         return this;
