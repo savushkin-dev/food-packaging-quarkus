@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,8 +52,8 @@ class JobEnrichmentServiceTest {
     void enrichCameraFacts_doesNothing_whenNoJobsNeedCamera() {
         Job jobWithCamera = JobTestBuilder.aJob().withId("1")
                 .withIdBatch("B1")
-                .withCameraStart(LocalDateTime.now())
-                .withCameraEnd(LocalDateTime.now())
+                .withCameraStart(LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0))
+                .withCameraEnd(LocalDateTime.of(2025, Month.JANUARY, 1, 9, 0))
                 .build();
 
         schedule.setJobs(List.of(jobWithCamera));
@@ -80,8 +81,8 @@ class JobEnrichmentServiceTest {
                 .withIdBatch("B1").build();
         schedule.setJobs(List.of(job));
 
-        LocalDateTime start = LocalDateTime.of(2025, 1, 1, 8, 0);
-        LocalDateTime end = LocalDateTime.of(2025, 1, 1, 9, 0);
+        LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0);
+        LocalDateTime end = LocalDateTime.of(2025, Month.JANUARY, 1, 9, 0);
         CameraValue cameraValue = new CameraValue(start, end);
 
         when(jobRepository.getCameraFactRowMap(List.of(job))).thenReturn(Map.of("B1", cameraValue));
@@ -99,7 +100,7 @@ class JobEnrichmentServiceTest {
 
     @Test
     void enrichCameraFacts_fillsOnlyMissingField_whenStartAlreadyPresent() throws CameraDataReadException {
-        LocalDateTime existingStart = LocalDateTime.of(2025, 1, 1, 7, 0);
+        LocalDateTime existingStart = LocalDateTime.of(2025, Month.JANUARY, 1, 7, 0);
 
         Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1")
                 .withCameraStart(existingStart)
@@ -107,8 +108,8 @@ class JobEnrichmentServiceTest {
                 .build();
         schedule.setJobs(List.of(job));
 
-        LocalDateTime end = LocalDateTime.of(2025, 1, 1, 9, 0);
-        CameraValue cameraValue = new CameraValue(LocalDateTime.of(2025, 1, 1, 8, 0), end);
+        LocalDateTime end = LocalDateTime.of(2025, Month.JANUARY, 1, 9, 0);
+        CameraValue cameraValue = new CameraValue(LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0), end);
 
         when(jobRepository.getCameraFactRowMap(List.of(job))).thenReturn(Map.of("B1", cameraValue));
 

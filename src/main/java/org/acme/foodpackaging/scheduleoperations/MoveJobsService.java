@@ -21,7 +21,7 @@ public class MoveJobsService {
      * Выполняет перемещение подпоследовательности задач.
      * Бросает IllegalArgumentException при некорректных входных данных.
      */
-    public PackagingSchedule moveJobs(PackagingSchedule schedule, MoveJobsRequest request) {
+    public void moveJobs(PackagingSchedule schedule, MoveJobsRequest request) {
         Objects.requireNonNull(schedule, "schedule must not be null");
         Objects.requireNonNull(request, "request must not be null");
 
@@ -31,15 +31,14 @@ public class MoveJobsService {
         boolean sameLine = fromLine.getId().equals(toLine.getId());
 
         int fromIndex = request.getFromIndex();
-        int count = Math.max(0, request.getCount());
+        int count = request.getCount();
         List<Job> fromJobs = fromLine.getJobs();
         if (fromJobs == null) fromJobs = Collections.emptyList();
 
-        int fromEnd = Math.min(fromIndex + count, fromJobs.size());
-
-        if (fromIndex < 0 || fromIndex >= fromJobs.size() || fromIndex >= fromEnd) {
+        if (fromIndex < 0 || count <= 0 || fromIndex >= fromJobs.size()) {
             throw new IllegalArgumentException("Nothing to move: invalid fromIndex/count");
         }
+        int fromEnd = (int) Math.min((long) fromIndex + (long) count, fromJobs.size());
 
         if (!sameLine) {
             for (int i = fromIndex; i < fromEnd; i++) {
@@ -60,7 +59,7 @@ public class MoveJobsService {
         List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, insertIndex);
 
         if (moved.isEmpty()) {
-            return schedule;
+            return;
         }
 
         fixLineJobs(fromLine);
@@ -71,23 +70,22 @@ public class MoveJobsService {
             fixPinnedJobs(toLine);
         }
 
-        return schedule;
     }
     /**
      * Перемещает подпоследовательность задач между линиями или внутри одной линии.
-     *
+     * <p>
      * Поведение зависит от того, совпадают ли линии:
-     *
+     * <p>
      * 1) Перемещение внутри одной линии:
      *    - Работа ведётся с одним списком задач
      *    - Подсписок [fromIndex, fromIndex + count) удаляется
      *    - Затем он вставляется в позицию insertIndex
      *    - Индексы рассчитываются в одном и том же списке
-     *
+     * <p>
      * 2) Перемещение между разными линиями:
      *    - Подсписок удаляется из списка исходной линии
      *    - Затем вставляется в список целевой линии
-     *
+     * <p>
      * Метод работает на копиях списков, чтобы избежать побочных эффектов,
      * и в конце устанавливает обновлённые списки обратно в объекты Line.
      *
@@ -105,12 +103,12 @@ public class MoveJobsService {
 
         boolean sameLine = fromLine.getId().equals(toLine.getId());
 
-        int fromEnd = Math.min(fromIndex + Math.max(0, count),
-                fromLine.getJobs().size());
-
-        if (fromIndex < 0 || fromIndex >= fromLine.getJobs().size() || fromIndex >= fromEnd) {
+        int fromSize = fromLine.getJobs().size();
+        if (fromIndex < 0 || count <= 0 || fromIndex >= fromSize) {
             return Collections.emptyList();
         }
+        
+        int fromEnd = (int) Math.min((long) fromIndex + (long) count, fromSize);
         // =======================
         // SAME LINE
         // =======================
