@@ -31,7 +31,9 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
+
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @Path("schedule")
@@ -64,7 +66,7 @@ public class PackagingScheduleResource {
     @Path("downtimePeriods/{idBatch}")
     @Produces(MediaType.APPLICATION_JSON)
     public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
-            @QueryParam("duration") Integer duration) {
+                                                   @QueryParam("duration") Integer duration) {
         if (idBatch == null || idBatch.isBlank()) {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
         }
@@ -371,11 +373,27 @@ public class PackagingScheduleResource {
                 ApiFields.MESSAGE, "Line end time updated")).build();
     }
 
-    @POST
+    @GET
     @Path("dailyProductions")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response dailyProductions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+    public Response dailyProductions(
+            @HeaderParam("X-Session-Id") String sessionId,
+            @QueryParam("selectedDate") String selectedDateParam) {
+
+        if (selectedDateParam == null || selectedDateParam.isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, "selectedDate query parameter is required"))
+                    .build();
+        }
+
+        LocalDate selectedDate;
+        try {
+            selectedDate = LocalDate.parse(selectedDateParam);
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, "selectedDate must be in ISO format (yyyy-MM-dd)"))
+                    .build();
+        }
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -385,8 +403,8 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Map<String, LineProductionDto> productions = lineService.calculateLineProductions(solution.getLines(),
-                loadDTO.getStartDate());
+        Map<String, LineProductionDto> productions =
+                lineService.calculateLineProductions(solution.getLines(), selectedDate);
 
         return Response.ok(productions).build();
     }
@@ -546,7 +564,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("maintenance")
     public Response addMaintenance(MaintenanceRequest request,
-            @HeaderParam("X-Session-Id") String sessionId) {
+                                   @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         PackagingSchedule updated;
@@ -625,7 +643,7 @@ public class PackagingScheduleResource {
      * Сохраняет план в json определенной версии
      */
     @POST
-    @Consumes({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     @Path("saveVersion")
     public Response saveVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
@@ -647,7 +665,7 @@ public class PackagingScheduleResource {
     }
 
     @PUT
-    @Consumes({ MediaType.APPLICATION_JSON })
+    @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     @Path("analyze")
     public ScoreAnalysis<HardMediumSoftLongScore> analyze(
