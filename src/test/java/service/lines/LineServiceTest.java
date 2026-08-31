@@ -286,7 +286,7 @@ class LineServiceTest {
         LineProductionDto dto = result.get(String.valueOf(l1.getId()));
         assertEquals(120.0, dto.shift1().massa()); // 200 * 0.6, попадает в конец 1-й смены
         assertEquals(0.0, dto.shift2().massa()); // остаток job'а после границы не считается отдельно — это оставшаяся
-                                                 // часть той же задачи, PM_LOG уже разделил её через success_rate
+
         assertEquals(120.0, dto.totalMassa());
     }
 }
