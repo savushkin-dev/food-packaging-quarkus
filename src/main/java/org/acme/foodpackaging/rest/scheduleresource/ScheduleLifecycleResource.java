@@ -23,9 +23,6 @@ import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.rest.ScheduleSessionService;
-import org.acme.foodpackaging.service.builder.ScheduleBuilder;
-import org.acme.foodpackaging.service.builder.ScheduleBuilderByVersion;
-
 import java.util.Map;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.getDowntimeData;
@@ -141,7 +138,7 @@ public class ScheduleLifecycleResource {
         PackagingSchedule bestSolution = scheduleSessionService.requireScheduleForRead(sessionId);
 
         jobSaveService.saveJobsByType(bestSolution);
-        DowntimeData response = getDowntimeData(bestSolution); // TODO: уточнить источник метода
+        DowntimeData response = getDowntimeData(bestSolution);
 
         return Response.ok(response).build();
     }

@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -29,7 +30,7 @@ class JobNoteServiceTest {
 
     @BeforeEach
     void setUp() {
-        LocalDateTime lineStartDateTime = LocalDateTime.of(2025, 1, 15, 8, 0);
+        LocalDateTime lineStartDateTime = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
         job = JobTestBuilder.aJob().withId("J1").build();
 
         schedule = ScheduleTestBuilder.aSchedule()

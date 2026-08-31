@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +42,7 @@ class ScheduleInitializerTest {
 
     @Test
     void buildSchedule() {
-        LocalDate date = LocalDate.of(2025, 12, 24);
+        LocalDate date = LocalDate.of(2025, Month.DECEMBER, 24);
 
         List<Line> lines = List.of(new Line(), new Line());
         List<Product> products = List.of(new Product("VAN", "Vanilla"));

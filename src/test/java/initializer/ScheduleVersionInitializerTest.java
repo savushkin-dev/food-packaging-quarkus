@@ -12,13 +12,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.Month;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ScheduleVersionInitializerTest {
+class ScheduleVersionInitializerTest {
 
     @InjectMocks
     ScheduleVersionInitializer scheduleVersionInitializer;
@@ -31,7 +32,7 @@ public class ScheduleVersionInitializerTest {
     @Test
     void buildScheduleByVersion() {
 
-        LocalDate dti = LocalDate.of(2025, 12, 24);
+        LocalDate dti = LocalDate.of(2025, Month.DECEMBER, 24);
         String version = "v1";
 
         SolutionByVersion solutionWrapper =

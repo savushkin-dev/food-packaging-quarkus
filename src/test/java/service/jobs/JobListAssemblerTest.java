@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ class JobListAssemblerTest {
 
     @BeforeEach
     void setUp() {
-        LocalDateTime lineStartDateTime = LocalDateTime.of(2025, 1, 15, 8, 0);
+        LocalDateTime lineStartDateTime = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
         Job job = JobTestBuilder.aJob().withId("J1").build();
 
         schedule = ScheduleTestBuilder.aSchedule()

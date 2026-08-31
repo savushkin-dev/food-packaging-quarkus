@@ -3,13 +3,14 @@ package builder;
 import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 
 public class JobRowBuilder {
 
-    private final LocalDateTime dti = LocalDateTime.of(2025, 1, 15, 9, 0);
+    private final LocalDateTime dti = LocalDateTime.of(2025, Month.JANUARY, 15, 9, 0);
     private String kmc = "KMC1";
     private final LocalDateTime start = dti;
-    private final LocalDateTime end = LocalDateTime.of(2025, 1, 15, 9, 30);
+    private final LocalDateTime end = LocalDateTime.of(2025, Month.JANUARY, 15, 9, 30);
     private Long snpz = 123L;
     private String lineId = "L1";
 
