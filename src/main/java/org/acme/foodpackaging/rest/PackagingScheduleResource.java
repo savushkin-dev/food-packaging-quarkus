@@ -31,7 +31,6 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -214,8 +213,7 @@ public class PackagingScheduleResource {
         repository.writeForSession(sessionId, schedule);
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, ApiFields.REFRESH_OK
-        )).build();
+                ApiFields.MESSAGE, ApiFields.REFRESH_OK)).build();
     }
 
     @POST
@@ -299,7 +297,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
-        if (solution == null ) {
+        if (solution == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
@@ -373,17 +371,11 @@ public class PackagingScheduleResource {
                 ApiFields.MESSAGE, "Line end time updated")).build();
     }
 
-    @GET
+    @POST
     @Path("dailyProductions")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response dailyProductions(
-            @HeaderParam("X-Session-Id") String sessionId, DailyProductionsDto request) {
-
-        if (request  == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, "date query parameter is required"))
-                    .build();
-        }
+    public Response dailyProductions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -393,8 +385,8 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Map<String, LineProductionDto> productions =
-                lineService.calculateLineProductions(solution.getLines(), request.selectedDate(), request.shiftNumber());
+        Map<String, LineProductionDto> productions = lineService.calculateLineProductions(solution.getLines(),
+                loadDTO.getStartDate());
 
         return Response.ok(productions).build();
     }
