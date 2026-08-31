@@ -7,9 +7,10 @@ import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
+import org.acme.foodpackaging.persistence.constants.DelayEventType;
 import org.acme.foodpackaging.persistence.load.CameraDataLoader;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;
@@ -45,7 +46,7 @@ public class JobRepository {
      * @param to   End date (inclusive)
      * @return Map of job rows by SNPZ
      */
-    public Map<Long, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to) {
+    public Map<Long, JobRow> getJobRowMap(LocalDate from, LocalDate to) {
         return jobDBLoader.loadJobRowMap(
                 from.atStartOfDay(), to.atStartOfDay(), ksk);
     }
@@ -82,10 +83,8 @@ public class JobRepository {
      * @param to   End date (inclusive)
      * @return Map of delay rows by Event 10
      */
-    public Map<Long, DelayRow> loadDelayDurationRows(
-            LocalDate from,
-            LocalDate to) {
-        return jobDBLoader.loadDelayRowsByType(10, from.atStartOfDay(), to.atStartOfDay());
+    public Map<Long, DelayRow> loadDelayDurationRows(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadDelayRowsByType(DelayEventType.PACKAGING, from.atStartOfDay(), to.atStartOfDay());
     }
 
     /**
@@ -95,10 +94,8 @@ public class JobRepository {
      * @param to   End date (inclusive)
      * @return Map of cleaning delay rows by Event 11
      */
-    public Map<Long, DelayRow> loadCleaningDelayDurationRows(
-            LocalDate from,
-            LocalDate to) {
-        return jobDBLoader.loadDelayRowsByType(11, from.atStartOfDay(), to.atStartOfDay());
+    public Map<Long, DelayRow> loadCleaningDelayDurationRows(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadDelayRowsByType(DelayEventType.CLEANING, from.atStartOfDay(), to.atStartOfDay());
     }
 
     /**
@@ -118,7 +115,6 @@ public class JobRepository {
      *
      * @param jobs list with idBatch (inclusive)
      * @return Map of camera start, camera end production rows by idBatch
-     * @throws CameraDataReadException 
      */
     public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
 

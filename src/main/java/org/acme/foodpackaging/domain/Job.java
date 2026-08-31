@@ -3,7 +3,6 @@ package org.acme.foodpackaging.domain;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -16,6 +15,7 @@ import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 import org.acme.foodpackaging.record.CleaningResult;
@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.ProductionJobParams;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
@@ -156,8 +155,8 @@ public class Job {
                 : startProductionDateTime.plus(duration);
     }
 
-    public static Job fromDbJobRow(
-            DbJobRow row,
+    public static Job fromJobRow(
+            JobRow row,
             Product product,
             LocalDateTime startProductionDateTime,
             UnaryOperator<String> nameCleaner) {

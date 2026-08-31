@@ -2,6 +2,7 @@ package org.acme.foodpackaging.service.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
@@ -23,21 +24,14 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
 
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class JobRefreshService {
-
-    @Inject
-    public JobRefreshService(JobRepository jobRepository, ProductService productService,
-            UploadDataService uploadDataService) {
-        this.jobRepository = jobRepository;
-        this.productService = productService;
-        this.uploadDataService = uploadDataService;
-    }
 
     private final JobRepository jobRepository;
     private final ProductService productService;
     private final UploadDataService uploadDataService;
 
-    public PackagingSchedule applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
+    public void applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
         selection.forEach((snpz, value) -> {
             if (Boolean.TRUE.equals(value.isSelect())) {
                 addJobIfAbsent(snpz, Boolean.TRUE.equals(value.isLabeling()), solution);
@@ -45,8 +39,8 @@ public class JobRefreshService {
                 removeJobFromSolution(snpz, solution);
             }
         });
+
         solution.setProducts(productService.getProductList(solution));
-        return solution;
     }
 
     private void addJobIfAbsent(Long snpz, boolean isHandPackaging, PackagingSchedule solution) {

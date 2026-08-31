@@ -1,9 +1,10 @@
-package org.acme.foodpackaging.record;
+package org.acme.foodpackaging.dto.bdvzpmc;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.LocalDateTime;
 
-public record DbJobRow(
+public record JobRow(
         @JsonFormat(timezone = "Europe/Minsk")
         LocalDateTime dti,
         String kmc,
@@ -23,7 +24,7 @@ public record DbJobRow(
         Integer placePlan,
         Integer sticker
 ) {
-        public boolean isHandPackaging() {
-                return sticker != null && sticker > 0;
-        }
+    public boolean isHandPackaging() {
+        return sticker != null && sticker > 0;
+    }
 }
