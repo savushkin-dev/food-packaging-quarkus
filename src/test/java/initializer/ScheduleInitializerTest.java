@@ -1,15 +1,15 @@
-package service.builder;
+package initializer;
 
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.initializer.ScheduleInitializer;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
-import org.acme.foodpackaging.service.products.ProductService;
-import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.service.lines.LineService;
+import org.acme.foodpackaging.service.products.ProductService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,10 +25,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduleBuilderTest {
+class ScheduleInitializerTest {
 
     @InjectMocks
-    ScheduleBuilder builder;
+    ScheduleInitializer scheduleInitializer;
 
     @Mock
     JobService jobService;
@@ -58,7 +58,7 @@ class ScheduleBuilderTest {
 
         doNothing().when(alignSolutionService).align(any());
 
-        InitData initData = builder.buildSchedule(date);
+        InitData initData = scheduleInitializer.initSchedule(date);
 
         PackagingSchedule schedule = initData.schedule();
 
@@ -79,7 +79,7 @@ class ScheduleBuilderTest {
 
         when(productService.getProductList(schedule)).thenReturn(newProducts);
 
-        PackagingSchedule updated = builder.updateProductList(schedule);
+        PackagingSchedule updated = scheduleInitializer.updateProductList(schedule);
 
         assertSame(schedule, updated);
         assertEquals(newProducts, schedule.getProducts());

@@ -12,6 +12,8 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.LoadRequest;
+import org.acme.foodpackaging.initializer.ScheduleInitializer;
+import org.acme.foodpackaging.initializer.ScheduleVersionInitializer;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.persistence.upload.JobSaveService;
@@ -36,8 +38,8 @@ public class ScheduleLifecycleResource {
     private final PackagingScheduleRepository repository;
     private final SolverManager<PackagingSchedule, String> solverManager;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-    private final ScheduleBuilder scheduleBuilder;
-    private final ScheduleBuilderByVersion builderByVersion;
+    private final ScheduleInitializer scheduleInitializer;
+    private final ScheduleVersionInitializer scheduleVersionInitializer;
     private final LoadDataService loadDataService;
     private final JobSaveService jobSaveService;
     private final SolutionVersionExportService exportService;
@@ -54,7 +56,7 @@ public class ScheduleLifecycleResource {
             throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
         }
 
-        InitData data = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
+        InitData data = scheduleInitializer.initSchedule(loadDTO.getStartDate());
         PackagingSchedule schedule = data.schedule();
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -72,7 +74,7 @@ public class ScheduleLifecycleResource {
             throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
         }
 
-        PackagingSchedule solution = builderByVersion.init(loadDTO.getStartDate(), loadDTO.getVersion());
+        PackagingSchedule solution = scheduleVersionInitializer.initSchedule(loadDTO.getStartDate(), loadDTO.getVersion());
         solution.setVersion(loadDTO.getVersion());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);

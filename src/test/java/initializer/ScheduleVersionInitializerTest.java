@@ -1,10 +1,10 @@
-package service.builder;
+package initializer;
 
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.initializer.ScheduleVersionInitializer;
 import org.acme.foodpackaging.persistence.json.SolutionImporter;
 import org.acme.foodpackaging.record.SolutionByVersion;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
-import org.acme.foodpackaging.service.builder.ScheduleBuilderByVersion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,10 +18,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduleBuilderByVersionTest {
+public class ScheduleVersionInitializerTest {
 
     @InjectMocks
-    ScheduleBuilderByVersion builder;
+    ScheduleVersionInitializer scheduleVersionInitializer;
 
     @Mock
     PlrPlanRepository repository;
@@ -45,7 +45,7 @@ class ScheduleBuilderByVersionTest {
         when(importer.importFromJson(solutionWrapper))
                 .thenReturn(schedule);
 
-        PackagingSchedule resultSchedule = builder.init(dti, version);
+        PackagingSchedule resultSchedule = scheduleVersionInitializer.initSchedule(dti, version);
 
         assertEquals(schedule, resultSchedule);
 
@@ -53,4 +53,3 @@ class ScheduleBuilderByVersionTest {
         verify(importer).importFromJson(solutionWrapper);
     }
 }
-
