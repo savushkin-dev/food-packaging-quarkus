@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
+import org.acme.foodpackaging.dto.response.lineservice.LineProductionDto;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
@@ -31,6 +32,7 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
@@ -66,7 +68,7 @@ public class PackagingScheduleResource {
     @Path("downtimePeriods/{idBatch}")
     @Produces(MediaType.APPLICATION_JSON)
     public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
-                                                   @QueryParam("duration") Integer duration) {
+            @QueryParam("duration") Integer duration) {
         if (idBatch == null || idBatch.isBlank()) {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
         }
@@ -378,20 +380,20 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response dailyProductions(
             @HeaderParam("X-Session-Id") String sessionId,
-            @QueryParam("selectedDate") String selectedDateParam) {
+            @QueryParam("shiftStart") String shiftStartParam) {
 
-        if (selectedDateParam == null || selectedDateParam.isBlank()) {
+        if (shiftStartParam == null || shiftStartParam.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, "selectedDate query parameter is required"))
+                    .entity(Map.of(ApiFields.ERROR, "shiftStart query parameter is required"))
                     .build();
         }
 
-        LocalDate selectedDate;
+        LocalDateTime shiftStart;
         try {
-            selectedDate = LocalDate.parse(selectedDateParam);
+            shiftStart = LocalDateTime.parse(shiftStartParam);
         } catch (DateTimeParseException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, "selectedDate must be in ISO format (yyyy-MM-dd)"))
+                    .entity(Map.of(ApiFields.ERROR, "shiftStart must be in ISO format (yyyy-MM-ddTHH:mm:ss)"))
                     .build();
         }
 
@@ -403,8 +405,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Map<String, LineProductionDto> productions =
-                lineService.calculateLineProductions(solution.getLines(), selectedDate);
+        Map<String, Object> productions = lineService.calculateLineProductions(solution.getLines(), shiftStart);
 
         return Response.ok(productions).build();
     }
@@ -564,7 +565,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("maintenance")
     public Response addMaintenance(MaintenanceRequest request,
-                                   @HeaderParam("X-Session-Id") String sessionId) {
+            @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         PackagingSchedule updated;
@@ -643,7 +644,7 @@ public class PackagingScheduleResource {
      * Сохраняет план в json определенной версии
      */
     @POST
-    @Consumes({MediaType.APPLICATION_JSON})
+    @Consumes({ MediaType.APPLICATION_JSON })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("saveVersion")
     public Response saveVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
@@ -665,7 +666,7 @@ public class PackagingScheduleResource {
     }
 
     @PUT
-    @Consumes({MediaType.APPLICATION_JSON})
+    @Consumes({ MediaType.APPLICATION_JSON })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("analyze")
     public ScoreAnalysis<HardMediumSoftLongScore> analyze(

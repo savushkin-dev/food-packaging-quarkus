@@ -4,8 +4,10 @@ import fixtures.SolutionFixtures;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.response.lineservice.BatchProductionDto;
+import org.acme.foodpackaging.dto.response.lineservice.LineProductionDto;
+import org.acme.foodpackaging.dto.response.lineservice.TotalProductionDto;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.dto.LineProductionDto;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.Test;
@@ -178,115 +180,308 @@ class LineServiceTest {
     // ============================================================
     // calculateLineProductions
     // ============================================================
+
     @Test
     void calculateLineProductions_jobFullyInFirstShift_countedInShift1Only() {
-        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
 
         Job j1 = new Job();
         j1.setId("1");
         j1.setMass(227.0);
-        j1.setCameraStart(date.atStartOfDay().plusHours(15));
+        j1.setNp(123);
+        j1.setCameraStart(shiftStart.plusHours(7)); // 15:00
         j1.setCameraEnd(j1.getCameraStart().plusHours(2));
 
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1));
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
-        assertEquals(227.0, dto.shift1().massa());
-        assertEquals(Map.of("1", 227.0), dto.shift1().snpz());
-        assertEquals(0.0, dto.shift2().massa());
-        assertTrue(dto.shift2().snpz().isEmpty());
-        assertEquals(227.0, dto.totalMassa());
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(227.0, dto.massa1());
+        assertEquals(0.0, dto.massa2());
+        assertEquals(227.0, dto.massa());
+        assertEquals(1, dto.shift1().size());
+
+        BatchProductionDto batch = dto.shift1().get(0);
+        assertEquals("1", batch.snpz());
+        assertEquals(227.0, batch.massa());
+        assertEquals(123, batch.np());
+        assertEquals(j1.getCameraStart(), batch.dts());
+        assertEquals(j1.getCameraEnd(), batch.dte());
+
+        assertTrue(dto.shift2().isEmpty());
     }
 
     @Test
     void calculateLineProductions_jobFullyInSecondShift_countedInShift2Only() {
-        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
 
         Job j1 = new Job();
         j1.setId("1");
         j1.setMass(150.0);
-        j1.setCameraStart(date.atStartOfDay().plusHours(21));
+        j1.setCameraStart(shiftStart.plusHours(13)); // 21:00
         j1.setCameraEnd(j1.getCameraStart().plusHours(1));
 
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1));
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
-        assertEquals(0.0, dto.shift1().massa());
-        assertEquals(150.0, dto.shift2().massa());
-        assertEquals(150.0, dto.totalMassa());
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(0.0, dto.massa1());
+        assertEquals(150.0, dto.massa2());
+        assertEquals(150.0, dto.massa());
+        assertTrue(dto.shift1().isEmpty());
+        assertEquals(1, dto.shift2().size());
     }
 
     @Test
     void calculateLineProductions_jobsInBothShifts_totalIsSum() {
-        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
 
         Job morningJob = new Job();
         morningJob.setId("1");
         morningJob.setMass(200.0);
-        morningJob.setCameraStart(date.atStartOfDay().plusHours(10));
+        morningJob.setCameraStart(shiftStart.plusHours(2)); // 10:00
         morningJob.setCameraEnd(morningJob.getCameraStart().plusHours(1));
 
         Job eveningJob = new Job();
         eveningJob.setId("2");
         eveningJob.setMass(300.0);
-        eveningJob.setCameraStart(date.atStartOfDay().plusHours(22));
+        eveningJob.setCameraStart(shiftStart.plusHours(14)); // 22:00
         eveningJob.setCameraEnd(eveningJob.getCameraStart().plusHours(1));
 
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(morningJob, eveningJob));
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
-        assertEquals(200.0, dto.shift1().massa());
-        assertEquals(300.0, dto.shift2().massa());
-        assertEquals(500.0, dto.totalMassa());
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(200.0, dto.massa1());
+        assertEquals(300.0, dto.massa2());
+        assertEquals(500.0, dto.massa());
     }
 
     @Test
     void calculateLineProductions_emptyJobs_zeroForBothShiftsAndTotal() {
-        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
 
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of());
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
-        assertEquals(0.0, dto.shift1().massa());
-        assertEquals(0.0, dto.shift2().massa());
-        assertEquals(0.0, dto.totalMassa());
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(0.0, dto.massa1());
+        assertEquals(0.0, dto.massa2());
+        assertEquals(0.0, dto.massa());
+        assertTrue(dto.shift1().isEmpty());
+        assertTrue(dto.shift2().isEmpty());
+    }
+
+    @Test
+    void calculateLineProductions_nullJobs_zeroForBothShiftsAndTotal() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(null);
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
+
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(0.0, dto.massa());
+        assertTrue(dto.shift1().isEmpty());
+        assertTrue(dto.shift2().isEmpty());
     }
 
     @Test
     void calculateLineProductions_jobCrossesShift1ToShift2Boundary_usesUntilEndQuery() {
-        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
 
         Job j1 = new Job();
         j1.setId("1");
         j1.setMass(200.0);
         j1.setIdBatch("BATCH_BOUNDARY");
-        j1.setCameraStart(date.atStartOfDay().plusHours(19).plusMinutes(30));
-        j1.setCameraEnd(date.atStartOfDay().plusHours(20).plusMinutes(30));
+        j1.setCameraStart(shiftStart.plusHours(11).plusMinutes(30)); // 19:30
+        j1.setCameraEnd(shiftStart.plusHours(12).plusMinutes(30)); // 20:30
 
         Line l1 = new Line("L1", "Line 1");
         l1.setJobs(List.of(j1));
 
-        LocalDateTime shift1End = date.atTime(20, 0);
+        LocalDateTime shift1End = shiftStart.plusHours(12); // 20:00
         when(pmLogRepository.getSuccessRateUntilEnd("BATCH_BOUNDARY", shift1End)).thenReturn(0.6);
 
-        Map<String, LineProductionDto> result = lineService.calculateLineProductions(List.of(l1), date);
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = result.get(String.valueOf(l1.getId()));
-        assertEquals(120.0, dto.shift1().massa()); // 200 * 0.6, попадает в конец 1-й смены
-        assertEquals(0.0, dto.shift2().massa()); // остаток job'а после границы не считается отдельно — это оставшаяся
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(120.0, dto.massa1()); // 200 * 0.6
+        assertEquals(0.0, dto.massa2());
+        assertEquals(120.0, dto.massa());
+    }
 
-        assertEquals(120.0, dto.totalMassa());
+    @Test
+    void calculateLineProductions_jobCrossesWindowStart_usesFromStartQuery() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(300.0);
+        j1.setIdBatch("BATCH_START");
+        j1.setCameraStart(shiftStart.minusMinutes(10)); // 7:50
+        j1.setCameraEnd(shiftStart.plusMinutes(20)); // 8:20
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        when(pmLogRepository.getSuccessRateFromStart("BATCH_START", shiftStart)).thenReturn(0.4);
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
+
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(120.0, dto.massa1()); // 300 * 0.4
+        assertEquals(120.0, dto.massa());
+    }
+
+    @Test
+    void calculateLineProductions_partialJobWithoutIdBatch_isSkipped() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(300.0);
+        j1.setIdBatch(null);
+        j1.setCameraStart(shiftStart.minusMinutes(10));
+        j1.setCameraEnd(shiftStart.plusMinutes(20));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
+
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(0.0, dto.massa());
+        assertTrue(dto.shift1().isEmpty());
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void calculateLineProductions_successRateNull_treatedAsZero() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(300.0);
+        j1.setIdBatch("BATCH_NO_DATA");
+        j1.setCameraStart(shiftStart.minusMinutes(10));
+        j1.setCameraEnd(shiftStart.plusMinutes(20));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        when(pmLogRepository.getSuccessRateFromStart("BATCH_NO_DATA", shiftStart)).thenReturn(null);
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
+
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(0.0, dto.massa());
+        assertTrue(dto.shift1().isEmpty());
+    }
+
+    @Test
+    void calculateLineProductions_jobOutsideWindow_massIsZero() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(100.0);
+        j1.setCameraStart(shiftStart.plusDays(5));
+        j1.setCameraEnd(j1.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
+
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(0.0, dto.massa());
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void calculateLineProductions_totalAggregatesAllLines() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(100.0);
+        j1.setCameraStart(shiftStart.plusHours(2)); // 10:00
+        j1.setCameraEnd(j1.getCameraStart().plusHours(1));
+
+        Job j2 = new Job();
+        j2.setId("2");
+        j2.setMass(200.0);
+        j2.setCameraStart(shiftStart.plusHours(14)); // 22:00
+        j2.setCameraEnd(j2.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Line l2 = new Line("L2", "Line 2");
+        l2.setJobs(List.of(j2));
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1, l2), shiftStart);
+
+        TotalProductionDto total = (TotalProductionDto) result.get("total");
+        assertEquals("Итого", total.name());
+        assertEquals(100.0, total.massa1());
+        assertEquals(200.0, total.massa2());
+        assertEquals(300.0, total.massa());
+    }
+
+    @Test
+    void calculateLineProductions_customShiftStartHour9_shiftsShiftedByOneHour() {
+        LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(100.0);
+        j1.setCameraStart(date.atStartOfDay().plusHours(8).plusMinutes(30));
+        j1.setCameraEnd(j1.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        Map<String, Object> resultDefault = lineService.calculateLineProductions(List.of(l1), date.atTime(8, 0));
+        LineProductionDto dtoDefault = (LineProductionDto) resultDefault.get(String.valueOf(l1.getId()));
+        assertEquals(100.0, dtoDefault.massa1());
+
+        Map<String, Object> resultShifted = lineService.calculateLineProductions(List.of(l1), date.atTime(9, 0));
+        LineProductionDto dtoShifted = (LineProductionDto) resultShifted.get(String.valueOf(l1.getId()));
+        assertEquals(0.0, dtoShifted.massa1());
+    }
+
+    @Test
+    void calculateLineProductions_massIsRoundedToTwoDecimals() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Job j1 = new Job();
+        j1.setId("1");
+        j1.setMass(300.0);
+        j1.setIdBatch("BATCH_ROUND");
+        j1.setCameraStart(shiftStart.minusMinutes(10));
+        j1.setCameraEnd(shiftStart.plusMinutes(20));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(j1));
+
+        // 300 * 0.333333 = 99.9999 -> округляется до 100.0
+        when(pmLogRepository.getSuccessRateFromStart("BATCH_ROUND", shiftStart)).thenReturn(0.333333);
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
+
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(100.0, dto.massa1());
+        assertEquals(100.0, dto.shift1().get(0).massa());
     }
 }

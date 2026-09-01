@@ -4,7 +4,6 @@ import org.acme.foodpackaging.persistence.constants.WindowCrossing;
 import org.acme.foodpackaging.service.lines.ShiftWindow;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 
@@ -13,20 +12,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ShiftWindowTest {
 
-    private final LocalDate date = LocalDate.of(2026, Month.AUGUST, 3);
-    private final ShiftWindow window = ShiftWindow.forDate(date, null);
+    private final LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+    private final ShiftWindow window = ShiftWindow.forShiftStart(shiftStart, null);
 
     // --- crossingType ---
 
     @Test
     void crossingType_jobStartsBeforeWindow_crossesStart() {
-        LocalDateTime start = date.atStartOfDay().plusHours(7).plusMinutes(50);
+        LocalDateTime start = shiftStart.minusHours(0).minusMinutes(10); // 7:50
         assertEquals(WindowCrossing.CROSSES_START, window.crossingType(start));
     }
 
     @Test
     void crossingType_jobStartsInsideWindow_crossesEnd() {
-        LocalDateTime start = date.plusDays(1).atStartOfDay().plusHours(7).plusMinutes(30);
+        LocalDateTime start = shiftStart.plusHours(23).minusMinutes(30); // next day 7:30
         assertEquals(WindowCrossing.CROSSES_END, window.crossingType(start));
     }
 
@@ -35,7 +34,7 @@ class ShiftWindowTest {
     @Test
     void overlaps_jobStartsAfterWindowEnd_false() {
         // jobStart.isBefore(end) == false -> короткое замыкание, jobEnd не оценивается
-        LocalDateTime start = date.plusDays(2).atStartOfDay();
+        LocalDateTime start = shiftStart.plusDays(2);
         LocalDateTime end = start.plusHours(1);
         assertFalse(window.overlaps(start, end));
     }
@@ -43,32 +42,32 @@ class ShiftWindowTest {
     @Test
     void overlaps_jobEndsBeforeWindowStart_false() {
         // jobStart.isBefore(end) == true, доходим до jobEnd.isAfter(start), там false
-        LocalDateTime start = date.atStartOfDay().plusHours(5);
-        LocalDateTime end = date.atStartOfDay().plusHours(6);
+        LocalDateTime start = shiftStart.minusHours(3);
+        LocalDateTime end = shiftStart.minusHours(2);
         assertFalse(window.overlaps(start, end));
     }
 
     @Test
     void overlaps_jobInsideWindow_true() {
         // оба условия true
-        LocalDateTime start = date.atStartOfDay().plusHours(15);
+        LocalDateTime start = shiftStart.plusHours(7);
         LocalDateTime end = start.plusHours(2);
         assertTrue(window.overlaps(start, end));
     }
 
     @Test
     void overlaps_jobEndsJustAfterWindowStartBySeconds_ignoredAsSameMinute() {
-        // 8:00:23 после округления до минут == window.start (8:00:00), пересечения нет
-        LocalDateTime start = date.atStartOfDay().plusHours(7).plusMinutes(29);
-        LocalDateTime end = date.atTime(8, 0, 23);
+        // shiftStart + 23s после округления до минут == window.start, пересечения нет
+        LocalDateTime start = shiftStart.minusMinutes(31);
+        LocalDateTime end = shiftStart.plusSeconds(23);
         assertFalse(window.overlaps(start, end));
     }
 
     @Test
     void overlaps_jobEndsFullMinuteAfterWindowStart_trueOverlap() {
-        // 8:01:00 после округления остаётся 8:01:00, это уже после window.start
-        LocalDateTime start = date.atStartOfDay().plusHours(7).plusMinutes(50);
-        LocalDateTime end = date.atTime(8, 1, 0);
+        // shiftStart + 1 минута после округления остаётся после window.start
+        LocalDateTime start = shiftStart.minusMinutes(10);
+        LocalDateTime end = shiftStart.plusMinutes(1);
         assertTrue(window.overlaps(start, end));
     }
 
@@ -77,7 +76,7 @@ class ShiftWindowTest {
     @Test
     void fullyContains_jobInsideWindow_true() {
         // все 4 условия true
-        LocalDateTime start = date.atStartOfDay().plusHours(15);
+        LocalDateTime start = shiftStart.plusHours(7);
         LocalDateTime end = start.plusHours(2);
         assertTrue(window.fullyContains(start, end));
     }
@@ -85,15 +84,15 @@ class ShiftWindowTest {
     @Test
     void fullyContains_jobStartsBeforeWindow_false() {
         // !jobStart.isBefore(start) == false -> первое условие
-        LocalDateTime start = date.atStartOfDay().plusHours(7).plusMinutes(50);
-        LocalDateTime end = date.atStartOfDay().plusHours(8).plusMinutes(20);
+        LocalDateTime start = shiftStart.minusMinutes(10);
+        LocalDateTime end = shiftStart.plusMinutes(20);
         assertFalse(window.fullyContains(start, end));
     }
 
     @Test
     void fullyContains_jobStartAtOrAfterWindowEnd_false() {
         // jobStart.isBefore(end) == false -> второе условие
-        LocalDateTime start = date.plusDays(1).atTime(8, 0);
+        LocalDateTime start = shiftStart.plusHours(24);
         LocalDateTime end = start.plusHours(1);
         assertFalse(window.fullyContains(start, end));
     }
@@ -102,42 +101,57 @@ class ShiftWindowTest {
     void fullyContains_jobEndBeforeWindowStart_false() {
         // jobStart внутри окна (первые 2 условия true), а jobEnd раньше window.start
         // -> !jobEnd.isBefore(start) == false, третье условие
-        LocalDateTime start = date.atStartOfDay().plusHours(9);
-        LocalDateTime end = date.atStartOfDay().plusHours(7).plusMinutes(30);
+        LocalDateTime start = shiftStart.plusHours(1);
+        LocalDateTime end = shiftStart.minusMinutes(30);
         assertFalse(window.fullyContains(start, end));
     }
 
     @Test
     void fullyContains_jobEndAtOrAfterWindowEnd_false() {
         // первые три условия true, jobEnd.isBefore(end) == false -> четвёртое условие
-        LocalDateTime start = date.atStartOfDay().plusHours(20);
-        LocalDateTime end = date.plusDays(1).atTime(8, 0);
+        LocalDateTime start = shiftStart.plusHours(12);
+        LocalDateTime end = shiftStart.plusHours(24);
         assertFalse(window.fullyContains(start, end));
     }
 
+    // --- forShiftStart ---
+
     @Test
-    void forDate_shiftNumberNull_fullDayWindow() {
-        ShiftWindow noShiftWindow = ShiftWindow.forDate(date, null);
-        assertEquals(date.atTime(8, 0), noShiftWindow.start());
-        assertEquals(date.plusDays(1).atTime(8, 0), noShiftWindow.end());
+    void forShiftStart_shiftNumberNull_fullDayWindow() {
+        ShiftWindow noShiftWindow = ShiftWindow.forShiftStart(shiftStart, null);
+        assertEquals(shiftStart, noShiftWindow.start());
+        assertEquals(shiftStart.plusHours(24), noShiftWindow.end());
     }
 
     @Test
-    void forDate_shiftNumber1_firstShiftWindow() {
-        ShiftWindow firstWindow = ShiftWindow.forDate(date, 1);
-        assertEquals(date.atTime(8, 0), firstWindow.start());
-        assertEquals(date.atTime(20, 0), firstWindow.end());
+    void forShiftStart_shiftNumber1_firstShiftWindow() {
+        ShiftWindow firstWindow = ShiftWindow.forShiftStart(shiftStart, 1);
+        assertEquals(shiftStart, firstWindow.start());
+        assertEquals(shiftStart.plusHours(12), firstWindow.end());
     }
 
     @Test
-    void forDate_shiftNumber2_secondShiftWindow() {
-        ShiftWindow secondWindow = ShiftWindow.forDate(date, 2);
-        assertEquals(date.atTime(20, 0),  secondWindow.start());
-        assertEquals(date.plusDays(1).atTime(8, 0),  secondWindow.end());
+    void forShiftStart_shiftNumber2_secondShiftWindow() {
+        ShiftWindow secondWindow = ShiftWindow.forShiftStart(shiftStart, 2);
+        assertEquals(shiftStart.plusHours(12), secondWindow.start());
+        assertEquals(shiftStart.plusHours(24), secondWindow.end());
     }
 
     @Test
-    void forDate_unsupportedshiftNumber_throwsException() {
-        assertThrows(IllegalArgumentException.class, () -> ShiftWindow.forDate(date, 3));
+    void forShiftStart_unsupportedShiftNumber_throwsException() {
+        assertThrows(IllegalArgumentException.class, () -> ShiftWindow.forShiftStart(shiftStart, 3));
+    }
+
+    @Test
+    void forShiftStart_customShiftStartHour9_windowsShiftedByOneHour() {
+        LocalDateTime shiftStart9 = LocalDateTime.of(2026, Month.AUGUST, 3, 9, 0);
+
+        ShiftWindow firstWindow = ShiftWindow.forShiftStart(shiftStart9, 1);
+        assertEquals(shiftStart9, firstWindow.start());
+        assertEquals(shiftStart9.plusHours(12), firstWindow.end());
+
+        ShiftWindow secondWindow = ShiftWindow.forShiftStart(shiftStart9, 2);
+        assertEquals(shiftStart9.plusHours(12), secondWindow.start());
+        assertEquals(shiftStart9.plusHours(24), secondWindow.end());
     }
 }
