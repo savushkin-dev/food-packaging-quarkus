@@ -96,4 +96,31 @@ public class PmLogRepository {
                     e);
         }
     }
+
+    public Double getSuccessRateFromStart(String idBatch, LocalDateTime windowStart) {
+        return executeSuccessRate(sqlQueries.successRateFromStart(), idBatch, windowStart);
+    }
+
+    public Double getSuccessRateUntilEnd(String idBatch, LocalDateTime windowEnd) {
+        return executeSuccessRate(sqlQueries.successRateUntilEnd(), idBatch, windowEnd);
+    }
+
+    private Double executeSuccessRate(String sql, String idBatch, LocalDateTime boundary) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, idBatch);
+            ps.setObject(2, boundary);
+            ps.setString(3, idBatch);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                double value = rs.getDouble("success_rate");
+                return rs.wasNull() ? null : value;
+            }
+        } catch (SQLException e) {
+            throw new CameraDataReadException("Failed to load success rate for batch " + idBatch, e);
+        }
+    }
 }
