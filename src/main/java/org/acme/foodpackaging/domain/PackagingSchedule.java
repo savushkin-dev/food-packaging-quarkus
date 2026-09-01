@@ -14,7 +14,7 @@ import ai.timefold.solver.core.api.solver.SolverStatus;
 import lombok.Getter;
 import lombok.Setter;
 
-import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
+import static org.acme.foodpackaging.scheduleoperations.MaintenanceService.createMaintenanceProduct;
 
 @Setter
 @Getter

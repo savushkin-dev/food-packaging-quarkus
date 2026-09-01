@@ -10,10 +10,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
+import static org.acme.foodpackaging.scheduleoperations.MaintenanceService.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SortByNpServiceTest {
@@ -143,8 +144,8 @@ class SortByNpServiceTest {
         cleaning.setMaintenance(false);
         cleaning.setLineId("L1");
 
-        cleaning.setStartCleaningDateTime(LocalDateTime.of(2025, 1, 1, 8, 0));
-        cleaning.setStartProductionDateTime(LocalDateTime.of(2025, 1, 1, 9, 0));
+        cleaning.setStartCleaningDateTime(LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0));
+        cleaning.setStartProductionDateTime(LocalDateTime.of(2025, Month.JANUARY, 1, 9, 0));
 
         line1.setJobs(List.of(j1, cleaning, j2));
         line2.setJobs(List.of());

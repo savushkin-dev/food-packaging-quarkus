@@ -1,11 +1,11 @@
 package scheduleoperations;
 
 import builder.MaintenanceRowBuilder;
-import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.request.maintenance.*;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.scheduleoperations.MaintenanceService;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
@@ -29,17 +29,17 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class MaintenanceJobTest {
+class MaintenanceServiceTest {
 
     @Mock
     LoadDataService loadDataService;
-    private MaintenanceJob maintenanceJob;
+    private MaintenanceService maintenanceService;
     private PackagingSchedule schedule;
     private Line line;
 
     @BeforeEach
     void setup() {
-        maintenanceJob = new MaintenanceJob(loadDataService);
+        maintenanceService = new MaintenanceService(loadDataService);
 
         // Line, schedule
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
@@ -74,17 +74,22 @@ class MaintenanceJobTest {
         schedule.setJobs(new ArrayList<>());
     }
 
+    // ============================================================
+    // addMaintenanceJob
+    // ============================================================
+
     @Test
     void maintenanceJobInEmptyLineTest() {
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-        request.setMaintenanceNote("Maintenance 1");
-        request.setDurationMinutes(30);
+        AddMaintenanceRequest request = new AddMaintenanceRequest(
+                "line1",
+                "Maintenance 1",
+                4,
+                30,
+                null,
+                null,
+                LocalDateTime.now());
 
-        request.setStartProductionDateTime(LocalDateTime.now());
-        request.setMaintenanceTypeId(4);
-
-        PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
+        PackagingSchedule result = maintenanceService.addMaintenanceJob(schedule, request);
 
         assertEquals(1, result.getJobs().size());
         Job job = result.getJobs().getFirst();
@@ -99,101 +104,26 @@ class MaintenanceJobTest {
         Product product = schedule.getProducts().getFirst();
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
 
-        Job existingJob = new Job(row,"Maintenance Name", product);
+        Job existingJob = new Job(row, "Maintenance Name", product);
 
         line.getJobs().add(existingJob);
         schedule.getJobs().add(existingJob);
 
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-        request.setMaintenanceTypeId(4);
-        request.setMaintenanceNote("Maintenance 2");
-        request.setDurationMinutes(15);
-        request.setInsertIndex(0);
+        AddMaintenanceRequest request = new AddMaintenanceRequest(
+                "line1",
+                "Maintenance 2",
+                4,
+                15,
+                0,
+                null,
+                null);
 
-        PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
+        PackagingSchedule result = maintenanceService.addMaintenanceJob(schedule, request);
 
         assertEquals(2, result.getJobs().size());
-        assertEquals(4,line.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals(4, line.getJobs().getFirst().getMaintenanceTypeId());
         assertEquals("Maintenance 2", line.getJobs().getFirst().getMaintenanceNote());
         assertEquals("Maintenance Name", line.getJobs().get(1).getName());
-    }
-
-    @Test
-    void removeMaintenanceJobByIndexTest() {
-        Product product = schedule.getProducts().getFirst();
-        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
-
-        Job job = new Job(row,"MaintenanceJob 1", product);
-        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
-        job.setMaintenance(true);
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
-
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-        request.setRemoveIndex(0);
-
-        PackagingSchedule result = maintenanceJob.removeMaintenanceJob(schedule, request);
-
-        assertTrue(result.getJobs().isEmpty());
-        assertTrue(line.getJobs().isEmpty());
-    }
-    
-    @Test
-    void updateDurationTest() {
-        Product product = schedule.getProducts().getFirst();
-        MaintenanceRow row =  MaintenanceRowBuilder.aRow().build();
-
-        Job job = new Job(row,"MaintenanceJob 1", product);
-        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
-
-        job.setMaintenance(true);
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
-
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-
-        request.setUpdateIndex(0);
-        request.setDurationMinutes(45);
-
-        PackagingSchedule result = maintenanceJob.updateDuration(schedule, request);
-
-        assertEquals(45, result.getJobs().getFirst().getDuration().toMinutes());
-    }
-
-    @Test
-    void updateMaintenanceTypeTest() {
-        Product product = schedule.getProducts().getFirst();
-        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
-
-        Job job = new Job(row,"MaintenanceJob 1", product);
-        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
-
-        line.getJobs().add(job);
-        schedule.getJobs().add(job);
-
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-
-        request.setUpdateIndex(0);
-        request.setMaintenanceTypeId(2);
-        request.setMaintenanceNote("Updated note");
-        request.setDurationMinutes(45);
-
-        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
-        maintenanceTypes.put(1, "Обслуживание");
-        maintenanceTypes.put(2, "Мойка");
-
-        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
-
-        PackagingSchedule result = maintenanceJob.updateMaintenanceType(schedule, request);
-
-        assertEquals(45, result.getJobs().getFirst().getDuration().toMinutes());
-        assertEquals(2, result.getJobs().getFirst().getMaintenanceTypeId());
-        assertEquals("Updated note", result.getJobs().getFirst().getMaintenanceNote());
-        assertEquals("Мойка", result.getJobs().getFirst().getName());
     }
 
     @Test
@@ -201,20 +131,26 @@ class MaintenanceJobTest {
         CleaningDurationUtils.init(Map.of("line1", 40));
 
         // Seed one job to make line non-empty
-        MaintenanceRequest seed = new MaintenanceRequest();
-        seed.setLineId("line1");
-        seed.setDurationMinutes(20);
-        seed.setInsertIndex(0);
-        seed.setMaintenanceTypeId(2);
-        maintenanceJob.addMaintenanceJob(schedule, seed);
+        AddMaintenanceRequest seed = new AddMaintenanceRequest(
+                "line1",
+                null,
+                2,
+                20,
+                0,
+                null,
+                null);
+        maintenanceService.addMaintenanceJob(schedule, seed);
 
-        MaintenanceRequest req = new MaintenanceRequest();
-        req.setLineId("line1");
-        req.setDurationMinutes(360);
-        req.setInsertIndex(1); // insert after seed
-        req.setMaintenanceTypeId(2);
+        AddMaintenanceRequest req = new AddMaintenanceRequest(
+                "line1",
+                null,
+                2,
+                360,
+                1, // insert after seed
+                null,
+                null);
 
-        PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
+        PackagingSchedule result = maintenanceService.addMaintenanceJob(schedule, req);
 
         // Expect two jobs at indices 1 (original) and 2 (extra)
         assertEquals(3, result.getJobs().size());
@@ -223,7 +159,7 @@ class MaintenanceJobTest {
         assertTrue(inserted.isMaintenance());
         assertTrue(extra.isMaintenance());
         assertEquals(40, extra.getDuration().toMinutes());
-        assertEquals(2, extra.getMaintenanceTypeId()); 
+        assertEquals(2, extra.getMaintenanceTypeId());
         assertEquals("Мойка", extra.getName());
     }
 
@@ -232,13 +168,16 @@ class MaintenanceJobTest {
         CleaningDurationUtils.init(Map.of("line1", 30));
 
         LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 30, 8, 0);
-        MaintenanceRequest req = new MaintenanceRequest();
-        req.setLineId("line1");
-        req.setDurationMinutes(400);
-        req.setMaintenanceTypeId(4);
-        req.setStartProductionDateTime(start);
+        AddMaintenanceRequest req = new AddMaintenanceRequest(
+                "line1",
+                null,
+                4,
+                400,
+                null,
+                null,
+                start);
 
-        PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
+        PackagingSchedule result = maintenanceService.addMaintenanceJob(schedule, req);
 
         assertEquals(2, result.getJobs().size());
         Job first = line.getJobs().get(0);
@@ -251,13 +190,144 @@ class MaintenanceJobTest {
         assertEquals(2, extra.getMaintenanceTypeId());
         assertEquals("Мойка", extra.getName());
     }
-    
+
+    // ============================================================
+    // updateMaintenanceJob
+    // ============================================================
+
+    @Test
+    void updateMaintenanceJob_typeOnly() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        job.setDuration(Duration.ofMinutes(20));
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        UpdateMaintenanceRequest request = new UpdateMaintenanceRequest(
+                "line1",
+                0,
+                2,
+                null,
+                null);
+
+        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
+        maintenanceTypes.put(2, "Мойка");
+        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
+
+        PackagingSchedule result = maintenanceService.updateMaintenanceJob(schedule, request);
+
+        assertEquals(2, result.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("Мойка", result.getJobs().getFirst().getName());
+        assertEquals(20, result.getJobs().getFirst().getDuration().toMinutes());
+    }
+
+    @Test
+    void updateMaintenanceJob_noteOnly() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        job.setMaintenanceNote("Old note");
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        UpdateMaintenanceRequest request = new UpdateMaintenanceRequest(
+                "line1",
+                0,
+                null,
+                "New note",
+                null);
+
+        PackagingSchedule result = maintenanceService.updateMaintenanceJob(schedule, request);
+
+        assertEquals("New note", result.getJobs().getFirst().getMaintenanceNote());
+    }
+
+    @Test
+    void updateMaintenanceJob_typeNoteAndDurationTogether() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        UpdateMaintenanceRequest request = new UpdateMaintenanceRequest(
+                "line1",
+                0,
+                2,
+                "Updated note",
+                45);
+
+        ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
+        maintenanceTypes.put(1, "Обслуживание");
+        maintenanceTypes.put(2, "Мойка");
+        when(loadDataService.getMaintenanceTypes()).thenReturn(maintenanceTypes);
+
+        PackagingSchedule result = maintenanceService.updateMaintenanceJob(schedule, request);
+
+        assertEquals(45, result.getJobs().getFirst().getDuration().toMinutes());
+        assertEquals(2, result.getJobs().getFirst().getMaintenanceTypeId());
+        assertEquals("Updated note", result.getJobs().getFirst().getMaintenanceNote());
+        assertEquals("Мойка", result.getJobs().getFirst().getName());
+    }
+
+    @Test
+    void updateMaintenanceJob_invalidIndexThrows() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        UpdateMaintenanceRequest request = new UpdateMaintenanceRequest(
+                "line1",
+                5,
+                null,
+                null,
+                30);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> maintenanceService.updateMaintenanceJob(schedule, request));
+    }
+
+    // ============================================================
+    // removeMaintenanceJob
+    // ============================================================
+
+    @Test
+    void removeMaintenanceJobByIndexTest() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        job.setMaintenance(true);
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        PackagingSchedule result = maintenanceService.removeMaintenanceJob(schedule, "line1", 0);
+
+        assertTrue(result.getJobs().isEmpty());
+        assertTrue(line.getJobs().isEmpty());
+    }
+
+    // ============================================================
+    // dailyCleaning
+    // ============================================================
+
     @Test
     void dailyCleaningEmptyLine() {
         CleaningDurationUtils.init(Map.of("line1", 30));
         line.setJobs(new ArrayList<>());
 
-        maintenanceJob.addDailyFullCleaning(schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
 
         assertTrue(line.getJobs().isEmpty());
     }
@@ -267,19 +337,21 @@ class MaintenanceJobTest {
         CleaningDurationUtils.init(Map.of("line1", 30));
         line.setJobs(null);
 
-        maintenanceJob.addDailyFullCleaning(schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
 
         assertNull(line.getJobs());
     }
 
-    // --- addDailyFullCleaning (new logic: anchor from reversed jobs, dailyCleaningStart <= last job end) ---
+    // --- addDailyFullCleaning (new logic: anchor from reversed jobs,
+    // dailyCleaningStart <= last job end) ---
 
     @Test
     void addDailyFullCleaning_skipsWhenNoAnchor() {
         CleaningDurationUtils.init(Map.of("line1", 30));
         Product product = schedule.getProducts().get(1);
-        // One production job with no preceding cleaning gap >= 30 min; no type-2 maintenance
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
+        // One production job with no preceding cleaning gap >= 30 min; no type-2
+        // maintenance
+        LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
         Job job = Job.fromDbJobRow(
                 new DbJobRow(null, "", 0, 0, 0.0,
                         start, start.plusMinutes(60),
@@ -290,7 +362,7 @@ class MaintenanceJobTest {
         schedule.getJobs().add(job);
         ScheduleUtils.fixLineJobs(line);
 
-        maintenanceJob.addDailyFullCleaning(schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
 
         assertEquals(1, line.getJobs().size());
     }
@@ -299,8 +371,9 @@ class MaintenanceJobTest {
     void addDailyFullCleaning_skipsWhenDailyCleaningStartAfterLastJobEnd() {
         CleaningDurationUtils.init(Map.of("line1", 30));
         Product maintenanceProduct = schedule.getProducts().getFirst();
-        // Single maintenance type 2, duration 40 min; dailyCleaningStart = end+24h, last job = same → skip
-        LocalDateTime jobEnd = LocalDateTime.of(2025, 1, 15, 10, 0);
+        // Single maintenance type 2, duration 40 min; dailyCleaningStart = end+24h,
+        // last job = same → skip
+        LocalDateTime jobEnd = LocalDateTime.of(2025, Month.JANUARY, 15, 10, 0);
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
         Job mJob = new Job(row, "Maintenance job", maintenanceProduct);
 
@@ -309,7 +382,7 @@ class MaintenanceJobTest {
         schedule.getJobs().add(mJob);
         ScheduleUtils.fixLineJobs(line);
 
-        maintenanceJob.addDailyFullCleaning(schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
 
         assertEquals(1, line.getJobs().size());
     }
@@ -347,15 +420,17 @@ class MaintenanceJobTest {
         line.getJobs().add(prod);
         schedule.getJobs().add(prod);
 
-        maintenanceJob.addDailyFullCleaning(schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
 
         assertEquals(3, line.getJobs().size());
         Job added = line.getJobs().get(2);
         assertEquals(2, added.getMaintenanceTypeId());
         assertEquals(30, added.getDuration().toMinutes());
-        // fixLineJobs recalculates the new job's start from previous job end + cleaning; assert next day and ~10:00
+        // fixLineJobs recalculates the new job's start from previous job end +
+        // cleaning; assert next day and ~10:00
         assertEquals(LocalDate.of(2025, Month.JANUARY, 16), added.getStartProductionDateTime().toLocalDate());
-        // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly added job)
+        // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly
+        // added job)
         assertNotNull(line.getMaxEndTime());
         assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
     }
@@ -377,7 +452,8 @@ class MaintenanceJobTest {
                         day1At830, day2At10,
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
                 normalProduct, day1At830, null);
-        // New logic: cleaning duration = between(startCleaning, startProduction); need startCleaning < startProduction for positive gap
+        // New logic: cleaning duration = between(startCleaning, startProduction); need
+        // startCleaning < startProduction for positive gap
         prod.setStartCleaningDateTime(day1At8);
         prod.setStartProductionDateTime(day1At830);
         prod.setEndDateTime(day2At10);
@@ -386,7 +462,7 @@ class MaintenanceJobTest {
         line.getJobs().add(prod);
         schedule.getJobs().add(prod);
 
-        maintenanceJob.addDailyFullCleaning(schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
 
         assertEquals(2, line.getJobs().size());
         Job added = line.getJobs().stream()
@@ -395,10 +471,12 @@ class MaintenanceJobTest {
         assertTrue(added.isMaintenance());
         assertEquals(2, added.getMaintenanceTypeId());
         assertEquals(25, added.getDuration().toMinutes());
-        // fixLineJobs recalculates from line start (day1At8): new job ends up after previous; accept same or next day
+        // fixLineJobs recalculates from line start (day1At8): new job ends up after
+        // previous; accept same or next day
         assertTrue(added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, Month.JANUARY, 16))
                 || added.getStartProductionDateTime().toLocalDate().equals(LocalDate.of(2025, Month.JANUARY, 15)));
-        // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly added job)
+        // addDailyFullCleaning sets maxEndTime = last job end + 20h (last is the newly
+        // added job)
         assertNotNull(line.getMaxEndTime());
         assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
     }
@@ -419,7 +497,8 @@ class MaintenanceJobTest {
         LocalDateTime day2At15 = LocalDateTime.of(2025, Month.JANUARY, 16, 15, 0);
 
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
-        // Line1: maint type 2 end 10:00, prod end day2 15:00 (no fixLineJobs so end stays)
+        // Line1: maint type 2 end 10:00, prod end day2 15:00 (no fixLineJobs so end
+        // stays)
         Job m1 = new Job(row, "Мойка", maintenanceProduct);
         m1.setMaintenance(true);
         m1.setMaintenanceTypeId(2);
@@ -457,13 +536,14 @@ class MaintenanceJobTest {
         line2.getJobs().add(p2);
         schedule.getJobs().add(p2);
 
-        maintenanceJob.addDailyFullCleaning(schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
 
         assertEquals(3, line.getJobs().size());
         assertEquals(3, line2.getJobs().size());
         assertEquals(30, line.getJobs().get(2).getDuration().toMinutes());
         assertEquals(25, line2.getJobs().get(2).getDuration().toMinutes());
-        // addDailyFullCleaning sets maxEndTime = last job end + 20h on each line (last = newly added job)
+        // addDailyFullCleaning sets maxEndTime = last job end + 20h on each line (last
+        // = newly added job)
         assertNotNull(line.getMaxEndTime());
         assertNotNull(line2.getMaxEndTime());
         assertEquals(line.getJobs().getLast().getEndDateTime().plusHours(20), line.getMaxEndTime());
