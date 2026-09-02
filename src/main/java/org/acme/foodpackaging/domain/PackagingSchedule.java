@@ -36,6 +36,7 @@ public class PackagingSchedule {
 
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
+     private Map<String, ParallelOperation> parallelOperations;
     private List<Job> deletedMaintenance;
     private Set<String> overloadedIds;
     private LocalDate dti;
@@ -58,6 +59,7 @@ public class PackagingSchedule {
         maintenanceProduct = createMaintenanceProduct();
         this.deletedMaintenance = new ArrayList<>();
         this.overloadedIds = new HashSet<>();
+        this.parallelOperations = new HashMap<>();
 
         setWorkCalendar(new WorkCalendar(startDate));
         setLines(lines);

@@ -5,6 +5,7 @@ import ai.timefold.solver.core.api.solver.SolutionManager;
 import ai.timefold.solver.core.api.solver.SolutionUpdatePolicy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -24,7 +25,7 @@ import org.acme.foodpackaging.scheduleoperations.MaintenanceService;
 
 import java.util.Map;
 
-@Path("schedule")
+@Path("schedule/maintenance")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 @ApplicationScoped
 public class MaintenanceResource {
@@ -36,22 +37,19 @@ public class MaintenanceResource {
     /**
      * Суточная мойка линий
      */
+
     @POST
     @Path("dailyCleaning")
     @Produces(MediaType.TEXT_PLAIN)
     public Response dailyCleaning(@HeaderParam("X-Session-Id") String sessionId) {
 
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-
+        PackagingSchedule schedule = requireSchedule(sessionId);
         if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return noScheduleLoaded();
         }
-        maintenanceService.addDailyFullCleaning(schedule);
 
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
+        maintenanceService.addDailyFullCleaning(schedule);
+        persist(sessionId, schedule);
 
         return Response.ok("Cleanings added successfully").build();
     }
@@ -61,7 +59,8 @@ public class MaintenanceResource {
      */
 
     @POST
-    @Path("maintenance")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response addMaintenance(AddMaintenanceRequest request,
             @HeaderParam("X-Session-Id") String sessionId) {
 
@@ -80,7 +79,8 @@ public class MaintenanceResource {
     }
 
     @PUT
-    @Path("maintenance")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     public Response updateMaintenance(UpdateMaintenanceRequest request,
             @HeaderParam("X-Session-Id") String sessionId) {
 
@@ -99,7 +99,7 @@ public class MaintenanceResource {
     }
 
     @DELETE
-    @Path("maintenance")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response removeMaintenance(@QueryParam("lineId") String lineId,
             @QueryParam("removeIndex") int removeIndex,
             @HeaderParam("X-Session-Id") String sessionId) {
