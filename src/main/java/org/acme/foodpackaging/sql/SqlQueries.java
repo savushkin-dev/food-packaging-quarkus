@@ -73,7 +73,7 @@ public class SqlQueries {
                         WHERE IDBATCH = ?
                           AND KD = 17
                           AND TP = 0
-                        """.formatted(prommarkSchema);
+                """.formatted(prommarkSchema);
     }
 
     public String loadPmLogMarkingRowsByBatch() {
@@ -177,4 +177,28 @@ public class SqlQueries {
                     v.PDTN
                 """.formatted(mesSchema);
     }
+
+
+    public String successRateFromStart() {
+        return """
+                SELECT
+                  ( CAST((SELECT COUNT(DISTINCT text) FROM %s.dbo.PM_LOG WITH (NOLOCK)
+                     WHERE IDBATCH = ? AND F_DEL = 0 AND dts >= ?) AS float)
+                    /
+                    NULLIF((SELECT COUNT(DISTINCT text) FROM %s.dbo.PM_LOG WITH (NOLOCK)
+                            WHERE IDBATCH = ? AND F_DEL = 0), 0) ) AS success_rate
+                """.formatted(prommarkSchema, prommarkSchema);
+    }
+
+    public String successRateUntilEnd() {
+        return """
+                SELECT
+                  ( CAST((SELECT COUNT(DISTINCT text) FROM %s.dbo.PM_LOG WITH (NOLOCK)
+                     WHERE IDBATCH = ? AND F_DEL = 0 AND dts < ?) AS float)
+                    /
+                    NULLIF((SELECT COUNT(DISTINCT text) FROM %s.dbo.PM_LOG WITH (NOLOCK)
+                            WHERE IDBATCH = ? AND F_DEL = 0), 0) ) AS success_rate
+                """.formatted(prommarkSchema, prommarkSchema);
+    }
+
 }
