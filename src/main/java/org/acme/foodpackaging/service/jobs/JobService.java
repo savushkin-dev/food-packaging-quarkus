@@ -38,8 +38,8 @@ import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 public class JobService {
 
     @Inject
-    public JobService(LoadDataService loadDataService, 
-        UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService,
+    public JobService(LoadDataService loadDataService,
+                      UploadDataService uploadDataService, JobRepository jobRepository, JobInfoService jobInfoService,
                       JobRefreshService refreshService, LineService lineService) {
         this.loadDataService = loadDataService;
         this.uploadDataService = uploadDataService;

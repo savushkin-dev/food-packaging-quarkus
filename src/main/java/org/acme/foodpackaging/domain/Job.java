@@ -3,7 +3,6 @@ package org.acme.foodpackaging.domain;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -225,14 +224,31 @@ public class Job {
     }
 
     public long getCleaningDurationPlan() {
-        if (product == null || product.getCleaningDurations() == null || previousJob == null
+        if (product == null
+                || product.getCleaningDurations() == null
+                || previousJob == null
                 || previousJob.getProduct() == null
-                || previousJob.getProduct().getCleaningDurations() == null)
+                || previousJob.getProduct().getCleaningDurations() == null
+                || line == null) {
             return 0;
-        CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
-        return meta.isPLRLC()
-                ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
-                : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
+        }
+
+        Duration cleaningDuration =
+                product.getCleaningDurations().get(previousJob.getProduct());
+
+        if (!line.isDeletedLine()) {
+            CleaningResult meta =
+                    product.getCleaningResults().get(previousJob.getProduct());
+
+            if (meta != null && meta.isPLRLC()) {
+                Integer lineCleaning =
+                        CleaningDurationUtils.getLinesCleaning().get(line.getId());
+
+                return lineCleaning == null ? 0 : lineCleaning;
+            }
+        }
+
+        return cleaningDuration == null ? 0 : cleaningDuration.toMinutes();
     }
 
     public long getCleaningDurationFact() {
@@ -252,8 +268,7 @@ public class Job {
     // ************************************************************************
 
     public Duration getDuration() {
-        if (isMaintenance())
-            return duration;
+        if (isMaintenance() || (line != null && line.isDeletedLine())) return duration;
         return calculateDuration(true);
     }
 
@@ -342,15 +357,16 @@ public class Job {
     }
 
     private LocalDateTime computeStartProduction(Job previous, LocalDateTime startCleaning) {
-        if (previous == null || previous.isMaintenance() || startCleaning == null || getProduct() == null
-                || previous.getProduct() == null) {
+        if (previous == null || previous.isMaintenance() || startCleaning == null
+                || getProduct() == null || previous.getProduct() == null || line == null) {
             return startCleaning;
         }
         try {
-            CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
-            Duration cleanupDuration = meta.isPLRLC()
-                    ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()))
-                    : product.getCleaningDurations().get(previous.getProduct());
+            Duration cleanupDuration = product.getCleaningDurations().get(previous.getProduct());
+            if(!line.isDeletedLine()){
+                CleaningResult meta = product.getCleaningResults().get(previous.getProduct());
+                cleanupDuration =  meta.isPLRLC() ? Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId())) : cleanupDuration;
+            }
             cleanupDuration = cleaningDelay == null ? cleanupDuration : cleanupDuration.plus(cleaningDelay);
             if (cleanupDuration.isNegative()) {
                 cleanupDuration = Duration.ofMinutes(10);
@@ -361,3 +377,4 @@ public class Job {
         }
     }
 }
+

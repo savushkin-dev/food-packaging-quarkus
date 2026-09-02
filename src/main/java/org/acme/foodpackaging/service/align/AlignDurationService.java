@@ -21,7 +21,7 @@ public class AlignDurationService {
             return;
         for (Line line : schedule.getLines()) {
             List<Job> jobs = line.getJobs();
-            if (jobs == null || jobs.isEmpty()) {
+            if (jobs == null || jobs.isEmpty() || line.isDeletedLine()) {
                 continue;
             }
             fixDurationByFact(line);

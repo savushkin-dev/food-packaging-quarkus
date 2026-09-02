@@ -30,7 +30,7 @@ public class AlignCleaningService {
         for (Line line : solution.getLines()) {
             List<Job> factJobs = getFactJobsSorted(line.getJobs());
 
-            if (factJobs.isEmpty()) {
+            if (factJobs.isEmpty() || line.isDeletedLine()) {
                 continue;
             }
 

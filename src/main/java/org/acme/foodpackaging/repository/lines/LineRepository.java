@@ -4,6 +4,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.entity.lines.PlrLines;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
@@ -20,5 +21,10 @@ public class LineRepository  implements PanacheRepository<PlrLines> {
                         e -> e.getSnm().trim(),
                         (existing, ignored) -> existing
                 ));
+    }
+
+    public Optional<PlrLines> findLineInfo(String lineId) {
+        return find("lineId = ?1 and snm is not null", lineId)
+                .firstResultOptional();
     }
 }

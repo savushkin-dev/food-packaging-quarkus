@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,10 +34,12 @@ public class LineService {
     private static final int MASS_SCALE = 2;
 
     public List<Line> getLines() {
-        return loadDataService.getLines().entrySet().stream()
+        return new ArrayList<>(
+                loadDataService.getLines().entrySet().stream()
                 .sorted(lineNameComparator())
                 .map(e -> new Line(e.getKey(), e.getValue()))
-                .toList();
+                .toList()
+        );
     }
 
     private Comparator<Map.Entry<String, String>> lineNameComparator() {

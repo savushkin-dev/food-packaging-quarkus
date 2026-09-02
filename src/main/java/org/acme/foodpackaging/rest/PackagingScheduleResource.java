@@ -331,7 +331,7 @@ public class PackagingScheduleResource {
         }
         Line line = findLineById(solution, request.getLineId());
         if (!line.getJobs().isEmpty()) {
-            setLineStartDateTime(line, request.getStartLineDateTime());
+            line.setStartDateTime(request.getStartLineDateTime());
 
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
             lineService.setMaxEndDateTimeByLastJob(solution);

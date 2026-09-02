@@ -7,6 +7,7 @@ import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
+import org.acme.foodpackaging.service.lines.LineActivitySyncService;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.builder.ScheduleBuilder;
 import org.acme.foodpackaging.service.lines.LineService;
@@ -38,6 +39,8 @@ class ScheduleBuilderTest {
     ProductService productService;
     @Mock
     AlignSolutionService alignSolutionService;
+    @Mock
+    LineActivitySyncService syncService;
 
     @Test
     void buildSchedule() {
@@ -57,6 +60,7 @@ class ScheduleBuilderTest {
         }).when(productService).buildProducts(any());
 
         doNothing().when(alignSolutionService).align(any());
+        doNothing().when(syncService).syncLines(any(), any(), any());
 
         InitData initData = builder.buildSchedule(date);
 
