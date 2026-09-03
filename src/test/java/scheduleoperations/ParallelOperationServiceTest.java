@@ -171,7 +171,10 @@ class ParallelOperationServiceTest {
                 .duration(java.time.Duration.ofMinutes(60))
                 .endDateTime(start.plusMinutes(60))
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+
+        Map<String, ParallelOperation> operations = new HashMap<>();
+        operations.put("op1", existing);
+        schedule.setParallelOperations(operations);
 
         LocalDateTime newStart = LocalDateTime.of(2026, Month.MARCH, 1, 10, 0);
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
@@ -196,7 +199,10 @@ class ParallelOperationServiceTest {
                 .name("Old name")
                 .eventTypeId(1)
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+
+        Map<String, ParallelOperation> operations = new HashMap<>();
+        operations.put("op1", existing);
+        schedule.setParallelOperations(operations);
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, null, 5, null);
@@ -219,7 +225,10 @@ class ParallelOperationServiceTest {
                 .endDateTime(start.plusMinutes(45))
                 .note("old")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+
+        Map<String, ParallelOperation> operations = new HashMap<>();
+        operations.put("op1", existing);
+        schedule.setParallelOperations(operations);
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", "line2", null, null, null, "new note");
@@ -247,7 +256,10 @@ class ParallelOperationServiceTest {
                 .eventTypeId(2)
                 .note("note")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+
+        Map<String, ParallelOperation> operations = new HashMap<>();
+        operations.put("op1", existing);
+        schedule.setParallelOperations(operations);
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, null, null, null);
@@ -272,7 +284,10 @@ class ParallelOperationServiceTest {
                 .id("op1")
                 .lineId("line1")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+
+        Map<String, ParallelOperation> operations = new HashMap<>();
+        operations.put("op1", existing);
+        schedule.setParallelOperations(operations);
 
         PackagingSchedule result = parallelOperationService.remove(schedule, "op1");
 
