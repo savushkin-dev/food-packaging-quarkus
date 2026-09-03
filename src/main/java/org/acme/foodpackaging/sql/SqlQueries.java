@@ -19,6 +19,30 @@ public class SqlQueries {
     @ConfigProperty(name = "app.prommark.schema")
     String prommarkSchema;
 
+    public String loadProductsGroupedByDti() {
+        return """
+                SELECT
+                    v.KMC,
+                    m.EAN13,
+                    v.EMK,
+                    v.KT,
+                    SUM(v.MASSA) as SUM_MASS,
+                    SUM(v.KOLEV) as SUM_KOLEV,
+                    m.SNM as PRODUCT_NAME,
+                    m.KRKMC
+                FROM %s.dbo.BD_VZPMC AS v
+                    JOIN %s.dbo.NS_MC AS m ON v.KMC = m.KMC
+                WHERE
+                    CAST(v.DTI AS DATE) = ?
+                    AND v.KSK = ?
+                    AND v.F_DEL = 0
+                    AND v.NP > 0
+                GROUP BY v.KMC, m.EAN13, v.EMK, m.SNM, m.KRKMC, v.KT
+                ORDER BY v.KMC
+                """.formatted(mesSchema, mesSchema);
+    }
+
+
     public String loadJobs() {
         return """
                 SELECT
