@@ -11,6 +11,7 @@ import ai.timefold.solver.core.api.domain.solution.ProblemFactProperty;
 import ai.timefold.solver.core.api.domain.valuerange.ValueRangeProvider;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 import ai.timefold.solver.core.api.solver.SolverStatus;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -36,7 +37,11 @@ public class PackagingSchedule {
 
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
-     private Map<String, ParallelOperation> parallelOperations;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Map<String, ParallelOperation> parallelOperations;
+
     private List<Job> deletedMaintenance;
     private Set<String> overloadedIds;
     private LocalDate dti;
@@ -45,14 +50,13 @@ public class PackagingSchedule {
     @PlanningScore
     private HardMediumSoftLongScore score;
 
-    // Ignored by Timefold, used by the UI to display solve or stop solving button
     private SolverStatus solverStatus;
 
-    // No-arg constructor required for Timefold
     public PackagingSchedule() {
         maintenanceProduct = createMaintenanceProduct();
         this.deletedMaintenance = new ArrayList<>();
         this.overloadedIds = new HashSet<>();
+        this.parallelOperations = new HashMap<>();
     }
 
     public PackagingSchedule(List<Line> lines, LocalDate startDate) {
@@ -78,20 +82,11 @@ public class PackagingSchedule {
         }
     }
 
-    // ************************************************************************
-    // Getters and setters
-    // ************************************************************************
+    public Map<String, ParallelOperation> getParallelOperations() {
+        return new HashMap<>(parallelOperations);
+    }
 
-    @Override
-    public String toString() {
-        return "PackagingSchedule{" +
-                "workCalendar=" + workCalendar +
-                ", products=" + products +
-                ", lines=" + lines +
-                ", jobs=" + jobs +
-                ", score=" + score +
-                ", solverStatus=" + solverStatus +
-                '}';
-
+    public void setParallelOperations(Map<String, ParallelOperation> parallelOperations) {
+        this.parallelOperations = parallelOperations == null ? new HashMap<>() : new HashMap<>(parallelOperations);
     }
 }

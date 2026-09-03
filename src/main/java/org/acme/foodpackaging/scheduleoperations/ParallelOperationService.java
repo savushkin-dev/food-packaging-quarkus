@@ -11,6 +11,7 @@ import org.acme.foodpackaging.persistence.load.LoadDataService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -19,9 +20,6 @@ public class ParallelOperationService {
 
     private final LoadDataService loadDataService;
 
-    /**
-     * Добавляет параллельную сервисную операцию, генерируя уникальный ключ
-     */
     public PackagingSchedule add(PackagingSchedule schedule, AddParallelOperationRequest request) {
 
         String id = generateKey();
@@ -41,17 +39,17 @@ public class ParallelOperationService {
                 .note(request.note())
                 .build();
 
-        schedule.getParallelOperations().put(id, operation);
+        Map<String, ParallelOperation> operations = schedule.getParallelOperations();
+        operations.put(id, operation);
+        schedule.setParallelOperations(operations);
+
         return schedule;
     }
 
-    /**
-     * Обновляет существующую параллельную операцию по id — устанавливаются только
-     * переданные поля
-     */
     public PackagingSchedule update(PackagingSchedule schedule, UpdateParallelOperationRequest request) {
 
-        ParallelOperation existing = schedule.getParallelOperations().get(request.id());
+        Map<String, ParallelOperation> operations = schedule.getParallelOperations();
+        ParallelOperation existing = operations.get(request.id());
         if (existing == null) {
             throw new IllegalArgumentException("Parallel operation not found: " + request.id());
         }
@@ -70,7 +68,7 @@ public class ParallelOperationService {
         }
 
         LocalDateTime newStart = request.startDateTime() != null ? request.startDateTime() : existing.getStartDateTime();
-        var newDuration = request.duration() != null ? Duration.ofMinutes(request.duration()) : existing.getDuration();
+        Duration newDuration = request.duration() != null ? Duration.ofMinutes(request.duration()) : existing.getDuration();
         if (request.startDateTime() != null || request.duration() != null) {
             builder.startDateTime(newStart);
             builder.duration(newDuration);
@@ -78,20 +76,20 @@ public class ParallelOperationService {
         }
 
         ParallelOperation updated = builder.build();
-        schedule.getParallelOperations().put(updated.getId(), updated);
+        operations.put(updated.getId(), updated);
+        schedule.setParallelOperations(operations);
 
         return schedule;
     }
 
-    /**
-     * Удаляет параллельную операцию по ключу
-     */
-
     public PackagingSchedule remove(PackagingSchedule schedule, String id) {
-        ParallelOperation removed = schedule.getParallelOperations().remove(id);
+        Map<String, ParallelOperation> operations = schedule.getParallelOperations();
+        ParallelOperation removed = operations.remove(id);
         if (removed == null) {
             throw new IllegalArgumentException("Parallel operation not found: " + id);
         }
+        schedule.setParallelOperations(operations);
+
         return schedule;
     }
 
@@ -99,7 +97,7 @@ public class ParallelOperationService {
         return UUID.randomUUID().toString();
     }
 
-    private LocalDateTime calculateEndDateTime(LocalDateTime start, java.time.Duration duration) {
+    private LocalDateTime calculateEndDateTime(LocalDateTime start, Duration duration) {
         return start == null || duration == null ? null : start.plus(duration);
     }
 
@@ -110,3 +108,4 @@ public class ParallelOperationService {
         return loadDataService.getMaintenanceTypes().getOrDefault(eventTypeId, "Параллельная операция");
     }
 }
+

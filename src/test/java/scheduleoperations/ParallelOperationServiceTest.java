@@ -13,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -31,9 +33,7 @@ class ParallelOperationServiceTest {
     @BeforeEach
     void setup() {
         parallelOperationService = new ParallelOperationService(loadDataService);
-
         schedule = new PackagingSchedule();
-        schedule.setParallelOperations(new ConcurrentHashMap<>());
     }
 
     // ---------- add ----------
@@ -142,7 +142,10 @@ class ParallelOperationServiceTest {
                 .eventTypeId(2)
                 .note("old note")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+
+        Map<String, ParallelOperation> operations = new HashMap<>();
+        operations.put("op1", existing);
+        schedule.setParallelOperations(operations);
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, 120, null, null);
