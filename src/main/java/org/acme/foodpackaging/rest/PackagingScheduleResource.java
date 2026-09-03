@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
+import org.acme.foodpackaging.dto.response.lineservice.LineProductionDto;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
@@ -31,7 +32,10 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.*;
+
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @Path("schedule")
@@ -375,13 +379,20 @@ public class PackagingScheduleResource {
     @Path("dailyProductions")
     @Produces(MediaType.APPLICATION_JSON)
     public Response dailyProductions(
-            @HeaderParam("X-Session-Id") String sessionId,
-            @QueryParam("selectedDate") String selectedDate,
-            @QueryParam("shiftNumber") Integer shiftNumber) {
+            @HeaderParam("X-Session-Id") String sessionId, DailyProductionsDto request) {
 
-        if (selectedDate == null || selectedDate.isBlank()) {
+        if (request  == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, "selectedDate is required"))
+                    .entity(Map.of(ApiFields.ERROR, "date query parameter is required"))
+                    .build();
+        }
+
+        LocalDateTime shiftStart;
+        try {
+            shiftStart = LocalDateTime.parse(shiftStartParam);
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, "shiftStart must be in ISO format (yyyy-MM-ddTHH:mm:ss)"))
                     .build();
         }
 
@@ -393,10 +404,8 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Map<String, LineProductionDto> productions = lineService.calculateLineProductions(
-                solution.getLines(),
-                LocalDate.parse(selectedDate),
-                shiftNumber);
+        Map<String, LineProductionDto> productions =
+                lineService.calculateLineProductions(solution.getLines(), request.selectedDate(), request.shiftNumber());
 
         return Response.ok(productions).build();
     }
