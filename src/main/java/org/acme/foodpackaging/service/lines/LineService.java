@@ -170,6 +170,7 @@ public class LineService {
                     job.getCameraEnd()));
         }
 
+        batches.sort(Comparator.comparing(BatchProductionDto::dts, Comparator.nullsLast(Comparator.naturalOrder())));
         return batches;
     }
 

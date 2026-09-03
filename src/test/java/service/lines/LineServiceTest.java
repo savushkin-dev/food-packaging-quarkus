@@ -264,6 +264,34 @@ class LineServiceTest {
     }
 
     @Test
+    void calculateLineProductions_shiftBatches_sortedByDts() {
+        LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
+
+        Job later = new Job();
+        later.setId("later");
+        later.setMass(100.0);
+        later.setCameraStart(shiftStart.plusHours(5)); // 13:00
+        later.setCameraEnd(later.getCameraStart().plusHours(1));
+
+        Job earlier = new Job();
+        earlier.setId("earlier");
+        earlier.setMass(100.0);
+        earlier.setCameraStart(shiftStart.plusHours(1)); // 09:00
+        earlier.setCameraEnd(earlier.getCameraStart().plusHours(1));
+
+        Line l1 = new Line("L1", "Line 1");
+        l1.setJobs(List.of(later, earlier));
+
+        Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
+
+        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        assertEquals(List.of("earlier", "later"),
+                dto.shift1().stream().map(BatchProductionDto::snpz).toList());
+        assertEquals(earlier.getCameraStart(), dto.shift1().get(0).dts());
+        assertEquals(later.getCameraStart(), dto.shift1().get(1).dts());
+    }
+
+    @Test
     void calculateLineProductions_emptyJobs_zeroForBothShiftsAndTotal() {
         LocalDateTime shiftStart = LocalDateTime.of(2026, Month.AUGUST, 3, 8, 0);
 
