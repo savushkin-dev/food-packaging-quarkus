@@ -253,6 +253,8 @@ public class SchedulerPage {
                     .click();
             wait.until(d -> d.findElements(By.xpath("//*[contains(text(),'Подтверждение действия')]")).isEmpty());
         } catch (Exception ignored) {
+            // Диалог подтверждения показывается не всегда - его отсутствие
+            // за отведённое время это нормальный сценарий, а не сбой.
         }
     }
 
@@ -262,6 +264,8 @@ public class SchedulerPage {
                     .until(d -> d.findElement(By.xpath("//div[contains(., 'Результат операции')]//button[contains(., 'ОК')]")))
                     .click();
         } catch (Exception ignored) {
+            // Диалог результата показывается не всегда - его отсутствие
+            // за отведённое время это нормальный сценарий, а не сбой.
         }
         waitUntilOverlayGone();
     }
