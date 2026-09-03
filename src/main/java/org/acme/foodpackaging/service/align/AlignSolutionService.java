@@ -62,24 +62,28 @@ public class AlignSolutionService {
         }
     }
 
-    private void markForDeleting(PackagingSchedule schedule){
-        for(Job job : schedule.getJobs()){
-            if(job.isMaintenance() && job.getMaintenanceTypeId()!= null
+    private void markForDeleting(PackagingSchedule schedule) {
+        List<Job> deletedMaintenance = schedule.getDeletedMaintenance();
+
+        for (Job job : schedule.getJobs()) {
+            if (job.isMaintenance() && job.getMaintenanceTypeId() != null
                     && (job.getMaintenanceTypeId() == 7
                     || job.getMaintenanceTypeId() == 8 ||
                     job.getMaintenanceTypeId() == 2)
-            ){
-                if(job.getMaintenanceTypeId() == 2
+            ) {
+                if (job.getMaintenanceTypeId() == 2
                         && job.getPreviousJob() != null
                         && job.getPreviousJob().isMaintenance()
                         && job.getPreviousJob().getMaintenanceTypeId() != null
-                        && job.getPreviousJob().getMaintenanceTypeId() != 8){
+                        && job.getPreviousJob().getMaintenanceTypeId() != 8) {
                     continue;
                 }
-                job.setFDel((short)1);
-                schedule.getDeletedMaintenance().add(job);
+                job.setFDel((short) 1);
+                deletedMaintenance.add(job);
             }
         }
+
+        schedule.setDeletedMaintenance(deletedMaintenance);
     }
 
     public void reset(PackagingSchedule solution){

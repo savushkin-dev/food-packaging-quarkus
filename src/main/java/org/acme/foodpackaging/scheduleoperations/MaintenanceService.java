@@ -30,6 +30,7 @@ public class MaintenanceService {
      * Добавляет Maintenance Job на линию (вставка в существующее расписание либо
      * старт пустой линии)
      */
+
     public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule, AddMaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.lineId());
@@ -94,6 +95,7 @@ public class MaintenanceService {
     /**
      * Удаляет Maintenance Job с линии
      */
+
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule, String lineId, int removeIndex) {
 
         Line line = findLineById(schedule, lineId);
@@ -105,7 +107,10 @@ public class MaintenanceService {
 
         Job jobToRemove = lineJobs.get(removeIndex);
         if (jobToRemove.isMaintenance()) {
-            schedule.getDeletedMaintenance().add(jobToRemove);
+            List<Job> deletedMaintenance = schedule.getDeletedMaintenance();
+            deletedMaintenance.add(jobToRemove);
+            schedule.setDeletedMaintenance(deletedMaintenance);
+
             jobToRemove.setFDel((short) 1);
             schedule.getJobs().remove(jobToRemove);
 

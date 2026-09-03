@@ -42,6 +42,8 @@ public class PackagingSchedule {
     @Setter(AccessLevel.NONE)
     private Map<String, ParallelOperation> parallelOperations;
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private List<Job> deletedMaintenance;
     private Set<String> overloadedIds;
     private LocalDate dti;
@@ -88,5 +90,13 @@ public class PackagingSchedule {
 
     public void setParallelOperations(Map<String, ParallelOperation> parallelOperations) {
         this.parallelOperations = parallelOperations == null ? new HashMap<>() : new HashMap<>(parallelOperations);
+    }
+
+    public List<Job> getDeletedMaintenance() {
+        return new ArrayList<>(deletedMaintenance);
+    }
+
+    public void setDeletedMaintenance(List<Job> deletedMaintenance) {
+        this.deletedMaintenance = deletedMaintenance == null ? new ArrayList<>() : new ArrayList<>(deletedMaintenance);
     }
 }

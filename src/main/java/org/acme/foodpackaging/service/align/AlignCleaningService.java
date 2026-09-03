@@ -63,7 +63,7 @@ public class AlignCleaningService {
     }
 
     private void calculateCleaningDelay(List<Job> jobs, Line line, PackagingSchedule solution) {
-        if (jobs.size() < 2 || solution.getDeletedMaintenance() == null) {
+        if (jobs.size() < 2) {
             return;
         }
 
