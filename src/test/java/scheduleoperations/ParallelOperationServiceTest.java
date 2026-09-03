@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -43,7 +44,7 @@ class ParallelOperationServiceTest {
         types.put(3, "Мойка");
         when(loadDataService.getMaintenanceTypes()).thenReturn(types);
 
-        LocalDateTime start = LocalDateTime.of(2026, 2, 24, 9, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.FEBRUARY, 24, 9, 0);
         AddParallelOperationRequest request = new AddParallelOperationRequest(
                 "line1",
                 start,
@@ -130,7 +131,7 @@ class ParallelOperationServiceTest {
 
     @Test
     void update_durationOnly_recalculatesEndDateTime() {
-        LocalDateTime start = LocalDateTime.of(2026, 2, 24, 9, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.FEBRUARY, 24, 9, 0);
         ParallelOperation existing = ParallelOperation.builder()
                 .id("op1")
                 .lineId("line1")
@@ -159,7 +160,7 @@ class ParallelOperationServiceTest {
 
     @Test
     void update_startDateTimeOnly_recalculatesEndDateTime() {
-        LocalDateTime start = LocalDateTime.of(2026, 2, 24, 9, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.FEBRUARY, 24, 9, 0);
         ParallelOperation existing = ParallelOperation.builder()
                 .id("op1")
                 .lineId("line1")
@@ -169,7 +170,7 @@ class ParallelOperationServiceTest {
                 .build();
         schedule.getParallelOperations().put("op1", existing);
 
-        LocalDateTime newStart = LocalDateTime.of(2026, 3, 1, 10, 0);
+        LocalDateTime newStart = LocalDateTime.of(2026, Month.MARCH, 1, 10, 0);
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, newStart, null, null, null);
 
@@ -206,7 +207,7 @@ class ParallelOperationServiceTest {
 
     @Test
     void update_lineIdAndNoteOnly_doesNotTouchDurationOrStart() {
-        LocalDateTime start = LocalDateTime.of(2026, 2, 24, 9, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.FEBRUARY, 24, 9, 0);
         ParallelOperation existing = ParallelOperation.builder()
                 .id("op1")
                 .lineId("line1")
@@ -232,7 +233,7 @@ class ParallelOperationServiceTest {
 
     @Test
     void update_noFieldsProvided_keepsOperationUnchanged() {
-        LocalDateTime start = LocalDateTime.of(2026, 2, 24, 9, 0);
+        LocalDateTime start = LocalDateTime.of(2026, Month.FEBRUARY, 24, 9, 0);
         ParallelOperation existing = ParallelOperation.builder()
                 .id("op1")
                 .lineId("line1")
