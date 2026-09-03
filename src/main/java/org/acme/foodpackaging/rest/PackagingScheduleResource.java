@@ -379,11 +379,12 @@ public class PackagingScheduleResource {
     @Path("dailyProductions")
     @Produces(MediaType.APPLICATION_JSON)
     public Response dailyProductions(
-            @HeaderParam("X-Session-Id") String sessionId, DailyProductionsDto request) {
+            @HeaderParam("X-Session-Id") String sessionId,
+            @QueryParam("shiftStart") String shiftStartParam) {
 
-        if (request  == null) {
+        if (shiftStartParam == null || shiftStartParam.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, "date query parameter is required"))
+                    .entity(Map.of(ApiFields.ERROR, "shiftStart query parameter is required"))
                     .build();
         }
 
@@ -404,8 +405,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Map<String, LineProductionDto> productions =
-                lineService.calculateLineProductions(solution.getLines(), request.selectedDate(), request.shiftNumber());
+        Map<String, Object> productions = lineService.calculateLineProductions(solution.getLines(), shiftStart);
 
         return Response.ok(productions).build();
     }
