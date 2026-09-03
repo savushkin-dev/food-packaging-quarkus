@@ -2,41 +2,22 @@ package org.acme.foodpackaging.service.lines;
 
 import org.acme.foodpackaging.persistence.constants.WindowCrossing;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 public record ShiftWindow(LocalDateTime start, LocalDateTime end) {
 
-    private static final int SHIFT_START_HOUR = 8;
-    private static final int SHIFT_SPLIT_HOUR = 20;
+    private static final int SHIFT_DURATION_HOURS = 12;
 
-    public static ShiftWindow forDate(LocalDate date, Integer smena) {
-        if (smena == null) {
-            return fullDay(date);
+    public static ShiftWindow forShiftStart(LocalDateTime shiftStart, Integer shiftNumber) {
+        if (shiftNumber == null) {
+            return new ShiftWindow(shiftStart, shiftStart.plusHours(24));
         }
-        return switch (smena) {
-            case 1 -> firstShift(date);
-            case 2 -> secondShift(date);
-            default -> throw new IllegalArgumentException("Unsupported smena value: " + smena);
+        return switch (shiftNumber) {
+            case 1 -> new ShiftWindow(shiftStart, shiftStart.plusHours(SHIFT_DURATION_HOURS));
+            case 2 -> new ShiftWindow(shiftStart.plusHours(SHIFT_DURATION_HOURS), shiftStart.plusHours(24));
+            default -> throw new IllegalArgumentException("Unsupported shiftNumber value: " + shiftNumber);
         };
-    }
-
-    private static ShiftWindow fullDay(LocalDate date) {
-        LocalDateTime start = date.atTime(SHIFT_START_HOUR, 0);
-        return new ShiftWindow(start, start.plusDays(1));
-    }
-
-    private static ShiftWindow firstShift(LocalDate date) {
-        LocalDateTime start = date.atTime(SHIFT_START_HOUR, 0);
-        LocalDateTime end = date.atTime(SHIFT_SPLIT_HOUR, 0);
-        return new ShiftWindow(start, end);
-    }
-
-    private static ShiftWindow secondShift(LocalDate date) {
-        LocalDateTime start = date.atTime(SHIFT_SPLIT_HOUR, 0);
-        LocalDateTime end = date.plusDays(1).atTime(SHIFT_START_HOUR, 0);
-        return new ShiftWindow(start, end);
     }
 
     public boolean overlaps(LocalDateTime jobStart, LocalDateTime jobEnd) {
@@ -60,4 +41,3 @@ public record ShiftWindow(LocalDateTime start, LocalDateTime end) {
         return dateTime.truncatedTo(ChronoUnit.MINUTES);
     }
 }
-
