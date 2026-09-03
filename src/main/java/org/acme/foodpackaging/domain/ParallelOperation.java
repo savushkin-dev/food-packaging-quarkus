@@ -1,7 +1,9 @@
 package org.acme.foodpackaging.domain;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Builder;
 import lombok.Getter;
+import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -15,6 +17,7 @@ public class ParallelOperation {
     private final String name;
     private final LocalDateTime startDateTime;
     private final LocalDateTime endDateTime;
+    @JsonSerialize(using = DurationMinutesSerializer.class)
     private final Duration duration;
     private final Integer eventTypeId;
     private final String note;

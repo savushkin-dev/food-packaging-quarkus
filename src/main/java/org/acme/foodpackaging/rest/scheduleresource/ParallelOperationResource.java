@@ -8,11 +8,13 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.dto.request.paralleloperations.*;
 import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
 import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.scheduleoperations.ParallelOperationService;
 
+import java.util.Collection;
 import java.util.Map;
 
 @Path("schedule/parallel-operations")
@@ -23,11 +25,25 @@ public class ParallelOperationResource {
     private final ParallelOperationService parallelOperationService;
     private final PackagingScheduleRepository repository;
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getParallelOperations(@HeaderParam("X-Session-Id") String sessionId) {
+
+        PackagingSchedule schedule = requireSchedule(sessionId);
+        if (schedule == null) {
+            return noScheduleLoaded();
+        }
+
+        Collection<ParallelOperation> operations = schedule.getParallelOperations().values();
+
+        return Response.ok(operations).build();
+    }
+
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response addParallelOperation(AddParallelOperationRequest request,
-            @HeaderParam("X-Session-Id") String sessionId) {
+                                         @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = requireSchedule(sessionId);
         if (schedule == null) {
@@ -39,15 +55,14 @@ public class ParallelOperationResource {
 
         return Response.status(Response.Status.CREATED).entity(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "Parallel operation added",
-                ApiFields.LINE_ID, request.lineId())).build();
+                ApiFields.MESSAGE, "Parallel operation added")).build();
     }
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateParallelOperation(UpdateParallelOperationRequest request,
-            @HeaderParam("X-Session-Id") String sessionId) {
+                                            @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = requireSchedule(sessionId);
         if (schedule == null) {
@@ -59,15 +74,14 @@ public class ParallelOperationResource {
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "Parallel operation updated",
-                ApiFields.LINE_ID, request.lineId())).build();
+                ApiFields.MESSAGE, "Parallel operation updated")).build();
     }
 
     @DELETE
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response removeParallelOperation(@PathParam("id") String id,
-            @HeaderParam("X-Session-Id") String sessionId) {
+                                            @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = requireSchedule(sessionId);
         if (schedule == null) {
