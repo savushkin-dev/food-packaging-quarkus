@@ -46,7 +46,6 @@ public class PackagingScheduleResource {
     private final PackagingScheduleRepository repository;
     private final SolverManager<PackagingSchedule, String> solverManager;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-    private final MaintenanceJob maintenanceJob;
     private final JobService jobService;
     private final LineService lineService;
     private final MoveJobsService moveJobsService;
@@ -106,6 +105,7 @@ public class PackagingScheduleResource {
         return new FrontendDataWrapper(
                 schedule.getJobs(),
                 schedule.getLines(),
+                schedule.getParallelOperations().values(),
                 schedule.getScore(),
                 schedule.getSolverStatus());
     }
@@ -534,64 +534,6 @@ public class PackagingScheduleResource {
 
         return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully"))
                 .build();
-    }
-
-    /**
-     * Суточная мойка линий
-     */
-    @POST
-    @Path("dailyCleaning")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response dailyCleaning(@HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-
-        if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
-        }
-        maintenanceJob.addDailyFullCleaning(schedule);
-
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
-
-        return Response.ok("Cleanings added successfully").build();
-    }
-
-    /**
-     * Операции для сервисной работы на линии
-     */
-    @POST
-    @Path("maintenance")
-    public Response addMaintenance(MaintenanceRequest request,
-            @HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-        PackagingSchedule updated;
-        if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
-        }
-        if (request.isUpdateLineMode()) {
-            if (request.getMaintenanceTypeId() != null) {
-                updated = maintenanceJob.updateMaintenanceType(schedule, request);
-            } else {
-                updated = maintenanceJob.updateDuration(schedule, request);
-            }
-        } else if (request.isRemoveLineMode()) {
-            updated = maintenanceJob.removeMaintenanceJob(schedule, request);
-        } else {
-            updated = maintenanceJob.addMaintenanceJob(schedule, request);
-        }
-        solutionManager.update(updated, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, updated);
-
-        return Response.ok(Map.of(
-                ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "Maintenance job added",
-                ApiFields.LINE_ID, request.getLineId())).build();
     }
 
     /**

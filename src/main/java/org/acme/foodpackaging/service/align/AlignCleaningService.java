@@ -34,7 +34,7 @@ public class AlignCleaningService {
                 continue;
             }
 
-            calculateCleaningDelay(factJobs, line, solution);
+            calculateCleaningDelay(factJobs, line);
             Job firstFactJob = factJobs.getFirst();
             alignLineByStartDateTime(line, firstFactJob);
         }
@@ -62,8 +62,8 @@ public class AlignCleaningService {
         fixPinnedJobs(line);
     }
 
-    private void calculateCleaningDelay(List<Job> jobs, Line line, PackagingSchedule solution) {
-        if (jobs.size() < 2 || solution.getDeletedMaintenance() == null) {
+    private void calculateCleaningDelay(List<Job> jobs, Line line) {
+        if (jobs.size() < 2) {
             return;
         }
 

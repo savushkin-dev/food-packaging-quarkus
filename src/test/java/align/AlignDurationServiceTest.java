@@ -4,7 +4,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.scheduleoperations.MaintenanceService;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.align.AlignDurationService;
 import org.apache.commons.lang3.tuple.Pair;
@@ -36,7 +36,7 @@ class AlignDurationServiceTest {
     AlignDurationService alignDuration;
 
     @Mock
-    MaintenanceJob maintenanceJob;
+    MaintenanceService maintenanceService;
 
     private PackagingSchedule solution;
     private Line line;
@@ -45,7 +45,7 @@ class AlignDurationServiceTest {
     @BeforeEach
     void setUp() {
 
-        lineSDateTime = LocalDateTime.of(2026, 3, 6, 10, 0);
+        lineSDateTime = LocalDateTime.of(2026, Month.MARCH, 6, 10, 0);
         line = LineTestBuilder.aLine("line1", lineSDateTime).build();
 
         solution = ScheduleTestBuilder.aSchedule()

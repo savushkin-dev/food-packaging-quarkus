@@ -16,6 +16,7 @@ import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.request.maintenance.AddMaintenanceRequest;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 import org.acme.foodpackaging.record.CleaningResult;
 
@@ -215,6 +216,16 @@ public class Job {
     public Job(String id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    public Job(String id, String name, AddMaintenanceRequest request, Product mProduct) {
+        this.id = id;
+        this.name = name;
+        this.maintenance = true;
+        this.product = mProduct;
+        this.maintenanceTypeId = request.maintenanceTypeId();
+        this.maintenanceNote = request.maintenanceNote();
+        this.duration = Duration.ofMinutes(request.durationMinutes());
     }
 
     public boolean areEqualsPlanAndFactLines() {
