@@ -544,4 +544,67 @@ class DbfImportServiceTest {
         assertEquals("Test Recipient", result.getSnm());
     }
 
+
+    // ==================== ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ ====================
+
+    @Test
+    void testImportSprog_ThrowsWhenFileMissing() throws IOException {
+        Files.delete(sprogFile);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> dbfImportService.importSprog());
+
+        assertEquals("DBF import file is unavailable", ex.getMessage());
+        verify(sprogService, never()).deleteAll();
+        verify(dbfReaderService, never()).readDbfFileStreaming(anyString(), any());
+    }
+
+    @Test
+    void testGetImportFile_RejectsPathTraversal() throws Exception {
+        java.lang.reflect.Method method = DbfImportService.class.getDeclaredMethod("getImportFile", String.class);
+        method.setAccessible(true);
+
+        java.lang.reflect.InvocationTargetException thrown = assertThrows(
+                java.lang.reflect.InvocationTargetException.class,
+                () -> method.invoke(dbfImportService, "../evil.DBF"));
+
+        assertInstanceOf(IllegalArgumentException.class, thrown.getCause());
+        assertEquals("Invalid DBF import file", thrown.getCause().getMessage());
+    }
+
+    @Test
+    void testImportRnpp_SkipsRecordOnClassCastException() {
+        List<Map<String, Object>> records = new ArrayList<>();
+
+        // SYSN не число - вызовет ClassCastException внутри лямбды, запись должна быть пропущена
+        Map<String, Object> badRecord = new HashMap<>();
+        badRecord.put("SYSN", "not-a-number");
+        badRecord.put("KMC", "BAD001");
+        badRecord.put("KT", "KT001");
+        badRecord.put("EMK", 1.0);
+        badRecord.put("KKOM", "MT001");
+        badRecord.put("KOL1T", 1.0);
+        badRecord.put("KOLVK", 1.0);
+        records.add(badRecord);
+
+        Map<String, Object> goodRecord = new HashMap<>();
+        goodRecord.put("SYSN", 39005);
+        goodRecord.put("KMC", "OK001");
+        goodRecord.put("KT", "KT002");
+        goodRecord.put("EMK", 2.0);
+        goodRecord.put("KKOM", "MT002");
+        goodRecord.put("KOL1T", 2.0);
+        goodRecord.put("KOLVK", 2.0);
+        records.add(goodRecord);
+
+        simulateRead(rnppFile, records);
+
+        assertDoesNotThrow(() -> dbfImportService.importRnpp());
+
+        verify(rnppService).deleteAll();
+        verify(entityManager, times(1)).persist(any(PlrRnpp.class));
+        verify(entityManager).flush();
+        verify(entityManager).clear();
+    }
+
 }
