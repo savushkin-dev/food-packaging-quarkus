@@ -25,3 +25,7 @@ jobs:
           context: .
           push: false
           tags: foodpack:latest
+          build-args: |
+            QUARKUS_PROFILE=prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
