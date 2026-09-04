@@ -1,348 +1,384 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.acme</groupId>
-  <artifactId>food-packaging</artifactId>
-  <version>1.0-SNAPSHOT</version>
+    <groupId>org.acme</groupId>
+    <artifactId>food-packaging</artifactId>
+    <version>1.0-SNAPSHOT</version>
 
-  <properties>
-    <!-- Maven Configuration -->
-    <maven.compiler.release>21</maven.compiler.release>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <properties>
+        <!-- Maven Configuration -->
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <!-- SonarQube  -->
-    <sonar.organization>savushkin-dev</sonar.organization>
-    <!-- Sonar coverage exclusions -->
-    <sonar.coverage.exclusions>**/repository/**,**/entity/**,**/record/**,**/rest/**,**/persistence/**,**/sql/**,**/dto/**,**/exception/**,**/config/**,**/solver/**</sonar.coverage.exclusions>
+        <!-- SonarQube  -->
+        <sonar.organization>savushkin-dev</sonar.organization>
+        <!-- Sonar coverage exclusions -->
+        <sonar.coverage.exclusions>
+            **/repository/**,**/entity/**,**/record/**,**/rest/**,**/persistence/**,**/sql/**,**/dto/**,**/exception/**,**/config/**,**/solver/**
+        </sonar.coverage.exclusions>
 
-    <!-- Framework Versions -->
-    <version.io.quarkus>3.15.1</version.io.quarkus>
-    <version.ai.timefold.solver>1.15.0</version.ai.timefold.solver>
+        <!-- Framework Versions -->
+        <version.io.quarkus>3.15.1</version.io.quarkus>
+        <version.ai.timefold.solver>1.15.0</version.ai.timefold.solver>
 
-    <!-- Database Driver Versions -->
-    <version.mssql.jdbc>12.8.1.jre11</version.mssql.jdbc>
+        <!-- Selenium Versions -->
+        <version.selenium>4.27.0</version.selenium>
+        <version.webdrivermanager>5.9.2</version.webdrivermanager>
 
-    <!-- Apache POI Versions -->
-    <version.poi>5.3.0</version.poi>
+        <!-- Database Driver Versions -->
+        <version.mssql.jdbc>12.8.1.jre11</version.mssql.jdbc>
 
-    <!-- WebJars Versions -->
-    <version.webjars.bootstrap>5.2.3</version.webjars.bootstrap>
-    <version.webjars.jquery>3.6.4</version.webjars.jquery>
-    <version.webjars.fontawesome>5.15.1</version.webjars.fontawesome>
-    <version.webjars.jsjoda>1.11.0</version.webjars.jsjoda>
+        <!-- Apache POI Versions -->
+        <version.poi>5.3.0</version.poi>
 
-    <!-- Testing Versions -->
-    <version.mockito.junit.jupiter>5.21.0</version.mockito.junit.jupiter>
-    <version.assertj>3.26.3</version.assertj>
+        <!-- WebJars Versions -->
+        <version.webjars.bootstrap>5.2.3</version.webjars.bootstrap>
+        <version.webjars.jquery>3.6.4</version.webjars.jquery>
+        <version.webjars.fontawesome>5.15.1</version.webjars.fontawesome>
+        <version.webjars.jsjoda>1.11.0</version.webjars.jsjoda>
 
-    <!-- Lombok Version -->
-    <version.lombok>1.18.42</version.lombok>
+        <!-- Testing Versions -->
+        <version.mockito.junit.jupiter>5.21.0</version.mockito.junit.jupiter>
+        <version.assertj>3.26.3</version.assertj>
 
-    <!-- Maven Plugin Versions -->
-    <version.compiler.plugin>3.13.0</version.compiler.plugin>
-    <version.surefire.plugin>3.5.1</version.surefire.plugin>
-  </properties>
+        <!-- Lombok Version -->
+        <version.lombok>1.18.42</version.lombok>
 
-  <!-- Dependency Management: BOMs for version management -->
-  <dependencyManagement>
-    <dependencies>
-      <!-- Quarkus BOM manages all Quarkus dependency versions -->
-      <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-bom</artifactId>
-        <version>${version.io.quarkus}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <!-- Timefold Solver BOM manages all Timefold Solver dependency versions -->
-      <dependency>
-        <groupId>ai.timefold.solver</groupId>
-        <artifactId>timefold-solver-bom</artifactId>
-        <version>${version.ai.timefold.solver}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+        <!-- Maven Plugin Versions -->
+        <version.compiler.plugin>3.13.0</version.compiler.plugin>
+        <version.surefire.plugin>3.5.1</version.surefire.plugin>
+    </properties>
 
-  <dependencies>
-    <!-- Timefold Solver -->
-    <dependency>
-      <groupId>ai.timefold.solver</groupId>
-      <artifactId>timefold-solver-quarkus</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ai.timefold.solver</groupId>
-      <artifactId>timefold-solver-quarkus-jackson</artifactId>
-    </dependency>
-
-    <!-- Database -->
-    <dependency>
-      <groupId>com.microsoft.sqlserver</groupId>
-      <artifactId>mssql-jdbc</artifactId>
-      <version>${version.mssql.jdbc}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jdbc-mssql</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-hibernate-orm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-hibernate-orm-panache</artifactId>
-    </dependency>
-
-    <!-- REST API -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-jackson</artifactId>
-    </dependency>
-
-    <!-- Scheduler -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-scheduler</artifactId>
-    </dependency>
-
-    <!-- Apache POI for Excel export -->
-    <dependency>
-      <groupId>org.apache.poi</groupId>
-      <artifactId>poi</artifactId>
-      <version>${version.poi}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.poi</groupId>
-      <artifactId>poi-ooxml</artifactId>
-      <version>${version.poi}</version>
-    </dependency>
-
-    <!-- Lombok -->
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>${version.lombok}</version>
-    </dependency>
-
-    <!-- UI - WebJars -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-webjars-locator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ai.timefold.solver</groupId>
-      <artifactId>timefold-solver-webui</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.webjars</groupId>
-      <artifactId>bootstrap</artifactId>
-      <version>${version.webjars.bootstrap}</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.webjars</groupId>
-      <artifactId>jquery</artifactId>
-      <version>${version.webjars.jquery}</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.webjars</groupId>
-      <artifactId>font-awesome</artifactId>
-      <version>${version.webjars.fontawesome}</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.webjars.npm</groupId>
-      <artifactId>js-joda</artifactId>
-      <version>${version.webjars.jsjoda}</version>
-      <scope>runtime</scope>
-    </dependency>
-
-    <!-- Testing -->
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <version>${version.mockito.junit.jupiter}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ai.timefold.solver</groupId>
-      <artifactId>timefold-solver-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.rest-assured</groupId>
-      <artifactId>rest-assured</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <version>${version.assertj}</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  <build>
-    <plugins>
-      <!-- CodeCov Plugin -->
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.11</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>report</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <configuration>
-              <!-- Exclude entity and persistence packages from coverage -->
-              <excludes>
-                <exclude>**/entity/**</exclude>
-                <exclude>**/persistence/**</exclude>
-                <exclude>**/repository/**</exclude>
-                <exclude>**/record/**</exclude>
-                <exclude>**/rest/**</exclude>
-                <exclude>**/exception/**</exclude>
-                <exclude>**/sql/**</exclude>
-                <exclude>**/dto/**</exclude>
-                <exclude>**/config/**</exclude>
-                <exclude>**/solver/**</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- Maven Compiler Plugin -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${version.compiler.plugin}</version>
-      </plugin>
-      <!-- Quarkus Maven Plugin -->
-      <plugin>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${version.io.quarkus}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- Maven Surefire Plugin for unit and integration tests -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>${version.surefire.plugin}</version>
-        <configuration>
-          <!-- Include @Tag("database") tests so JobRepository, ProductRepository, etc. get coverage in SonarQube.
-               To exclude them (e.g. faster local runs): -DexcludedGroups=database -->
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-  <profiles>
-    <!-- Native build profile for GraalVM native image compilation -->
-    <profile>
-      <id>native</id>
-      <activation>
-        <property>
-          <name>native</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <!-- Maven Failsafe Plugin for integration tests in native mode -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <version>${version.surefire.plugin}</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-                <configuration>
-                  <systemPropertyVariables>
-                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                  </systemPropertyVariables>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-      <properties>
-        <quarkus.package.type>native</quarkus.package.type>
-      </properties>
-    </profile>
-    <!-- Container build profile for Docker image creation -->
-    <profile>
-      <id>container</id>
-      <activation>
-        <property>
-          <name>container</name>
-        </property>
-      </activation>
-      <properties>
-        <quarkus.container-image.build>true</quarkus.container-image.build>
-      </properties>
-    </profile>
-    <!-- Enterprise profile for Timefold Solver Enterprise Edition -->
-    <profile>
-      <id>enterprise</id>
-      <activation>
-        <property>
-          <name>enterprise</name>
-        </property>
-      </activation>
-      <repositories>
-        <repository>
-          <id>timefold-solver-enterprise</id>
-          <name>Timefold Solver Enterprise Edition</name>
-          <url>https://timefold.jfrog.io/artifactory/releases/</url>
-        </repository>
-      </repositories>
-      <dependencyManagement>
+    <!-- Dependency Management: BOMs for version management -->
+    <dependencyManagement>
         <dependencies>
-          <dependency>
-            <groupId>ai.timefold.solver.enterprise</groupId>
-            <artifactId>timefold-solver-enterprise-bom</artifactId>
-            <version>${version.ai.timefold.solver}</version>
-            <type>pom</type>
-            <scope>import</scope>
-          </dependency>
+            <!-- Quarkus BOM manages all Quarkus dependency versions -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${version.io.quarkus}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Timefold Solver BOM manages all Timefold Solver dependency versions -->
+            <dependency>
+                <groupId>ai.timefold.solver</groupId>
+                <artifactId>timefold-solver-bom</artifactId>
+                <version>${version.ai.timefold.solver}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
-      </dependencyManagement>
-    </profile>
-  </profiles>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Timefold Solver -->
+        <dependency>
+            <groupId>ai.timefold.solver</groupId>
+            <artifactId>timefold-solver-quarkus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.timefold.solver</groupId>
+            <artifactId>timefold-solver-quarkus-jackson</artifactId>
+        </dependency>
+
+        <!-- Database -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>${version.mssql.jdbc}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-mssql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
+        </dependency>
+
+        <!-- REST API -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
+        </dependency>
+
+        <!-- Scheduler -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+
+        <!-- Apache POI for Excel export -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>${version.poi}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${version.poi}</version>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${version.lombok}</version>
+        </dependency>
+
+        <!-- UI - WebJars -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-webjars-locator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.timefold.solver</groupId>
+            <artifactId>timefold-solver-webui</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>${version.webjars.bootstrap}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>${version.webjars.jquery}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>font-awesome</artifactId>
+            <version>${version.webjars.fontawesome}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>js-joda</artifactId>
+            <version>${version.webjars.jsjoda}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${version.mockito.junit.jupiter}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ai.timefold.solver</groupId>
+            <artifactId>timefold-solver-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>${version.selenium}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>${version.webdrivermanager}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${version.assertj}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <!-- CodeCov Plugin -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Exclude entity and persistence packages from coverage -->
+                            <excludes>
+                                <exclude>**/entity/**</exclude>
+                                <exclude>**/persistence/**</exclude>
+                                <exclude>**/repository/**</exclude>
+                                <exclude>**/record/**</exclude>
+                                <exclude>**/rest/**</exclude>
+                                <exclude>**/exception/**</exclude>
+                                <exclude>**/sql/**</exclude>
+                                <exclude>**/dto/**</exclude>
+                                <exclude>**/config/**</exclude>
+                                <exclude>**/solver/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${version.compiler.plugin}</version>
+            </plugin>
+            <!-- Quarkus Maven Plugin -->
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${version.io.quarkus}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Maven Surefire Plugin for unit and integration tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${version.surefire.plugin}</version>
+                <configuration>
+                    <!-- Include @Tag("database") tests so JobRepository, ProductRepository, etc. get coverage in SonarQube.
+                         To exclude them (e.g. faster local runs): -DexcludedGroups=database -->
+                    <excludedGroups>selenium</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <profiles>
+        <!-- Native build profile for GraalVM native image compilation -->
+        <profile>
+            <id>native</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- Maven Failsafe Plugin for integration tests in native mode -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${version.surefire.plugin}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                                <configuration>
+                                    <systemPropertyVariables>
+                                        <native.image.path>
+                                            ${project.build.directory}/${project.build.finalName}-runner
+                                        </native.image.path>
+                                    </systemPropertyVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+            </properties>
+        </profile>
+        <!-- Container build profile for Docker image creation -->
+        <profile>
+            <id>container</id>
+            <activation>
+                <property>
+                    <name>container</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.container-image.build>true</quarkus.container-image.build>
+            </properties>
+        </profile>
+        <!-- Enterprise profile for Timefold Solver Enterprise Edition -->
+        <profile>
+            <id>enterprise</id>
+            <activation>
+                <property>
+                    <name>enterprise</name>
+                </property>
+            </activation>
+            <repositories>
+                <repository>
+                    <id>timefold-solver-enterprise</id>
+                    <name>Timefold Solver Enterprise Edition</name>
+                    <url>https://timefold.jfrog.io/artifactory/releases/</url>
+                </repository>
+            </repositories>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>ai.timefold.solver.enterprise</groupId>
+                        <artifactId>timefold-solver-enterprise-bom</artifactId>
+                        <version>${version.ai.timefold.solver}</version>
+                        <type>pom</type>
+                        <scope>import</scope>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+        <profile>
+            <id>selenium</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <groups>selenium</groups>
+                            <excludedGroups combine.self="override"/>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

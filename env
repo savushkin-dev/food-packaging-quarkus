@@ -1,0 +1,62 @@
+###############################
+# Environment Variables (.env)
+#
+# Usage:
+# 1) Copy this file to ".env"
+# 2) Fill in the values
+# 3) Start app with: mvn quarkus:dev -Dquarkus.profile=local
+#
+# Notes:
+# - This project uses MS SQL Server (quarkus.datasource.db-kind=mssql)
+# - DB_URL is the JDBC URL used by Quarkus and the app
+# - Keep .env out of version control (already in .gitignore)
+###############################
+
+###############################
+# Profile
+###############################
+# Quarkus profile to use (local, prod, test, etc.)
+QUARKUS_PROFILE=local
+
+###############################
+# HTTP Server
+###############################
+# Port the HTTP server listens on
+HTTP_PORT=8080
+
+###############################
+# Database (MS SQL Server)
+###############################
+# Database username/password
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+# MS SQL JDBC URL format:
+# jdbc:sqlserver://HOST:PORT;databaseName=DB;encrypt=true;trustServerCertificate=true
+# Example for local SQL Server with a database named "foodpackaging":
+DB_URL=jdbc:sqlserver://localhost:1433;databaseName=foodpackaging;encrypt=true;trustServerCertificate=true
+
+###############################
+# Configuration codes
+###############################
+# Application-specific configuration codes
+KSK=KSK_LOCAL
+KRC=KRC_LOCAL
+KRCA=KRCA_LOCAL
+
+###############################
+# CORS
+###############################
+# Allowed origin for browser clients
+# For local frontend (e.g., Vite/React on port 3000) you can set:
+# CORS_ORIGIN=http://localhost:3000
+# Leave empty to disable CORS origins in local setups where not needed
+CORS_ORIGIN=
+
+###############################
+# Selenium Tests
+###############################
+# Scheduler page URL used by Selenium UI tests (SchedulerPage.java).
+# Run tests with: mvn clean test -Pselenium
+SCHEDULER_URL=http://10.30.0.5:7980/scheduler
+scheduler.url=http://10.30.0.5:7980/scheduler
