@@ -1,6 +1,9 @@
 services:
   foodpack:
-    build: .
+    build:
+      context: .
+      args:
+        QUARKUS_PROFILE: ${QUARKUS_PROFILE}
     container_name: foodpack
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
