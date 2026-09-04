@@ -22,6 +22,11 @@ public class JobTestBuilder {
         return this;
     }
 
+     public JobTestBuilder withIdBatch(String idBatch) {
+        job.setIdBatch(idBatch);
+        return this;
+    }
+
     public JobTestBuilder withProduct(Product product) {
         job.setProduct(product);
         return this;
