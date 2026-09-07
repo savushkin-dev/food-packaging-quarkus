@@ -4,52 +4,42 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.persistence.constants.DelayEventType;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.sql.SqlQueries;
-
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class JobDBLoader {
 
-    private static final String DB_JOB_ROW_MAPPING = "DbJobRowMapping";
+    private static final String DB_JOB_ROW_MAPPING = "JobRowMapping";
     private static final String FACT_PRODUCTION_MAPPING = "FactProductionRowMapping";
 
     private final EntityManager em;
     private final SqlQueries queries;
 
-    @Inject
-    public JobDBLoader(EntityManager em, SqlQueries queries) {
-        this.em = em;
-        this.queries = queries;
+    private <K, T> Map<K, T> toMapByKey(List<T> rows, Function<T, K> keyExtractor) {
+        Map<K, T> result = HashMap.newHashMap(rows.size());
+        for (T row : rows) {
+            result.putIfAbsent(keyExtractor.apply(row), row);
+        }
+        return result;
     }
 
     // ========================= JOBS =========================
 
-    public Map<Long, DbJobRow> loadJobRowMap(
-            LocalDateTime from,
-            LocalDateTime to,
-            String ksk
-    ) {
-        List<DbJobRow> rows = getResultList(
-                queries.loadJobs(),
-                DB_JOB_ROW_MAPPING,
-                from, to, ksk, from
-        );
-
-
-        Map<Long, DbJobRow> result = HashMap.newHashMap(rows.size());
-        for (DbJobRow row : rows) {
-            result.putIfAbsent(row.snpz(), row);
-        }
-
-        return result;
+    public Map<Long, JobRow> loadJobRowMap(LocalDateTime from, LocalDateTime to, String ksk) {
+        List<JobRow> rows = getResultList(queries.loadJobs(), DB_JOB_ROW_MAPPING, from, to, ksk, from);
+        return toMapByKey(rows, JobRow::snpz);
     }
 
     // ========================= MAINTENANCE / DELAYS =========================
@@ -67,75 +57,25 @@ public class JobDBLoader {
     }
 
     // cleanings fid by snpz
-    public Map<Long, CleaningRow> loadCleaningRows(
-            LocalDateTime from,
-            LocalDateTime to
-    ) {
-
-        List<CleaningRow> rows = getResultList(
-                queries.loadCleaningData(),
-                "CleaningRowMapping",
-                from,
-                to
-        );
-
-        Map<Long, CleaningRow> result = HashMap.newHashMap(rows.size());
-
-        for (CleaningRow row : rows) {
-            result.putIfAbsent(row.snpz(), row);
-        }
-
-        return result;
+    public Map<Long, CleaningRow> loadCleaningRows(LocalDateTime from, LocalDateTime to) {
+        List<CleaningRow> rows = getResultList(queries.loadCleaningData(), "CleaningRowMapping", from, to);
+        return toMapByKey(rows, CleaningRow::snpz);
     }
 
-// packaging/cleaning delays
-    public Map<Long, DelayRow> loadDelayRowsByType(
-            int eventType,
-            LocalDateTime from,
-            LocalDateTime to
-    ) {
 
-        List<DelayRow> rows = getResultList(
-                queries.loadDelayData(eventType),
-                "DelayRowMapping",
-                from,
-                to
-        );
-
-        Map<Long, DelayRow> result = HashMap.newHashMap(rows.size());
-
-        for (DelayRow row : rows) {
-            result.putIfAbsent(row.snpz(), row);
-        }
-
-        return result;
+    // packaging/cleaning delays
+    public Map<Long, DelayRow> loadDelayRowsByType(DelayEventType eventType, LocalDateTime from, LocalDateTime to) {
+        List<DelayRow> rows = getResultList(queries.loadDelayData(eventType.code()), "DelayRowMapping", from, to);
+        return toMapByKey(rows, DelayRow::snpz);
     }
 
     // ========================= FACT =========================
 
-    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(
-            LocalDateTime from, LocalDateTime to
-    ) {
-
-        List<FactProductionRow> rows = getResultList(
-                queries.loadFact(),
-                FACT_PRODUCTION_MAPPING,
-                from, to
-        );
-
-        Map<FactKey, FactProductionRow> result = HashMap.newHashMap(rows.size());
-
-        for (FactProductionRow row : rows) {
-
-            FactKey key = new FactKey(
-                    row.kmc(), row.np(), row.eventType()
-            );
-
-            result.putIfAbsent(key, row);
-        }
-
-        return result;
+    public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
+        List<FactProductionRow> rows = getResultList(queries.loadFact(), FACT_PRODUCTION_MAPPING, from, to);
+        return toMapByKey(rows, row -> new FactKey(row.kmc(), row.np(), row.eventType()));
     }
+
 
     // ========================= CORE (JPA HELPER) =========================
 

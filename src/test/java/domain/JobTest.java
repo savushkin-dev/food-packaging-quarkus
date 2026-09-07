@@ -6,9 +6,9 @@ import fixtures.SolutionFixtures;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.record.CleaningResult;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -62,14 +62,14 @@ class JobTest {
     }
 
     // ============================================================
-    // fromDbJobRow
+    // fromJobRow
     // ============================================================
     @Test
-    void fromDbJobRow_success() {
-        DbJobRow row = DbJobRowBuilder.aRow().build();
+    void fromJobRow_success() {
+        JobRow row = JobRowBuilder.aRow().build();
 
         Product p1 = new Product();
-        Job job = Job.fromDbJobRow(row, p1, row.startProductionDateTime(),
+        Job job = Job.fromJobRow(row, p1, row.startProductionDateTime(),
                 ScheduleUtils::nameCleaner);
 
         assertEquals("123", job.getId());
@@ -84,8 +84,8 @@ class JobTest {
     }
 
     @Test
-    void fromDbJobRow_whenValuesAreNull() {
-        DbJobRow row = DbJobRowBuilder.aRow()
+    void fromJobRow_whenValuesAreNull() {
+        JobRow row = JobRowBuilder.aRow()
                 .withNp(null)
                 .withEmk(null)
                 .withDuration(null)
@@ -94,7 +94,7 @@ class JobTest {
                 .withPriority(null).build();
 
         Product p1 = new Product();
-        Job job = Job.fromDbJobRow(row, p1, row.startProductionDateTime(),
+        Job job = Job.fromJobRow(row, p1, row.startProductionDateTime(),
                 ScheduleUtils::nameCleaner);
 
         assertEquals(0, job.getNp());

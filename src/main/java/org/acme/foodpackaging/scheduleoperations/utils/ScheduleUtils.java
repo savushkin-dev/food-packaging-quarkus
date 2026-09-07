@@ -3,7 +3,7 @@ package org.acme.foodpackaging.scheduleoperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.DowntimeData;
 
 import java.time.Duration;
@@ -14,6 +14,10 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class ScheduleUtils {
+
+    public static final int START_FACT_EVENT_TYPE = 1;
+    public static final int START_CAMERA_EVENT_TYPE = 2;
+    public static final int END_CAMERA_EVENT_TYPE = 3;
 
     private ScheduleUtils() {}
     /**
@@ -133,7 +137,7 @@ public class ScheduleUtils {
 
     /**
      * Удаляет задачи, у которых line равен null, из списка задач.
-     * 
+     *
      * @param jobs Список задач для фильтрации
      */
     public static void removeJobsWithoutLine(List<Job> jobs) {
@@ -149,13 +153,13 @@ public class ScheduleUtils {
         }
         return (duration.toSeconds() + 59) / 60;
     }
-     /**
+    /**
      * Преобразует Map в List для удобства работы.
-     * 
+     *
      * @param rows Map of job rows
      * @return List of job rows
      */
-     public static List<DbJobRow> getDbJobRowList(Map<Long, DbJobRow> rows) {
+    public static List<JobRow> getJobRowList(Map<Long, JobRow> rows) {
         if (rows == null || rows.isEmpty()) {
             return List.of();
         }
@@ -221,12 +225,12 @@ public class ScheduleUtils {
         Duration lineDowntime = Duration.ZERO;
 
         for (Job job : line.getJobs()) {
-         if( job == null || job.getId() == null) continue;
+            if( job == null || job.getId() == null) continue;
 
-         if(targetIds.contains(job.getId())){
-             Duration jobDowntime = calculateJobDowntime(job);
-             lineDowntime = lineDowntime.plus(jobDowntime);
-         }
+            if(targetIds.contains(job.getId())){
+                Duration jobDowntime = calculateJobDowntime(job);
+                lineDowntime = lineDowntime.plus(jobDowntime);
+            }
         }
         return lineDowntime;
     }

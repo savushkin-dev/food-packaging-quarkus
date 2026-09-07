@@ -3,7 +3,7 @@ package org.acme.foodpackaging.service.builder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.record.InitData;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
@@ -35,7 +35,7 @@ public class ScheduleBuilder {
     public InitData buildSchedule(LocalDate startDate) {
 
         PackagingSchedule schedule = new PackagingSchedule(lineService.getLines(), startDate);
-        List<DbJobRow> jobRows = jobService.buildJobsOnLines(schedule);
+        List<JobRow> jobRows = jobService.buildJobsOnLines(schedule);
         productService.buildProducts(schedule);
 
         schedule.setDateForEmptySolution(startDate);

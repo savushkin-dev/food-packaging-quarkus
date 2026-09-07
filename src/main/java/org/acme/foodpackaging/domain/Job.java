@@ -15,6 +15,7 @@ import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
 import org.acme.foodpackaging.record.CleaningResult;
@@ -23,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.acme.foodpackaging.record.DbJobRow;
 import org.acme.foodpackaging.record.ProductionJobParams;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
@@ -155,8 +155,8 @@ public class Job {
                 : startProductionDateTime.plus(duration);
     }
 
-    public static Job fromDbJobRow(
-            DbJobRow row,
+    public static Job fromJobRow(
+            JobRow row,
             Product product,
             LocalDateTime startProductionDateTime,
             UnaryOperator<String> nameCleaner) {
@@ -191,7 +191,7 @@ public class Job {
      */
 
     public Job(String id, String name, Product product, Duration duration,
-            int priority, boolean pinned, LocalDateTime startProductionDateTime) {
+               int priority, boolean pinned, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
         this.product = product;
