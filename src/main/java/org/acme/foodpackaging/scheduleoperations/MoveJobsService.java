@@ -48,17 +48,7 @@ public class MoveJobsService {
         int fromEnd = (int) Math.min((long) fromIndex + (long) count, fromJobs.size());
 
         if (!sameLine) {
-            for (int i = fromIndex; i < fromEnd; i++) {
-                Job job = fromJobs.get(i);
-                if (job.isMaintenance()) continue;
-                String productType = job.getProduct().getType();
-                Integer speed = SpeedCacheUtils.getSpeed(toLine.getId(), productType);
-                if (speed == null || speed == 0) {
-                    throw new IllegalArgumentException(
-                            String.format("Cannot move job \"%s\" to line \"%s\": product type unsupported",
-                                    job.getName(), toLine.getName()));
-                }
-            }
+            validateProductTypesSupported(fromJobs, fromIndex, fromEnd, toLine);
         }
 
         int insertIndex = request.getInsertIndex();
@@ -78,6 +68,25 @@ public class MoveJobsService {
         }
 
     }
+    /**
+     * Проверяет, что каждая перемещаемая (не ремонтная) задача поддерживается на целевой линии.
+     * Бросает IllegalArgumentException, если тип продукта задачи не поддерживается на целевой линии.
+     */
+    private void validateProductTypesSupported(List<Job> fromJobs, int fromIndex, int fromEnd, Line toLine) {
+        for (int i = fromIndex; i < fromEnd; i++) {
+            Job job = fromJobs.get(i);
+            if (job.isMaintenance()) continue;
+
+            String productType = job.getProduct().getType();
+            Integer speed = SpeedCacheUtils.getSpeed(toLine.getId(), productType);
+            if (speed == null || speed == 0) {
+                throw new IllegalArgumentException(
+                        String.format("Cannot move job \"%s\" to line \"%s\": product type unsupported",
+                                job.getName(), toLine.getName()));
+            }
+        }
+    }
+
     /**
      * Перемещает подпоследовательность задач между линиями или внутри одной линии.
      * <p>

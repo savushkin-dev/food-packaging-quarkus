@@ -365,6 +365,12 @@ public class PackagingScheduleResource {
 
         Line line = findLineById(solution, request.getLineId());
 
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.LINE_NOT_FOUND))
+                    .build();
+        }
+
         setLineMaxEndDateTime(line, request.getLineMaxEndDateTime());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);

@@ -50,7 +50,7 @@ class JobServiceTest {
 
         @BeforeEach
         void setUp() {
-                LocalDateTime lineStartDateTime = LocalDateTime.of(2025, 1, 15, 8, 0);
+                LocalDateTime lineStartDateTime = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
                 job = JobTestBuilder.aJob().withId("J1").build();
 
                 schedule = ScheduleTestBuilder.aSchedule()
