@@ -1,6 +1,6 @@
 package builder;
 
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 
 import java.time.LocalDateTime;
 import java.time.Month;

@@ -3,7 +3,7 @@ package service.jobs;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.record.CameraFactRow;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.jobs.JobInfoService;

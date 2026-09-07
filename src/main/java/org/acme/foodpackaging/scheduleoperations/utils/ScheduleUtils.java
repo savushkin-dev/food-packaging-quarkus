@@ -3,7 +3,7 @@ package org.acme.foodpackaging.scheduleoperations.utils;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.record.DowntimeData;
 
 import java.time.Duration;

@@ -10,7 +10,7 @@ import org.acme.foodpackaging.exception.service.CameraDataReadException;
 import org.acme.foodpackaging.persistence.constants.DelayEventType;
 import org.acme.foodpackaging.persistence.load.CameraDataLoader;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.record.FactKey;
 import org.acme.foodpackaging.record.FactProductionRow;
 import org.acme.foodpackaging.record.CameraValue;

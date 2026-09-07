@@ -6,7 +6,7 @@ import fixtures.SolutionFixtures;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
 import org.acme.foodpackaging.record.CleaningResult;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;

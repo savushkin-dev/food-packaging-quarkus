@@ -10,7 +10,7 @@ import org.acme.foodpackaging.domain.WorkCalendar;
 import org.acme.foodpackaging.dto.oeepev.CleaningRow;
 import org.acme.foodpackaging.dto.oeepev.DelayRow;
 import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
 import java.time.Duration;

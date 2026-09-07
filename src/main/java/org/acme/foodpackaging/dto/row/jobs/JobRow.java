@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.dto.bdvzpmc;
+package org.acme.foodpackaging.dto.row.jobs;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 

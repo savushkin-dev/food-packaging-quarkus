@@ -1,7 +1,7 @@
 package org.acme.foodpackaging.record;
 
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 
 import java.util.List;
 

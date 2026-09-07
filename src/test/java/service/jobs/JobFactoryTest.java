@@ -2,7 +2,7 @@ package service.jobs;
 
 import builder.JobRowBuilder;
 import builder.ProductTestBuilder;
-import org.acme.foodpackaging.dto.bdvzpmc.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.exception.service.ProductNotFoundException;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.JobFactory;
