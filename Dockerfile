@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /build
@@ -5,11 +6,13 @@ WORKDIR /build
 ARG QUARKUS_PROFILE=prod
 
 COPY pom.xml .
-RUN mvn dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2,sharing=locked \
+    mvn dependency:go-offline -B
 
 COPY src ./src
 
-RUN mvn clean package -Dquarkus.profile=${QUARKUS_PROFILE} -DskipTests
+RUN --mount=type=cache,target=/root/.m2,sharing=locked \
+    mvn clean package -Dquarkus.profile=${QUARKUS_PROFILE} -DskipTests -B
 
 FROM eclipse-temurin:21-jdk
 

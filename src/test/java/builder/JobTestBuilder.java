@@ -22,8 +22,13 @@ public class JobTestBuilder {
         return this;
     }
 
-     public JobTestBuilder withIdBatch(String idBatch) {
-        job.setIdBatch(idBatch);
+    public JobTestBuilder withLineId(String id) {
+        job.setLineId(id);
+        return this;
+    }
+
+    public JobTestBuilder withIdBatch(String id) {
+        job.setIdBatch(id);
         return this;
     }
 
@@ -58,6 +63,16 @@ public class JobTestBuilder {
 
     public JobTestBuilder withCamera(LocalDateTime start, LocalDateTime end) {
         job.setCameraStart(start);
+        job.setCameraEnd(end);
+        return this;
+    }
+
+    public JobTestBuilder withCameraStart(LocalDateTime start) {
+        job.setCameraStart(start);
+        return this;
+    }
+
+    public JobTestBuilder withCameraEnd(LocalDateTime end) {
         job.setCameraEnd(end);
         return this;
     }
