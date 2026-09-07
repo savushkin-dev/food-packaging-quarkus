@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.*;
-import org.acme.foodpackaging.dto.response.lineservice.LineProductionDto;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
@@ -63,6 +62,7 @@ public class PackagingScheduleResource {
     private final AlignSolutionService alignSolutionService;
     private final PlrPlanRepository plrPlanRepository;
     private final DowntimePeriodsService downtimePeriodsService;
+    private final JobNoteService jobNoteService;
 
     @GET
     @Path("downtimePeriods/{idBatch}")
@@ -181,7 +181,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
-        jobService.writeDelayNote(request, schedule);
+        jobNoteService.writeDelayNote(request, schedule);
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Note is written").build();
@@ -195,7 +195,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
-        jobService.writeCleaningDelayNote(request, schedule);
+        jobNoteService.writeCleaningDelayNote(request, schedule);
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Note is written").build();
@@ -309,11 +309,11 @@ public class PackagingScheduleResource {
 
         solution.getOverloadedIds().clear();
 
-        PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
+       jobRefreshService.applySelection(dto.selection(),
                 solution);
 
-        solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, updatedSchedule);
+        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, solution);
 
         return Response.ok().build();
     }
@@ -364,6 +364,12 @@ public class PackagingScheduleResource {
         }
 
         Line line = findLineById(solution, request.getLineId());
+
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.LINE_NOT_FOUND))
+                    .build();
+        }
 
         setLineMaxEndDateTime(line, request.getLineMaxEndDateTime());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
@@ -527,10 +533,10 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        PackagingSchedule result = moveJobsService.moveJobs(schedule, request);
+         moveJobsService.moveJobs(schedule, request);
 
-        solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, result);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully"))
                 .build();
