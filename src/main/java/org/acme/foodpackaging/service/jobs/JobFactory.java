@@ -32,7 +32,7 @@ public class JobFactory {
         }
 
         LocalDateTime startTime = row.lineId() != null ? row.startProductionDateTime() : null;
-        Job job = Job.fromJobRow(row, product, startTime, ScheduleUtils::nameCleaner);
+        Job job = new Job(row, product, startTime, ScheduleUtils::nameCleaner);
 
         allJobsById.put(row.snpz(), job);
         return job;

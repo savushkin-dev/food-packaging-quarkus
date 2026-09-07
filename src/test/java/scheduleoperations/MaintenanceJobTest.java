@@ -280,7 +280,7 @@ class MaintenanceJobTest {
         Product product = schedule.getProducts().get(1);
         // One production job with no preceding cleaning gap >= 30 min; no type-2 maintenance
         LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
-        Job job = Job.fromJobRow(
+        Job job = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         start, start.plusMinutes(60),
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
@@ -335,7 +335,7 @@ class MaintenanceJobTest {
         line.getJobs().add(mJob);
         schedule.getJobs().add(mJob);
 
-        Job prod = Job.fromJobRow(
+        Job prod = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At10.plusMinutes(30), day2At15,
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
@@ -372,7 +372,7 @@ class MaintenanceJobTest {
         LocalDateTime day1At830 = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 30);
         LocalDateTime day2At10 = LocalDateTime.of(2025, Month.JANUARY, 16, 10, 0);
 
-        Job prod = Job.fromJobRow(
+        Job prod = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At830, day2At10,
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
@@ -427,7 +427,7 @@ class MaintenanceJobTest {
         m1.setLine(line);
         line.getJobs().add(m1);
         schedule.getJobs().add(m1);
-        Job p1 = Job.fromJobRow(
+        Job p1 = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At10.plusMinutes(30), day2At15,
                         60, 2212L, 0, "line1", "Job", 0, 100, 0),
@@ -445,7 +445,7 @@ class MaintenanceJobTest {
         m2.setLine(line2);
         line2.getJobs().add(m2);
         schedule.getJobs().add(m2);
-        Job p2 = Job.fromJobRow(
+        Job p2 = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At10.plusMinutes(30), day2At15,
                         60, 2214L, 0, "line2", "Job2", 0, 100, 0),

@@ -49,7 +49,7 @@ class JobInfoServiceTest {
                 "L1", "Product Name", 19, 100, 0
         );
 
-        job = Job.fromJobRow(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
+        job = new Job(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
         job.setEmk(EMK);
         job.setDti(NOW);
         schedule = new PackagingSchedule();

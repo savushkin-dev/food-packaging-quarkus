@@ -62,14 +62,14 @@ class JobTest {
     }
 
     // ============================================================
-    // fromJobRow
+    // Constructor(JobRow, Product, LocalDateTime, UnaryOperator<String>)
     // ============================================================
     @Test
-    void fromJobRow_success() {
+    void ConstructorWithJobRow_success() {
         JobRow row = JobRowBuilder.aRow().build();
 
         Product p1 = new Product();
-        Job job = Job.fromJobRow(row, p1, row.startProductionDateTime(),
+        Job job = new Job(row, p1, row.startProductionDateTime(),
                 ScheduleUtils::nameCleaner);
 
         assertEquals("123", job.getId());
@@ -84,7 +84,7 @@ class JobTest {
     }
 
     @Test
-    void fromJobRow_whenValuesAreNull() {
+    void ConstructorWithJobRow_whenValuesAreNull() {
         JobRow row = JobRowBuilder.aRow()
                 .withNp(null)
                 .withEmk(null)
@@ -94,7 +94,7 @@ class JobTest {
                 .withPriority(null).build();
 
         Product p1 = new Product();
-        Job job = Job.fromJobRow(row, p1, row.startProductionDateTime(),
+        Job job = new Job(row, p1, row.startProductionDateTime(),
                 ScheduleUtils::nameCleaner);
 
         assertEquals(0, job.getNp());
