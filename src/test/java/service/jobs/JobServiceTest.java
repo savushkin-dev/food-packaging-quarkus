@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.START_FACT_EVENT_TYPE;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -102,5 +104,64 @@ class JobServiceTest {
                 jobService.buildJobsOnLines(schedule);
 
                 assertEquals("P1", job.getIdBatch());
+        }
+
+        @Test
+        void buildJobsOnLines_appliesCameraFacts() {
+                job.setProduct(ProductTestBuilder.aProduct("P1").withType("CLASSIC").build());
+                job.setNp(1);
+
+                LocalDateTime cameraStart = LocalDateTime.of(2026, Month.AUGUST, 27, 9, 0);
+                LocalDateTime cameraEnd = LocalDateTime.of(2026, Month.AUGUST, 27, 9, 30);
+
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
+
+                FactProductionRow startCameraFact = new FactProductionRow(
+                        null, "P1", null, 1, START_CAMERA_EVENT_TYPE, cameraStart, null);
+                FactProductionRow endCameraFact = new FactProductionRow(
+                        null, "P1", null, 1, END_CAMERA_EVENT_TYPE, cameraEnd, null);
+
+                when(jobRepository.getFactProductionRowMap(any(), any()))
+                        .thenReturn(Map.of(
+                                new FactKey("P1", 1, START_CAMERA_EVENT_TYPE), startCameraFact,
+                                new FactKey("P1", 1, END_CAMERA_EVENT_TYPE), endCameraFact
+                        ));
+
+                jobService.buildJobsOnLines(schedule);
+
+                assertEquals(cameraStart, job.getCameraStart());
+                assertEquals(cameraEnd, job.getCameraEnd());
+        }
+
+        @Test
+        void buildJobsOnLines_skipsJobsWithoutProduct() {
+                job.setProduct(null);
+
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
+                when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
+
+                assertDoesNotThrow(() -> jobService.buildJobsOnLines(schedule));
+                assertNull(job.getIdBatch());
+        }
+
+        @Test
+        void buildJobsOnLines_noMatchingFactRows_leavesJobUnchanged() {
+                job.setProduct(ProductTestBuilder.aProduct("P1").withType("CLASSIC").build());
+                job.setNp(1);
+
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
+                when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
+
+                jobService.buildJobsOnLines(schedule);
+
+                assertNull(job.getIdBatch());
+                assertNull(job.getCameraStart());
+                assertNull(job.getCameraEnd());
         }
 }

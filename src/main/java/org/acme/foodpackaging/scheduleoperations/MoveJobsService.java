@@ -28,6 +28,13 @@ public class MoveJobsService {
         Line fromLine = findLineById(schedule, request.getFromLineId());
         Line toLine = findLineById(schedule, request.getToLineId());
 
+        if (fromLine == null) {
+            throw new IllegalArgumentException("Line not found: " + request.getFromLineId());
+        }
+        if (toLine == null) {
+            throw new IllegalArgumentException("Line not found: " + request.getToLineId());
+        }
+
         boolean sameLine = fromLine.getId().equals(toLine.getId());
 
         int fromIndex = request.getFromIndex();

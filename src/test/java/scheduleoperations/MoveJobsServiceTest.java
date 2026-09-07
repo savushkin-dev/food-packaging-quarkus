@@ -132,6 +132,96 @@ class MoveJobsServiceTest {
     }
 
     @Test
+    void throwsWhenFromLineNotFound() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+
+        MoveJobsRequest request = new MoveJobsRequest();
+        request.setFromLineId("missing");
+        request.setToLineId("line2");
+        request.setFromIndex(0);
+        request.setCount(1);
+        request.setInsertIndex(0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
+    void throwsWhenToLineNotFound() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+
+        MoveJobsRequest request = new MoveJobsRequest();
+        request.setFromLineId("line1");
+        request.setToLineId("missing");
+        request.setFromIndex(0);
+        request.setCount(1);
+        request.setInsertIndex(0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
+    void throwsWhenProductTypeUnsupportedOnTargetLine() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+        line2.setJobs(new ArrayList<>());
+
+        SpeedCacheUtils.init(Map.of(
+                "line1", Map.of("TYPE_A", Pair.of(10, 5)),
+                "line2", Map.of("TYPE_B", Pair.of(20, 10))
+        ));
+
+        MoveJobsRequest request = new MoveJobsRequest();
+        request.setFromLineId("line1");
+        request.setToLineId("line2");
+        request.setFromIndex(0);
+        request.setCount(1);
+        request.setInsertIndex(0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
+    void movingMaintenanceJob_skipsSpeedCheckAcrossLines() {
+        Job maintenanceJob = job("1", "M1", productA);
+        maintenanceJob.setMaintenance(true);
+        line1.setJobs(new ArrayList<>(List.of(maintenanceJob)));
+        line2.setJobs(new ArrayList<>());
+
+        SpeedCacheUtils.init(Map.of(
+                "line1", Map.of("TYPE_A", Pair.of(10, 5)),
+                "line2", Map.of("TYPE_B", Pair.of(20, 10))
+        ));
+
+        MoveJobsRequest request = new MoveJobsRequest();
+        request.setFromLineId("line1");
+        request.setToLineId("line2");
+        request.setFromIndex(0);
+        request.setCount(1);
+        request.setInsertIndex(0);
+
+        assertDoesNotThrow(() -> service.moveJobs(schedule, request));
+        assertEquals(1, line2.getJobs().size());
+    }
+
+    @Test
+    void throwsWhenFromIndexOutOfRange() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+        line2.setJobs(new ArrayList<>());
+
+        MoveJobsRequest request = new MoveJobsRequest();
+        request.setFromLineId("line1");
+        request.setToLineId("line2");
+        request.setFromIndex(5);
+        request.setCount(1);
+        request.setInsertIndex(0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
     void sanityCheck() {
         assertNotNull(service);
         assertNotNull(loadDataService);

@@ -88,4 +88,55 @@ class JobNoteServiceTest {
 
         assertNull(schedule.getLines().getFirst().getJobs());
     }
+
+    @Test
+    void writeDelayNote_whenLineJobsEmpty() {
+        schedule.getLines().getFirst().setJobs(new java.util.ArrayList<>());
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Note");
+
+        jobNoteService.writeDelayNote(request, schedule);
+
+        assertNull(job.getDelayNote());
+    }
+
+    @Test
+    void writeCleaningDelayNote_whenLineNotFound() {
+        schedule.getLines().getFirst().setId("L2");
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setDelayNote("Cleaning");
+
+        jobNoteService.writeCleaningDelayNote(request, schedule);
+
+        assertNull(job.getCleaningDelayNote());
+    }
+
+    @Test
+    void writeCleaningDelayNote_whenLineJobsNull() {
+        schedule.getLines().getFirst().setJobs(null);
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Cleaning");
+
+        jobNoteService.writeCleaningDelayNote(request, schedule);
+
+        assertNull(schedule.getLines().getFirst().getJobs());
+    }
+
+    @Test
+    void writeCleaningDelayNote_whenLineJobsEmpty() {
+        schedule.getLines().getFirst().setJobs(new java.util.ArrayList<>());
+        DelayNoteRequest request = new DelayNoteRequest();
+        request.setLineId("L1");
+        request.setIndex(0);
+        request.setDelayNote("Cleaning");
+
+        jobNoteService.writeCleaningDelayNote(request, schedule);
+
+        assertNull(job.getCleaningDelayNote());
+    }
 }
