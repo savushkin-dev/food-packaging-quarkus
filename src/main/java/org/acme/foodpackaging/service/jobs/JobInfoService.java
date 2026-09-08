@@ -24,6 +24,9 @@ public class JobInfoService {
     public PackagingSchedule findFactPlace(PackagingSchedule solution, long snpz){
 
         Job job = solution.getAllJobsById().get(snpz);
+        if (job == null) {
+            throw new IllegalArgumentException("Job not found: " + snpz);
+        }
 
         String idBatch = generateIdBatch(solution, snpz);
 
@@ -63,6 +66,9 @@ public class JobInfoService {
 
     public String generateIdBatch(PackagingSchedule solution, long snpz){
         Job job = solution.getAllJobsById().get(snpz);
+        if (job == null) {
+            throw new IllegalArgumentException("Job not found: " + snpz);
+        }
         String ean13 = job.getProduct().getEan13().substring(0, 12) + "0";
         String formattedNp = String.format("%09d", job.getNp());
 

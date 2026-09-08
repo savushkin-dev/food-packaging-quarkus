@@ -221,6 +221,8 @@
             <exclude>**/dto/**</exclude>
             <exclude>**/config/**</exclude>
             <exclude>**/solver/**</exclude>
+            <exclude>**/service/solution/value/**</exclude>
+
           </excludes>
         </configuration>
         <executions>

@@ -4,7 +4,6 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.dto.response.solution.DowntimeDataResponse;
 import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 
 import java.time.Duration;

@@ -176,6 +176,9 @@ public class MaintenanceJob {
                                                   MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.lineId());
+        if (line == null) {
+            throw new IllegalArgumentException("Line not found: " + request.lineId());
+        }
 
         List<Job> lineJobs = line.getJobs();
         int index = request.removeIndex();
@@ -201,6 +204,9 @@ public class MaintenanceJob {
     public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.lineId());
+        if (line == null) {
+            throw new IllegalArgumentException("Line not found: " + request.lineId());
+        }
 
         List<Job> jobs = line.getJobs();
 
@@ -222,6 +228,9 @@ public class MaintenanceJob {
     public PackagingSchedule updateMaintenanceType(PackagingSchedule schedule, MaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.lineId());
+        if (line == null) {
+            throw new IllegalArgumentException("Line not found: " + request.lineId());
+        }
 
         List<Job> jobs = line.getJobs();
 

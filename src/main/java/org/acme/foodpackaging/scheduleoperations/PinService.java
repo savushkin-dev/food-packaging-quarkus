@@ -5,6 +5,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.dto.request.lines.PinRequest;
 
 import java.util.List;
+import java.util.Objects;
 
 @ApplicationScoped
 public class PinService {
@@ -13,6 +14,7 @@ public class PinService {
      * Если count >= количества заданий на линии, закрепляются все задания.
      */
     public void pinJobs(Line line, Integer count) {
+        Objects.requireNonNull(line, "line must not be null");
         if (count == null) {
             line.setFirstUnpinnedIndex(0);
         } else if (count <= 0) {
@@ -43,6 +45,7 @@ public class PinService {
      * Закрепляет/открепляет все задания на конкретной линии в зависимости от флагов.
      */
     public void pinLine(Line line, PinRequest request) {
+        Objects.requireNonNull(line, "line must not be null");
         if (Boolean.TRUE.equals(request.pinAll())) {
             line.setFirstUnpinnedIndex(line.getJobs().size());
         } else if (request.pinCount() != null) {
