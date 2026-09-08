@@ -181,36 +181,37 @@ public class CleaningDurationReport {
         List<Job> result = new ArrayList<>();
 
         for (Job job : jobs) {
-
-            if (job.getStartCleaningDateTime() == null ||
-                    job.getStartProductionDateTime() == null) {
-                continue;
+            if (isEligibleCleaningJob(job, from, to)) {
+                result.add(job);
             }
-
-            boolean isProductionAfterCleaning = job.getStartProductionDateTime()
-                    .isAfter(job.getStartCleaningDateTime());
-
-            boolean isMaintenanceMatch = job.isMaintenance()
-                    && job.getMaintenanceTypeId() != null
-                    && job.getMaintenanceTypeId() == 2;
-
-            if (!isMaintenanceMatch && !isProductionAfterCleaning) {
-                continue;
-            }
-
-            LocalDate dateForFilter = job.isMaintenance()
-                    ? job.getStartProductionDateTime().toLocalDate()
-                    : job.getStartCleaningDateTime().toLocalDate();
-
-            if (dateForFilter.isBefore(from)
-                    || dateForFilter.isAfter(to)) {
-                continue;
-            }
-
-            result.add(job);
         }
 
         return result;
+    }
+
+    private boolean isEligibleCleaningJob(Job job, LocalDate from, LocalDate to) {
+
+        if (job.getStartCleaningDateTime() == null
+                || job.getStartProductionDateTime() == null) {
+            return false;
+        }
+
+        boolean isProductionAfterCleaning = job.getStartProductionDateTime()
+                .isAfter(job.getStartCleaningDateTime());
+
+        boolean isMaintenanceMatch = job.isMaintenance()
+                && job.getMaintenanceTypeId() != null
+                && job.getMaintenanceTypeId() == 2;
+
+        if (!isMaintenanceMatch && !isProductionAfterCleaning) {
+            return false;
+        }
+
+        LocalDate dateForFilter = job.isMaintenance()
+                ? job.getStartProductionDateTime().toLocalDate()
+                : job.getStartCleaningDateTime().toLocalDate();
+
+        return !dateForFilter.isBefore(from) && !dateForFilter.isAfter(to);
     }
 
     private void createHeader(Row row, CellStyle style) {

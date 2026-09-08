@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import org.acme.foodpackaging.utils.ScheduleUtils;
@@ -34,7 +35,7 @@ class JobInfoServiceTest {
     private Job job;
     private Product product;
     private static final long SNPZ = 12345L;
-    private static final LocalDateTime NOW = LocalDateTime.of(2026, 2, 12, 10, 0);
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, Month.FEBRUARY, 12, 10, 0);
     private static final int EMK = 12;
 
     @BeforeEach

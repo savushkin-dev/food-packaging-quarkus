@@ -45,7 +45,7 @@ class AlignDurationServiceTest {
     @BeforeEach
     void setUp() {
 
-        lineSDateTime = LocalDateTime.of(2026, 3, 6, 10, 0);
+        lineSDateTime = LocalDateTime.of(2026, Month.MARCH, 6, 10, 0);
         line = LineTestBuilder.aLine("line1", lineSDateTime).build();
 
         solution = ScheduleTestBuilder.aSchedule()

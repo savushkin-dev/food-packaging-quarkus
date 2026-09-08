@@ -16,15 +16,23 @@ import java.util.Set;
 @Priority(2)
 public class ResponseLoggingFilter implements ContainerResponseFilter {
 
+    // HttpServerRequest — request-scoped Vert.x бин; при внедрении через конструктор
+    // JAX-RS Provider не резолвит его корректно (проверено на практике), поэтому
+    // здесь сознательно оставлено field injection.
     @Inject
-    HttpServerRequest vertxRequest;
-    @Inject
-    LogService logService;
-    @Inject
-    ObjectMapper objectMapper;
+    HttpServerRequest vertxRequest; // NOSONAR
+
+    private final LogService logService;
+    private final ObjectMapper objectMapper;
 
     private static final Set<String> ENDPOINTS_TO_LOG = Set.of("save", "stopSolving");
     private static final String DEFAULT_SESSION_ID = "default_session_id";
+
+    @Inject
+    public ResponseLoggingFilter(LogService logService, ObjectMapper objectMapper) {
+        this.logService = logService;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void filter(ContainerRequestContext requestContext,

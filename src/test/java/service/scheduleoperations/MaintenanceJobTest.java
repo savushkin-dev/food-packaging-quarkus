@@ -294,7 +294,7 @@ class MaintenanceJobTest {
         CleaningDurationUtils.init(Map.of("line1", 30));
         Product product = schedule.getProducts().get(1);
         // One production job with no preceding cleaning gap >= 30 min; no type-2 maintenance
-        LocalDateTime start = LocalDateTime.of(2025, 1, 15, 8, 0);
+        LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
         Job job = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         start, start.plusMinutes(60),
@@ -315,7 +315,7 @@ class MaintenanceJobTest {
         CleaningDurationUtils.init(Map.of("line1", 30));
         Product maintenanceProduct = schedule.getProducts().getFirst();
         // Single maintenance type 2, duration 40 min; dailyCleaningStart = end+24h, last job = same → skip
-        LocalDateTime jobEnd = LocalDateTime.of(2025, 1, 15, 10, 0);
+        LocalDateTime jobEnd = LocalDateTime.of(2025, Month.JANUARY, 15, 10, 0);
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
         Job mJob = new Job(row, "Maintenance job", maintenanceProduct);
 

@@ -28,6 +28,7 @@ public class PlanReport {
     private static final String SHEET_NAME = "Statistics";
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final int MAX_AUTO_SIZE_COLUMN = 9;
+    private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 
     private static final String[] CORRECT_HEADERS = {
             "Название продукта",
@@ -69,7 +70,7 @@ public class PlanReport {
             throw new ReportGenerationException("Failed to create directory: " + dir, e);
         }
 
-        String date = LocalDate.now()
+        String date = LocalDate.now(ZONE_ID)
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         return dir + date + "_PlanReport.xlsx";
@@ -387,13 +388,12 @@ public class PlanReport {
     }
 
     private long getFactDuration(LocalDateTime start, LocalDateTime end) {
-        ZoneId zoneId = ZoneId.systemDefault();
-        return Duration.between(start.atZone(zoneId), end.atZone(zoneId)).toMinutes();
+        return Duration.between(start.atZone(ZONE_ID), end.atZone(ZONE_ID)).toMinutes();
     }
 
     private boolean isYesterdayOrToday(LocalDateTime time) {
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZONE_ID);
         LocalDate yesterday = today.minusDays(1);
 
         return !time.toLocalDate().isBefore(yesterday)
