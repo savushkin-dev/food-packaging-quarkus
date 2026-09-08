@@ -22,7 +22,7 @@ import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.record.*;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.acme.foodpackaging.scheduleoperations.*;
-import org.acme.foodpackaging.service.builder.*;
+import org.acme.foodpackaging.initializer.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.*;
@@ -46,13 +46,12 @@ public class PackagingScheduleResource {
     private final SolverManager<PackagingSchedule, String> solverManager;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final MaintenanceJob maintenanceJob;
-    private final JobService jobService;
     private final LineService lineService;
     private final MoveJobsService moveJobsService;
     private final SortByNpService sortByNpService;
     private final PinService pinService;
-    private final ScheduleBuilder scheduleBuilder;
-    private final ScheduleBuilderByVersion builderByVersion;
+    private final ScheduleInitializer scheduleInitializer;
+    private final ScheduleVersionInitializer initializerByVersion;
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
     private final JobRefreshService jobRefreshService;
@@ -262,7 +261,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        InitData data = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
+        InitData data = scheduleInitializer.initSchedule(loadDTO.getStartDate());
         PackagingSchedule schedule = data.schedule();
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -280,7 +279,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response initVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        PackagingSchedule solution = builderByVersion.init(loadDTO.getStartDate(), loadDTO.getVersion());
+        PackagingSchedule solution = initializerByVersion.initSchedule(loadDTO.getStartDate(), loadDTO.getVersion());
         solution.setVersion(loadDTO.getVersion());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);
