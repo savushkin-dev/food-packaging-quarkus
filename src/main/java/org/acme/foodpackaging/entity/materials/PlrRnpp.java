@@ -47,6 +47,9 @@ public class PlrRnpp extends PanacheEntityBase {
     @Column(name = "EMK", nullable = false)
     public Double emk;
 
+    @Column(name = "TKOM", nullable = false)
+    public Integer tkom;
+
     @Column(name = "KKOM", length = 10, nullable = false)
     public String kkom;
 

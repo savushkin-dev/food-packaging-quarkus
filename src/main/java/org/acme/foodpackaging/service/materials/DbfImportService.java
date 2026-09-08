@@ -344,6 +344,8 @@ public class DbfImportService {
         entity.setKt(getStringOrDefault(recordMap, "KT", DEFAULT_UNKNOWN));
         entity.setEmk(getDoubleOrDefault(recordMap, "EMK", 0.0));
 
+        entity.setTkom(getIntegerOrDefault(recordMap, "TKOM", 0));
+
         String kkom = getStringOrDefault(recordMap, "KKOM", DEFAULT_UNKNOWN);
         if (kkom.length() > 10) {
             kkom = kkom.substring(0, 10);
