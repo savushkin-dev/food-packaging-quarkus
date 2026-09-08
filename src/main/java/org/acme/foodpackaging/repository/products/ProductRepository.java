@@ -4,7 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.record.ProductRow;
+import org.acme.foodpackaging.dto.row.products.ProductRow;
 
 import java.util.HashMap;
 import java.util.List;

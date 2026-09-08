@@ -1,9 +1,9 @@
 package scheduleoperations;
 
 import builder.MaintenanceRowBuilder;
-import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;

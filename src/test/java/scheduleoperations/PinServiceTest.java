@@ -2,7 +2,7 @@ package scheduleoperations;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.dto.PinRequest;
+import org.acme.foodpackaging.dto.request.lines.PinRequest;
 import org.acme.foodpackaging.scheduleoperations.PinService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

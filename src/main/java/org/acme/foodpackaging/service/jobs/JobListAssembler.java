@@ -7,9 +7,9 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.WorkCalendar;
-import org.acme.foodpackaging.dto.oeepev.CleaningRow;
-import org.acme.foodpackaging.dto.oeepev.DelayRow;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.row.maintenance.CleaningRow;
+import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 

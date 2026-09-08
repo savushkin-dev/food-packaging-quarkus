@@ -5,7 +5,7 @@ import builder.LineTestBuilder;
 import builder.ScheduleTestBuilder;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.DelayNoteRequest;
+import org.acme.foodpackaging.dto.request.jobs.DelayNoteRequest;
 import org.acme.foodpackaging.service.jobs.JobNoteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

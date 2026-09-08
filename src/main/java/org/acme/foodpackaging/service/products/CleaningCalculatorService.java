@@ -5,8 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.record.CleaningRule;
-import org.acme.foodpackaging.record.CleaningResult;
+import org.acme.foodpackaging.dto.row.products.CleaningRule;
+import org.acme.foodpackaging.dto.row.products.CleaningResult;
 
 import java.time.Duration;
 import java.util.*;

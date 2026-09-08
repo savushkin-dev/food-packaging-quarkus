@@ -1,0 +1,11 @@
+package org.acme.foodpackaging.dto.response.solution;
+
+import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
+
+import java.util.List;
+
+public record InitData (
+        PackagingSchedule schedule, List<JobRow> jobsFromDbRow
+){}
+

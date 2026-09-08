@@ -5,7 +5,7 @@ import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.record.InitData;
+import org.acme.foodpackaging.dto.response.solution.InitData;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.lines.LineService;

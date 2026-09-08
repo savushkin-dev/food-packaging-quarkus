@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.record.SelectionValue;
+import org.acme.foodpackaging.dto.row.jobs.CameraValue;
+import org.acme.foodpackaging.dto.request.jobs.SelectionValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 

@@ -5,8 +5,8 @@ import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.record.FactKey;
-import org.acme.foodpackaging.record.FactProductionRow;
+import org.acme.foodpackaging.dto.row.jobs.FactKey;
+import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
 import java.util.List;

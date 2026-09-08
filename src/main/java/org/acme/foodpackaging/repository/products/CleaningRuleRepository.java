@@ -4,7 +4,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.acme.foodpackaging.entity.products.PlrChange;
-import org.acme.foodpackaging.record.CleaningRule;
+import org.acme.foodpackaging.dto.row.products.CleaningRule;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;

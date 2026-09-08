@@ -2,8 +2,8 @@ package org.acme.foodpackaging.persistence.load;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.acme.foodpackaging.dto.DowntimePeriodItem;
-import org.acme.foodpackaging.dto.DowntimePeriodsResponse;
+import org.acme.foodpackaging.dto.response.jobs.DowntimePeriodItem;
+import org.acme.foodpackaging.dto.response.jobs.DowntimePeriodsResponse;
 import org.acme.foodpackaging.repository.PmLogRepository;
 
 import java.time.Duration;

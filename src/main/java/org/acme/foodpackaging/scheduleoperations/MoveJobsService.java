@@ -4,7 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.MoveJobsRequest;
+import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 
 import java.util.ArrayList;

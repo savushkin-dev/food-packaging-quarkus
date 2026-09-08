@@ -2,7 +2,7 @@ package org.acme.foodpackaging.domain;
 
 import ai.timefold.solver.core.api.domain.lookup.PlanningId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.acme.foodpackaging.record.CleaningResult;
+import org.acme.foodpackaging.dto.row.products.CleaningResult;
 import lombok.Getter;
 import lombok.Setter;
 

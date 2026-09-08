@@ -2,7 +2,7 @@ package scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.record.DowntimeData;
+import org.acme.foodpackaging.dto.response.lineservice.DowntimeData;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.junit.jupiter.api.BeforeEach;

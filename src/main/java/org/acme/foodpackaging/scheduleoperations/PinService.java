@@ -2,7 +2,7 @@ package org.acme.foodpackaging.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.dto.PinRequest;
+import org.acme.foodpackaging.dto.request.lines.PinRequest;
 
 import java.util.List;
 

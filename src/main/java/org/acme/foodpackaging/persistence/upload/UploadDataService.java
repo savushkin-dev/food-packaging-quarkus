@@ -7,7 +7,7 @@ import org.acme.foodpackaging.exception.service.DataUploadException;
 import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.sql.SqlQueries;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
 import jakarta.transaction.Transactional;
 
 import java.sql.*;

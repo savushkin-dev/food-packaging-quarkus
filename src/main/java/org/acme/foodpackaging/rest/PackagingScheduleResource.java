@@ -13,13 +13,21 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.*;
+import org.acme.foodpackaging.dto.request.jobs.*;
+import org.acme.foodpackaging.dto.request.lines.PinRequest;
+import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
+import org.acme.foodpackaging.dto.request.solution.LoadRequest;
+import org.acme.foodpackaging.dto.response.jobs.DowntimePeriodsResponse;
+import org.acme.foodpackaging.dto.response.lineservice.DowntimeData;
+import org.acme.foodpackaging.dto.response.solution.FrontendDataWrapper;
+import org.acme.foodpackaging.dto.response.solution.InitData;
+import org.acme.foodpackaging.dto.row.solution.DateRange;
+import org.acme.foodpackaging.dto.row.solution.TimeUpdate;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.excel.UserLogReport;
 import org.acme.foodpackaging.persistence.upload.*;
-import org.acme.foodpackaging.record.*;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.initializer.*;
@@ -67,7 +75,7 @@ public class PackagingScheduleResource {
     @Path("downtimePeriods/{idBatch}")
     @Produces(MediaType.APPLICATION_JSON)
     public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
-            @QueryParam("duration") Integer duration) {
+                                                   @QueryParam("duration") Integer duration) {
         if (idBatch == null || idBatch.isBlank()) {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
         }
@@ -570,7 +578,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("maintenance")
     public Response addMaintenance(MaintenanceRequest request,
-            @HeaderParam("X-Session-Id") String sessionId) {
+                                   @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         PackagingSchedule updated;

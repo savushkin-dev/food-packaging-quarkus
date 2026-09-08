@@ -3,7 +3,7 @@ package org.acme.foodpackaging.scheduleoperations;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
 

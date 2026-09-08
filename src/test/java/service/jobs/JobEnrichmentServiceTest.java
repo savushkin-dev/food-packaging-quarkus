@@ -3,7 +3,7 @@ package service.jobs;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.dto.row.jobs.CameraValue;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.jobs.JobEnrichmentService;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 import org.mockito.ArgumentCaptor;
 import builder.JobTestBuilder;
 
-import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
 
 @ExtendWith(MockitoExtension.class)

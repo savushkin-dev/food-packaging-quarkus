@@ -8,7 +8,7 @@ import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.entity.lines.PlrLines;
-import org.acme.foodpackaging.record.CleaningRule;
+import org.acme.foodpackaging.dto.row.products.CleaningRule;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;

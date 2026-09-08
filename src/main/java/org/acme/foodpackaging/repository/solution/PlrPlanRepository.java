@@ -3,7 +3,7 @@ package org.acme.foodpackaging.repository.solution;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.entity.solution.PlrPlan;
-import org.acme.foodpackaging.record.SolutionByVersion;
+import org.acme.foodpackaging.dto.row.solution.SolutionByVersion;
 
 import java.time.LocalDate;
 import java.util.List;

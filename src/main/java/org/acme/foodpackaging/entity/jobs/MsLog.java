@@ -3,7 +3,7 @@ package org.acme.foodpackaging.entity.jobs;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import lombok.*;
-import org.acme.foodpackaging.record.FactProductionRow;
+import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;
 
 import java.time.LocalDateTime;
 
