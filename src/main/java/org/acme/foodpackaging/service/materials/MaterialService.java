@@ -401,4 +401,60 @@ public class MaterialService {
                 .doubleValue();
     }
 
+    /**
+     * Получает все материалы для даты и МОЛ с их текущим статусом IN_CALC
+     */
+    public List<MaterialSettingDto> getMaterialsSettings(String date, String kpp) {
+        LocalDate dt = LocalDate.parse(date);
+
+        // 1. Получаем все нормы для продуктов на дату (без фильтра по inCalc)
+        List<ProductDto> products = materialRepository.findProductsByDate(date);
+        PlrSprog plrSprog = sprogService.findByDate(dt);
+        Double sysn = plrSprog.getSysn();
+
+        // 2. Собираем все KMT из норм
+        Set<String> allKmt = new HashSet<>();
+        for (ProductDto product : products) {
+            List<PlrRnpp> norms = rnppService.findByKmcAndKtAndEmkAndSysnWithHidden(
+                    sysn, product.getKmc(), product.getKt(), product.getEmk()
+            );
+            for (PlrRnpp norm : norms) {
+                allKmt.add(norm.getKkom());
+            }
+        }
+
+        // 3. Загружаем материалы
+        Map<String, PlrMt> mtMap = mtService.getByKmtList(allKmt)
+                .stream()
+                .collect(Collectors.toMap(PlrMt::getKmt, mt -> mt));
+
+        // 4. Собираем DTO для ответа
+        List<MaterialSettingDto> result = new ArrayList<>();
+        for (String kmt : allKmt) {
+            PlrMt mt = mtMap.get(kmt);
+            if (mt != null) {
+                result.add(MaterialSettingDto.builder()
+                        .kmt(kmt)
+                        .snm(mt.getSnm())
+                        .edu(mt.getEdu())
+                        .inCalc(mt.inCalc)
+                        .build());
+            }
+        }
+
+        // Сортируем по коду
+        result.sort(Comparator.comparing(MaterialSettingDto::getKmt));
+        return result;
+    }
+
+    /**
+     * Сохраняет настройки IN_CALC для материалов
+     */
+    @Transactional
+    public void saveMaterialsSettings(List<MaterialSettingDto> settings) {
+        for (MaterialSettingDto setting : settings) {
+            mtService.updateInCalc(setting.getKmt(), setting.getInCalc());
+        }
+    }
+
 }

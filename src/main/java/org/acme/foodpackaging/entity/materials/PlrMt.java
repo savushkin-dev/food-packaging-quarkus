@@ -52,4 +52,7 @@ public class PlrMt extends PanacheEntityBase {
 
     @Column(name = "RND", nullable = false)
     public Double rnd = 0.0;
+
+    @Column(name = "IN_CALC", nullable = false)
+    public Boolean inCalc = true;
 }

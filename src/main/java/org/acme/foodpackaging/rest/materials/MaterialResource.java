@@ -6,11 +6,9 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.extern.log4j.Log4j2;
-import org.acme.foodpackaging.dto.materials.KolfRecalcRequest;
-import org.acme.foodpackaging.dto.materials.PpDto;
-import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
-import org.acme.foodpackaging.dto.materials.SaveRequest;
+import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.service.materials.MaterialService;
+import org.acme.foodpackaging.service.materials.config.MtService;
 import org.acme.foodpackaging.service.materials.config.PpService;
 
 import java.util.List;
@@ -23,11 +21,13 @@ public class MaterialResource {
 
     private final MaterialService materialService;
     private final PpService ppService;
+    private final MtService mtService;
 
     @Inject
-    public MaterialResource(MaterialService materialService, PpService ppService) {
+    public MaterialResource(MaterialService materialService, PpService ppService, MtService mtService) {
         this.materialService = materialService;
         this.ppService = ppService;
+        this.mtService = mtService;
     }
 
     @GET
@@ -96,6 +96,26 @@ public class MaterialResource {
                     .entity("Error saving data: " + e.getMessage())
                     .build();
         }
+    }
+
+    /**
+     * Получить настройки материалов для даты и МОЛ
+     */
+    @GET
+    @Path("/settings")
+    public Response getSettings(@QueryParam("date") String date, @QueryParam("kpp") String kpp) {
+        List<MaterialSettingDto> settings = materialService.getMaterialsSettings(date, kpp);
+        return Response.ok(settings).build();
+    }
+
+    /**
+     * Сохранить настройки материалов
+     */
+    @PUT
+    @Path("/settings")
+    public Response saveSettings(List<MaterialSettingDto> settings) {
+        materialService.saveMaterialsSettings(settings);
+        return Response.ok().build();
     }
 
     private String sanitizeForLog(String value) {
