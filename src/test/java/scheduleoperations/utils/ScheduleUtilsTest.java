@@ -2,9 +2,9 @@ package scheduleoperations.utils;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.record.DowntimeData;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -376,7 +376,7 @@ class ScheduleUtilsTest {
     }
 
     @Test
-    void downtimeData_shouldReturnCorrectDuration_onlyForOverloadedJobs() {
+    void DowntimeDataValue_shouldReturnCorrectDuration_onlyForOverloadedJobs() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1", "2"));
@@ -389,14 +389,14 @@ class ScheduleUtilsTest {
         job2.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 12, 0));
         job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 30));
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
 
         assertEquals(60, result.downtime());
         assertEquals(60, result.lines().get(line.getId()));
     }
 
     @Test
-    void downtimeData_shouldIgnoreNullIdAndJob() {
+    void DowntimeDataValue_shouldIgnoreNullIdAndJob() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1", "2"));
@@ -412,14 +412,14 @@ class ScheduleUtilsTest {
         job2.setId(null);
         line.setJobs(Arrays.asList(job1, job2, null));
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
 
         assertEquals(30, result.downtime());
         assertEquals(30, result.lines().get(line.getId()));
     }
 
     @Test
-    void downtimeData_shouldIgnoreJobsNotInOverloadedIds() {
+    void DowntimeDataValue_shouldIgnoreJobsNotInOverloadedIds() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
@@ -430,13 +430,13 @@ class ScheduleUtilsTest {
         job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 0));
         job2.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 12, 0));
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
 
         assertEquals(60, result.downtime());
     }
 
     @Test
-    void downtimeData_isNegativeCleaning() {
+    void DowntimeDataValue_isNegativeCleaning() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1", "2"));
@@ -447,13 +447,13 @@ class ScheduleUtilsTest {
         job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 12, 0));
         job2.setStartProductionDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 0));
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
 
         assertEquals(60, result.downtime());
     }
 
     @Test
-    void downtimeData_startProductionIsNull_shouldReturnZero() {
+    void DowntimeDataValue_startProductionIsNull_shouldReturnZero() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
@@ -464,81 +464,81 @@ class ScheduleUtilsTest {
         job2.setStartCleaningDateTime(LocalDateTime.of(2026, Month.APRIL, 6, 11, 0));
         job2.setStartProductionDateTime(null);
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
 
         assertEquals(0, result.downtime());
     }
 
     @Test
-    void downtimeData_emptyOverloadedIds_shouldReturnZero() {
+    void DowntimeDataValue_emptyOverloadedIds_shouldReturnZero() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of());
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertTrue(result.lines().isEmpty());
     }
 
     @Test
-    void downtimeData_solutionIsnNull_shouldReturnZero() {
+    void DowntimeDataValue_solutionIsnNull_shouldReturnZero() {
 
         schedule = null;
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertTrue(result.lines().isEmpty());
     }
 
     @Test
-    void downtimeData_WorkCalendarIsNull_shouldReturnZero() {
+    void DowntimeDataValue_WorkCalendarIsNull_shouldReturnZero() {
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertTrue(result.lines().isEmpty());
     }
 
     @Test
-    void downtimeData_LinesIsNull_shouldReturnZero() {
+    void DowntimeDataValue_LinesIsNull_shouldReturnZero() {
 
         schedule.setLines(null);
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue  result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertTrue(result.lines().isEmpty());
     }
 
     @Test
-    void downtimeData_lineIsnull_shouldReturnZero() {
+    void DowntimeDataValue_lineIsnull_shouldReturnZero() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
         schedule.setLines(Arrays.asList(line, null));
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertEquals(1, result.lines().size());
     }
 
     @Test
-    void downtimeData_PlanningDateIsNull_shouldReturnZero() {
+    void DowntimeDataValue_PlanningDateIsNull_shouldReturnZero() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
 
         schedule.getWorkCalendar().setPlanningDate(null);
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertTrue(result.lines().isEmpty());
     }
 
     @Test
-    void downtimeData_lineJobsIsNull_shouldReturnZero() {
+    void DowntimeDataValue_lineJobsIsNull_shouldReturnZero() {
 
         schedule.setWorkCalendar(new WorkCalendar(LocalDate.of(2026, Month.APRIL, 6)));
         schedule.setOverloadedIds(Set.of("1"));
         Line line2 = new Line("line2", "Line 2");
         schedule.setLines(Arrays.asList(line, line2));
 
-        DowntimeData result = getDowntimeData(schedule);
+        DowntimeDataValue result = getDowntimeData(schedule);
         assertEquals(0, result.downtime());
         assertEquals(2, result.lines().size());
     }

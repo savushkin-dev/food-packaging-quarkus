@@ -2,7 +2,7 @@ package scheduleoperations;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.dto.PinRequest;
+import org.acme.foodpackaging.dto.request.lines.PinRequest;
 import org.acme.foodpackaging.scheduleoperations.PinService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PinServiceTest {
@@ -79,6 +80,11 @@ class PinServiceTest {
 
         assertEquals(3, line.getFirstUnpinnedIndex());
     }
+
+    @Test
+    void pinJobsWithNullLine_shouldDoNothing() {
+        assertDoesNotThrow(() -> service.pinJobs(null, 5));
+    }
     // ------------------------------------------------------------------
     // pinAllLines / unPinAllLines
     // ------------------------------------------------------------------
@@ -105,9 +111,15 @@ class PinServiceTest {
     // pinLine
     // ------------------------------------------------------------------
     @Test
+    void pinLineWithNullLine_shouldDoNothing() {
+        PinRequest request = new PinRequest(null, null, true);
+
+        assertDoesNotThrow(() -> service.pinLine(null, request));
+    }
+
+    @Test
     void pinAllOneLine() {
-        PinRequest request = new PinRequest();
-        request.setPinAll(true);
+        PinRequest request = new PinRequest(null, null, true);
 
         service.pinLine(line, request);
 
@@ -116,8 +128,7 @@ class PinServiceTest {
 
     @Test
     void pinOneLineWithCount() {
-        PinRequest request = new PinRequest();
-        request.setPinCount(1);
+        PinRequest request = new PinRequest(null, 1, null);
 
         service.pinLine(line, request);
 
@@ -126,7 +137,7 @@ class PinServiceTest {
 
     @Test
     void pinLineWithNoFlags() {
-        PinRequest request = new PinRequest();
+        PinRequest request = new PinRequest(null, null, null);
 
         service.pinLine(line, request);
 

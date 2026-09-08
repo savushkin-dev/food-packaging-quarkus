@@ -3,7 +3,7 @@ package service.jobs;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.jobs.JobEnrichmentService;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 import org.mockito.ArgumentCaptor;
 import builder.JobTestBuilder;
 
-import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,7 +83,7 @@ class JobEnrichmentServiceTest {
 
         LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0);
         LocalDateTime end = LocalDateTime.of(2025, Month.JANUARY, 1, 9, 0);
-        CameraValue cameraValue = new CameraValue(start, end);
+        CameraFactRow cameraValue = new CameraFactRow(start, end);
 
         when(jobRepository.getCameraFactRowMap(List.of(job))).thenReturn(Map.of("B1", cameraValue));
 
@@ -109,7 +109,7 @@ class JobEnrichmentServiceTest {
         schedule.setJobs(List.of(job));
 
         LocalDateTime end = LocalDateTime.of(2025, Month.JANUARY, 1, 9, 0);
-        CameraValue cameraValue = new CameraValue(LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0), end);
+        CameraFactRow cameraValue = new CameraFactRow(LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0), end);
 
         when(jobRepository.getCameraFactRowMap(List.of(job))).thenReturn(Map.of("B1", cameraValue));
 
@@ -125,7 +125,7 @@ class JobEnrichmentServiceTest {
     }
 
     @Test
-    void enrichCameraFacts_skipsJob_whenCameraValueNotFound() throws CameraDataReadException {
+    void enrichCameraFacts_skipsJob_whenCameraFactRowNotFound() throws CameraDataReadException {
         Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1").build();
         schedule.setJobs(List.of(job));
 

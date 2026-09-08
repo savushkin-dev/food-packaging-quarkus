@@ -4,7 +4,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.SortRangeRequest;
+import org.acme.foodpackaging.dto.request.jobs.SortRangeRequest;
 import org.acme.foodpackaging.scheduleoperations.SortByNpService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -228,12 +228,7 @@ class SortByNpServiceTest {
     // --- sortRangeByNp ---
 
     private SortRangeRequest sortRangeRequest(String lineId, int fromIndex, int sortCount, boolean sortUp) {
-        SortRangeRequest req = new SortRangeRequest();
-        req.setLineId(lineId);
-        req.setFromIndex(fromIndex);
-        req.setSortCount(sortCount);
-        req.setSortUp(sortUp);
-        return req;
+        return new SortRangeRequest(fromIndex, sortCount, lineId, sortUp);
     }
 
     @Test

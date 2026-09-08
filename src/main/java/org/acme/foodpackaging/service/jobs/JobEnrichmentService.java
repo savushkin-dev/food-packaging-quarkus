@@ -5,10 +5,10 @@ import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class JobEnrichmentService {
             return;
         }
 
-        Map<String, CameraValue> cameraMap;
+        Map<String, CameraFactRow> cameraMap;
         try {
             cameraMap = jobRepository.getCameraFactRowMap(jobsWithoutCamera);
         } catch (CameraDataReadException e) {
@@ -51,7 +51,7 @@ public class JobEnrichmentService {
 
         for (Job job : jobsWithoutCamera) {
 
-            CameraValue camera = cameraMap.get(job.getIdBatch());
+            CameraFactRow camera = cameraMap.get(job.getIdBatch());
             if (camera == null) {
                 continue;
             }

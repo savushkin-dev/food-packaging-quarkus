@@ -7,7 +7,7 @@ import org.acme.foodpackaging.exception.service.DataUploadException;
 import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.sql.SqlQueries;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.acme.foodpackaging.dto.MsLogInsertRow;
+import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
 import jakarta.transaction.Transactional;
 
 import java.sql.*;
@@ -115,13 +115,13 @@ public class UploadDataService {
             PreparedStatement ps = conn.prepareStatement(queries.insertCameraEvent())) {
 
         for (MsLogInsertRow row : rows) {
-            ps.setString(1, row.getIdBatch());
-            ps.setString(2, row.getProductId());
-            ps.setString(3, row.getLineIdFact());
-            ps.setInt(4, row.getNp());
-            ps.setInt(5, row.getEventType());
-            ps.setObject(6, row.getDtv());
-            ps.setObject(7, row.getEventTime());
+            ps.setString(1, row.idBatch());
+            ps.setString(2, row.productId());
+            ps.setString(3, row.lineIdFact());
+            ps.setInt(4, row.np());
+            ps.setInt(5, row.eventType());
+            ps.setObject(6, row.dtv());
+            ps.setObject(7, row.eventTime());
 
             ps.addBatch();
         }
@@ -145,9 +145,9 @@ public class UploadDataService {
              PreparedStatement ps = conn.prepareStatement(queries.updateCameraEndEvent())) {
 
             for (MsLogInsertRow row : rows) {
-                ps.setObject(1, row.getEventTime());
-                ps.setString(2, row.getIdBatch());
-                ps.setInt(3, row.getEventType());
+                ps.setObject(1, row.eventTime());
+                ps.setString(2, row.idBatch());
+                ps.setInt(3, row.eventType());
                 ps.addBatch();
             }
             ps.executeBatch();

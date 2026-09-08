@@ -2,7 +2,7 @@ package org.acme.foodpackaging.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Line;
-import org.acme.foodpackaging.dto.PinRequest;
+import org.acme.foodpackaging.dto.request.lines.PinRequest;
 
 import java.util.List;
 
@@ -13,6 +13,9 @@ public class PinService {
      * Если count >= количества заданий на линии, закрепляются все задания.
      */
     public void pinJobs(Line line, Integer count) {
+        if (line == null) {
+            return;
+        }
         if (count == null) {
             line.setFirstUnpinnedIndex(0);
         } else if (count <= 0) {
@@ -43,10 +46,13 @@ public class PinService {
      * Закрепляет/открепляет все задания на конкретной линии в зависимости от флагов.
      */
     public void pinLine(Line line, PinRequest request) {
-        if (Boolean.TRUE.equals(request.getPinAll())) {
+        if (line == null) {
+            return;
+        }
+        if (Boolean.TRUE.equals(request.pinAll())) {
             line.setFirstUnpinnedIndex(line.getJobs().size());
-        } else if (request.getPinCount() != null) {
-            pinJobs(line, request.getPinCount());
+        } else if (request.pinCount() != null) {
+            pinJobs(line, request.pinCount());
         } else {
             line.setFirstUnpinnedIndex(0); // открепляет всю линию
         }

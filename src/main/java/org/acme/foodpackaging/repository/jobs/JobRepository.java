@@ -3,17 +3,17 @@ package org.acme.foodpackaging.repository.jobs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.dto.oeepev.CleaningRow;
-import org.acme.foodpackaging.dto.oeepev.DelayRow;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.row.maintenance.CleaningRow;
+import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
 import org.acme.foodpackaging.persistence.constants.DelayEventType;
 import org.acme.foodpackaging.persistence.load.CameraDataLoader;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.record.FactKey;
-import org.acme.foodpackaging.record.FactProductionRow;
-import org.acme.foodpackaging.record.CameraValue;
+import org.acme.foodpackaging.domain.value.FactKey;
+import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -116,7 +116,7 @@ public class JobRepository {
      * @param jobs list with idBatch (inclusive)
      * @return Map of camera start, camera end production rows by idBatch
      */
-    public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
+    public Map<String, CameraFactRow> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
 
         if (jobs.isEmpty()) {
             return Map.of();

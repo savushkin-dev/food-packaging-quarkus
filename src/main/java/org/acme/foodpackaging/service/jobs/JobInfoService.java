@@ -4,7 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.record.CameraFactRow;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.acme.foodpackaging.repository.PmLogRepository;
 
 import java.time.LocalDateTime;
@@ -22,8 +22,14 @@ public class JobInfoService {
     }
 
     public PackagingSchedule findFactPlace(PackagingSchedule solution, long snpz){
+        if (solution == null) {
+            return null;
+        }
 
         Job job = solution.getAllJobsById().get(snpz);
+        if (job == null) {
+            return solution;
+        }
 
         String idBatch = generateIdBatch(solution, snpz);
 
@@ -45,6 +51,14 @@ public class JobInfoService {
     }
 
     public PackagingSchedule findCameraFact(PackagingSchedule solution, long snpz){
+        if (solution == null) {
+            return null;
+        }
+
+        Job job = solution.getAllJobsById().get(snpz);
+        if (job == null) {
+            return solution;
+        }
 
         String idBatch = generateIdBatch(solution, snpz);
 
@@ -63,6 +77,9 @@ public class JobInfoService {
 
     public String generateIdBatch(PackagingSchedule solution, long snpz){
         Job job = solution.getAllJobsById().get(snpz);
+        if (job == null) {
+            throw new IllegalArgumentException("Job not found: " + snpz);
+        }
         String ean13 = job.getProduct().getEan13().substring(0, 12) + "0";
         String formattedNp = String.format("%09d", job.getNp());
 

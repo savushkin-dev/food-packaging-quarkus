@@ -5,7 +5,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.SortRangeRequest;
+import org.acme.foodpackaging.dto.request.jobs.SortRangeRequest;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
@@ -279,18 +279,18 @@ public class SortByNpService {
      * Сортирует диапазон задач на линии по партиям в прямом/обратном в зависимости от флага sortUp
      */
     public void sortRangeByNp(PackagingSchedule schedule, SortRangeRequest request){
-        Line line = findLineById(schedule, request.getLineId());
+        Line line = findLineById(schedule, request.lineId());
         if(line == null || line.getJobs() == null || line.getJobs().isEmpty()) return;
 
         List<Job> jobs = line.getJobs();
         int jobCount = jobs.size();
 
-        int from = request.getFromIndex();
+        int from = request.fromIndex();
         int to = getAnInt(request, from, jobCount);
 
         Comparator<Job> comparator = Comparator.comparing(Job::getNp, Comparator.nullsLast(Integer::compareTo));
 
-        if(!request.isSortUp()){
+        if(!request.sortUp()){
            comparator = comparator.reversed();
         }
 
@@ -312,7 +312,7 @@ public class SortByNpService {
     }
 
     private static int getAnInt(SortRangeRequest request, int from, int jobCount) {
-        int sortCount = request.getSortCount();
+        int sortCount = request.sortCount();
 
         if (from < 0) {
             throw new IllegalArgumentException("fromIndex must be non-negative");

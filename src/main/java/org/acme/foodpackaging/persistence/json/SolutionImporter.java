@@ -8,7 +8,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.exception.service.InvalidSolutionException;
 import org.acme.foodpackaging.exception.service.SolutionNotFoundException;
 import org.acme.foodpackaging.exception.service.SolutionParsingException;
-import org.acme.foodpackaging.record.SolutionByVersion;
+import org.acme.foodpackaging.dto.row.solution.SolutionVersionRow;
 import org.acme.foodpackaging.service.products.ProductService;
 
 import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.initLinesJobList;
@@ -26,7 +26,7 @@ public class SolutionImporter {
         this.productService = productService;
     }
 
-    public PackagingSchedule importFromJson(SolutionByVersion solutionWrapper) {
+    public PackagingSchedule importFromJson(SolutionVersionRow solutionWrapper) {
 
         if (solutionWrapper == null) {
             throw new SolutionNotFoundException("Solution wrapper is null");

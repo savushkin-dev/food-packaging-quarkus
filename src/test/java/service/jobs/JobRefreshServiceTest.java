@@ -2,8 +2,8 @@ package service.jobs;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.record.SelectionValue;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
+import org.acme.foodpackaging.dto.request.jobs.JobSelectionRequest;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
@@ -63,7 +63,7 @@ class JobRefreshServiceTest {
     when(productService.getProductList(solution)).thenReturn(List.of());
 
     service.applySelection(
-            Map.of(1L, new SelectionValue(true, false)),
+            Map.of(1L, new JobSelectionRequest.SelectionValue(true, false)),
             solution
     );
 
@@ -82,7 +82,7 @@ void applySelection_shouldAddJobIfSelected() {
     when(productService.getProductList(solution)).thenReturn(List.of());
 
     service.applySelection(
-            Map.of(1L, new SelectionValue(true, true)),
+            Map.of(1L, new JobSelectionRequest.SelectionValue(true, true)),
             solution
     );
 
@@ -110,7 +110,7 @@ void refreshStaleCameraEndFromPmLog_shouldUpdateWhenDiffMoreThanMinute() {
     LocalDateTime newEnd = now.minusMinutes(5);
 
     when(jobRepository.getCameraFactRowMap(any()))
-            .thenReturn(Map.of("B1", new CameraValue(null, newEnd)));
+            .thenReturn(Map.of("B1", new CameraFactRow(null, newEnd)));
 
     service.refreshStaleCameraEndFromPmLog(solution);
 
@@ -137,7 +137,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
     LocalDateTime newEnd = job.getCameraEnd().plusSeconds(30);
 
     when(jobRepository.getCameraFactRowMap(any()))
-            .thenReturn(Map.of("B1", new CameraValue(null, newEnd)));
+            .thenReturn(Map.of("B1", new CameraFactRow(null, newEnd)));
 
     service.refreshStaleCameraEndFromPmLog(solution);
 
@@ -152,7 +152,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
         when(productService.getProductList(solution)).thenReturn(List.of());
         assertDoesNotThrow(() -> {
             service.applySelection(
-                    Map.of(1L, new SelectionValue(false, false)),
+                    Map.of(1L, new JobSelectionRequest.SelectionValue(false, false)),
                     solution
             );
         });
@@ -171,7 +171,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
         when(productService.getProductList(solution)).thenReturn(List.of());
 
         service.applySelection(
-                Map.of(1L, new SelectionValue(false, false)),
+                Map.of(1L, new JobSelectionRequest.SelectionValue(false, false)),
                 solution
         );
         assertEquals(0, solution.getJobs().size());
@@ -197,7 +197,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
         when(productService.getProductList(solution)).thenReturn(List.of());
 
         service.applySelection(
-                Map.of(1L, new SelectionValue(false, false)),
+                Map.of(1L, new JobSelectionRequest.SelectionValue(false, false)),
                 solution
         );
 
@@ -220,7 +220,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
         when(productService.getProductList(solution)).thenReturn(List.of());
 
         service.applySelection(
-                Map.of(1L, new SelectionValue(false, false)),
+                Map.of(1L, new JobSelectionRequest.SelectionValue(false, false)),
                 solution
         );
 
@@ -252,7 +252,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
         when(productService.getProductList(solution)).thenReturn(List.of());
 
         service.applySelection(
-                Map.of(1L, new SelectionValue(false, false)),
+                Map.of(1L, new JobSelectionRequest.SelectionValue(false, false)),
                 solution
         );
 
@@ -283,7 +283,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
 
         when(productService.getProductList(solution)).thenReturn(List.of());
         service.applySelection(
-                Map.of(1L, new SelectionValue(false, false)),
+                Map.of(1L, new JobSelectionRequest.SelectionValue(false, false)),
                 solution
         );
 
@@ -307,7 +307,7 @@ void refreshStaleCameraEndFromPmLog_shouldNotUpdateWhenDiffLessThanMinute() {
 
         when(productService.getProductList(solution)).thenReturn(List.of());
         service.applySelection(
-                Map.of(1L, new SelectionValue(false, false)),
+                Map.of(1L, new JobSelectionRequest.SelectionValue(false, false)),
                 solution
         );
         assertNull(job.getLine());

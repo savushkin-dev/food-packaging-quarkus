@@ -4,7 +4,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.MoveJobsRequest;
+import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.scheduleoperations.MoveJobsService;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
@@ -76,12 +76,7 @@ class MoveJobsServiceTest {
         line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
         schedule.getJobs().addAll(line1.getJobs());
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("line1");
-        request.setToLineId("line1");
-        request.setFromIndex(0);
-        request.setCount(1);
-        request.setInsertIndex(2);
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line1", 0, 1, 2);
 
         service.moveJobs(schedule, request);
 
@@ -98,12 +93,7 @@ class MoveJobsServiceTest {
 
         line1.setJobs(new ArrayList<>(List.of(j1, j2)));
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("line1");
-        request.setToLineId("line1");
-        request.setFromIndex(0);
-        request.setCount(1);
-        request.setInsertIndex(1);
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line1", 0, 1, 1);
 
         service.moveJobs(schedule, request);
 
@@ -117,12 +107,7 @@ class MoveJobsServiceTest {
         line1.setJobs(new ArrayList<>(List.of(j1)));
         line2.setJobs(new ArrayList<>());
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("line1");
-        request.setToLineId("line2");
-        request.setFromIndex(0);
-        request.setCount(1);
-        request.setInsertIndex(0);
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 0, 1, 0);
 
         service.moveJobs(schedule, request);
 
@@ -136,12 +121,7 @@ class MoveJobsServiceTest {
         Job j1 = job("1", "J1", productA);
         line1.setJobs(new ArrayList<>(List.of(j1)));
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("missing");
-        request.setToLineId("line2");
-        request.setFromIndex(0);
-        request.setCount(1);
-        request.setInsertIndex(0);
+        MoveJobsRequest request = new MoveJobsRequest("missing", "line2", 0, 1, 0);
 
         assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
     }
@@ -151,12 +131,7 @@ class MoveJobsServiceTest {
         Job j1 = job("1", "J1", productA);
         line1.setJobs(new ArrayList<>(List.of(j1)));
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("line1");
-        request.setToLineId("missing");
-        request.setFromIndex(0);
-        request.setCount(1);
-        request.setInsertIndex(0);
+        MoveJobsRequest request = new MoveJobsRequest("line1", "missing", 0, 1, 0);
 
         assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
     }
@@ -172,12 +147,7 @@ class MoveJobsServiceTest {
                 "line2", Map.of("TYPE_B", Pair.of(20, 10))
         ));
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("line1");
-        request.setToLineId("line2");
-        request.setFromIndex(0);
-        request.setCount(1);
-        request.setInsertIndex(0);
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 0, 1, 0);
 
         assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
     }
@@ -194,12 +164,7 @@ class MoveJobsServiceTest {
                 "line2", Map.of("TYPE_B", Pair.of(20, 10))
         ));
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("line1");
-        request.setToLineId("line2");
-        request.setFromIndex(0);
-        request.setCount(1);
-        request.setInsertIndex(0);
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 0, 1, 0);
 
         assertDoesNotThrow(() -> service.moveJobs(schedule, request));
         assertEquals(1, line2.getJobs().size());
@@ -211,12 +176,7 @@ class MoveJobsServiceTest {
         line1.setJobs(new ArrayList<>(List.of(j1)));
         line2.setJobs(new ArrayList<>());
 
-        MoveJobsRequest request = new MoveJobsRequest();
-        request.setFromLineId("line1");
-        request.setToLineId("line2");
-        request.setFromIndex(5);
-        request.setCount(1);
-        request.setInsertIndex(0);
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 5, 1, 0);
 
         assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
     }
