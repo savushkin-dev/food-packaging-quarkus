@@ -7,7 +7,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.dto.response.lineservice.*;
+import org.acme.foodpackaging.service.lines.value.*;
 
 import org.acme.foodpackaging.repository.PmLogRepository;
 
@@ -125,36 +125,36 @@ public class LineService {
         double totalMassa2 = 0.0;
 
         for (Line line : lines) {
-            LineProductionDto lineDto = buildLineProduction(line, firstShiftWindow, secondShiftWindow);
+            LineProductionValue lineDto = buildLineProduction(line, firstShiftWindow, secondShiftWindow);
             result.put(String.valueOf(line.getId()), lineDto);
             totalMassa1 += lineDto.massa1();
             totalMassa2 += lineDto.massa2();
         }
 
         double totalMassa = round(totalMassa1 + totalMassa2);
-        result.put("total", new TotalProductionDto("Итого", totalMassa, round(totalMassa1), round(totalMassa2)));
+        result.put("total", new  TotalProductionValue("Итого", totalMassa, round(totalMassa1), round(totalMassa2)));
 
         return result;
     }
 
-    private LineProductionDto buildLineProduction(Line line, ShiftWindow firstShiftWindow,
+    private LineProductionValue buildLineProduction(Line line, ShiftWindow firstShiftWindow,
             ShiftWindow secondShiftWindow) {
         if (line.getJobs() == null || line.getJobs().isEmpty()) {
-            return new LineProductionDto(line.getName(), 0.0, 0.0, 0.0, List.of(), List.of());
+            return new LineProductionValue(line.getName(), 0.0, 0.0, 0.0, List.of(), List.of());
         }
 
-        List<BatchProductionDto> shift1 = buildShiftBatches(line.getJobs(), firstShiftWindow);
-        List<BatchProductionDto> shift2 = buildShiftBatches(line.getJobs(), secondShiftWindow);
+        List< BatchProductionValue> shift1 = buildShiftBatches(line.getJobs(), firstShiftWindow);
+        List< BatchProductionValue> shift2 = buildShiftBatches(line.getJobs(), secondShiftWindow);
 
         double massa1 = sumMass(shift1);
         double massa2 = sumMass(shift2);
         double totalMass = round(massa1 + massa2);
 
-        return new LineProductionDto(line.getName(), totalMass, massa1, massa2, shift1, shift2);
+        return new LineProductionValue(line.getName(), totalMass, massa1, massa2, shift1, shift2);
     }
 
-    private List<BatchProductionDto> buildShiftBatches(List<Job> jobs, ShiftWindow window) {
-        List<BatchProductionDto> batches = new ArrayList<>();
+    private List< BatchProductionValue> buildShiftBatches(List<Job> jobs, ShiftWindow window) {
+        List< BatchProductionValue> batches = new ArrayList<>();
 
         for (Job job : jobs) {
             double mass = calculateJobMass(job, window);
@@ -162,7 +162,7 @@ public class LineService {
                 continue;
             }
 
-            batches.add(new BatchProductionDto(
+            batches.add(new  BatchProductionValue(
                     job.getId(),
                     round(mass),
                     job.getNp(),
@@ -170,13 +170,13 @@ public class LineService {
                     job.getCameraEnd()));
         }
 
-        batches.sort(Comparator.comparing(BatchProductionDto::dts, Comparator.nullsLast(Comparator.naturalOrder())));
+        batches.sort(Comparator.comparing( BatchProductionValue::dts, Comparator.nullsLast(Comparator.naturalOrder())));
         return batches;
     }
 
-    private static double sumMass(List<BatchProductionDto> batches) {
+    private static double sumMass(List< BatchProductionValue> batches) {
         double sum = 0.0;
-        for (BatchProductionDto batch : batches) {
+        for ( BatchProductionValue batch : batches) {
             sum += batch.massa();
         }
         return round(sum);

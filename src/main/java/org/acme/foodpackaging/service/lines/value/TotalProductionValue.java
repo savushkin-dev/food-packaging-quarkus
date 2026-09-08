@@ -1,6 +1,6 @@
-package org.acme.foodpackaging.dto.response.lineservice;
+package org.acme.foodpackaging.service.lines.value;
 
-public record TotalProductionDto(
+public record TotalProductionValue(
         String name,
         double massa,
         double massa1,
