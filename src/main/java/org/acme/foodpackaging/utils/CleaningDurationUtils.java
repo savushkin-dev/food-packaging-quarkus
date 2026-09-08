@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleoperations.utils;
+package org.acme.foodpackaging.utils;
 
 import lombok.Getter;
 import java.util.Map;

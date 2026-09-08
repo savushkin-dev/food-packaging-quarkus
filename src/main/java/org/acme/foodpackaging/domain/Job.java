@@ -24,8 +24,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 
 @Getter
 @Setter

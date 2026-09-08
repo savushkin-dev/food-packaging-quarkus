@@ -1,18 +1,21 @@
-package org.acme.foodpackaging.scheduleoperations;
+package org.acme.foodpackaging.service.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import java.util.*;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
+
+import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixPinnedJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
 
 @ApplicationScoped
 public class MoveJobsService {

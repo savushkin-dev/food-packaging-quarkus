@@ -21,9 +21,9 @@ import java.time.Month;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.START_FACT_EVENT_TYPE;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.utils.ScheduleUtils.START_FACT_EVENT_TYPE;
+import static org.acme.foodpackaging.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

@@ -10,11 +10,10 @@ import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.acme.foodpackaging.service.products.ProductService;
+import static org.acme.foodpackaging.utils.ScheduleUtils.removeJobsWithoutLine;
 
 import java.time.LocalDate;
 import java.util.List;
-
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)

@@ -1,7 +1,7 @@
 package service.jobs;
 
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.service.upload.UploadDataService;
 import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.acme.foodpackaging.dto.request.jobs.JobSelectionRequest;
 import org.acme.foodpackaging.repository.jobs.JobRepository;

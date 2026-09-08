@@ -1,6 +1,6 @@
-package scheduleoperations.utils;
+package utils;
 
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

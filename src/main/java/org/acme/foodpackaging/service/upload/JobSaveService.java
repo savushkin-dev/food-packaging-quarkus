@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.persistence.upload;
+package org.acme.foodpackaging.service.upload;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

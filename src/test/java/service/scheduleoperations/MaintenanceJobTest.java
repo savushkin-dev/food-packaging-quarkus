@@ -1,14 +1,14 @@
-package scheduleoperations;
+package service.scheduleoperations;
 
 import builder.MaintenanceRowBuilder;
 import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleoperations.MaintenanceJob;
-import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
-import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.utils.ScheduleUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

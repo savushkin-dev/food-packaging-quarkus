@@ -9,8 +9,8 @@ import org.acme.foodpackaging.service.lines.LineService;
 
 import java.util.List;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixPinnedJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixPinnedJobs;
 
 @ApplicationScoped
 public class AlignSolutionService {

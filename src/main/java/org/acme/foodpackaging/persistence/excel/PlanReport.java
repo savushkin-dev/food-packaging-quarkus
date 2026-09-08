@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.findLineById;
+import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
 
 public class PlanReport {
 

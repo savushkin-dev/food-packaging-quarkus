@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleoperations;
+package org.acme.foodpackaging.service.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
@@ -7,9 +7,11 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.request.jobs.SortRangeRequest;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
-
 import java.util.*;
+
+import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
+
 /**
  * Сервис выполняет перестановку задач на всех линиях,
  * сортируя их внутри каждого продуктового пула по полю NP.

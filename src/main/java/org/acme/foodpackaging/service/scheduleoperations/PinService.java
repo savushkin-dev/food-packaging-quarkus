@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleoperations;
+package org.acme.foodpackaging.service.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Line;

@@ -17,7 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.utils.ScheduleUtils;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 

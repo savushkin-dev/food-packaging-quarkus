@@ -11,7 +11,7 @@ import org.acme.foodpackaging.exception.service.SolutionParsingException;
 import org.acme.foodpackaging.dto.row.solution.SolutionVersionRow;
 import org.acme.foodpackaging.service.products.ProductService;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.initLinesJobList;
+import static org.acme.foodpackaging.utils.ScheduleUtils.initLinesJobList;
 
 @ApplicationScoped
 public class SolutionImporter {

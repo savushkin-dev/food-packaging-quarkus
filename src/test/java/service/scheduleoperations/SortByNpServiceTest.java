@@ -1,11 +1,11 @@
-package scheduleoperations;
+package service.scheduleoperations;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.request.jobs.SortRangeRequest;
-import org.acme.foodpackaging.scheduleoperations.SortByNpService;
+import org.acme.foodpackaging.service.scheduleoperations.SortByNpService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
+import static org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SortByNpServiceTest {

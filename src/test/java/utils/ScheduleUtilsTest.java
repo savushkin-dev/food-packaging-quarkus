@@ -1,9 +1,9 @@
-package scheduleoperations.utils;
+package utils;
 
 import org.acme.foodpackaging.domain.*;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.ScheduleUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import java.time.Month;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.utils.ScheduleUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ScheduleUtilsTest {

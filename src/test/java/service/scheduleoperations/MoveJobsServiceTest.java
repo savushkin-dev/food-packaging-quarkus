@@ -1,13 +1,13 @@
-package scheduleoperations;
+package service.scheduleoperations;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleoperations.MoveJobsService;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

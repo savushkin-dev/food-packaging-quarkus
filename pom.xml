@@ -220,8 +220,12 @@
             <exclude>**/sql/**</exclude>
             <exclude>**/dto/**</exclude>
             <exclude>**/config/**</exclude>
+            <exclude>**/utils/**</exclude>
             <exclude>**/solver/**</exclude>
             <exclude>**/service/solution/value/**</exclude>
+            <exclude>**/service/solution/value/**</exclude>
+            <exclude>**/service/load/**</exclude>
+            <exclude>**/service/upload/**</exclude>
 
           </excludes>
         </configuration>

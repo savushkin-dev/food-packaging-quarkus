@@ -8,7 +8,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.request.jobs.DelayNoteRequest;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.findLineById;
+import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)

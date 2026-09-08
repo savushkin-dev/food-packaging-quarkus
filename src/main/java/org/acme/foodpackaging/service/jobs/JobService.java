@@ -14,7 +14,9 @@ import java.util.Map;
 
 import org.acme.foodpackaging.service.lines.LineService;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.utils.ScheduleUtils.START_FACT_EVENT_TYPE;
 
 /**
  * Business logic service for job management.
