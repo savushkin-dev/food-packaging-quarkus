@@ -143,6 +143,61 @@ class MaintenanceJobTest {
     }
 
     @Test
+    void removeMaintenanceJob_withUnknownLineId_shouldDoNothing() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        job.setMaintenance(true);
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        MaintenanceRequest request = new MaintenanceRequest("unknown-line", null, null, null, null, null, 0, null, null);
+        PackagingSchedule result = maintenanceJob.removeMaintenanceJob(schedule, request);
+
+        assertSame(schedule, result);
+        assertEquals(1, result.getJobs().size());
+        assertEquals(1, line.getJobs().size());
+    }
+
+    @Test
+    void updateDuration_withUnknownLineId_shouldDoNothing() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        job.setMaintenance(true);
+        job.setDuration(Duration.ofMinutes(30));
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        MaintenanceRequest request = new MaintenanceRequest("unknown-line", null, null, 45, null, 0, null, null, null);
+        PackagingSchedule result = maintenanceJob.updateDuration(schedule, request);
+
+        assertSame(schedule, result);
+        assertEquals(30, line.getJobs().getFirst().getDuration().toMinutes());
+    }
+
+    @Test
+    void updateMaintenanceType_withUnknownLineId_shouldDoNothing() {
+        Product product = schedule.getProducts().getFirst();
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+        Job job = new Job(row, "MaintenanceJob 1", product);
+        job.setMinStartTime(schedule.getWorkCalendar().getMinStartDateTime());
+        line.getJobs().add(job);
+        schedule.getJobs().add(job);
+
+        MaintenanceRequest request = new MaintenanceRequest("unknown-line", "Updated note", 2, 45, null, 0, null, null, null);
+        PackagingSchedule result = maintenanceJob.updateMaintenanceType(schedule, request);
+
+        assertSame(schedule, result);
+        assertEquals("Delay Note", line.getJobs().getFirst().getMaintenanceNote());
+    }
+
+    @Test
     void updateMaintenanceTypeTest() {
         Product product = schedule.getProducts().getFirst();
         MaintenanceRow row = MaintenanceRowBuilder.aRow().build();

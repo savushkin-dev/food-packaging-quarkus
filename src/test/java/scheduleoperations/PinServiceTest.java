@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PinServiceTest {
@@ -79,6 +80,11 @@ class PinServiceTest {
 
         assertEquals(3, line.getFirstUnpinnedIndex());
     }
+
+    @Test
+    void pinJobsWithNullLine_shouldDoNothing() {
+        assertDoesNotThrow(() -> service.pinJobs(null, 5));
+    }
     // ------------------------------------------------------------------
     // pinAllLines / unPinAllLines
     // ------------------------------------------------------------------
@@ -104,6 +110,13 @@ class PinServiceTest {
     // ------------------------------------------------------------------
     // pinLine
     // ------------------------------------------------------------------
+    @Test
+    void pinLineWithNullLine_shouldDoNothing() {
+        PinRequest request = new PinRequest(null, null, true);
+
+        assertDoesNotThrow(() -> service.pinLine(null, request));
+    }
+
     @Test
     void pinAllOneLine() {
         PinRequest request = new PinRequest(null, null, true);

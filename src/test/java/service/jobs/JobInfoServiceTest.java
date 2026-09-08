@@ -131,6 +131,44 @@ class JobInfoServiceTest {
     }
 
     @Test
+    void findFactPlace_withNullSolution_shouldReturnNull() {
+        PackagingSchedule result = jobInfoService.findFactPlace(null, SNPZ);
+
+        assertNull(result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void findFactPlace_withUnknownSnpz_shouldDoNothing() {
+        PackagingSchedule result = jobInfoService.findFactPlace(schedule, 999L);
+
+        assertSame(schedule, result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void findCameraFact_withNullSolution_shouldReturnNull() {
+        PackagingSchedule result = jobInfoService.findCameraFact(null, SNPZ);
+
+        assertNull(result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void findCameraFact_withUnknownSnpz_shouldDoNothing() {
+        PackagingSchedule result = jobInfoService.findCameraFact(schedule, 999L);
+
+        assertSame(schedule, result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void generateIdBatch_withUnknownSnpz_shouldThrow() {
+        assertThrows(IllegalArgumentException.class,
+                () -> jobInfoService.generateIdBatch(schedule, 999L));
+    }
+
+    @Test
     void generateIdBatch_withDifferentNp_shouldPadWithZeros() {
         job.setNp(5);
         String result = jobInfoService.generateIdBatch(schedule, SNPZ);

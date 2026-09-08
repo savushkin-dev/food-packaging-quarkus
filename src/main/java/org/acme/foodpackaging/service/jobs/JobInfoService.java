@@ -22,10 +22,13 @@ public class JobInfoService {
     }
 
     public PackagingSchedule findFactPlace(PackagingSchedule solution, long snpz){
+        if (solution == null) {
+            return null;
+        }
 
         Job job = solution.getAllJobsById().get(snpz);
         if (job == null) {
-            throw new IllegalArgumentException("Job not found: " + snpz);
+            return solution;
         }
 
         String idBatch = generateIdBatch(solution, snpz);
@@ -48,6 +51,14 @@ public class JobInfoService {
     }
 
     public PackagingSchedule findCameraFact(PackagingSchedule solution, long snpz){
+        if (solution == null) {
+            return null;
+        }
+
+        Job job = solution.getAllJobsById().get(snpz);
+        if (job == null) {
+            return solution;
+        }
 
         String idBatch = generateIdBatch(solution, snpz);
 
