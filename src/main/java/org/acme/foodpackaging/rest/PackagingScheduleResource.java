@@ -624,6 +624,12 @@ public class PackagingScheduleResource {
 
         Line line = findLineById(solution, pinRequest.lineId());
 
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.LINE_NOT_FOUND))
+                    .build();
+        }
+
         pinService.pinLine(line, pinRequest);
 
         repository.writeForSession(sessionId, solution);
