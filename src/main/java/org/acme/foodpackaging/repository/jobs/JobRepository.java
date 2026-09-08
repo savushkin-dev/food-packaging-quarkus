@@ -13,7 +13,7 @@ import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.jobs.FactKey;
 import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;
-import org.acme.foodpackaging.dto.row.jobs.CameraValue;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -116,7 +116,7 @@ public class JobRepository {
      * @param jobs list with idBatch (inclusive)
      * @return Map of camera start, camera end production rows by idBatch
      */
-    public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
+    public Map<String, CameraFactRow> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
 
         if (jobs.isEmpty()) {
             return Map.of();

@@ -106,8 +106,7 @@ class PinServiceTest {
     // ------------------------------------------------------------------
     @Test
     void pinAllOneLine() {
-        PinRequest request = new PinRequest();
-        request.setPinAll(true);
+        PinRequest request = new PinRequest(null, null, true);
 
         service.pinLine(line, request);
 
@@ -116,8 +115,7 @@ class PinServiceTest {
 
     @Test
     void pinOneLineWithCount() {
-        PinRequest request = new PinRequest();
-        request.setPinCount(1);
+        PinRequest request = new PinRequest(null, 1, null);
 
         service.pinLine(line, request);
 
@@ -126,7 +124,7 @@ class PinServiceTest {
 
     @Test
     void pinLineWithNoFlags() {
-        PinRequest request = new PinRequest();
+        PinRequest request = new PinRequest(null, null, null);
 
         service.pinLine(line, request);
 

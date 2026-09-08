@@ -142,7 +142,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response findCameraFact(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
-        schedule = jobInfoService.findCameraFact(schedule, placeFactRequest.getSnpz());
+        schedule = jobInfoService.findCameraFact(schedule, placeFactRequest.snpz());
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
@@ -154,7 +154,7 @@ public class PackagingScheduleResource {
     @Path("versionsByDate")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> getPlanVersions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
-        return plrPlanRepository.findDistinctVersionsByDate(loadDTO.getStartDate().atStartOfDay().toLocalDate());
+        return plrPlanRepository.findDistinctVersionsByDate(loadDTO.startDate().atStartOfDay().toLocalDate());
     }
 
     @POST
@@ -162,7 +162,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response findFactPlace(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
-        schedule = jobInfoService.findFactPlace(schedule, placeFactRequest.getSnpz());
+        schedule = jobInfoService.findFactPlace(schedule, placeFactRequest.snpz());
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
@@ -269,7 +269,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        InitData data = scheduleInitializer.initSchedule(loadDTO.getStartDate());
+        InitData data = scheduleInitializer.initSchedule(loadDTO.startDate());
         PackagingSchedule schedule = data.schedule();
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -287,8 +287,8 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response initVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        PackagingSchedule solution = initializerByVersion.initSchedule(loadDTO.getStartDate(), loadDTO.getVersion());
-        solution.setVersion(loadDTO.getVersion());
+        PackagingSchedule solution = initializerByVersion.initSchedule(loadDTO.startDate(), loadDTO.version());
+        solution.setVersion(loadDTO.version());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);
 
@@ -304,7 +304,7 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("/selection")
-    public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelection dto) {
+    public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionRequest dto) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -333,14 +333,14 @@ public class PackagingScheduleResource {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
-        if (solution == null || request.getStartLineDateTime() == null) {
+        if (solution == null || request.startLineDateTime() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
-        Line line = findLineById(solution, request.getLineId());
+        Line line = findLineById(solution, request.lineId());
         if (!line.getJobs().isEmpty()) {
-            setLineStartDateTime(line, request.getStartLineDateTime());
+            setLineStartDateTime(line, request.startLineDateTime());
 
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
             lineService.setMaxEndDateTimeByLastJob(solution);
@@ -370,7 +370,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Line line = findLineById(solution, request.getLineId());
+        Line line = findLineById(solution, request.lineId());
 
         if (line == null) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -378,7 +378,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        setLineMaxEndDateTime(line, request.getLineMaxEndDateTime());
+        setLineMaxEndDateTime(line, request.lineMaxEndDateTime());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);
 
@@ -588,7 +588,7 @@ public class PackagingScheduleResource {
                     .build();
         }
         if (request.isUpdateLineMode()) {
-            if (request.getMaintenanceTypeId() != null) {
+            if (request.maintenanceTypeId() != null) {
                 updated = maintenanceJob.updateMaintenanceType(schedule, request);
             } else {
                 updated = maintenanceJob.updateDuration(schedule, request);
@@ -604,7 +604,7 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.MESSAGE, "Maintenance job added",
-                ApiFields.LINE_ID, request.getLineId())).build();
+                ApiFields.LINE_ID, request.lineId())).build();
     }
 
     /**
@@ -622,7 +622,7 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Line line = findLineById(solution, pinRequest.getLineId());
+        Line line = findLineById(solution, pinRequest.lineId());
 
         pinService.pinLine(line, pinRequest);
 
@@ -669,10 +669,10 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        if (bestSolution.getVersion() == null && loadDTO.getVersion() == null) {
+        if (bestSolution.getVersion() == null && loadDTO.version() == null) {
             bestSolution.setVersion("V1");
         } else {
-            bestSolution.setVersion(loadDTO.getVersion());
+            bestSolution.setVersion(loadDTO.version());
         }
         exportService.export(bestSolution, bestSolution.getVersion());
         return Response.ok(Map.of(ApiFields.MESSAGE, "Saved to PlrPLan successfully")).build();

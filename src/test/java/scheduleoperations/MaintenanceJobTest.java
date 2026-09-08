@@ -76,14 +76,7 @@ class MaintenanceJobTest {
 
     @Test
     void maintenanceJobInEmptyLineTest() {
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-        request.setMaintenanceNote("Maintenance 1");
-        request.setDurationMinutes(30);
-
-        request.setStartProductionDateTime(LocalDateTime.now());
-        request.setMaintenanceTypeId(4);
-
+        MaintenanceRequest request = new MaintenanceRequest("line1", "Maintenance 1", 4, 30, null, null, null, null, LocalDateTime.now());
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
         assertEquals(1, result.getJobs().size());
@@ -104,13 +97,7 @@ class MaintenanceJobTest {
         line.getJobs().add(existingJob);
         schedule.getJobs().add(existingJob);
 
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-        request.setMaintenanceTypeId(4);
-        request.setMaintenanceNote("Maintenance 2");
-        request.setDurationMinutes(15);
-        request.setInsertIndex(0);
-
+        MaintenanceRequest request = new MaintenanceRequest("line1", "Maintenance 2", 4, 15, 0, null, null, null, null);
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, request);
 
         assertEquals(2, result.getJobs().size());
@@ -130,10 +117,7 @@ class MaintenanceJobTest {
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-        request.setRemoveIndex(0);
-
+        MaintenanceRequest request = new MaintenanceRequest("line1", null, null, null, null, null, 0, null, null);
         PackagingSchedule result = maintenanceJob.removeMaintenanceJob(schedule, request);
 
         assertTrue(result.getJobs().isEmpty());
@@ -152,12 +136,7 @@ class MaintenanceJobTest {
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-
-        request.setUpdateIndex(0);
-        request.setDurationMinutes(45);
-
+        MaintenanceRequest request = new MaintenanceRequest("line1", null, null, 45, null, 0, null, null, null);
         PackagingSchedule result = maintenanceJob.updateDuration(schedule, request);
 
         assertEquals(45, result.getJobs().getFirst().getDuration().toMinutes());
@@ -174,14 +153,7 @@ class MaintenanceJobTest {
         line.getJobs().add(job);
         schedule.getJobs().add(job);
 
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId("line1");
-
-        request.setUpdateIndex(0);
-        request.setMaintenanceTypeId(2);
-        request.setMaintenanceNote("Updated note");
-        request.setDurationMinutes(45);
-
+        MaintenanceRequest request = new MaintenanceRequest("line1", "Updated note", 2, 45, null, 0, null, null, null);
         ConcurrentMap<Integer, String> maintenanceTypes = new ConcurrentHashMap<>();
         maintenanceTypes.put(1, "Обслуживание");
         maintenanceTypes.put(2, "Мойка");
@@ -201,18 +173,11 @@ class MaintenanceJobTest {
         CleaningDurationUtils.init(Map.of("line1", 40));
 
         // Seed one job to make line non-empty
-        MaintenanceRequest seed = new MaintenanceRequest();
-        seed.setLineId("line1");
-        seed.setDurationMinutes(20);
-        seed.setInsertIndex(0);
-        seed.setMaintenanceTypeId(2);
+        MaintenanceRequest seed = new MaintenanceRequest("line1", null, 2, 20, 0, null, null, null, null);
         maintenanceJob.addMaintenanceJob(schedule, seed);
 
-        MaintenanceRequest req = new MaintenanceRequest();
-        req.setLineId("line1");
-        req.setDurationMinutes(360);
-        req.setInsertIndex(1); // insert after seed
-        req.setMaintenanceTypeId(2);
+        // insertIndex=1 to insert after seed
+        MaintenanceRequest req = new MaintenanceRequest("line1", null, 2, 360, 1, null, null, null, null);
 
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
 
@@ -232,12 +197,7 @@ class MaintenanceJobTest {
         CleaningDurationUtils.init(Map.of("line1", 30));
 
         LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 30, 8, 0);
-        MaintenanceRequest req = new MaintenanceRequest();
-        req.setLineId("line1");
-        req.setDurationMinutes(400);
-        req.setMaintenanceTypeId(4);
-        req.setStartProductionDateTime(start);
-
+        MaintenanceRequest req = new MaintenanceRequest("line1", null, 4, 400, null, null, null, null, start);
         PackagingSchedule result = maintenanceJob.addMaintenanceJob(schedule, req);
 
         assertEquals(2, result.getJobs().size());

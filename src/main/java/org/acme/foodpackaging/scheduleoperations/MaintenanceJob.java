@@ -33,8 +33,8 @@ public class MaintenanceJob {
     public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule,
                                                MaintenanceRequest request) {
 
-        Line line = findLineById(schedule, request.getLineId());
-        int typeKey = request.getMaintenanceTypeId() != null ? request.getMaintenanceTypeId() : 1;
+        Line line = findLineById(schedule, request.lineId());
+        int typeKey = request.maintenanceTypeId() != null ? request.maintenanceTypeId() : 1;
 
         String maintenanceTypeName = resolveMaintenanceTypeName(typeKey);
         Job maintenanceJob = buildMaintenanceJob(schedule, request, line, maintenanceTypeName);
@@ -45,7 +45,7 @@ public class MaintenanceJob {
         fixPinnedJobs(line);
 
         schedule.getJobs().add(maintenanceJob);
-        Integer alignExtraCleaning = request.getAlignExtraCleaning();
+        Integer alignExtraCleaning = request.alignExtraCleaning();
         if(alignExtraCleaning!=null){
             maybeAddExtraMaintenance(schedule, line, request, alignExtraCleaning, insertedIndex);
         }
@@ -62,12 +62,12 @@ public class MaintenanceJob {
     private ExtraMaintenance getExtraMaintenanceData(MaintenanceRequest request){
         int packagingType = 7;
         int alignType = 8;
-        int maintenanceType = request.getMaintenanceTypeId();
+        int maintenanceType = request.maintenanceTypeId();
 
-        if(isMoreSixHours(request.getDurationMinutes()) && maintenanceType!=alignType && maintenanceType!=packagingType) {
+        if(isMoreSixHours(request.durationMinutes()) && maintenanceType!=alignType && maintenanceType!=packagingType) {
             Map<String, Integer> cleanings = CleaningDurationUtils.getLinesCleaning();
             if (cleanings != null) {
-                Integer extraMinutes = cleanings.get(request.getLineId());
+                Integer extraMinutes = cleanings.get(request.lineId());
 
                 if (!(extraMinutes == null || extraMinutes <= 0)) {
                     return new ExtraMaintenance(true, extraMinutes);
@@ -107,7 +107,7 @@ public class MaintenanceJob {
                                      Job maintenanceJob,
                                      MaintenanceRequest request) {
         List<Job> lineJobs = line.getJobs();
-        LocalDateTime startTime = request.getStartProductionDateTime();
+        LocalDateTime startTime = request.startProductionDateTime();
 
         if (lineJobs.isEmpty()) {
             line.setStartDateTime(startTime);
@@ -117,7 +117,7 @@ public class MaintenanceJob {
             return 0;
         }
 
-        Integer insertIndex = request.getInsertIndex();
+        Integer insertIndex = request.insertIndex();
         if (insertIndex == null) {
             insertIndex = findInsertIndexByTime(lineJobs, startTime);
         }
@@ -175,10 +175,10 @@ public class MaintenanceJob {
     public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
                                                   MaintenanceRequest request) {
 
-        Line line = findLineById(schedule, request.getLineId());
+        Line line = findLineById(schedule, request.lineId());
 
         List<Job> lineJobs = line.getJobs();
-        int index = request.getRemoveIndex();
+        int index = request.removeIndex();
 
         if (index < 0 || index >= lineJobs.size()) {
             throw new IllegalArgumentException("Invalid insertIndex: " + index);
@@ -200,18 +200,18 @@ public class MaintenanceJob {
 
     public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {
 
-        Line line = findLineById(schedule, request.getLineId());
+        Line line = findLineById(schedule, request.lineId());
 
         List<Job> jobs = line.getJobs();
 
-        int index = request.getUpdateIndex();
+        int index = request.updateIndex();
         if (index < 0 || index >= jobs.size()) {
             throw new IllegalArgumentException("Invalid insertIndex: " + index);
         }
 
         Job job = jobs.get(index);
 
-        job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+        job.setDuration(Duration.ofMinutes(request.durationMinutes()));
 
         fixLineJobs(line);
         fixPinnedJobs(line);
@@ -221,26 +221,26 @@ public class MaintenanceJob {
 
     public PackagingSchedule updateMaintenanceType(PackagingSchedule schedule, MaintenanceRequest request) {
 
-        Line line = findLineById(schedule, request.getLineId());
+        Line line = findLineById(schedule, request.lineId());
 
         List<Job> jobs = line.getJobs();
 
-        int index = request.getUpdateIndex();
+        int index = request.updateIndex();
         if (index < 0 || index >= jobs.size()) {
             throw new IllegalArgumentException("Invalid insertIndex: " + index);
         }
 
         Job job = jobs.get(index);
-        job.setMaintenanceTypeId(request.getMaintenanceTypeId());
+        job.setMaintenanceTypeId(request.maintenanceTypeId());
         job.setName(loadDataService.getMaintenanceTypes().get(job.getMaintenanceTypeId()));
 
-        if(request.getDurationMinutes()!=null){
-            job.setDuration(Duration.ofMinutes(request.getDurationMinutes()));
+        if(request.durationMinutes()!=null){
+            job.setDuration(Duration.ofMinutes(request.durationMinutes()));
         }
 
-        if(request.getMaintenanceNote()!=null)
+        if(request.maintenanceNote()!=null)
         {
-            job.setMaintenanceNote(request.getMaintenanceNote());
+            job.setMaintenanceNote(request.maintenanceNote());
         }
 
         fixLineJobs(line);
@@ -299,11 +299,9 @@ public class MaintenanceJob {
             LocalDateTime startTime,
             int durationMinutes
     ) {
-        MaintenanceRequest request = new MaintenanceRequest();
-        request.setLineId(line.getId());
-        request.setMaintenanceTypeId(2);
-        request.setDurationMinutes(durationMinutes);
-        request.setStartProductionDateTime(startTime);
+        MaintenanceRequest request = new MaintenanceRequest(
+                line.getId(), null, 2, durationMinutes,
+                null, null, null, null, startTime);
 
         addMaintenanceJob(schedule, request);
     }

@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
-import org.acme.foodpackaging.dto.row.jobs.CameraValue;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +21,9 @@ public class CameraDataLoader {
         this.pmLogRepository = pmLogRepository;
     }
 
-    public Map<String, CameraValue> loadCameraRowMap(List<Job> jobs) {
+    public Map<String, CameraFactRow> loadCameraRowMap(List<Job> jobs) {
 
-        Map<String, CameraValue> result = new HashMap<>();
+        Map<String, CameraFactRow> result = new HashMap<>();
 
         for (String idBatch : jobs.stream()
                 .map(Job::getIdBatch)
@@ -35,9 +34,7 @@ public class CameraDataLoader {
             CameraFactRow row = pmLogRepository.getCameraFactRow(idBatch);
 
             if (row != null) {
-                result.put(idBatch, new CameraValue(
-                        row.cameraStart(),
-                        row.cameraEnd()));
+                result.put(idBatch, row);
             }
         }
 

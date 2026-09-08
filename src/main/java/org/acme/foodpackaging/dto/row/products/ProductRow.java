@@ -11,4 +11,3 @@ public record ProductRow(
     String krkmc,
     Double massa
 ) {}
-

@@ -228,12 +228,7 @@ class SortByNpServiceTest {
     // --- sortRangeByNp ---
 
     private SortRangeRequest sortRangeRequest(String lineId, int fromIndex, int sortCount, boolean sortUp) {
-        SortRangeRequest req = new SortRangeRequest();
-        req.setLineId(lineId);
-        req.setFromIndex(fromIndex);
-        req.setSortCount(sortCount);
-        req.setSortUp(sortUp);
-        return req;
+        return new SortRangeRequest(fromIndex, sortCount, lineId, sortUp);
     }
 
     @Test

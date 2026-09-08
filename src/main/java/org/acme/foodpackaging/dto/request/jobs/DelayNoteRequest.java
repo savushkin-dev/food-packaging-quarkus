@@ -1,12 +1,3 @@
 package org.acme.foodpackaging.dto.request.jobs;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class DelayNoteRequest {
-    private String lineId;
-    private int index;
-    private String delayNote;
-}
+public record DelayNoteRequest(String lineId, int index, String delayNote) {}

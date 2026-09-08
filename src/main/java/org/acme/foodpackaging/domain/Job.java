@@ -196,9 +196,9 @@ public class Job {
         this.name = name;
         this.maintenance = true;
         this.product = mProduct;
-        this.maintenanceTypeId = request.getMaintenanceTypeId();
-        this.maintenanceNote = request.getMaintenanceNote();
-        this.duration = Duration.ofMinutes(request.getDurationMinutes());
+        this.maintenanceTypeId = request.maintenanceTypeId();
+        this.maintenanceNote = request.maintenanceNote();
+        this.duration = Duration.ofMinutes(request.durationMinutes());
     }
 
     public Job(String id, String name) {

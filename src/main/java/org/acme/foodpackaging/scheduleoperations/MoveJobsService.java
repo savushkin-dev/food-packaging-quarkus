@@ -25,20 +25,20 @@ public class MoveJobsService {
         Objects.requireNonNull(schedule, "schedule must not be null");
         Objects.requireNonNull(request, "request must not be null");
 
-        Line fromLine = findLineById(schedule, request.getFromLineId());
-        Line toLine = findLineById(schedule, request.getToLineId());
+        Line fromLine = findLineById(schedule, request.fromLineId());
+        Line toLine = findLineById(schedule, request.toLineId());
 
         if (fromLine == null) {
-            throw new IllegalArgumentException("Line not found: " + request.getFromLineId());
+            throw new IllegalArgumentException("Line not found: " + request.fromLineId());
         }
         if (toLine == null) {
-            throw new IllegalArgumentException("Line not found: " + request.getToLineId());
+            throw new IllegalArgumentException("Line not found: " + request.toLineId());
         }
 
         boolean sameLine = fromLine.getId().equals(toLine.getId());
 
-        int fromIndex = request.getFromIndex();
-        int count = request.getCount();
+        int fromIndex = request.fromIndex();
+        int count = request.count();
         List<Job> fromJobs = fromLine.getJobs();
         if (fromJobs == null) fromJobs = Collections.emptyList();
 
@@ -51,7 +51,7 @@ public class MoveJobsService {
             validateProductTypesSupported(fromJobs, fromIndex, fromEnd, toLine);
         }
 
-        int insertIndex = request.getInsertIndex();
+        int insertIndex = request.insertIndex();
 
         List<Job> moved = moveSubList(fromLine, fromIndex, count, toLine, insertIndex);
 

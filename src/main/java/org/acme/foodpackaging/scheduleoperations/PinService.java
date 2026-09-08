@@ -43,10 +43,10 @@ public class PinService {
      * Закрепляет/открепляет все задания на конкретной линии в зависимости от флагов.
      */
     public void pinLine(Line line, PinRequest request) {
-        if (Boolean.TRUE.equals(request.getPinAll())) {
+        if (Boolean.TRUE.equals(request.pinAll())) {
             line.setFirstUnpinnedIndex(line.getJobs().size());
-        } else if (request.getPinCount() != null) {
-            pinJobs(line, request.getPinCount());
+        } else if (request.pinCount() != null) {
+            pinJobs(line, request.pinCount());
         } else {
             line.setFirstUnpinnedIndex(0); // открепляет всю линию
         }
