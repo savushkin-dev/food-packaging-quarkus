@@ -11,7 +11,6 @@ import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
 import org.acme.foodpackaging.repository.jobs.MsLogRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;
-import org.acme.foodpackaging.persistence.constants.EventCode;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

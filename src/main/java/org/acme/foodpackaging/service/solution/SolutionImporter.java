@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.persistence.json;
+package org.acme.foodpackaging.service.solution;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

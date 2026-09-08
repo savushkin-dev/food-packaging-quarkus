@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.dto.row.maintenance.CleaningRow;
 import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
-import org.acme.foodpackaging.persistence.constants.DelayEventType;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.domain.value.FactKey;
 import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;

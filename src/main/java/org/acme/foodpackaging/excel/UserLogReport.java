@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.persistence.excel;
+package org.acme.foodpackaging.excel;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

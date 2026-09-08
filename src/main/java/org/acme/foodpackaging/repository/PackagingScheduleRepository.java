@@ -1,7 +1,8 @@
-package org.acme.foodpackaging.persistence;
+package org.acme.foodpackaging.repository;
 
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
+import lombok.Getter;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,5 +37,21 @@ public class PackagingScheduleRepository {
     public void cleanupOldSessions() {
         long cutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000; // 24 часа назад
         sessionSolutions.entrySet().removeIf(entry -> entry.getValue().getLastUpdated() < cutoff);
+    }
+
+    @Getter
+    private static class SessionPackagingSchedule {
+
+        private final PackagingSchedule schedule;
+        private volatile long lastUpdated;
+
+        private SessionPackagingSchedule(PackagingSchedule schedule) {
+            this.schedule = schedule;
+            this.lastUpdated = System.currentTimeMillis();
+        }
+
+        private void updateTimestamp() {
+            this.lastUpdated = System.currentTimeMillis();
+        }
     }
 }

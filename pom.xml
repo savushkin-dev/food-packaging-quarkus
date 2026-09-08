@@ -240,6 +240,8 @@
                         <exclude>**/service/solution/value/**</exclude>
                         <exclude>**/service/load/**</exclude>
                         <exclude>**/service/upload/**</exclude>
+                        <exclude>**/excel/**</exclude>
+                        <exclude>**/service/solution/SolutionImporter.class</exclude>
 
                     </excludes>
                 </configuration>

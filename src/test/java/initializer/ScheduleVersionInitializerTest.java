@@ -2,7 +2,7 @@ package initializer;
 
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.initializer.ScheduleVersionInitializer;
-import org.acme.foodpackaging.persistence.json.SolutionImporter;
+import org.acme.foodpackaging.service.solution.SolutionImporter;
 import org.acme.foodpackaging.dto.row.solution.SolutionVersionRow;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.junit.jupiter.api.Test;

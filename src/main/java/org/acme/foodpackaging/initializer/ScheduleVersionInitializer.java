@@ -4,7 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.persistence.json.SolutionImporter;
+import org.acme.foodpackaging.service.solution.SolutionImporter;
 import org.acme.foodpackaging.dto.row.solution.SolutionVersionRow;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 

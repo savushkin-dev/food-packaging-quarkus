@@ -7,7 +7,7 @@ import org.acme.foodpackaging.dto.row.maintenance.CleaningRow;
 import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
-import org.acme.foodpackaging.persistence.constants.DelayEventType;
+import org.acme.foodpackaging.service.load.DelayEventType;
 import org.acme.foodpackaging.service.load.CameraDataLoader;
 import org.acme.foodpackaging.service.load.JobDBLoader;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;

@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.persistence.constants;
+package org.acme.foodpackaging.service.upload;
 
 import lombok.Getter;
 
