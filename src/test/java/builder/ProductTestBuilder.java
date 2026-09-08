@@ -1,7 +1,7 @@
 package builder;
 
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.row.products.CleaningResult;
+import org.acme.foodpackaging.domain.value.CleaningResult;
 
 import java.time.Duration;
 import java.util.HashMap;

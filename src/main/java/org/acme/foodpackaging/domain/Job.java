@@ -18,7 +18,7 @@ import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
-import org.acme.foodpackaging.dto.row.products.CleaningResult;
+import org.acme.foodpackaging.domain.value.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;

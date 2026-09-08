@@ -1,6 +1,6 @@
 package org.acme.foodpackaging.dto.row.products;
 
-public record CleaningRule(
+public record CleaningRuleRow(
         String parameter,
         String from,
         String to,

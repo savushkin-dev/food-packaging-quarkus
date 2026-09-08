@@ -5,7 +5,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.initializer.ScheduleInitializer;
-import org.acme.foodpackaging.dto.response.solution.InitData;
+import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.lines.LineService;
@@ -59,7 +59,7 @@ class ScheduleInitializerTest {
 
         doNothing().when(alignSolutionService).align(any());
 
-        InitData initData = scheduleInitializer.initSchedule(date);
+        InitDataValue initData = scheduleInitializer.initSchedule(date);
 
         PackagingSchedule schedule = initData.schedule();
 

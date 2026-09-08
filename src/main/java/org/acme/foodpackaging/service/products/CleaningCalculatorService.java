@@ -5,8 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.row.products.CleaningRule;
-import org.acme.foodpackaging.dto.row.products.CleaningResult;
+import org.acme.foodpackaging.domain.value.CleaningResult;
+import org.acme.foodpackaging.dto.row.products.CleaningRuleRow;
 
 import java.time.Duration;
 import java.util.*;
@@ -17,7 +17,7 @@ import java.util.*;
 @ApplicationScoped
 public class CleaningCalculatorService {
 
-    private List<CleaningRule> rules;
+    private List<CleaningRuleRow> rules;
     /**
      * Определяет длительность мойки при переходе от продукта *from* к продукту *to*.
      * Логика:
@@ -78,7 +78,7 @@ public class CleaningCalculatorService {
      * — правило с одним совпадением лучше чем wildcard
      * — полностью пустое правило (FROM="", TO="") — самое слабое
      */
-    private int specificity(CleaningRule rule, String from, String to) {
+    private int specificity(CleaningRuleRow rule, String from, String to) {
         int score = 0;
         if (!rule.from().isBlank() && rule.from().equalsIgnoreCase(from)) score++;
         if (!rule.to().isBlank() && rule.to().equalsIgnoreCase(to)) score++;

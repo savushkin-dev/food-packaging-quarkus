@@ -7,7 +7,7 @@ import org.acme.foodpackaging.domain.Line;
 
 import java.util.List;
 
-public record FrontendDataWrapper(
+public record FrontendDataResponse(
         List<Job> jobs,
         List<Line> lines,
         HardMediumSoftLongScore score,

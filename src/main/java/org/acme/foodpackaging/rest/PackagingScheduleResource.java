@@ -14,19 +14,19 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.request.jobs.*;
+import org.acme.foodpackaging.dto.request.lines.LineTimeUpdateRequest;
 import org.acme.foodpackaging.dto.request.lines.PinRequest;
 import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
+import org.acme.foodpackaging.dto.request.solution.DateRangeRequest;
 import org.acme.foodpackaging.dto.request.solution.LoadRequest;
-import org.acme.foodpackaging.dto.response.jobs.DowntimePeriodsResponse;
-import org.acme.foodpackaging.dto.response.lineservice.DowntimeData;
-import org.acme.foodpackaging.dto.response.solution.FrontendDataWrapper;
-import org.acme.foodpackaging.dto.response.solution.InitData;
-import org.acme.foodpackaging.dto.row.solution.DateRange;
-import org.acme.foodpackaging.dto.row.solution.TimeUpdate;
+import org.acme.foodpackaging.dto.response.solution.DowntimeDataResponse;
+import org.acme.foodpackaging.dto.response.solution.FrontendDataResponse;
+import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.persistence.*;
 import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
 import org.acme.foodpackaging.persistence.excel.PlanReport;
 import org.acme.foodpackaging.persistence.excel.UserLogReport;
+import org.acme.foodpackaging.persistence.load.DowntimeDataService;
 import org.acme.foodpackaging.persistence.upload.*;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.acme.foodpackaging.scheduleoperations.*;
@@ -34,8 +34,8 @@ import org.acme.foodpackaging.initializer.*;
 import org.acme.foodpackaging.persistence.load.LoadDataService;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.*;
-import org.acme.foodpackaging.persistence.load.DowntimePeriodsService;
 import org.acme.foodpackaging.service.lines.LineService;
+import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -68,25 +68,25 @@ public class PackagingScheduleResource {
     private final JobInfoService jobInfoService;
     private final AlignSolutionService alignSolutionService;
     private final PlrPlanRepository plrPlanRepository;
-    private final DowntimePeriodsService downtimePeriodsService;
+    private final DowntimeDataService downtimeDataService;
     private final JobNoteService jobNoteService;
 
     @GET
     @Path("downtimePeriods/{idBatch}")
     @Produces(MediaType.APPLICATION_JSON)
-    public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
-                                                   @QueryParam("duration") Integer duration) {
+    public DowntimeDataResponse downtimePeriods(@PathParam("idBatch") String idBatch,
+                                                @QueryParam("duration") Integer duration) {
         if (idBatch == null || idBatch.isBlank()) {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
         }
         String trimmed = idBatch.trim();
         if (duration == null) {
-            return downtimePeriodsService.build(trimmed);
+            return downtimeDataService.build(trimmed);
         }
         if (duration < 0) {
             throw new WebApplicationException("Query parameter 'duration' must be >= 0", Response.Status.BAD_REQUEST);
         }
-        return downtimePeriodsService.build(trimmed, Duration.ofMinutes(duration.longValue()));
+        return downtimeDataService.build(trimmed, Duration.ofMinutes(duration.longValue()));
     }
 
     @GET
@@ -105,12 +105,12 @@ public class PackagingScheduleResource {
     @GET
     @Path("frontData")
     @Produces(MediaType.APPLICATION_JSON)
-    public FrontendDataWrapper getFrontendData(@HeaderParam("X-Session-Id") String sessionId) {
+    public FrontendDataResponse getFrontendData(@HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
         if (schedule == null) {
             throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
         }
-        return new FrontendDataWrapper(
+        return new FrontendDataResponse(
                 schedule.getJobs(),
                 schedule.getLines(),
                 schedule.getScore(),
@@ -269,7 +269,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        InitData data = scheduleInitializer.initSchedule(loadDTO.startDate());
+        InitDataValue data = scheduleInitializer.initSchedule(loadDTO.startDate());
         PackagingSchedule schedule = data.schedule();
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -329,7 +329,7 @@ public class PackagingScheduleResource {
     @Path("lineStart")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdate request) {
+    public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, LineTimeUpdateRequest request) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -360,7 +360,7 @@ public class PackagingScheduleResource {
     @Path("lineMaxEnd")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdate request) {
+    public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, LineTimeUpdateRequest request) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -519,7 +519,7 @@ public class PackagingScheduleResource {
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
         repository.writeForSession(sessionId, finalSchedule);
 
-        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
+        DowntimeDataValue response = getDowntimeData(repository.readForSession(sessionId));
 
         return Response.ok(response).build();
     }
@@ -648,7 +648,7 @@ public class PackagingScheduleResource {
         }
 
         jobSaveService.saveJobsByType(bestSolution);
-        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
+        DowntimeDataValue response = getDowntimeData(repository.readForSession(sessionId));
 
         return Response.ok(response).build();
     }
@@ -693,7 +693,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("userLogReport")
     @Produces("application/vnd.malformations-office document.spreadsheet.sheet")
-    public Response createUserLogReport(DateRange range) {
+    public Response createUserLogReport(DateRangeRequest range) {
 
         UserLogReport report = new UserLogReport();
         byte[] file = report.createExcelReport(range.from(), range.to());
@@ -726,7 +726,7 @@ public class PackagingScheduleResource {
     @Produces("application/vnd.malformations-officedocument.spreadsheet.sheet")
     public Response createCleaningReport(
             @HeaderParam("X-Session-Id") String sessionId,
-            DateRange range) {
+            DateRangeRequest range) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         CleaningDurationReport report = new CleaningDurationReport();

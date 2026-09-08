@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.dto.row.products;
+package org.acme.foodpackaging.domain.value;
 
 public record CleaningResult(
     int minutes,

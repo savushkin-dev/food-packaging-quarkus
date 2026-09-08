@@ -4,7 +4,8 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.dto.response.lineservice.DowntimeData;
+import org.acme.foodpackaging.dto.response.solution.DowntimeDataResponse;
+import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -183,16 +184,16 @@ public class ScheduleUtils {
     /**
      * Считает суммарное выремя простоя на всех линиях
      */
-    public static DowntimeData getDowntimeData(PackagingSchedule solution){
+    public static DowntimeDataValue getDowntimeData(PackagingSchedule solution){
         return calculateDownTime(solution);
     }
 
     /**
      * Вспомогательные методы
      */
-    private static DowntimeData calculateDownTime(PackagingSchedule solution) {
+    private static DowntimeDataValue calculateDownTime(PackagingSchedule solution) {
         if (isInvalidSolution(solution)) {
-            return new DowntimeData("",0, Map.of());
+            return new DowntimeDataValue("",0, Map.of());
         }
 
         Duration totalDowntime = Duration.ZERO;
@@ -208,7 +209,7 @@ public class ScheduleUtils {
             lineDownTimes.put(line.getId(), lineDowntime.toMinutes());
         }
 
-        return new DowntimeData(planningDate.toString(), totalDowntime.toMinutes(), lineDownTimes);
+        return new DowntimeDataValue(planningDate.toString(), totalDowntime.toMinutes(), lineDownTimes);
     }
 
     private static boolean isInvalidSolution(PackagingSchedule solution) {

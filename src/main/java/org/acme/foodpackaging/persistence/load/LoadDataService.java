@@ -7,8 +7,8 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.Getter;
 import org.acme.foodpackaging.domain.*;
+import org.acme.foodpackaging.dto.row.products.CleaningRuleRow;
 import org.acme.foodpackaging.entity.lines.PlrLines;
-import org.acme.foodpackaging.dto.row.products.CleaningRule;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
@@ -40,7 +40,7 @@ public class LoadDataService {
     @Getter
     private Map<String, Product> products;
     @Getter
-    private List<CleaningRule> cleaningRules;
+    private List<CleaningRuleRow> cleaningRules;
 
     @Inject
     public LoadDataService(

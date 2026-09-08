@@ -11,7 +11,7 @@ import org.acme.foodpackaging.persistence.constants.DelayEventType;
 import org.acme.foodpackaging.persistence.load.CameraDataLoader;
 import org.acme.foodpackaging.persistence.load.JobDBLoader;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.dto.row.jobs.FactKey;
+import org.acme.foodpackaging.domain.value.FactKey;
 import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;
 import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;

@@ -5,7 +5,7 @@ import builder.ProductTestBuilder;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.dto.row.products.CleaningResult;
+import org.acme.foodpackaging.domain.value.CleaningResult;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.Duration;

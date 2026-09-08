@@ -8,7 +8,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
-import org.acme.foodpackaging.dto.row.products.CleaningResult;
+import org.acme.foodpackaging.domain.value.CleaningResult;
 import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
 import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
