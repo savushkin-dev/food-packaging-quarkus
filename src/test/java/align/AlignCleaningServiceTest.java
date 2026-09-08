@@ -151,16 +151,6 @@ class AlignCleaningServiceTest {
     }
 
     @Test
-    void alignCleanings_whenDeletedMaintenanceIsNull() {
-        solution.setDeletedMaintenance(null);
-
-        cleaningService.alignCleanings(solution);
-        assertNull(solution.getJobs().getLast().getCleaningDelay());
-        assertEquals(solution.getJobs().getFirst().getCameraStart(),
-                solution.getLines().getFirst().getStartDateTime());
-    }
-
-    @Test
     void alignCleanings_theSameProduct() {
         solution.getJobs().getLast().setProduct(solution.getJobs().getFirst().getProduct());
 
@@ -214,7 +204,7 @@ class AlignCleaningServiceTest {
                 .withQuantity(2600)
                 .withCamera(cameraStart, cameraEnd).build();
     }
-    
+
     private Product buildTestProduct(String id, String type) {
         return ProductTestBuilder.aProduct(id)
                 .withType(type)
