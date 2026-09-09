@@ -106,10 +106,10 @@ curl -X POST "http://localhost:8080/schedule/updateOrderList" ^
   -H "X-Session-Id: default"
 ```
 
-### POST /schedule/sortByNp
+### PUT /schedule/sort
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/sortByNp" ^
+curl -X PUT "http://localhost:8080/schedule/sort" ^
   -H "X-Session-Id: default"
 ```
 
