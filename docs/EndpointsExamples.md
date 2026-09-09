@@ -81,19 +81,19 @@ curl -X PUT "http://localhost:8080/schedule/selection" ^
   -d "{\"selection\":{\"12345\":true,\"67890\":false}}"
 ```
 
-### PUT /schedule/lines/start
+### PUT /schedule/line/start
 
 ```shell
-curl -X PUT "http://localhost:8080/schedule/lines/start" ^
+curl -X PUT "http://localhost:8080/schedule/line/start" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"startLineDateTime\":\"2026-01-19T08:00\"}"
 ```
 
-### PUT /schedule/lines/maxEnd
+### PUT /schedule/line/maxEnd
 
 ```shell
-curl -X PUT "http://localhost:8080/schedule/lines/maxEnd" ^
+curl -X PUT "http://localhost:8080/schedule/line/maxEnd" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"lineMaxEndDateTime\":\"2026-01-19T18:00\"}"
@@ -158,10 +158,10 @@ curl -X POST "http://localhost:8080/schedule/maintenance" ^
   -d "{\"lineId\":\"170610020000\",\"removeIndex\":0}"
 ```
 
-### PUT /schedule/lines/pin
+### PUT /schedule/line/pin
 
 ```shell
-curl -X PUT "http://localhost:8080/schedule/lines/pin" ^
+curl -X PUT "http://localhost:8080/schedule/line/pin" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"pinCount\":3,\"pinAll\":false}"

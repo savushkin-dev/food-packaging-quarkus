@@ -24,7 +24,7 @@ import static org.acme.foodpackaging.utils.ScheduleUtils.*;
 import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
 import static org.acme.foodpackaging.utils.ScheduleUtils.setLineStartDateTime;
 
-@Path("schedule/lines")
+@Path("schedule/line")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 @ApplicationScoped
 public class LineResource {
