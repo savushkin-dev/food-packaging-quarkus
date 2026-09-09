@@ -28,7 +28,9 @@
             **/solver/**,
             **/service/load/**,
             **/service/upload/**,
-            **/utils/**
+            **/utils/**,
+            **/excel/**,
+            **/service/solution/SolutionImporter.java
         </sonar.coverage.exclusions>
 
         <!-- Framework Versions -->
