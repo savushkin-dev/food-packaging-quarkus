@@ -23,7 +23,6 @@ import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
 import org.acme.foodpackaging.service.jobs.JobNoteService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
-import org.acme.foodpackaging.service.jobs.JobService;
 
 import java.util.Map;
 
@@ -34,7 +33,6 @@ public class ScheduleEditResource {
 
     private final PackagingScheduleRepository repository;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-    private final JobService jobService;
     private final JobNoteService jobNoteService;
     private final MoveJobsService moveJobsService;
     private final SortByNpService sortByNpService;
