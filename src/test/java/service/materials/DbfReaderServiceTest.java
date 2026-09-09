@@ -622,4 +622,45 @@ class DbfReaderServiceTest {
         List<String> keysInOrder = new ArrayList<>(recordMap.keySet());
         assertThat(keysInOrder).containsExactly("STR", "NUM", "LOG");
     }
+
+    // ==================== ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ ====================
+
+    @Test
+    void shouldFindMemoFile_PreferringDbtOverFpt() throws Exception {
+        Path dbfFile = createTestDbfFile(tempDir.resolve("with_memo.dbf"));
+        Path dbtFile = tempDir.resolve("with_memo.DBT");
+        Path fptFile = tempDir.resolve("with_memo.FPT");
+        Files.createFile(dbtFile);
+        Files.createFile(fptFile);
+
+        java.lang.reflect.Method method = DbfReaderService.class.getDeclaredMethod("findMemoFile", String.class);
+        method.setAccessible(true);
+
+        String memoPath = (String) method.invoke(service, dbfFile.toString());
+
+        assertThat(memoPath).isEqualTo(dbtFile.toAbsolutePath().toString());
+    }
+
+    @Test
+    void shouldFindMemoFile_ReturnNull_whenNoMemoFileExists() throws Exception {
+        Path dbfFile = createTestDbfFile(tempDir.resolve("no_memo.dbf"));
+
+        java.lang.reflect.Method method = DbfReaderService.class.getDeclaredMethod("findMemoFile", String.class);
+        method.setAccessible(true);
+
+        String memoPath = (String) method.invoke(service, dbfFile.toString());
+
+        assertThat(memoPath).isNull();
+    }
+
+    @Test
+    void shouldResolveCharset_FallBackToDefault_whenCharsetNameUnsupported() throws Exception {
+        java.lang.reflect.Method method = DbfReaderService.class.getDeclaredMethod("resolveCharset", String.class);
+        method.setAccessible(true);
+
+        java.nio.charset.Charset resolved = (java.nio.charset.Charset) method.invoke(service, "NOT_A_REAL_CHARSET");
+
+        assertThat(resolved).isEqualTo(java.nio.charset.Charset.forName("CP866"));
+    }
+
 }
