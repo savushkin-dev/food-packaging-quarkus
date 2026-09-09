@@ -24,7 +24,7 @@ import static org.acme.foodpackaging.utils.ScheduleUtils.*;
 import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
 import static org.acme.foodpackaging.utils.ScheduleUtils.setLineStartDateTime;
 
-@Path("schedule")
+@Path("schedule/lines")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 @ApplicationScoped
 public class LineResource {
@@ -33,18 +33,17 @@ public class LineResource {
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final LineService lineService;
     private final PinService pinService;
-    private final ScheduleSessionService scheduleSessionService;
 
-    @POST
-    @Path("lineStart")
+    @PUT
+    @Path("start")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, LineTimeUpdateRequest request) {
 
-        PackagingSchedule solution = repository.readForSession(sessionId);
+        PackagingSchedule solution = requireSchedule(sessionId);
 
         if (solution == null || request.startLineDateTime() == null) {
-            return scheduleSessionService.noScheduleLoadedResponse();
+            return noScheduleLoaded();
         }
         Line line = findLineById(solution, request.lineId());
         if (!line.getJobs().isEmpty()) {
@@ -63,23 +62,23 @@ public class LineResource {
                 ApiFields.SESSION_ID, sessionId,
                 ApiFields.MESSAGE, "Line has jobs. Start time is not updated")).build();
     }
-    @POST
-    @Path("lineMaxEnd")
+
+    @PUT
+    @Path("maxEnd")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, LineTimeUpdateRequest request) {
 
-        PackagingSchedule solution = repository.readForSession(sessionId);
+        PackagingSchedule solution = requireSchedule(sessionId);
 
         if (solution == null) {
-            return scheduleSessionService.noScheduleLoadedResponse();
+            return noScheduleLoaded();
         }
 
         Line line = findLineById(solution, request.lineId());
 
         setLineMaxEndDateTime(line, request.lineMaxEndDateTime());
-        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, solution);
+        persist(sessionId, solution);
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
@@ -88,16 +87,16 @@ public class LineResource {
     }
 
     /**
-     * Закрепеляет/открепляет задачи на линииях
+     * Закрепляет/открепляет задачи на линиях
      */
-    @POST
+    @PUT
     @Path("pin")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response pin(PinRequest pinRequest, @HeaderParam("X-Session-Id") String sessionId) {
-        PackagingSchedule solution = repository.readForSession(sessionId);
+        PackagingSchedule solution = requireSchedule(sessionId);
         if (solution == null) {
-            return scheduleSessionService.noScheduleLoadedResponse();
+            return noScheduleLoaded();
         }
 
         Line line = findLineById(solution, pinRequest.lineId());
@@ -110,10 +109,27 @@ public class LineResource {
 
         pinService.pinLine(line, pinRequest);
 
+        // solutionManager.update() здесь не вызывается —
+        // только запись в репозиторий.
         repository.writeForSession(sessionId, solution);
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.MESSAGE, "Line " + line.getId() + " updated successfully.")).build();
+    }
+
+    private PackagingSchedule requireSchedule(String sessionId) {
+        return repository.readForSession(sessionId);
+    }
+
+    private Response noScheduleLoaded() {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                .build();
+    }
+
+    private void persist(String sessionId, PackagingSchedule updated) {
+        solutionManager.update(updated, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, updated);
     }
 }

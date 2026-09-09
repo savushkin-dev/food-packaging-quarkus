@@ -24,11 +24,11 @@ curl -X GET "http://localhost:8080/schedule/lines"
 `cameraStart` / `cameraEnd` — `DTS` первой и последней строки выборки. Заголовок `X-Session-Id` не нужен.
 
 ```shell
-curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105"
+curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020268808990000105"
 ```
 
 ```shell
-curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105?duration=5"
+curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610089800000000105?duration=5"
 ```
 
 Пример ответа:
@@ -81,19 +81,19 @@ curl -X POST "http://localhost:8080/schedule/selection" ^
   -d "{\"selection\":{\"12345\":true,\"67890\":false}}"
 ```
 
-### POST /schedule/lineStart
+### PUT /schedule/lines/start
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/lineStart" ^
+curl -X PUT "http://localhost:8080/schedule/lines/start" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"startLineDateTime\":\"2026-01-19T08:00\"}"
 ```
 
-### POST /schedule/lineMaxEnd
+### PUT /schedule/lines/maxEnd
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/lineMaxEnd" ^
+curl -X PUT "http://localhost:8080/schedule/lines/maxEnd" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"lineMaxEndDateTime\":\"2026-01-19T18:00\"}"
@@ -165,10 +165,10 @@ curl -X POST "http://localhost:8080/schedule/maintenance" ^
   -d "{\"lineId\":\"170610020000\",\"removeIndex\":0}"
 ```
 
-### POST /schedule/pin
+### PUT /schedule/lines/pin
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/pin" ^
+curl -X PUT "http://localhost:8080/schedule/lines/pin" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"pinCount\":3,\"pinAll\":false}"
