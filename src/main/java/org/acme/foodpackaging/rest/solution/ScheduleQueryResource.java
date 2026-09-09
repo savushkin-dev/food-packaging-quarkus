@@ -88,8 +88,7 @@ public class ScheduleQueryResource {
         return Response.ok(productions).build();
     }
 
-    @PUT
-    @Consumes({ MediaType.APPLICATION_JSON })
+    @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("analyze")
     public ScoreAnalysis<HardMediumSoftLongScore> analyze(
