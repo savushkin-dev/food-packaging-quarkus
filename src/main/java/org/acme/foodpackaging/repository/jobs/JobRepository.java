@@ -2,20 +2,18 @@ package org.acme.foodpackaging.repository.jobs;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
-import org.acme.foodpackaging.dto.oeepev.CleaningRow;
-import org.acme.foodpackaging.dto.oeepev.DelayRow;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
-import org.acme.foodpackaging.entity.jobs.MsLog;
+import org.acme.foodpackaging.dto.row.maintenance.CleaningRow;
+import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
-import org.acme.foodpackaging.persistence.load.CameraDataLoader;
-import org.acme.foodpackaging.persistence.load.JobDBLoader;
-import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.FactKey;
-import org.acme.foodpackaging.record.FactProductionRow;
-import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.persistence.constants.EventCode;
+import org.acme.foodpackaging.service.load.DelayEventType;
+import org.acme.foodpackaging.service.load.CameraDataLoader;
+import org.acme.foodpackaging.service.load.JobDBLoader;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
+import org.acme.foodpackaging.domain.value.FactKey;
+import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
@@ -27,31 +25,35 @@ import java.util.Map;
  * Handles loading job and maintenance data from the database.
  */
 @ApplicationScoped
-@RequiredArgsConstructor(onConstructor_ = @Inject)
 public class JobRepository {
+
+    @Inject
+    public JobRepository(JobDBLoader jobDBLoader, CameraDataLoader cameraDataLoader) {
+        this.jobDBLoader = jobDBLoader;
+        this.cameraDataLoader = cameraDataLoader;
+    }
 
     private final JobDBLoader jobDBLoader;
     private final CameraDataLoader cameraDataLoader;
-    private final MsLogRepository msLogRepository;
 
     @ConfigProperty(name = "ksk")
     String ksk;
 
     /**
      * Загружает карту задач из базы данных за указанный период.
-     * 
+     *
      * @param from Start date (inclusive)
      * @param to   End date (inclusive)
      * @return Map of job rows by SNPZ
      */
-    public Map<Long, DbJobRow> getDbJobRowMap(LocalDate from, LocalDate to) {
+    public Map<Long, JobRow> getJobRowMap(LocalDate from, LocalDate to) {
         return jobDBLoader.loadJobRowMap(
                 from.atStartOfDay(), to.atStartOfDay(), ksk);
     }
 
     /**
      * Загружает список задач обслуживания из базы данных за указанный период.
-     * 
+     *
      * @param from Start date (inclusive)
      * @param to   End date (inclusive)
      * @return List of maintenance rows by FId
@@ -81,10 +83,8 @@ public class JobRepository {
      * @param to   End date (inclusive)
      * @return Map of delay rows by Event 10
      */
-    public Map<Long, DelayRow> loadDelayDurationRows(
-            LocalDate from,
-            LocalDate to) {
-        return jobDBLoader.loadDelayRowsByType(10, from.atStartOfDay(), to.atStartOfDay());
+    public Map<Long, DelayRow> loadDelayDurationRows(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadDelayRowsByType(DelayEventType.PACKAGING, from.atStartOfDay(), to.atStartOfDay());
     }
 
     /**
@@ -94,10 +94,8 @@ public class JobRepository {
      * @param to   End date (inclusive)
      * @return Map of cleaning delay rows by Event 11
      */
-    public Map<Long, DelayRow> loadCleaningDelayDurationRows(
-            LocalDate from,
-            LocalDate to) {
-        return jobDBLoader.loadDelayRowsByType(11, from.atStartOfDay(), to.atStartOfDay());
+    public Map<Long, DelayRow> loadCleaningDelayDurationRows(LocalDate from, LocalDate to) {
+        return jobDBLoader.loadDelayRowsByType(DelayEventType.CLEANING, from.atStartOfDay(), to.atStartOfDay());
     }
 
     /**
@@ -118,38 +116,11 @@ public class JobRepository {
      * @param jobs list with idBatch (inclusive)
      * @return Map of camera start, camera end production rows by idBatch
      */
-    public Map<String, CameraValue> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
+    public Map<String, CameraFactRow> getCameraFactRowMap(List<Job> jobs) throws CameraDataReadException {
 
         if (jobs.isEmpty()) {
             return Map.of();
         }
         return cameraDataLoader.loadCameraRowMap(jobs);
-    }
-    /**
-     * Загружает карту фактического производства по камере.
-     *
-     * @param jobs list with idBatch (inclusive)
-     */
-    public void fillJobsFromMsLog(List<Job> jobs) {
-
-        for (Job job : jobs) {
-
-            MsLog drawCleaningStart= msLogRepository.findByIdBatchAndEvent(
-                    job.getIdBatch(),
-                    EventCode.DRAW_CLEANING_START.getCode()
-            );
-
-            MsLog drawCleaningEnd= msLogRepository.findByIdBatchAndEvent(
-                    job.getIdBatch(),
-                    EventCode.DRAW_CLEANING_END.getCode()
-            );
-
-            if (drawCleaningStart == null || drawCleaningEnd == null) {
-                continue;
-            }
-
-            job.setDrawCleaningStart(drawCleaningStart.getEventTime());
-            job.setDrawCleaningEnd(drawCleaningEnd.getEventTime());
-        }
     }
 }

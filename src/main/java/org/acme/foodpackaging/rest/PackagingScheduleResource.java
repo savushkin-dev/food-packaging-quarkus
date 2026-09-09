@@ -13,22 +13,34 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.*;
-import org.acme.foodpackaging.dto.response.lineservice.LineProductionDto;
-import org.acme.foodpackaging.persistence.*;
-import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
-import org.acme.foodpackaging.persistence.excel.PlanReport;
-import org.acme.foodpackaging.persistence.excel.UserLogReport;
-import org.acme.foodpackaging.persistence.upload.*;
-import org.acme.foodpackaging.record.*;
+import org.acme.foodpackaging.dto.request.jobs.*;
+import org.acme.foodpackaging.dto.request.lines.LineTimeUpdateRequest;
+import org.acme.foodpackaging.dto.request.lines.PinRequest;
+import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
+import org.acme.foodpackaging.dto.request.solution.DateRangeRequest;
+import org.acme.foodpackaging.dto.request.solution.LoadRequest;
+import org.acme.foodpackaging.dto.response.solution.DowntimeDataResponse;
+import org.acme.foodpackaging.dto.response.solution.FrontendDataResponse;
+import org.acme.foodpackaging.initializer.value.InitDataValue;
+import org.acme.foodpackaging.repository.PackagingScheduleRepository;
+import org.acme.foodpackaging.excel.CleaningDurationReport;
+import org.acme.foodpackaging.excel.PlanReport;
+import org.acme.foodpackaging.excel.UserLogReport;
+import org.acme.foodpackaging.service.load.DowntimeDataService;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
-import org.acme.foodpackaging.scheduleoperations.*;
-import org.acme.foodpackaging.service.builder.*;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.initializer.*;
+import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.*;
-import org.acme.foodpackaging.persistence.load.DowntimePeriodsService;
 import org.acme.foodpackaging.service.lines.LineService;
+import org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
+import org.acme.foodpackaging.service.scheduleoperations.PinService;
+import org.acme.foodpackaging.service.scheduleoperations.SortByNpService;
+import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
+import org.acme.foodpackaging.service.upload.JobSaveService;
+import org.acme.foodpackaging.service.upload.SolutionVersionExportService;
+import org.acme.foodpackaging.service.upload.UploadDataService;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -36,7 +48,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.utils.ScheduleUtils.*;
 
 @Path("schedule")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -47,13 +59,12 @@ public class PackagingScheduleResource {
     private final SolverManager<PackagingSchedule, String> solverManager;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final MaintenanceJob maintenanceJob;
-    private final JobService jobService;
     private final LineService lineService;
     private final MoveJobsService moveJobsService;
     private final SortByNpService sortByNpService;
     private final PinService pinService;
-    private final ScheduleBuilder scheduleBuilder;
-    private final ScheduleBuilderByVersion builderByVersion;
+    private final ScheduleInitializer scheduleInitializer;
+    private final ScheduleVersionInitializer initializerByVersion;
     private final LoadDataService loadDataService;
     private final UploadDataService uploadDataService;
     private final JobRefreshService jobRefreshService;
@@ -62,24 +73,25 @@ public class PackagingScheduleResource {
     private final JobInfoService jobInfoService;
     private final AlignSolutionService alignSolutionService;
     private final PlrPlanRepository plrPlanRepository;
-    private final DowntimePeriodsService downtimePeriodsService;
+    private final DowntimeDataService downtimeDataService;
+    private final JobNoteService jobNoteService;
 
     @GET
     @Path("downtimePeriods/{idBatch}")
     @Produces(MediaType.APPLICATION_JSON)
-    public DowntimePeriodsResponse downtimePeriods(@PathParam("idBatch") String idBatch,
-            @QueryParam("duration") Integer duration) {
+    public DowntimeDataResponse downtimePeriods(@PathParam("idBatch") String idBatch,
+                                                @QueryParam("duration") Integer duration) {
         if (idBatch == null || idBatch.isBlank()) {
             throw new WebApplicationException("Batch id is required", Response.Status.BAD_REQUEST);
         }
         String trimmed = idBatch.trim();
         if (duration == null) {
-            return downtimePeriodsService.build(trimmed);
+            return downtimeDataService.build(trimmed);
         }
         if (duration < 0) {
             throw new WebApplicationException("Query parameter 'duration' must be >= 0", Response.Status.BAD_REQUEST);
         }
-        return downtimePeriodsService.build(trimmed, Duration.ofMinutes(duration.longValue()));
+        return downtimeDataService.build(trimmed, Duration.ofMinutes(duration.longValue()));
     }
 
     @GET
@@ -98,12 +110,12 @@ public class PackagingScheduleResource {
     @GET
     @Path("frontData")
     @Produces(MediaType.APPLICATION_JSON)
-    public FrontendDataWrapper getFrontendData(@HeaderParam("X-Session-Id") String sessionId) {
+    public FrontendDataResponse getFrontendData(@HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
         if (schedule == null) {
             throw new WebApplicationException("No schedule loaded", Response.Status.NOT_FOUND);
         }
-        return new FrontendDataWrapper(
+        return new FrontendDataResponse(
                 schedule.getJobs(),
                 schedule.getLines(),
                 schedule.getScore(),
@@ -135,7 +147,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response findCameraFact(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
-        schedule = jobInfoService.findCameraFact(schedule, placeFactRequest.getSnpz());
+        schedule = jobInfoService.findCameraFact(schedule, placeFactRequest.snpz());
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
@@ -147,7 +159,7 @@ public class PackagingScheduleResource {
     @Path("versionsByDate")
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> getPlanVersions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
-        return plrPlanRepository.findDistinctVersionsByDate(loadDTO.getStartDate().atStartOfDay().toLocalDate());
+        return plrPlanRepository.findDistinctVersionsByDate(loadDTO.startDate().atStartOfDay().toLocalDate());
     }
 
     @POST
@@ -155,7 +167,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response findFactPlace(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
         PackagingSchedule schedule = repository.readForSession(sessionId);
-        schedule = jobInfoService.findFactPlace(schedule, placeFactRequest.getSnpz());
+        schedule = jobInfoService.findFactPlace(schedule, placeFactRequest.snpz());
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
@@ -181,7 +193,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
-        jobService.writeDelayNote(request, schedule);
+        jobNoteService.writeDelayNote(request, schedule);
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Note is written").build();
@@ -195,7 +207,7 @@ public class PackagingScheduleResource {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
-        jobService.writeCleaningDelayNote(request, schedule);
+        jobNoteService.writeCleaningDelayNote(request, schedule);
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Note is written").build();
@@ -262,7 +274,7 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        InitData data = scheduleBuilder.buildSchedule(loadDTO.getStartDate());
+        InitDataValue data = scheduleInitializer.initSchedule(loadDTO.startDate());
         PackagingSchedule schedule = data.schedule();
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, schedule);
@@ -280,8 +292,8 @@ public class PackagingScheduleResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response initVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
 
-        PackagingSchedule solution = builderByVersion.init(loadDTO.getStartDate(), loadDTO.getVersion());
-        solution.setVersion(loadDTO.getVersion());
+        PackagingSchedule solution = initializerByVersion.initSchedule(loadDTO.startDate(), loadDTO.version());
+        solution.setVersion(loadDTO.version());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);
 
@@ -297,7 +309,7 @@ public class PackagingScheduleResource {
 
     @POST
     @Path("/selection")
-    public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelection dto) {
+    public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionRequest dto) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -309,11 +321,11 @@ public class PackagingScheduleResource {
 
         solution.getOverloadedIds().clear();
 
-        PackagingSchedule updatedSchedule = jobRefreshService.applySelection(dto.selection(),
+       jobRefreshService.applySelection(dto.selection(),
                 solution);
 
-        solutionManager.update(updatedSchedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, updatedSchedule);
+        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, solution);
 
         return Response.ok().build();
     }
@@ -322,18 +334,18 @@ public class PackagingScheduleResource {
     @Path("lineStart")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdate request) {
+    public Response updateLineStartTime(@HeaderParam("X-Session-Id") String sessionId, LineTimeUpdateRequest request) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
-        if (solution == null || request.getStartLineDateTime() == null) {
+        if (solution == null || request.startLineDateTime() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
                     .build();
         }
-        Line line = findLineById(solution, request.getLineId());
+        Line line = findLineById(solution, request.lineId());
         if (!line.getJobs().isEmpty()) {
-            setLineStartDateTime(line, request.getStartLineDateTime());
+            setLineStartDateTime(line, request.startLineDateTime());
 
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
             lineService.setMaxEndDateTimeByLastJob(solution);
@@ -353,7 +365,7 @@ public class PackagingScheduleResource {
     @Path("lineMaxEnd")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, TimeUpdate request) {
+    public Response updateLineMaxEndTime(@HeaderParam("X-Session-Id") String sessionId, LineTimeUpdateRequest request) {
 
         PackagingSchedule solution = repository.readForSession(sessionId);
 
@@ -363,9 +375,15 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Line line = findLineById(solution, request.getLineId());
+        Line line = findLineById(solution, request.lineId());
 
-        setLineMaxEndDateTime(line, request.getLineMaxEndDateTime());
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.LINE_NOT_FOUND))
+                    .build();
+        }
+
+        setLineMaxEndDateTime(line, request.lineMaxEndDateTime());
         solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
         repository.writeForSession(sessionId, solution);
 
@@ -506,7 +524,7 @@ public class PackagingScheduleResource {
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
         repository.writeForSession(sessionId, finalSchedule);
 
-        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
+        DowntimeDataValue response = getDowntimeData(repository.readForSession(sessionId));
 
         return Response.ok(response).build();
     }
@@ -527,10 +545,10 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        PackagingSchedule result = moveJobsService.moveJobs(schedule, request);
+         moveJobsService.moveJobs(schedule, request);
 
-        solutionManager.update(result, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, result);
+        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
+        repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully"))
                 .build();
@@ -565,7 +583,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("maintenance")
     public Response addMaintenance(MaintenanceRequest request,
-            @HeaderParam("X-Session-Id") String sessionId) {
+                                   @HeaderParam("X-Session-Id") String sessionId) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         PackagingSchedule updated;
@@ -575,7 +593,7 @@ public class PackagingScheduleResource {
                     .build();
         }
         if (request.isUpdateLineMode()) {
-            if (request.getMaintenanceTypeId() != null) {
+            if (request.maintenanceTypeId() != null) {
                 updated = maintenanceJob.updateMaintenanceType(schedule, request);
             } else {
                 updated = maintenanceJob.updateDuration(schedule, request);
@@ -591,7 +609,7 @@ public class PackagingScheduleResource {
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
                 ApiFields.MESSAGE, "Maintenance job added",
-                ApiFields.LINE_ID, request.getLineId())).build();
+                ApiFields.LINE_ID, request.lineId())).build();
     }
 
     /**
@@ -609,7 +627,13 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        Line line = findLineById(solution, pinRequest.getLineId());
+        Line line = findLineById(solution, pinRequest.lineId());
+
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.LINE_NOT_FOUND))
+                    .build();
+        }
 
         pinService.pinLine(line, pinRequest);
 
@@ -635,7 +659,7 @@ public class PackagingScheduleResource {
         }
 
         jobSaveService.saveJobsByType(bestSolution);
-        DowntimeData response = getDowntimeData(repository.readForSession(sessionId));
+        DowntimeDataValue response = getDowntimeData(repository.readForSession(sessionId));
 
         return Response.ok(response).build();
     }
@@ -656,10 +680,10 @@ public class PackagingScheduleResource {
                     .build();
         }
 
-        if (bestSolution.getVersion() == null && loadDTO.getVersion() == null) {
+        if (bestSolution.getVersion() == null && loadDTO.version() == null) {
             bestSolution.setVersion("V1");
         } else {
-            bestSolution.setVersion(loadDTO.getVersion());
+            bestSolution.setVersion(loadDTO.version());
         }
         exportService.export(bestSolution, bestSolution.getVersion());
         return Response.ok(Map.of(ApiFields.MESSAGE, "Saved to PlrPLan successfully")).build();
@@ -680,7 +704,7 @@ public class PackagingScheduleResource {
     @POST
     @Path("userLogReport")
     @Produces("application/vnd.malformations-office document.spreadsheet.sheet")
-    public Response createUserLogReport(DateRange range) {
+    public Response createUserLogReport(DateRangeRequest range) {
 
         UserLogReport report = new UserLogReport();
         byte[] file = report.createExcelReport(range.from(), range.to());
@@ -713,7 +737,7 @@ public class PackagingScheduleResource {
     @Produces("application/vnd.malformations-officedocument.spreadsheet.sheet")
     public Response createCleaningReport(
             @HeaderParam("X-Session-Id") String sessionId,
-            DateRange range) {
+            DateRangeRequest range) {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         CleaningDurationReport report = new CleaningDurationReport();

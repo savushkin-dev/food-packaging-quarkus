@@ -1,7 +1,7 @@
 package service.products;
 
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.record.CleaningRule;
+import org.acme.foodpackaging.dto.row.products.CleaningRuleRow;
 import org.acme.foodpackaging.service.products.CleaningCalculatorService;
 import org.junit.jupiter.api.Test;
 
@@ -15,13 +15,13 @@ class CleaningCalculatorServiceTest {
 
     private CleaningCalculatorService createCalculator() {
 
-        List<CleaningRule> rules = List.of(
-                new CleaningRule("1", "Классика", "Стержень", 90, false),
-                new CleaningRule("1", "Плюш", "Классика", 160, false),
-                new CleaningRule("1", "Стержень", "Классика", 150, false),
-                new CleaningRule("1", "Классика", "Плюш", 180, false),
-                new CleaningRule("1", "", "Кактус", 180, false),   // ANY → Кактус
-                new CleaningRule("1", "Кактус", "", 180, false)   // Кактус → ANY
+        List<CleaningRuleRow> rules = List.of(
+                new CleaningRuleRow("1", "Классика", "Стержень", 90, false),
+                new CleaningRuleRow("1", "Плюш", "Классика", 160, false),
+                new CleaningRuleRow("1", "Стержень", "Классика", 150, false),
+                new CleaningRuleRow("1", "Классика", "Плюш", 180, false),
+                new CleaningRuleRow("1", "", "Кактус", 180, false),   // ANY → Кактус
+                new CleaningRuleRow("1", "Кактус", "", 180, false)   // Кактус → ANY
         );
 
         CleaningCalculatorService cleaningCalculatorService = new CleaningCalculatorService();

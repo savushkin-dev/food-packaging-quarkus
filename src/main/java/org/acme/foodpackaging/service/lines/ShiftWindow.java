@@ -1,7 +1,5 @@
 package org.acme.foodpackaging.service.lines;
 
-import org.acme.foodpackaging.persistence.constants.WindowCrossing;
-
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 

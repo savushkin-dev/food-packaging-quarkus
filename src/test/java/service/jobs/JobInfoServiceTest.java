@@ -3,8 +3,8 @@ package service.jobs;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.record.CameraFactRow;
-import org.acme.foodpackaging.record.DbJobRow;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,9 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.utils.ScheduleUtils;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -34,7 +35,7 @@ class JobInfoServiceTest {
     private Job job;
     private Product product;
     private static final long SNPZ = 12345L;
-    private static final LocalDateTime NOW = LocalDateTime.of(2026, 2, 12, 10, 0);
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, Month.FEBRUARY, 12, 10, 0);
     private static final int EMK = 12;
 
     @BeforeEach
@@ -43,13 +44,13 @@ class JobInfoServiceTest {
         product.setEan13("4810268053150");
         product.setMass(2.5);
 
-        DbJobRow dbJobRow = new DbJobRow(
+        JobRow dbJobRow = new JobRow(
                 NOW, "KMC001", 111, 100, 2.5,
                 NOW, NOW, 60, SNPZ, 1,
                 "L1", "Product Name", 19, 100, 0
         );
 
-        job = Job.fromDbJobRow(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
+        job = new Job(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
         job.setEmk(EMK);
         job.setDti(NOW);
         schedule = new PackagingSchedule();
@@ -128,6 +129,44 @@ class JobInfoServiceTest {
         jobInfoService.findFactPlace(schedule, SNPZ);
 
         assertEquals("0 (0 шт., 0 кг.)", schedule.getAllJobsById().get(SNPZ).getPlaceFactInfo());
+    }
+
+    @Test
+    void findFactPlace_withNullSolution_shouldReturnNull() {
+        PackagingSchedule result = jobInfoService.findFactPlace(null, SNPZ);
+
+        assertNull(result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void findFactPlace_withUnknownSnpz_shouldDoNothing() {
+        PackagingSchedule result = jobInfoService.findFactPlace(schedule, 999L);
+
+        assertSame(schedule, result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void findCameraFact_withNullSolution_shouldReturnNull() {
+        PackagingSchedule result = jobInfoService.findCameraFact(null, SNPZ);
+
+        assertNull(result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void findCameraFact_withUnknownSnpz_shouldDoNothing() {
+        PackagingSchedule result = jobInfoService.findCameraFact(schedule, 999L);
+
+        assertSame(schedule, result);
+        verifyNoInteractions(pmLogRepository);
+    }
+
+    @Test
+    void generateIdBatch_withUnknownSnpz_shouldThrow() {
+        assertThrows(IllegalArgumentException.class,
+                () -> jobInfoService.generateIdBatch(schedule, 999L));
     }
 
     @Test
