@@ -19,7 +19,6 @@ import org.acme.foodpackaging.dto.request.jobs.JobSelectionRequest;
 import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
 import org.acme.foodpackaging.service.scheduleoperations.SortByNpService;
-import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
 import org.acme.foodpackaging.service.jobs.JobNoteService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
@@ -38,7 +37,6 @@ public class ScheduleEditResource {
     private final SortByNpService sortByNpService;
     private final JobRefreshService jobRefreshService;
     private final JobInfoService jobInfoService;
-    private final AlignSolutionService alignSolutionService;
     private final ScheduleSessionService scheduleSessionService;
 
     @POST
@@ -155,25 +153,5 @@ public class ScheduleEditResource {
                 schedule -> moveJobsService.moveJobs(schedule, request), solutionManager);
         return Response.ok(Map.of(ApiFields.STATUS, ApiFields.SUCCESS, ApiFields.MESSAGE, "Jobs moved successfully"))
                 .build();
-    }
-
-    @POST
-    @Path("alignPlan")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response alignPlan(@HeaderParam("X-Session-Id") String sessionId) {
-        scheduleSessionService.mutateAndResolve(sessionId, alignSolutionService::alignFromScratch, solutionManager);
-        return Response.ok(Map.of(
-                ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, ApiFields.REFRESH_OK)).build();
-    }
-
-    @POST
-    @Path("resetAlign")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response resetAlign(@HeaderParam("X-Session-Id") String sessionId) {
-        scheduleSessionService.mutateAndResolve(sessionId, alignSolutionService::reset, solutionManager);
-        return Response.ok(Map.of(
-                ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, ApiFields.REFRESH_OK)).build();
     }
 }
