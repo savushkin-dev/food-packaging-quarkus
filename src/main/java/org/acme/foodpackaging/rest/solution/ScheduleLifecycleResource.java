@@ -13,9 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.request.solution.LoadRequest;
 import org.acme.foodpackaging.initializer.ScheduleInitializer;
-import org.acme.foodpackaging.initializer.ScheduleVersionInitializer;
 import org.acme.foodpackaging.repository.PackagingScheduleRepository;
-import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.service.upload.*;
 
@@ -23,7 +21,6 @@ import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.rest.ApiFields;
 
-import java.util.List;
 import java.util.Map;
 import static org.acme.foodpackaging.utils.ScheduleUtils.getDowntimeData;
 
@@ -36,16 +33,12 @@ public class ScheduleLifecycleResource {
     private final SolverManager<PackagingSchedule, String> solverManager;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final ScheduleInitializer scheduleInitializer;
-    private final ScheduleVersionInitializer scheduleVersionInitializer;
     private final LoadDataService loadDataService;
     private final JobSaveService jobSaveService;
-    private final SolutionVersionExportService exportService;
     private final UploadDataService uploadDataService;
     private final ScheduleSessionService scheduleSessionService;
-    private final PlrPlanRepository plrPlanRepository;
 
     @POST
-    @Path("init")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response init(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
@@ -60,34 +53,6 @@ public class ScheduleLifecycleResource {
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok(data.jobsFromDbRow()).build();
-    }
-
-    @POST
-    @Path("initVersion")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response initVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
-
-        if (!loadDataService.isLoaded()) {
-            throw new WebApplicationException(ApiFields.NO_DATA_LOADED, Response.Status.NOT_FOUND);
-        }
-
-        PackagingSchedule solution = scheduleVersionInitializer.initSchedule(loadDTO.startDate(), loadDTO.version());
-        solution.setVersion(loadDTO.version());
-        solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, solution);
-
-        return Response.ok(Map.of(
-                ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.SESSION_ID, sessionId,
-                ApiFields.MESSAGE, "Solution version imported from json")).build();
-    }
-
-    @POST
-    @Path("versionsByDate")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<String> getPlanVersions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
-        return plrPlanRepository.findDistinctVersionsByDate(loadDTO.startDate().atStartOfDay().toLocalDate());
     }
 
     @POST
@@ -145,25 +110,6 @@ public class ScheduleLifecycleResource {
         DowntimeDataValue response = getDowntimeData(bestSolution);
 
         return Response.ok(response).build();
-    }
-
-    /**
-     * Сохраняет план в json определенной версии
-     */
-    @POST
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("saveVersion")
-    public Response saveVersion(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
-        PackagingSchedule bestSolution = scheduleSessionService.requireScheduleForRead(sessionId);
-
-        if (bestSolution.getVersion() == null && loadDTO.version() == null) {
-            bestSolution.setVersion("V1");
-        } else {
-            bestSolution.setVersion(loadDTO.version());
-        }
-        exportService.export(bestSolution, bestSolution.getVersion());
-        return Response.ok(Map.of(ApiFields.MESSAGE, "Saved to PlrPLan successfully")).build();
     }
 
     @POST

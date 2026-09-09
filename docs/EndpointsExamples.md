@@ -63,10 +63,10 @@ curl -X POST "http://localhost:8080/schedule/work" ^
   -H "X-Session-Id: default"
 ```
 
-### POST /schedule/init
+### POST /schedule
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/init" ^
+curl -X POST "http://localhost:8080/schedule" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"startDate\":\"2026-01-19\"}"
@@ -174,19 +174,19 @@ curl -X POST "http://localhost:8080/schedule/save" ^
   -H "X-Session-Id: default"
 ```
 
-### PUT /schedule/analyze
+### GET /schedule/analyze
 
 Without fetchPolicy:
 
 ```shell
-curl -X PUT "http://localhost:8080/schedule/analyze" ^
+curl -X GET "http://localhost:8080/schedule/analyze" ^
   -H "X-Session-Id: default"
 ```
 
 With fetchPolicy:
 
 ```shell
-curl -X PUT "http://localhost:8080/schedule/analyze?fetchPolicy=FULL" ^
+curl -X GET "http://localhost:8080/schedule/analyze?fetchPolicy=FULL" ^
   -H "X-Session-Id: default"
 ```
 
