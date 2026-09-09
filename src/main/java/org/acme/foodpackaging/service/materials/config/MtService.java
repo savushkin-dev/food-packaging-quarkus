@@ -2,6 +2,7 @@ package org.acme.foodpackaging.service.materials.config;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
+import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -31,15 +32,15 @@ public class MtService {
 
     @CacheInvalidateAll(cacheName = "material-cache")
     public void invalidateAll() {
-        // метод пустой, аннотация делает всю работу
+
     }
 
     /**
      * Инвалидирует кэш для конкретного материала
      */
     @CacheInvalidate(cacheName = "material-cache")
-    public void invalidate(String kmt) {
-        // метод пустой, аннотация делает всю работу
+    public void invalidate(@CacheKey String kmt) {
+
     }
 
     /**

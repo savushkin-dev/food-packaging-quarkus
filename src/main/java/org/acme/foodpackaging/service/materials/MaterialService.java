@@ -455,6 +455,7 @@ public class MaterialService {
         for (MaterialSettingDto setting : settings) {
             mtService.updateInCalc(setting.getKmt(), setting.getInCalc());
         }
+        rnppService.invalidateAll();
     }
 
 }
