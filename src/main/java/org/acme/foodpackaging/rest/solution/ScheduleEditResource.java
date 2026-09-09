@@ -10,7 +10,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.request.jobs.DelayNoteRequest;
 import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
 import org.acme.foodpackaging.dto.request.jobs.PlaceFactRequest;
 import org.acme.foodpackaging.dto.request.jobs.SortRangeRequest;
@@ -20,7 +19,6 @@ import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
 import org.acme.foodpackaging.service.scheduleoperations.SortByNpService;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
-import org.acme.foodpackaging.service.jobs.JobNoteService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 
 import java.util.Map;
@@ -32,33 +30,11 @@ public class ScheduleEditResource {
 
     private final PackagingScheduleRepository repository;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
-    private final JobNoteService jobNoteService;
     private final MoveJobsService moveJobsService;
     private final SortByNpService sortByNpService;
     private final JobRefreshService jobRefreshService;
     private final JobInfoService jobInfoService;
     private final ScheduleSessionService scheduleSessionService;
-
-    @POST
-    @Path("delayNote")
-    public Response delayNote(@HeaderParam("X-Session-Id") String sessionId, DelayNoteRequest request) {
-        scheduleSessionService.mutate(sessionId, schedule -> jobNoteService.writeDelayNote(request, schedule));
-        return Response.ok("Note is written").build();
-    }
-
-    @POST
-    @Path("cleaningDelay")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response cleaningDelayNote(@HeaderParam("X-Session-Id") String sessionId, DelayNoteRequest request) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-
-        jobNoteService.writeCleaningDelayNote(request, schedule);
-        repository.writeForSession(sessionId, schedule);
-
-        return Response.ok("Note is written").build();
-    }
 
     @POST
     @Path("sortByNp")
