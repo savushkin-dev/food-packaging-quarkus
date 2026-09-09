@@ -11,14 +11,12 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
-import org.acme.foodpackaging.dto.request.jobs.PlaceFactRequest;
 import org.acme.foodpackaging.dto.request.jobs.SortRangeRequest;
 import org.acme.foodpackaging.repository.PackagingScheduleRepository;
 import org.acme.foodpackaging.dto.request.jobs.JobSelectionRequest;
 import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
 import org.acme.foodpackaging.service.scheduleoperations.SortByNpService;
-import org.acme.foodpackaging.service.jobs.JobInfoService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 
 import java.util.Map;
@@ -33,7 +31,6 @@ public class ScheduleEditResource {
     private final MoveJobsService moveJobsService;
     private final SortByNpService sortByNpService;
     private final JobRefreshService jobRefreshService;
-    private final JobInfoService jobInfoService;
     private final ScheduleSessionService scheduleSessionService;
 
     @POST
@@ -86,28 +83,6 @@ public class ScheduleEditResource {
         repository.writeForSession(sessionId, schedule);
 
         return Response.ok("Order list updated for planning").build();
-    }
-
-    @POST
-    @Path("findCameraFact")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response findCameraFact(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
-        scheduleSessionService.mutate(sessionId,
-                schedule -> jobInfoService.findCameraFact(schedule, placeFactRequest.snpz()));
-        return Response.ok(Map.of(
-                ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "")).build();
-    }
-
-    @POST
-    @Path("findPlaceFact")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response findFactPlace(@HeaderParam("X-Session-Id") String sessionId, PlaceFactRequest placeFactRequest) {
-        scheduleSessionService.mutate(sessionId,
-                schedule -> jobInfoService.findFactPlace(schedule, placeFactRequest.snpz()));
-        return Response.ok(Map.of(
-                ApiFields.STATUS, ApiFields.SUCCESS,
-                ApiFields.MESSAGE, "")).build();
     }
 
     @POST
