@@ -2,7 +2,6 @@ package org.acme.foodpackaging.rest.solution;
 
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 import ai.timefold.solver.core.api.solver.SolutionManager;
-import ai.timefold.solver.core.api.solver.SolutionUpdatePolicy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -11,7 +10,6 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
-import org.acme.foodpackaging.repository.PackagingScheduleRepository;
 import org.acme.foodpackaging.dto.request.jobs.JobSelectionRequest;
 import org.acme.foodpackaging.rest.ApiFields;
 import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
@@ -24,31 +22,13 @@ import java.util.Map;
 @ApplicationScoped
 public class ScheduleEditResource {
 
-    private final PackagingScheduleRepository repository;
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final MoveJobsService moveJobsService;
     private final JobRefreshService jobRefreshService;
     private final ScheduleSessionService scheduleSessionService;
 
-    @POST
-    @Path("updateOrderList")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response updateOrderList(@HeaderParam("X-Session-Id") String sessionId) {
-
-        PackagingSchedule schedule = repository.readForSession(sessionId);
-
-        if (schedule == null) {
-            return scheduleSessionService.noScheduleLoadedResponse();
-        }
-
-        solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);
-        repository.writeForSession(sessionId, schedule);
-
-        return Response.ok("Order list updated for planning").build();
-    }
-
-    @POST
-    @Path("/selection")
+    @PUT
+    @Path("selection")
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionRequest dto) {
         scheduleSessionService.mutateAndResolve(sessionId, schedule -> {
             schedule.getOverloadedIds().clear();
@@ -57,7 +37,7 @@ public class ScheduleEditResource {
         return Response.ok().build();
     }
 
-    @POST
+    @PUT
     @Path("moveJobs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

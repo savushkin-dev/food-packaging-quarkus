@@ -72,10 +72,10 @@ curl -X POST "http://localhost:8080/schedule/init" ^
   -d "{\"startDate\":\"2026-01-19\"}"
 ```
 
-### POST /schedule/selection
+### PUT /schedule/selection
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/selection" ^
+curl -X PUT "http://localhost:8080/schedule/selection" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"selection\":{\"12345\":true,\"67890\":false}}"
@@ -99,13 +99,6 @@ curl -X PUT "http://localhost:8080/schedule/lines/maxEnd" ^
   -d "{\"lineId\":\"170610020000\",\"lineMaxEndDateTime\":\"2026-01-19T18:00\"}"
 ```
 
-### POST /schedule/updateOrderList
-
-```shell
-curl -X POST "http://localhost:8080/schedule/updateOrderList" ^
-  -H "X-Session-Id: default"
-```
-
 ### PUT /schedule/sort
 
 ```shell
@@ -127,10 +120,10 @@ curl -X POST "http://localhost:8080/schedule/stopSolving" ^
   -H "X-Session-Id: default"
 ```
 
-### POST /schedule/moveJobs
+### PUT /schedule/moveJobs
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/moveJobs" ^
+curl -X PUT "http://localhost:8080/schedule/moveJobs" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"fromLineId\":\"170610020000\",\"toLineId\":\"170610020001\",\"fromIndex\":0,\"count\":2,\"insertIndex\":1}"
