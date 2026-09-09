@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.findLineById;
+import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)

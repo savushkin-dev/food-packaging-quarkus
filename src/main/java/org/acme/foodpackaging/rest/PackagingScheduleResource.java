@@ -22,20 +22,25 @@ import org.acme.foodpackaging.dto.request.solution.LoadRequest;
 import org.acme.foodpackaging.dto.response.solution.DowntimeDataResponse;
 import org.acme.foodpackaging.dto.response.solution.FrontendDataResponse;
 import org.acme.foodpackaging.initializer.value.InitDataValue;
-import org.acme.foodpackaging.persistence.*;
-import org.acme.foodpackaging.persistence.excel.CleaningDurationReport;
-import org.acme.foodpackaging.persistence.excel.PlanReport;
-import org.acme.foodpackaging.persistence.excel.UserLogReport;
-import org.acme.foodpackaging.persistence.load.DowntimeDataService;
-import org.acme.foodpackaging.persistence.upload.*;
+import org.acme.foodpackaging.repository.PackagingScheduleRepository;
+import org.acme.foodpackaging.excel.CleaningDurationReport;
+import org.acme.foodpackaging.excel.PlanReport;
+import org.acme.foodpackaging.excel.UserLogReport;
+import org.acme.foodpackaging.service.load.DowntimeDataService;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
-import org.acme.foodpackaging.scheduleoperations.*;
 import org.acme.foodpackaging.initializer.*;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.*;
 import org.acme.foodpackaging.service.lines.LineService;
+import org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
+import org.acme.foodpackaging.service.scheduleoperations.PinService;
+import org.acme.foodpackaging.service.scheduleoperations.SortByNpService;
 import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
+import org.acme.foodpackaging.service.upload.JobSaveService;
+import org.acme.foodpackaging.service.upload.SolutionVersionExportService;
+import org.acme.foodpackaging.service.upload.UploadDataService;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -43,7 +48,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.utils.ScheduleUtils.*;
 
 @Path("schedule")
 @RequiredArgsConstructor(onConstructor_ = @Inject)

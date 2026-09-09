@@ -6,10 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.service.lines.value.*;
 
 import org.acme.foodpackaging.repository.PmLogRepository;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixPinnedJobs;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)

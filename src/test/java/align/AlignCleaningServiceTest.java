@@ -9,7 +9,7 @@ import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.domain.value.CleaningResult;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.align.AlignCleaningService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.*;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)

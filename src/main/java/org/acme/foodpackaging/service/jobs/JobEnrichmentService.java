@@ -7,7 +7,7 @@ import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
-import org.acme.foodpackaging.persistence.upload.UploadDataService;
+import org.acme.foodpackaging.service.upload.UploadDataService;
 import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 
@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)

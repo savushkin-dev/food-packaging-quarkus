@@ -4,7 +4,7 @@ import fixtures.SolutionFixtures;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.acme.foodpackaging.service.lines.value.*;

@@ -9,8 +9,8 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.domain.value.CleaningResult;
-import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.ScheduleUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -339,7 +339,7 @@ class JobTest {
     @Test
     void updateStartCleaningDateTime_whenLineIsNull() {
         Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
-        LocalDateTime endDateTime = LocalDateTime.of(2026, 6, 9, 10, 30);
+        LocalDateTime endDateTime = LocalDateTime.of(2026, Month.JUNE, 9, 10, 30);
         jobs.getLeft().setEndDateTime(endDateTime);
         jobs.getLeft().setLine(null);
         jobs.getLeft().updateStartCleaningDateTime();
@@ -351,7 +351,7 @@ class JobTest {
     void updateStartCleaningDateTime_whenLineAndCleaningAreNull() {
         Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
 
-        jobs.getLeft().setStartCleaningDateTime(LocalDateTime.of(2026, 6, 9, 10, 0));
+        jobs.getLeft().setStartCleaningDateTime(LocalDateTime.of(2026, Month.JUNE, 9, 10, 0));
         jobs.getLeft().setLine(null);
         jobs.getLeft().updateStartCleaningDateTime();
 
