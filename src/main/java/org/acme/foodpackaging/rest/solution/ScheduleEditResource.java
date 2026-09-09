@@ -85,9 +85,7 @@ public class ScheduleEditResource {
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
         if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return scheduleSessionService.noScheduleLoadedResponse();
         }
 
         sortByNpService.sortRangeByNp(schedule, request);
@@ -107,9 +105,7 @@ public class ScheduleEditResource {
         PackagingSchedule schedule = repository.readForSession(sessionId);
 
         if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return scheduleSessionService.noScheduleLoadedResponse();
         }
 
         solutionManager.update(schedule, SolutionUpdatePolicy.UPDATE_ALL);

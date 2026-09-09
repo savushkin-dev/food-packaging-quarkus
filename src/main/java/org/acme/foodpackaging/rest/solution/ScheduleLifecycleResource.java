@@ -15,6 +15,7 @@ import org.acme.foodpackaging.dto.request.solution.LoadRequest;
 import org.acme.foodpackaging.initializer.ScheduleInitializer;
 import org.acme.foodpackaging.initializer.ScheduleVersionInitializer;
 import org.acme.foodpackaging.repository.PackagingScheduleRepository;
+import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.service.upload.*;
 
@@ -22,6 +23,7 @@ import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.rest.ApiFields;
 
+import java.util.List;
 import java.util.Map;
 import static org.acme.foodpackaging.utils.ScheduleUtils.getDowntimeData;
 
@@ -40,6 +42,7 @@ public class ScheduleLifecycleResource {
     private final SolutionVersionExportService exportService;
     private final UploadDataService uploadDataService;
     private final ScheduleSessionService scheduleSessionService;
+    private final PlrPlanRepository plrPlanRepository;
 
     @POST
     @Path("init")
@@ -81,6 +84,13 @@ public class ScheduleLifecycleResource {
     }
 
     @POST
+    @Path("versionsByDate")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getPlanVersions(LoadRequest loadDTO, @HeaderParam("X-Session-Id") String sessionId) {
+        return plrPlanRepository.findDistinctVersionsByDate(loadDTO.startDate().atStartOfDay().toLocalDate());
+    }
+
+    @POST
     @Path("solve")
     @Produces(MediaType.APPLICATION_JSON)
     public Response solve(@HeaderParam("X-Session-Id") String sessionId) {
@@ -90,7 +100,7 @@ public class ScheduleLifecycleResource {
                     .build();
         }
 
-        String problemId = getProblemId(sessionId);
+        String problemId = scheduleSessionService.getProblemId(sessionId);
 
         solverManager.solveBuilder()
                 .withProblemId(problemId)
@@ -115,7 +125,7 @@ public class ScheduleLifecycleResource {
                     .build();
         }
 
-        String problemId = getProblemId(sessionId);
+        String problemId = scheduleSessionService.getProblemId(sessionId);
         solverManager.terminateEarly(problemId);
 
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
@@ -124,10 +134,6 @@ public class ScheduleLifecycleResource {
         DowntimeDataValue response = getDowntimeData(finalSchedule);
 
         return Response.ok(response).build();
-    }
-
-    private String getProblemId(String sessionId) {
-        return sessionId != null ? sessionId : "default";
     }
 
     @POST
@@ -168,9 +174,7 @@ public class ScheduleLifecycleResource {
 
         PackagingSchedule schedule = repository.readForSession(sessionId);
         if (schedule == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return scheduleSessionService.noScheduleLoadedResponse();
         }
 
         uploadDataService.sendToWork(schedule.getJobs());

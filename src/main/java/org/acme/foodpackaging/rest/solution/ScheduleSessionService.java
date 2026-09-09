@@ -12,6 +12,7 @@ import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.repository.PackagingScheduleRepository;
 import org.acme.foodpackaging.rest.ApiFields;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 @ApplicationScoped
@@ -22,6 +23,17 @@ public class ScheduleSessionService {
 
     public String getProblemId(String sessionId) {
         return sessionId != null ? sessionId : "default";
+    }
+
+    /**
+     * Единый ответ 400 для эндпоинтов, которые сами проверяют schedule на null
+     * и должны молча вернуть ошибку,
+     * а не бросить исключение.
+     */
+    public Response noScheduleLoadedResponse() {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
+                .build();
     }
 
     public PackagingSchedule requireSchedule(String sessionId) {

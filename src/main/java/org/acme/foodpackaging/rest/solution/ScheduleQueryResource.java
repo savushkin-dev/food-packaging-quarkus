@@ -26,7 +26,7 @@ import java.util.Map;
 @Path("schedule")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 @ApplicationScoped
-public class ScheduleReadResource {
+public class ScheduleQueryResource {
 
     private final SolverManager<PackagingSchedule, String> solverManager;
     private final PackagingScheduleRepository repository;
@@ -80,9 +80,7 @@ public class ScheduleReadResource {
         PackagingSchedule solution = repository.readForSession(sessionId);
 
         if (solution == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return scheduleSessionService.noScheduleLoadedResponse();
         }
 
         Map<String, Object> productions = lineService.calculateLineProductions(solution.getLines(), shiftStart);

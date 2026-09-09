@@ -33,6 +33,7 @@ public class LineResource {
     private final SolutionManager<PackagingSchedule, HardMediumSoftLongScore> solutionManager;
     private final LineService lineService;
     private final PinService pinService;
+    private final ScheduleSessionService scheduleSessionService;
 
     @POST
     @Path("lineStart")
@@ -43,9 +44,7 @@ public class LineResource {
         PackagingSchedule solution = repository.readForSession(sessionId);
 
         if (solution == null || request.startLineDateTime() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return scheduleSessionService.noScheduleLoadedResponse();
         }
         Line line = findLineById(solution, request.lineId());
         if (!line.getJobs().isEmpty()) {
@@ -73,9 +72,7 @@ public class LineResource {
         PackagingSchedule solution = repository.readForSession(sessionId);
 
         if (solution == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return scheduleSessionService.noScheduleLoadedResponse();
         }
 
         Line line = findLineById(solution, request.lineId());
@@ -100,9 +97,7 @@ public class LineResource {
     public Response pin(PinRequest pinRequest, @HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule solution = repository.readForSession(sessionId);
         if (solution == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of(ApiFields.ERROR, ApiFields.NO_SCHEDULE_LOADED))
-                    .build();
+            return scheduleSessionService.noScheduleLoadedResponse();
         }
 
         Line line = findLineById(solution, pinRequest.lineId());
