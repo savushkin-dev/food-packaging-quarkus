@@ -6,9 +6,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.dto.row.products.CleaningRuleRow;
 import org.acme.foodpackaging.entity.lines.PlrLines;
+import org.acme.foodpackaging.dto.row.products.CleaningRuleRow;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.SpeedRepository;
 import org.acme.foodpackaging.repository.products.CleaningRuleRepository;
@@ -25,6 +26,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
+@RequiredArgsConstructor(onConstructor_ = @Inject)
+@Getter
 public class LoadDataService {
 
     private final LineRepository lineRepository;
@@ -33,29 +36,12 @@ public class LoadDataService {
     private final PlrPevRepository plrPevRepository;
     private final PlrLcRepository plrLcRepository;
 
-    @Getter
     private ConcurrentMap<String, String> lines;
-    @Getter
     private ConcurrentMap<Integer, String> maintenanceTypes;
-    @Getter
     private Map<String, Product> products;
-    @Getter
     private List<CleaningRuleRow> cleaningRules;
 
-    @Inject
-    public LoadDataService(
-            LineRepository lineRepository,
-            ProductRepository productRepository,
-            CleaningRuleRepository cleaningRuleRepository,
-            PlrPevRepository plrPevRepository,
-            PlrLcRepository plrLcRepository
-    ) {
-        this.lineRepository = lineRepository;
-        this.productRepository = productRepository;
-        this.cleaningRuleRepository = cleaningRuleRepository;
-        this.plrPevRepository = plrPevRepository;
-        this.plrLcRepository = plrLcRepository;
-    }
+    private volatile boolean loaded = false;
 
     void onStart(@Observes StartupEvent ev) {
         if (LaunchMode.current() == LaunchMode.TEST) {
@@ -92,14 +78,12 @@ public class LoadDataService {
                         ),
                         (existing, ignored) -> existing
                 ));
-
         SpeedCacheUtils.init(SpeedRepository.createSpeedMap(rawSpeeds));
         CleaningDurationUtils.init(plrLcRepository.loadLinesCleaning());
 
         this.products = productRepository.loadProducts();
         this.cleaningRules = cleaningRuleRepository.loadRules();
         this.maintenanceTypes = plrPevRepository.loadMaintenanceTypesRowMap();
+        this.loaded = true;
     }
 }
-
-
