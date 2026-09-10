@@ -21,7 +21,6 @@ public class JobRowBuilder {
     private Integer duration = 30;
     private Integer placePlan = 100;
     private Integer shift = 1;
-    private String idBatch = null;
 
     public static JobRowBuilder aRow() {
         return new JobRowBuilder();
@@ -77,11 +76,6 @@ public class JobRowBuilder {
         return this;
     }
 
-    public JobRowBuilder withIdBatch(String idBatch) {
-        this.idBatch = idBatch;
-        return this;
-    }
-
     public JobRow build() {
         String shortName = "Test Job";
         double mass = 2.0;
@@ -91,8 +85,7 @@ public class JobRowBuilder {
                 start, end, duration,
                 snpz, priority,
                 lineId, shortName,
-                emk, placePlan, shift,
-                idBatch
+                emk, placePlan, shift
         );
     }
 }

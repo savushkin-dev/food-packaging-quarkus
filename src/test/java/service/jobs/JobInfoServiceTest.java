@@ -47,8 +47,7 @@ class JobInfoServiceTest {
         JobRow dbJobRow = new JobRow(
                 NOW, "KMC001", 111, 100, 2.5,
                 NOW, NOW, 60, SNPZ, 1,
-                "L1", "Product Name", 19, 100, 0,
-                null
+                "L1", "Product Name", 19, 100, 0
         );
 
         job = new Job(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);
@@ -109,6 +108,15 @@ class JobInfoServiceTest {
 
         assertEquals(expectedEan13 + expectedDate + expectedNp, result);
         assertEquals(30, result.length());
+    }
+
+    @Test
+    void generateIdBatch_byJob_matchesScheduleBasedGeneration() {
+        String expected = jobInfoService.generateIdBatch(schedule, SNPZ);
+
+        String result = jobInfoService.generateIdBatch(job);
+
+        assertEquals(expected, result);
     }
 
     @Test

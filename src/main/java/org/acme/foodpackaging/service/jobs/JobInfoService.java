@@ -80,11 +80,17 @@ public class JobInfoService {
         if (job == null) {
             throw new IllegalArgumentException("Job not found: " + snpz);
         }
+        return generateIdBatch(job);
+    }
+
+    /**
+     * Генерирует idBatch по данным самой задачи, без обращения к schedule.
+     * Используется при создании задачи (в BD_VZPMC значение партии не хранится).
+     */
+    public String generateIdBatch(Job job) {
         String ean13 = job.getProduct().getEan13().substring(0, 12) + "0";
         String formattedNp = String.format("%09d", job.getNp());
-
-        String dateToIdBatch = solution.getAllJobsById().get(snpz).getDti()
-                .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String dateToIdBatch = job.getDti().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         return ean13 + dateToIdBatch + formattedNp;
     }
