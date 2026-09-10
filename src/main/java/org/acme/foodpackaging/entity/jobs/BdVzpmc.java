@@ -36,6 +36,7 @@ import java.util.UUID;
                         @ColumnResult(name = "EMK", type = Integer.class),
                         @ColumnResult(name = "KOLMP", type = Integer.class),
                         @ColumnResult(name = "STICKER", type =  Integer.class),
+                        @ColumnResult(name = "IDBATCH", type = String.class),
                 }
         )
 )
@@ -90,5 +91,8 @@ public class BdVzpmc extends PanacheEntityBase {
     @Convert(converter = BooleanToIntegerConverter.class)
     @Column(name = "STICKER")
     private Boolean isHandPackaging;
+
+    @Column(name = "IDBATCH")
+    private String idBatch;
 }
 

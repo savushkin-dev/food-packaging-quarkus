@@ -47,7 +47,8 @@ class JobInfoServiceTest {
         JobRow dbJobRow = new JobRow(
                 NOW, "KMC001", 111, 100, 2.5,
                 NOW, NOW, 60, SNPZ, 1,
-                "L1", "Product Name", 19, 100, 0
+                "L1", "Product Name", 19, 100, 0,
+                null
         );
 
         job = new Job(dbJobRow, product, NOW, ScheduleUtils::nameCleaner);

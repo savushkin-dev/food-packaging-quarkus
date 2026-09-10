@@ -64,14 +64,22 @@ class JobEnrichmentServiceTest {
     }
 
     @Test
-    void enrichCameraFacts_doesNothing_whenIdBatchIsNull() {
+    void enrichCameraFacts_doesNothing_whenIdBatchIsNull() throws CameraDataReadException {
+        // Отсутствие idBatch больше не проверяется отдельным фильтром отбора:
+        // задача всё равно считается "без данных по камере" и попадает в
+        // выборку (и в запрос к БД — CameraDataLoader сам игнорирует null
+        // idBatch), но сопоставление с результатом по idBatch пропускается.
         Job jobWithoutBatch = JobTestBuilder.aJob().withId("1").withIdBatch(null).build();
 
         schedule.setJobs(List.of(jobWithoutBatch));
 
+        when(jobRepository.getCameraFactRowMap(List.of(jobWithoutBatch))).thenReturn(Map.of());
+
         jobEnrichmentService.enrichCameraFactsFromPmLog(schedule);
 
-        verifyNoInteractions(jobRepository, uploadDataService);
+        verifyNoInteractions(uploadDataService);
+        assertNull(jobWithoutBatch.getCameraStart());
+        assertNull(jobWithoutBatch.getCameraEnd());
     }
 
     @Test

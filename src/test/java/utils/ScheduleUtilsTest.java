@@ -299,9 +299,9 @@ class ScheduleUtilsTest {
 
     @Test
     void convertsMapToList() {
-        JobRow row1 = new JobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
-        JobRow row2 = new JobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
-        JobRow row3 = new JobRow(now, "KMC3", 3, 30, 300.0, now, now, 180, 3L, 3, "L3", "Product 3", 20, 100, 0);
+        JobRow row1 = new JobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0, null);
+        JobRow row2 = new JobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0, null);
+        JobRow row3 = new JobRow(now, "KMC3", 3, 30, 300.0, now, now, 180, 3L, 3, "L3", "Product 3", 20, 100, 0, null);
 
         Map<Long, JobRow> rows = new HashMap<>();
         rows.put(1L, row1);
@@ -337,8 +337,8 @@ class ScheduleUtilsTest {
 
     @Test
     void returnListWithAllValues() {
-        JobRow row1 = new JobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0);
-        JobRow row2 = new JobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0);
+        JobRow row1 = new JobRow(now, "KMC1", 1, 10, 100.0, now, now, 60, 1L, 1, "L1", "Product 1", 18, 100, 0, null);
+        JobRow row2 = new JobRow(now, "KMC2", 2, 20, 200.0, now, now, 120, 2L, 2, "L2", "Product 2", 19, 100, 0, null);
 
         Map<Long, JobRow> rows = Map.of(1L, row1, 2L, row2);
 

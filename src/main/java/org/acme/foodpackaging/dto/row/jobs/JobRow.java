@@ -22,7 +22,8 @@ public record JobRow(
         String shortName,                // SNM
         Integer emk,
         Integer placePlan,
-        Integer sticker
+        Integer sticker,
+        String idBatch                  // IDBATCH
 ) {
     public boolean isHandPackaging() {
         return sticker != null && sticker > 0;

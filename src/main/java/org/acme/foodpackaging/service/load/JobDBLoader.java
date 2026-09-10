@@ -72,7 +72,7 @@ public class JobDBLoader {
 
     public Map<FactKey, FactProductionRow> loadFactProductionRowMap(LocalDateTime from, LocalDateTime to) {
         List<FactProductionRow> rows = getResultList(queries.loadFact(), FACT_PRODUCTION_MAPPING, from, to);
-        return toMapByKey(rows, row -> new FactKey(row.kmc(), row.np(), row.eventType()));
+        return toMapByKey(rows, row -> new FactKey(row.idBatch(), FactKey.EventType.fromCode(row.eventType())));
     }
 
 

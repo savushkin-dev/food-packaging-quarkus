@@ -298,7 +298,7 @@ class MaintenanceJobTest {
         Job job = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         start, start.plusMinutes(60),
-                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0, null),
                 product, start, null);
         line.setStartDateTime(start);
         line.getJobs().add(job);
@@ -353,7 +353,7 @@ class MaintenanceJobTest {
         Job prod = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At10.plusMinutes(30), day2At15,
-                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0, null),
                 normalProduct, day1At10.plusMinutes(30), null);
         prod.setStartCleaningDateTime(day1At10);
         prod.setStartProductionDateTime(day1At10.plusMinutes(30));
@@ -390,7 +390,7 @@ class MaintenanceJobTest {
         Job prod = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At830, day2At10,
-                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0, null),
                 normalProduct, day1At830, null);
         // New logic: cleaning duration = between(startCleaning, startProduction); need startCleaning < startProduction for positive gap
         prod.setStartCleaningDateTime(day1At8);
@@ -445,7 +445,7 @@ class MaintenanceJobTest {
         Job p1 = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At10.plusMinutes(30), day2At15,
-                        60, 2212L, 0, "line1", "Job", 0, 100, 0),
+                        60, 2212L, 0, "line1", "Job", 0, 100, 0, null),
                 normalProduct, day1At10.plusMinutes(30), null);
         p1.setStartCleaningDateTime(day1At10);
         p1.setStartProductionDateTime(day1At10.plusMinutes(30));
@@ -463,7 +463,7 @@ class MaintenanceJobTest {
         Job p2 = new Job(
                 new JobRow(null, "", 0, 0, 0.0,
                         day1At10.plusMinutes(30), day2At15,
-                        60, 2214L, 0, "line2", "Job2", 0, 100, 0),
+                        60, 2214L, 0, "line2", "Job2", 0, 100, 0, null),
                 normalProduct, day1At10.plusMinutes(30), null);
         p2.setStartCleaningDateTime(day1At10);
         p2.setStartProductionDateTime(day1At10.plusMinutes(30));

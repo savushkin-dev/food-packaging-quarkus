@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
-import static org.acme.foodpackaging.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.END_CAMERA;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.START_CAMERA;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -32,7 +32,6 @@ public class JobEnrichmentService {
     public void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
 
         List<Job> jobsWithoutCamera = solution.getJobs().stream()
-                .filter(j -> j.getIdBatch() != null)
                 .filter(j -> j.getCameraStart() == null || j.getCameraEnd() == null)
                 .toList();
 
@@ -51,6 +50,10 @@ public class JobEnrichmentService {
 
         for (Job job : jobsWithoutCamera) {
 
+            if (job.getIdBatch() == null) {
+                continue;
+            }
+
             CameraFactRow camera = cameraMap.get(job.getIdBatch());
             if (camera == null) {
                 continue;
@@ -58,12 +61,12 @@ public class JobEnrichmentService {
 
             if (job.getCameraStart() == null && camera.cameraStart() != null) {
                 job.setCameraStart(camera.cameraStart());
-                msLogRows.add(new MsLogInsertRow(job, START_CAMERA_EVENT_TYPE, job.getCameraStart()));
+                msLogRows.add(new MsLogInsertRow(job, START_CAMERA.code(), job.getCameraStart()));
             }
 
             if (job.getCameraEnd() == null && camera.cameraEnd() != null) {
                 job.setCameraEnd(camera.cameraEnd());
-                msLogRows.add(new MsLogInsertRow(job, END_CAMERA_EVENT_TYPE, job.getCameraEnd()));
+                msLogRows.add(new MsLogInsertRow(job, END_CAMERA.code(), job.getCameraEnd()));
             }
         }
 
