@@ -18,15 +18,4 @@ public class RnppRepository implements PanacheRepository<PlrRnpp> {
         ).list();
     }
 
-    /**
-     * Находит нормы без фильтра по inCalc
-     */
-    public List<PlrRnpp> findByKmcAndKtAndEmkAndSysnWithHidden(Double sysn, String kmc, String kt, Double emk) {
-        return find(
-                "sysn = ?1 AND kmc = ?2 AND kt = ?3 AND emk = ?4 " +
-                        "AND (kkom LIKE '1001%' OR kkom LIKE '1002%' OR kkom LIKE '1005%')",
-                sysn, kmc, kt, emk
-        ).list();
-    }
-
 }

@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import org.acme.foodpackaging.dto.materials.MaterialSettingDto;
 import org.acme.foodpackaging.dto.materials.ProductDto;
 import org.acme.foodpackaging.sql.SqlQueries;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -54,5 +55,27 @@ public class MaterialRepository {
         }
 
         return products;
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<MaterialSettingDto> findAllMaterialsForSettings(Double sysn) {
+        String sql = sqlQueries.loadMaterialsBySysn();
+
+        Query query = em.createNativeQuery(sql);
+        query.setParameter(1, sysn);
+
+        List<Object[]> results = query.getResultList();
+
+        List<MaterialSettingDto> materials = new ArrayList<>();
+        for (Object[] row : results) {
+            MaterialSettingDto dto = MaterialSettingDto.builder()
+                    .kmt((String) row[0])
+                    .snm((String) row[1])
+                    .edu((String) row[2])
+                    .inCalc((Boolean) row[3])
+                    .build();
+            materials.add(dto);
+        }
+        return materials;
     }
 }

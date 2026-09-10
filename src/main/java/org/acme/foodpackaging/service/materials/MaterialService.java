@@ -402,49 +402,13 @@ public class MaterialService {
     }
 
     /**
-     * Получает все материалы для даты и МОЛ с их текущим статусом IN_CALC
+     * Получает все материалы для всех продуктов из PLR_MC
      */
-    public List<MaterialSettingDto> getMaterialsSettings(String date, String kpp) {
+    public List<MaterialSettingDto> getMaterialsSettings(String date) {
         LocalDate dt = LocalDate.parse(date);
-
-        // 1. Получаем все нормы для продуктов на дату (без фильтра по inCalc)
-        List<ProductDto> products = materialRepository.findProductsByDate(date);
         PlrSprog plrSprog = sprogService.findByDate(dt);
         Double sysn = plrSprog.getSysn();
-
-        // 2. Собираем все KMT из норм
-        Set<String> allKmt = new HashSet<>();
-        for (ProductDto product : products) {
-            List<PlrRnpp> norms = rnppService.findByKmcAndKtAndEmkAndSysnWithHidden(
-                    sysn, product.getKmc(), product.getKt(), product.getEmk()
-            );
-            for (PlrRnpp norm : norms) {
-                allKmt.add(norm.getKkom());
-            }
-        }
-
-        // 3. Загружаем материалы
-        Map<String, PlrMt> mtMap = mtService.getByKmtList(allKmt)
-                .stream()
-                .collect(Collectors.toMap(PlrMt::getKmt, mt -> mt));
-
-        // 4. Собираем DTO для ответа
-        List<MaterialSettingDto> result = new ArrayList<>();
-        for (String kmt : allKmt) {
-            PlrMt mt = mtMap.get(kmt);
-            if (mt != null) {
-                result.add(MaterialSettingDto.builder()
-                        .kmt(kmt)
-                        .snm(mt.getSnm())
-                        .edu(mt.getEdu())
-                        .inCalc(mt.inCalc)
-                        .build());
-            }
-        }
-
-        // Сортируем по коду
-        result.sort(Comparator.comparing(MaterialSettingDto::getKmt));
-        return result;
+        return materialRepository.findAllMaterialsForSettings(sysn);
     }
 
     /**

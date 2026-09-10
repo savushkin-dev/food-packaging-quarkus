@@ -10,9 +10,7 @@ import jakarta.transaction.Transactional;
 import org.acme.foodpackaging.entity.materials.PlrMt;
 import org.acme.foodpackaging.repository.materials.MtRepository;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @ApplicationScoped
 public class MtService {
@@ -48,16 +46,6 @@ public class MtService {
      */
     public Map<String, PlrMt> findAllAsMapByKmt() {
         return mtRepository.findAllAsMapByKmt();
-    }
-
-    /**
-     * Массовая загрузка материалов по списку KMT
-     */
-    public List<PlrMt> getByKmtList(Set<String> kmtList) {
-        if (kmtList == null || kmtList.isEmpty()) {
-            return List.of();
-        }
-        return mtRepository.findByKmtIn(kmtList);
     }
 
     /**

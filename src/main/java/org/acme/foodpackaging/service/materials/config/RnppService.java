@@ -24,13 +24,9 @@ public class RnppService {
         return rnppRepository.findByKmcAndKtAndEmkAndSysn(sysn, kmc, kt, emk);
     }
 
-    public List<PlrRnpp> findByKmcAndKtAndEmkAndSysnWithHidden(Double sysn, String kmc, String kt, Double emk) {
-        return rnppRepository.findByKmcAndKtAndEmkAndSysnWithHidden(sysn, kmc, kt, emk);
-    }
-
     @CacheInvalidateAll(cacheName = "rnpp-cache")
     public void invalidateAll() {
-        // Очищает весь кэш норм
+
     }
 
     public void deleteAll(){

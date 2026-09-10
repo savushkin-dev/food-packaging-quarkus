@@ -103,8 +103,8 @@ public class MaterialResource {
      */
     @GET
     @Path("/settings")
-    public Response getSettings(@QueryParam("date") String date, @QueryParam("kpp") String kpp) {
-        List<MaterialSettingDto> settings = materialService.getMaterialsSettings(date, kpp);
+    public Response getSettings(@QueryParam("date") String date) {
+        List<MaterialSettingDto> settings = materialService.getMaterialsSettings(date);
         return Response.ok(settings).build();
     }
 
