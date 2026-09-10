@@ -48,13 +48,15 @@ public class SqlQueries {
                     r.kkom AS kmt,
                     mt.snm,
                     mt.edu,
+                    mt.pers,
+                    mt.rnd,
                     mt.in_calc
                 FROM PLR_MC m
-                JOIN PLR_RNPP r ON r.kmc = m.kmc
-                JOIN PLR_MT mt ON mt.kmt = r.kkom
+                    JOIN PLR_RNPP r ON r.kmc = m.kmc
+                    JOIN PLR_MT mt ON mt.kmt = r.kkom
                 WHERE m.F_DEL = 0
-                  AND r.sysn = ?1
-                  AND (r.kkom LIKE '1001%' OR r.kkom LIKE '1002%' OR r.kkom LIKE '1005%')
+                    AND r.sysn = ?1
+                    AND (r.kkom LIKE '1001%' OR r.kkom LIKE '1002%' OR r.kkom LIKE '1005%')
                 ORDER BY r.kkom
                 """;
     }

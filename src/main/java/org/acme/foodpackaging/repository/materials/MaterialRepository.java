@@ -72,7 +72,9 @@ public class MaterialRepository {
                     .kmt((String) row[0])
                     .snm((String) row[1])
                     .edu((String) row[2])
-                    .inCalc((Boolean) row[3])
+                    .pers((Double) row[3])
+                    .rnd((Double) row[4])
+                    .inCalc((Boolean) row[5])
                     .build();
             materials.add(dto);
         }

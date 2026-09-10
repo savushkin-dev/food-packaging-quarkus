@@ -7,6 +7,7 @@ import io.quarkus.cache.CacheResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.acme.foodpackaging.dto.materials.MaterialSettingDto;
 import org.acme.foodpackaging.entity.materials.PlrMt;
 import org.acme.foodpackaging.repository.materials.MtRepository;
 
@@ -52,10 +53,13 @@ public class MtService {
      * Обновляет флаг IN_CALC для материала
      */
     @Transactional
-    public void updateInCalc(String kmt, Boolean inCalc) {
+    public void updateSettings(MaterialSettingDto materialSettingDto) {
+        String kmt = materialSettingDto.getKmt();
         PlrMt mt = mtRepository.findByKmt(kmt)
-                .orElseThrow(() -> new RuntimeException("Материал не найден: " + kmt));
-        mt.inCalc = inCalc;
+                .orElseThrow(() -> new RuntimeException("Material not found: " + kmt));
+        mt.pers = materialSettingDto.getPers();
+        mt.rnd = materialSettingDto.getRnd();
+        mt.inCalc = materialSettingDto.getInCalc();
         invalidate(kmt);
     }
 }

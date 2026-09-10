@@ -417,7 +417,7 @@ public class MaterialService {
     @Transactional
     public void saveMaterialsSettings(List<MaterialSettingDto> settings) {
         for (MaterialSettingDto setting : settings) {
-            mtService.updateInCalc(setting.getKmt(), setting.getInCalc());
+            mtService.updateSettings(setting);
         }
         rnppService.invalidateAll();
     }

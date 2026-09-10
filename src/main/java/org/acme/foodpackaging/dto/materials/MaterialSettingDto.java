@@ -13,7 +13,7 @@ public class MaterialSettingDto {
     private String kmt;
     private String snm;
     private String edu;
-//    private String edu;
-//    private String edu;
+    private Double pers;
+    private Double rnd;
     private Boolean inCalc;
 }
