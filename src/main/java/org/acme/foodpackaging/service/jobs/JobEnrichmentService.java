@@ -50,11 +50,7 @@ public class JobEnrichmentService {
 
         for (Job job : jobsWithoutCamera) {
 
-            if (job.getIdBatch() == null) {
-                continue;
-            }
-
-            CameraFactRow camera = cameraMap.get(job.getIdBatch());
+            CameraFactRow camera = job.getIdBatch() == null ? null : cameraMap.get(job.getIdBatch());
             if (camera == null) {
                 continue;
             }

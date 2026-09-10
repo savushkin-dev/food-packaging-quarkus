@@ -77,6 +77,12 @@ public class LineResource {
 
         Line line = findLineById(solution, request.lineId());
 
+        if (line == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(ApiFields.ERROR, ApiFields.LINE_NOT_FOUND))
+                    .build();
+        }
+
         setLineMaxEndDateTime(line, request.lineMaxEndDateTime());
         persist(sessionId, solution);
 
