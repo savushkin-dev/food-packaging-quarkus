@@ -46,7 +46,7 @@ public class JobEnrichmentService {
             throw new RuntimeException("Failed to read camera data", e);
         }
 
-        List<MsLogInsertRow> msLogRows = new ArrayList<>();
+        List<MsLogInsertRow> msLogRows = new ArrayList<>(jobsWithoutCamera.size());
 
         for (Job job : jobsWithoutCamera) {
 
