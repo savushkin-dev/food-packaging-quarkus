@@ -6,22 +6,23 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.record.LineProductionDto;
+import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.service.lines.value.*;
+
 import org.acme.foodpackaging.repository.PmLogRepository;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixPinnedJobs;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -114,38 +115,72 @@ public class LineService {
     // ============================================================
     // LineProduction
     // ============================================================
-    public Map<String, LineProductionDto> calculateLineProductions(List<Line> lines, LocalDate selectedDate, Integer shiftNumber) {
-        ShiftWindow window = ShiftWindow.forDate(selectedDate, shiftNumber);
 
-        Map<String, LineProductionDto> result = LinkedHashMap.newLinkedHashMap(lines.size());
+    public Map<String, Object> calculateLineProductions(List<Line> lines, LocalDateTime shiftStart) {
+        ShiftWindow firstShiftWindow = ShiftWindow.forShiftStart(shiftStart, 1);
+        ShiftWindow secondShiftWindow = ShiftWindow.forShiftStart(shiftStart, 2);
+
+        Map<String, Object> result = LinkedHashMap.newLinkedHashMap(lines.size() + 1);
+
+        double totalMassa1 = 0.0;
+        double totalMassa2 = 0.0;
+
         for (Line line : lines) {
-            result.put(String.valueOf(line.getId()), buildLineProduction(line, window));
+            LineProductionValue lineDto = buildLineProduction(line, firstShiftWindow, secondShiftWindow);
+            result.put(String.valueOf(line.getId()), lineDto);
+            totalMassa1 += lineDto.massa1();
+            totalMassa2 += lineDto.massa2();
         }
+
+        double totalMassa = round(totalMassa1 + totalMassa2);
+        result.put("total", new  TotalProductionValue("Итого", totalMassa, round(totalMassa1), round(totalMassa2)));
+
         return result;
     }
 
-    private LineProductionDto buildLineProduction(Line line, ShiftWindow window) {
-        String lineKey = String.valueOf(line.getId());
-
+    private LineProductionValue buildLineProduction(Line line, ShiftWindow firstShiftWindow,
+            ShiftWindow secondShiftWindow) {
         if (line.getJobs() == null || line.getJobs().isEmpty()) {
-            return new LineProductionDto(lineKey, 0.0, line.getName(), Map.of());
+            return new LineProductionValue(line.getName(), 0.0, 0.0, 0.0, List.of(), List.of());
         }
 
-        Map<String, Double> snpz = new LinkedHashMap<>();
-        double totalMass = 0.0;
+        List< BatchProductionValue> shift1 = buildShiftBatches(line.getJobs(), firstShiftWindow);
+        List< BatchProductionValue> shift2 = buildShiftBatches(line.getJobs(), secondShiftWindow);
 
-        for (Job job : line.getJobs()) {
+        double massa1 = sumMass(shift1);
+        double massa2 = sumMass(shift2);
+        double totalMass = round(massa1 + massa2);
+
+        return new LineProductionValue(line.getName(), totalMass, massa1, massa2, shift1, shift2);
+    }
+
+    private List< BatchProductionValue> buildShiftBatches(List<Job> jobs, ShiftWindow window) {
+        List< BatchProductionValue> batches = new ArrayList<>();
+
+        for (Job job : jobs) {
             double mass = calculateJobMass(job, window);
             if (mass <= 0) {
                 continue;
             }
 
-            double roundedMass = round(mass);
-            totalMass += roundedMass;
-            snpz.put(String.valueOf(job.getId()), roundedMass);
+            batches.add(new  BatchProductionValue(
+                    job.getId(),
+                    round(mass),
+                    job.getNp(),
+                    job.getCameraStart(),
+                    job.getCameraEnd()));
         }
 
-        return new LineProductionDto(lineKey, round(totalMass), line.getName(), snpz);
+        batches.sort(Comparator.comparing( BatchProductionValue::dts, Comparator.nullsLast(Comparator.naturalOrder())));
+        return batches;
+    }
+
+    private static double sumMass(List< BatchProductionValue> batches) {
+        double sum = 0.0;
+        for ( BatchProductionValue batch : batches) {
+            sum += batch.massa();
+        }
+        return round(sum);
     }
 
     private static double round(double value) {

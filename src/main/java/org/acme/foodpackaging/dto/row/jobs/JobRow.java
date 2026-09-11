@@ -1,0 +1,30 @@
+package org.acme.foodpackaging.dto.row.jobs;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.time.LocalDateTime;
+
+public record JobRow(
+        @JsonFormat(timezone = "Europe/Minsk")
+        LocalDateTime dti,
+        String kmc,
+        Integer np,
+        Integer quantity,                          // KOLEV
+        double mass,
+        @JsonFormat(timezone = "Europe/Minsk")
+        LocalDateTime startProductionDateTime,       // PDTN
+        @JsonFormat(timezone = "Europe/Minsk")
+        LocalDateTime endDateTime,
+        Integer duration,                      // numeric(7,2)
+        Long snpz,                            // numeric(12,0)
+        Integer priority,                    // UX
+        String lineId,                      // krc
+        String shortName,                // SNM
+        Integer emk,
+        Integer placePlan,
+        Integer sticker
+) {
+    public boolean isHandPackaging() {
+        return sticker != null && sticker > 0;
+    }
+}

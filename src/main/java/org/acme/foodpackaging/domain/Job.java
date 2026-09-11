@@ -3,7 +3,6 @@ package org.acme.foodpackaging.domain;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
@@ -15,19 +14,18 @@ import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.acme.foodpackaging.dto.MaintenanceRequest;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
-import org.acme.foodpackaging.record.CleaningResult;
+import org.acme.foodpackaging.domain.value.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.record.ProductionJobParams;
-import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 
 @Getter
 @Setter
@@ -96,8 +94,6 @@ public class Job {
     @NextElementShadowVariable(sourceVariableName = "jobs")
     private Job nextJob;
 
-    @JsonIgnore
-    private SpeedCacheUtils speedCache;
     /**
      * Start is after cleanup.
      */
@@ -111,26 +107,37 @@ public class Job {
     private LocalDateTime endDateTime;
 
     /**
-     * Constructor for regular production jobs.
-     * Package-private - use factory methods for public API.
+     * Creates a regular production job from a database row.
+     *
+     * @param row                      The database row containing job data
+     * @param product                  The product for this job
+     * @param startProductionDateTime  Planned start of production
+     * @param nameCleaner              Optional function to clean up the job name; may be null
      */
-    private Job(ProductionJobParams params) {
-        this.id = params.id();
-        this.lineId = params.lineId();
-        this.name = params.name();
-        this.snpz = params.snpz();
-        this.np = params.np();
-        this.quantity = params.quantity();
-        this.priority = params.priority() == 0 ? 1 : params.priority() * 10;
-        this.mass = params.mass();
-        this.product = params.product();
-        this.duration = params.duration();
-        this.startProductionDateTime = params.startProductionDateTime();
-        this.endDateTime = params.startProductionDateTime() == null ? null
-                : params.startProductionDateTime().plus(params.duration());
-        this.emk = params.emk();
-        this.placePlan = params.placePlan();
-        this.handPackaging = params.handPackaging();
+    public Job(JobRow row, Product product, LocalDateTime startProductionDateTime,
+               UnaryOperator<String> nameCleaner) {
+        String jobName = row.shortName() != null ? row.shortName().trim() : "";
+        if (nameCleaner != null) {
+            jobName = nameCleaner.apply(jobName);
+        }
+
+        this.id = String.valueOf(row.snpz());
+        this.lineId = row.lineId();
+        this.name = jobName;
+        this.snpz = row.snpz();
+        this.dti = row.dti();
+        this.np = row.np() != null ? row.np() : 0;
+        this.quantity = row.quantity() != null ? row.quantity() : 0;
+        this.priority = normalizePriority(row.priority() != null ? row.priority() : 0);
+        this.mass = row.mass();
+        this.product = product;
+        this.duration = row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO;
+        this.startProductionDateTime = startProductionDateTime;
+        this.endDateTime = startProductionDateTime == null ? null
+                : startProductionDateTime.plus(this.duration);
+        this.emk = row.emk() != null ? row.emk() : 0;
+        this.placePlan = row.placePlan() != null ? row.placePlan() : 0;
+        this.handPackaging = row.isHandPackaging();
     }
 
     /**
@@ -156,33 +163,6 @@ public class Job {
                 : startProductionDateTime.plus(duration);
     }
 
-    public static Job fromDbJobRow(
-            DbJobRow row,
-            Product product,
-            LocalDateTime startProductionDateTime,
-            UnaryOperator<String> nameCleaner) {
-        String jobName = row.shortName() != null ? row.shortName().trim() : "";
-        if (nameCleaner != null) {
-            jobName = nameCleaner.apply(jobName);
-        }
-
-        return new Job(new ProductionJobParams(
-                String.valueOf(row.snpz()),
-                row.lineId(),
-                jobName,
-                row.snpz(),
-                row.np() != null ? row.np() : 0,
-                row.quantity() != null ? row.quantity() : 0,
-                row.priority() != null ? row.priority() : 0,
-                row.mass(),
-                product,
-                row.duration() != null ? Duration.ofMinutes(row.duration()) : Duration.ZERO,
-                startProductionDateTime,
-                row.emk() != null ? row.emk() : 0,
-                row.placePlan() != null ? row.placePlan() : 0,
-                row.isHandPackaging()));
-    }
-
     /**
      * Creates a job with time constraints (used for maintenance jobs with
      * scheduling constraints).
@@ -192,15 +172,24 @@ public class Job {
      */
 
     public Job(String id, String name, Product product, Duration duration,
-            int priority, boolean pinned, LocalDateTime startProductionDateTime) {
+               int priority, boolean pinned, LocalDateTime startProductionDateTime) {
         this.id = id;
         this.name = name;
         this.product = product;
         this.duration = duration;
-        this.priority = priority == 0 ? 1 : priority * 10;
+        this.priority = normalizePriority(priority);
         this.pinned = pinned;
         this.startProductionDateTime = startProductionDateTime;
         this.endDateTime = startProductionDateTime == null ? null : startProductionDateTime.plus(duration);
+    }
+
+    /**
+     * Приоритеты из источника данных приходят в диапазоне 0..N, где 0 означает
+     * "приоритет не задан". Ноль преобразуется в 1, остальные значения умножаются
+     * на 10, чтобы оставить зазор для ручной точной настройки очерёдности.
+     */
+    private static int normalizePriority(int rawPriority) {
+        return rawPriority == 0 ? 1 : rawPriority * 10;
     }
 
     public Job(String id, String name, MaintenanceRequest request, Product mProduct) {
@@ -208,9 +197,9 @@ public class Job {
         this.name = name;
         this.maintenance = true;
         this.product = mProduct;
-        this.maintenanceTypeId = request.getMaintenanceTypeId();
-        this.maintenanceNote = request.getMaintenanceNote();
-        this.duration = Duration.ofMinutes(request.getDurationMinutes());
+        this.maintenanceTypeId = request.maintenanceTypeId();
+        this.maintenanceNote = request.maintenanceNote();
+        this.duration = Duration.ofMinutes(request.durationMinutes());
     }
 
     public Job(String id, String name) {
