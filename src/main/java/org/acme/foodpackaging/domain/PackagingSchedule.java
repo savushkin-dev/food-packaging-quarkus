@@ -15,7 +15,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
-import static org.acme.foodpackaging.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
+import static org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 
 @Setter
 @Getter

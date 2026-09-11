@@ -4,9 +4,10 @@ import builder.JobRowBuilder;
 import builder.ProductTestBuilder;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.exception.service.ProductNotFoundException;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.service.jobs.JobFactory;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.service.jobs.JobInfoService;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
 import builder.MaintenanceRowBuilder;
@@ -31,6 +32,9 @@ class JobFactoryTest {
 
     @Mock
     LoadDataService loadDataService;
+
+    @Mock
+    JobInfoService jobInfoService;
 
     @Test
     void createProductionJob_shouldThrowException_whenProductNotFound() {
@@ -62,6 +66,20 @@ class JobFactoryTest {
 
         assertNotNull(job);
         assertSame(job, allJobsById.get(123L));
+    }
+
+    @Test
+    void createProductionJob_setsIdBatch_fromJobInfoService() {
+        JobRow jobRow = JobRowBuilder.aRow().withSnpz(123L).withKmc("P1").withLineId("L1").build();
+        Product product = ProductTestBuilder.aProduct("P1").build();
+
+        when(loadDataService.getProducts()).thenReturn(Map.of("P1", product));
+        when(jobInfoService.generateIdBatch(any(Job.class))).thenReturn("GENERATED_BATCH");
+
+        Job job = jobFactory.createProductionJob(jobRow, new HashMap<>());
+
+        assertEquals("GENERATED_BATCH", job.getIdBatch());
+        verify(jobInfoService).generateIdBatch(job);
     }
 
     @Test

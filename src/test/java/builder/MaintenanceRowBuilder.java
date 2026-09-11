@@ -1,6 +1,6 @@
 package builder;
 
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import java.time.LocalDateTime;
 import java.time.Month;
 

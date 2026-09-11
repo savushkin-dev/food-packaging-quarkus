@@ -4,12 +4,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixPinnedJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 public class AlignDurationService {

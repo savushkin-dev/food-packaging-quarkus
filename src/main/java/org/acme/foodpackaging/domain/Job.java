@@ -14,18 +14,18 @@ import ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable
 import ai.timefold.solver.core.api.domain.variable.NextElementShadowVariable;
 import ai.timefold.solver.core.api.domain.variable.PreviousElementShadowVariable;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.acme.foodpackaging.dto.MaintenanceRequest;
+import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.persistence.serializer.DurationMinutesSerializer;
-import org.acme.foodpackaging.record.CleaningResult;
+import org.acme.foodpackaging.domain.value.CleaningResult;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.CleaningDurationUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 
 @Getter
 @Setter
@@ -125,6 +125,7 @@ public class Job {
         this.lineId = row.lineId();
         this.name = jobName;
         this.snpz = row.snpz();
+        this.dti = row.dti();
         this.np = row.np() != null ? row.np() : 0;
         this.quantity = row.quantity() != null ? row.quantity() : 0;
         this.priority = normalizePriority(row.priority() != null ? row.priority() : 0);
@@ -196,9 +197,9 @@ public class Job {
         this.name = name;
         this.maintenance = true;
         this.product = mProduct;
-        this.maintenanceTypeId = request.getMaintenanceTypeId();
-        this.maintenanceNote = request.getMaintenanceNote();
-        this.duration = Duration.ofMinutes(request.getDurationMinutes());
+        this.maintenanceTypeId = request.maintenanceTypeId();
+        this.maintenanceNote = request.maintenanceNote();
+        this.duration = Duration.ofMinutes(request.durationMinutes());
     }
 
     public Job(String id, String name) {

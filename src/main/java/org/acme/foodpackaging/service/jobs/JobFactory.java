@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
+import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.ProductNotFoundException;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils;
+import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.utils.ScheduleUtils;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -21,6 +21,7 @@ public class JobFactory {
     private static final String DEFAULT_MAINTENANCE_NAME = "Обслуживание";
 
     private final LoadDataService loadDataService;
+    private final JobInfoService jobInfoService;
 
     public Job createProductionJob(JobRow row, Map<Long, Job> allJobsById) {
         if (row == null) {
@@ -33,6 +34,8 @@ public class JobFactory {
 
         LocalDateTime startTime = row.lineId() != null ? row.startProductionDateTime() : null;
         Job job = new Job(row, product, startTime, ScheduleUtils::nameCleaner);
+        // BD_VZPMC не хранит значение партии — генерируем idBatch сразу при создании задачи
+        job.setIdBatch(jobInfoService.generateIdBatch(job));
 
         allJobsById.put(row.snpz(), job);
         return job;

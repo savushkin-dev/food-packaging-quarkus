@@ -4,12 +4,10 @@ import fixtures.SolutionFixtures;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.response.lineservice.BatchProductionDto;
-import org.acme.foodpackaging.dto.response.lineservice.LineProductionDto;
-import org.acme.foodpackaging.dto.response.lineservice.TotalProductionDto;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.lines.LineService;
+import org.acme.foodpackaging.service.lines.value.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -197,13 +195,13 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(227.0, dto.massa1());
         assertEquals(0.0, dto.massa2());
         assertEquals(227.0, dto.massa());
         assertEquals(1, dto.shift1().size());
 
-        BatchProductionDto batch = dto.shift1().get(0);
+        BatchProductionValue batch = dto.shift1().get(0);
         assertEquals("1", batch.snpz());
         assertEquals(227.0, batch.massa());
         assertEquals(123, batch.np());
@@ -228,7 +226,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(0.0, dto.massa1());
         assertEquals(150.0, dto.massa2());
         assertEquals(150.0, dto.massa());
@@ -257,7 +255,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(200.0, dto.massa1());
         assertEquals(300.0, dto.massa2());
         assertEquals(500.0, dto.massa());
@@ -284,9 +282,9 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(List.of("earlier", "later"),
-                dto.shift1().stream().map(BatchProductionDto::snpz).toList());
+                dto.shift1().stream().map(BatchProductionValue::snpz).toList());
         assertEquals(earlier.getCameraStart(), dto.shift1().get(0).dts());
         assertEquals(later.getCameraStart(), dto.shift1().get(1).dts());
     }
@@ -300,7 +298,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(0.0, dto.massa1());
         assertEquals(0.0, dto.massa2());
         assertEquals(0.0, dto.massa());
@@ -317,7 +315,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(0.0, dto.massa());
         assertTrue(dto.shift1().isEmpty());
         assertTrue(dto.shift2().isEmpty());
@@ -342,7 +340,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(120.0, dto.massa1()); // 200 * 0.6
         assertEquals(0.0, dto.massa2());
         assertEquals(120.0, dto.massa());
@@ -366,7 +364,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(120.0, dto.massa1()); // 300 * 0.4
         assertEquals(120.0, dto.massa());
     }
@@ -387,7 +385,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(0.0, dto.massa());
         assertTrue(dto.shift1().isEmpty());
         verifyNoInteractions(pmLogRepository);
@@ -411,7 +409,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(0.0, dto.massa());
         assertTrue(dto.shift1().isEmpty());
     }
@@ -431,7 +429,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(0.0, dto.massa());
         verifyNoInteractions(pmLogRepository);
     }
@@ -460,7 +458,7 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1, l2), shiftStart);
 
-        TotalProductionDto total = (TotalProductionDto) result.get("total");
+        TotalProductionValue total = (TotalProductionValue) result.get("total");
         assertEquals("Итого", total.name());
         assertEquals(100.0, total.massa1());
         assertEquals(200.0, total.massa2());
@@ -481,11 +479,11 @@ class LineServiceTest {
         l1.setJobs(List.of(j1));
 
         Map<String, Object> resultDefault = lineService.calculateLineProductions(List.of(l1), date.atTime(8, 0));
-        LineProductionDto dtoDefault = (LineProductionDto) resultDefault.get(String.valueOf(l1.getId()));
+        LineProductionValue dtoDefault = (LineProductionValue) resultDefault.get(String.valueOf(l1.getId()));
         assertEquals(100.0, dtoDefault.massa1());
 
         Map<String, Object> resultShifted = lineService.calculateLineProductions(List.of(l1), date.atTime(9, 0));
-        LineProductionDto dtoShifted = (LineProductionDto) resultShifted.get(String.valueOf(l1.getId()));
+        LineProductionValue dtoShifted = (LineProductionValue) resultShifted.get(String.valueOf(l1.getId()));
         assertEquals(0.0, dtoShifted.massa1());
     }
 
@@ -508,8 +506,8 @@ class LineServiceTest {
 
         Map<String, Object> result = lineService.calculateLineProductions(List.of(l1), shiftStart);
 
-        LineProductionDto dto = (LineProductionDto) result.get(String.valueOf(l1.getId()));
+        LineProductionValue dto = (LineProductionValue) result.get(String.valueOf(l1.getId()));
         assertEquals(100.0, dto.massa1());
-        assertEquals(100.0, dto.shift1().get(0).massa());
+        assertEquals(100.0, dto.shift1().getFirst().massa());
     }
 }

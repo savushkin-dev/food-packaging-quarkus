@@ -4,8 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.persistence.json.SolutionImporter;
-import org.acme.foodpackaging.record.SolutionByVersion;
+import org.acme.foodpackaging.service.solution.SolutionImporter;
+import org.acme.foodpackaging.dto.row.solution.SolutionVersionRow;
 import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
 
 import java.time.LocalDate;
@@ -21,7 +21,7 @@ public class ScheduleVersionInitializer {
      * Строит сохраненное ранее расписание из json.
      */
     public PackagingSchedule initSchedule(LocalDate dti, String version) {
-        SolutionByVersion solution = plrPlanRepository.getSolutionByVersion(dti, version);
+        SolutionVersionRow solution = plrPlanRepository.getSolutionByVersion(dti, version);
         return importer.importFromJson(solution);
     }
 }

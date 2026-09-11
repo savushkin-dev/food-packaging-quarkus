@@ -14,7 +14,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixPinnedJobs;
 
 @ApplicationScoped
 public class AlignCleaningService {

@@ -6,27 +6,27 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.DelayNoteRequest;
+import org.acme.foodpackaging.dto.request.jobs.DelayNoteRequest;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.findLineById;
+import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
 public class JobNoteService {
 
     public void writeDelayNote(DelayNoteRequest request, PackagingSchedule solution){
-        Line line = findLineById(solution, request.getLineId());
+        Line line = findLineById(solution, request.lineId());
         if(line == null || line.getJobs() == null || line.getJobs().isEmpty()) return;
 
-        Job job = line.getJobs().get(request.getIndex());
-        job.setDelayNote(request.getDelayNote());
+        Job job = line.getJobs().get(request.index());
+        job.setDelayNote(request.delayNote());
     }
 
     public void writeCleaningDelayNote(DelayNoteRequest request, PackagingSchedule solution){
-        Line line = findLineById(solution, request.getLineId());
+        Line line = findLineById(solution, request.lineId());
         if(line == null || line.getJobs() == null || line.getJobs().isEmpty()) return;
 
-        Job job = line.getJobs().get(request.getIndex());
-        job.setCleaningDelayNote(request.getDelayNote());
+        Job job = line.getJobs().get(request.index());
+        job.setCleaningDelayNote(request.delayNote());
     }
 }

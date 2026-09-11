@@ -5,7 +5,7 @@ import builder.LineTestBuilder;
 import builder.ScheduleTestBuilder;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.DelayNoteRequest;
+import org.acme.foodpackaging.dto.request.jobs.DelayNoteRequest;
 import org.acme.foodpackaging.service.jobs.JobNoteService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,10 +44,7 @@ class JobNoteServiceTest {
 
     @Test
     void writeDelayNote_success() {
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Note");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Note");
 
         jobNoteService.writeDelayNote(request, schedule);
         assertEquals("Note", job.getDelayNote());
@@ -55,10 +52,7 @@ class JobNoteServiceTest {
 
     @Test
     void writeCleaningDelayNote_success() {
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Cleaning");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Cleaning");
 
         jobNoteService.writeCleaningDelayNote(request, schedule);
         assertEquals("Cleaning", job.getCleaningDelayNote());
@@ -67,9 +61,7 @@ class JobNoteServiceTest {
     @Test
     void writeDelayNote_whenLineNotFound() {
         schedule.getLines().getFirst().setId("L2");
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setDelayNote("Note");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Note");
 
         jobNoteService.writeDelayNote(request, schedule);
 
@@ -79,10 +71,7 @@ class JobNoteServiceTest {
     @Test
     void writeDelayNote_whenLineJobsNull() {
         schedule.getLines().getFirst().setJobs(null);
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Note");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Note");
 
         jobNoteService.writeDelayNote(request, schedule);
 
@@ -92,10 +81,7 @@ class JobNoteServiceTest {
     @Test
     void writeDelayNote_whenLineJobsEmpty() {
         schedule.getLines().getFirst().setJobs(new java.util.ArrayList<>());
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Note");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Note");
 
         jobNoteService.writeDelayNote(request, schedule);
 
@@ -105,9 +91,7 @@ class JobNoteServiceTest {
     @Test
     void writeCleaningDelayNote_whenLineNotFound() {
         schedule.getLines().getFirst().setId("L2");
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setDelayNote("Cleaning");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Cleaning");
 
         jobNoteService.writeCleaningDelayNote(request, schedule);
 
@@ -117,10 +101,7 @@ class JobNoteServiceTest {
     @Test
     void writeCleaningDelayNote_whenLineJobsNull() {
         schedule.getLines().getFirst().setJobs(null);
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Cleaning");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Cleaning");
 
         jobNoteService.writeCleaningDelayNote(request, schedule);
 
@@ -130,10 +111,7 @@ class JobNoteServiceTest {
     @Test
     void writeCleaningDelayNote_whenLineJobsEmpty() {
         schedule.getLines().getFirst().setJobs(new java.util.ArrayList<>());
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Cleaning");
+        DelayNoteRequest request = new DelayNoteRequest("L1", 0, "Cleaning");
 
         jobNoteService.writeCleaningDelayNote(request, schedule);
 

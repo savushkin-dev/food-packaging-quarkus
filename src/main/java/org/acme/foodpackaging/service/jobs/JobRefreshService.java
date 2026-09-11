@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.MsLogInsertRow;
-import org.acme.foodpackaging.persistence.upload.UploadDataService;
-import org.acme.foodpackaging.record.CameraValue;
-import org.acme.foodpackaging.record.SelectionValue;
+import org.acme.foodpackaging.dto.row.jobs.MsLogInsertRow;
+import org.acme.foodpackaging.service.upload.UploadDataService;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
+import org.acme.foodpackaging.dto.request.jobs.JobSelectionRequest;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
 import org.acme.foodpackaging.service.products.ProductService;
 
@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.fixLineJobs;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.END_CAMERA;
+import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -31,7 +31,7 @@ public class JobRefreshService {
     private final ProductService productService;
     private final UploadDataService uploadDataService;
 
-    public void applySelection(Map<Long, SelectionValue> selection, PackagingSchedule solution) {
+    public void applySelection(Map<Long, JobSelectionRequest.SelectionValue> selection, PackagingSchedule solution) {
         selection.forEach((snpz, value) -> {
             if (Boolean.TRUE.equals(value.isSelect())) {
                 addJobIfAbsent(snpz, Boolean.TRUE.equals(value.isLabeling()), solution);
@@ -108,17 +108,17 @@ public class JobRefreshService {
             return;
         }
 
-        Map<String, CameraValue> cameraMap = jobRepository.getCameraFactRowMap(staleCameraJobs);
+        Map<String, CameraFactRow> cameraMap = jobRepository.getCameraFactRowMap(staleCameraJobs);
 
         List<MsLogInsertRow> msLogRows = new ArrayList<>();
 
         for (Job job : staleCameraJobs) {
-            CameraValue camera = cameraMap.get(job.getIdBatch());
+            CameraFactRow camera = cameraMap.get(job.getIdBatch());
             if (camera != null && camera.cameraEnd() != null
                     && differsMoreThan(job.getCameraEnd(), camera.cameraEnd())) {
                 job.setCameraEnd(camera.cameraEnd());
                 msLogRows.add(new MsLogInsertRow(
-                        job, END_CAMERA_EVENT_TYPE, camera.cameraEnd()));
+                        job, END_CAMERA.code(), camera.cameraEnd()));
             }
         }
 

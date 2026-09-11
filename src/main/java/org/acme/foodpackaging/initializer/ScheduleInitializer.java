@@ -5,16 +5,15 @@ import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
-import org.acme.foodpackaging.record.InitData;
+import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.acme.foodpackaging.service.products.ProductService;
+import static org.acme.foodpackaging.utils.ScheduleUtils.removeJobsWithoutLine;
 
 import java.time.LocalDate;
 import java.util.List;
-
-import static org.acme.foodpackaging.scheduleoperations.utils.ScheduleUtils.*;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -34,7 +33,7 @@ public class ScheduleInitializer {
      * 4. Джобы без линии — мусор, удаляются перед выравниванием.
      * 5. Align — последний шаг, работает с уже консистентным schedule.
      */
-    public InitData initSchedule(LocalDate startDate) {
+    public InitDataValue initSchedule(LocalDate startDate) {
         PackagingSchedule schedule = createEmptySchedule(startDate);
         List<JobRow> jobRows = attachJobs(schedule);
         attachProducts(schedule);
@@ -42,7 +41,7 @@ public class ScheduleInitializer {
         cleanupOrphanJobs(schedule);
         alignSolutionService.align(schedule);
 
-        return new InitData(schedule, jobRows);
+        return new InitDataValue(schedule, jobRows);
     }
 
     public PackagingSchedule updateProductList(PackagingSchedule schedule) {

@@ -3,8 +3,8 @@ package org.acme.foodpackaging.repository.products;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.acme.foodpackaging.dto.row.products.CleaningRuleRow;
 import org.acme.foodpackaging.entity.products.PlrChange;
-import org.acme.foodpackaging.record.CleaningRule;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
@@ -16,7 +16,7 @@ public class CleaningRuleRepository implements PanacheRepository<PlrChange> {
     @ConfigProperty(name = "krc")
     String lineId;
 
-    public List<CleaningRule> loadRules() {
+    public List<CleaningRuleRow> loadRules() {
 
         List<PlrChange> rows =
                 find(
@@ -25,7 +25,7 @@ public class CleaningRuleRepository implements PanacheRepository<PlrChange> {
                         .list();
 
         return rows.stream()
-                .map(r -> new CleaningRule(
+                .map(r -> new CleaningRuleRow(
                         Objects.requireNonNullElse(r.parameter, ""),
                         Objects.requireNonNullElse(r.from, ""),
                         Objects.requireNonNullElse(r.to, ""),

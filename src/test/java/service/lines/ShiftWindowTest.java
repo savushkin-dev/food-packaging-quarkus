@@ -1,7 +1,7 @@
 package service.lines;
 
-import org.acme.foodpackaging.persistence.constants.WindowCrossing;
 import org.acme.foodpackaging.service.lines.ShiftWindow;
+import org.acme.foodpackaging.service.lines.WindowCrossing;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
