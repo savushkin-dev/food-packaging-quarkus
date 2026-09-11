@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -142,7 +143,7 @@ class ParallelOperationServiceTest {
                 .eventTypeId(2)
                 .note("old note")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+        schedule.setParallelOperations(Map.of("op1", existing));
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, 120, null, null);
@@ -168,7 +169,7 @@ class ParallelOperationServiceTest {
                 .duration(java.time.Duration.ofMinutes(60))
                 .endDateTime(start.plusMinutes(60))
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+        schedule.setParallelOperations(Map.of("op1", existing));
 
         LocalDateTime newStart = LocalDateTime.of(2026, Month.MARCH, 1, 10, 0);
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
@@ -193,7 +194,7 @@ class ParallelOperationServiceTest {
                 .name("Old name")
                 .eventTypeId(1)
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+        schedule.setParallelOperations(Map.of("op1", existing));
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, null, 5, null);
@@ -216,7 +217,7 @@ class ParallelOperationServiceTest {
                 .endDateTime(start.plusMinutes(45))
                 .note("old")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+        schedule.setParallelOperations(Map.of("op1", existing));
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", "line2", null, null, null, "new note");
@@ -244,7 +245,7 @@ class ParallelOperationServiceTest {
                 .eventTypeId(2)
                 .note("note")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+        schedule.setParallelOperations(Map.of("op1", existing));
 
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, null, null, null);
@@ -269,7 +270,7 @@ class ParallelOperationServiceTest {
                 .id("op1")
                 .lineId("line1")
                 .build();
-        schedule.getParallelOperations().put("op1", existing);
+        schedule.setParallelOperations(Map.of("op1", existing));
 
         parallelOperationService.remove(schedule, "op1");
 

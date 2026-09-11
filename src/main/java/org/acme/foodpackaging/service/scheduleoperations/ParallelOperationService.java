@@ -11,6 +11,7 @@ import org.acme.foodpackaging.service.load.LoadDataService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -41,7 +42,9 @@ public class ParallelOperationService {
                 .note(request.note())
                 .build();
 
-        schedule.getParallelOperations().put(id, operation);
+        Map<String, ParallelOperation> operations = schedule.getParallelOperations();
+        operations.put(id, operation);
+        schedule.setParallelOperations(operations);
     }
 
     /**
@@ -50,7 +53,8 @@ public class ParallelOperationService {
      */
     public void update(PackagingSchedule schedule, UpdateParallelOperationRequest request) {
 
-        ParallelOperation existing = schedule.getParallelOperations().get(request.id());
+        Map<String, ParallelOperation> operations = schedule.getParallelOperations();
+        ParallelOperation existing = operations.get(request.id());
         if (existing == null) {
             throw new IllegalArgumentException("Parallel operation not found: " + request.id());
         }
@@ -77,7 +81,8 @@ public class ParallelOperationService {
         }
 
         ParallelOperation updated = builder.build();
-        schedule.getParallelOperations().put(updated.getId(), updated);
+        operations.put(updated.getId(), updated);
+        schedule.setParallelOperations(operations);
     }
 
     /**
@@ -85,11 +90,12 @@ public class ParallelOperationService {
      */
 
     public void remove(PackagingSchedule schedule, String id) {
-        ParallelOperation removed = schedule.getParallelOperations().remove(id);
+        Map<String, ParallelOperation> operations = schedule.getParallelOperations();
+        ParallelOperation removed = operations.remove(id);
         if (removed == null) {
             throw new IllegalArgumentException("Parallel operation not found: " + id);
         }
-        return;
+        schedule.setParallelOperations(operations);
     }
 
     private String generateKey() {

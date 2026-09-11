@@ -59,11 +59,15 @@ public class PackagingSchedule {
     public PackagingSchedule() {
         maintenanceProduct = createMaintenanceProduct();
         this.overloadedIds = new HashSet<>();
+        this.deletedMaintenance = new ArrayList<>();
+        this.parallelOperations = new HashMap<>();
     }
 
     public PackagingSchedule(List<Line> lines, LocalDate startDate) {
         maintenanceProduct = createMaintenanceProduct();
         this.overloadedIds = new HashSet<>();
+        this.deletedMaintenance = new ArrayList<>();
+        this.parallelOperations = new HashMap<>();
 
         setWorkCalendar(new WorkCalendar(startDate));
         setLines(lines);

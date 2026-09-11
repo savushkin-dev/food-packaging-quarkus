@@ -104,7 +104,9 @@ public class MaintenanceService {
 
         Job jobToRemove = lineJobs.get(removeIndex);
         if (jobToRemove.isMaintenance()) {
-            schedule.getDeletedMaintenance().add(jobToRemove);
+            List<Job> deletedMaintenance = schedule.getDeletedMaintenance();
+            deletedMaintenance.add(jobToRemove);
+            schedule.setDeletedMaintenance(deletedMaintenance);
             jobToRemove.setFDel((short) 1);
             schedule.getJobs().remove(jobToRemove);
 
