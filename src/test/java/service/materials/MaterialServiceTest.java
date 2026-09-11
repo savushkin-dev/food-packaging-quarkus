@@ -220,6 +220,61 @@ class MaterialServiceTest {
         assertEquals(2, result.get(0).getMaterials().size());
     }
 
+    @Test
+    void testLoadProducts_WithDuplicateKeysInSavedData_UsesFirstValue() {
+
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+        PlrMt mt = createTestMt();
+        List<PlrRnpp> norms = createTestRnpp();
+
+        PlrSinv first = new PlrSinv();
+        first.dt = testDate;
+        first.kpp = testKpp;
+        first.kmc = "0307060046";
+        first.kt = "2201040296";
+        first.kmt = "1002051408";
+        first.norm = 18.5;
+        first.normf = 158.08;
+        first.kolf = 100.0;
+        first.pers = 15.0;
+        first.rnd = 5.0;
+        first.order = 175.0;
+
+        PlrSinv second = new PlrSinv();
+        second.dt = testDate;
+        second.kpp = testKpp;
+        second.kmc = "0307060046";
+        second.kt = "2201040296";
+        second.kmt = "1002051408";
+        second.norm = 18.5;
+        second.normf = 158.08;
+        second.kolf = 999.0;
+        second.pers = 99.0;
+        second.rnd = 99.0;
+        second.order = 999.0;
+
+        List<PlrSinv> existingData = List.of(first, second);
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(norms);
+        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+                .thenReturn(existingData);
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+
+        assertNotNull(result);
+        SinvDto material = result.get(0).getMaterials().get(0);
+        
+        assertEquals(100.0, material.getKolf());
+        assertEquals(15.0, material.getInsurancePerc());
+        assertEquals(5.0, material.getRoundStep());
+        assertEquals(175.0, material.getOrder());
+    }
+
     // ==================== ТЕСТЫ recalcKolf() ====================
 
     @Test
