@@ -1,10 +1,10 @@
-package scheduleoperations;
+package service.scheduleoperations;
 
 import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.dto.request.paralleloperations.*;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleoperations.ParallelOperationService;
+import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.service.scheduleoperations.ParallelOperationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,10 +52,10 @@ class ParallelOperationServiceTest {
                 3,
                 "note");
 
-        PackagingSchedule result = parallelOperationService.add(schedule, request);
+        parallelOperationService.add(schedule, request);
 
-        assertEquals(1, result.getParallelOperations().size());
-        ParallelOperation created = result.getParallelOperations().values().iterator().next();
+        assertEquals(1, schedule.getParallelOperations().size());
+        ParallelOperation created = schedule.getParallelOperations().values().iterator().next();
 
         assertNotNull(created.getId());
         assertEquals("line1", created.getLineId());
@@ -87,9 +87,9 @@ class ParallelOperationServiceTest {
         AddParallelOperationRequest request = new AddParallelOperationRequest(
                 "line1", null, null, null, null);
 
-        PackagingSchedule result = parallelOperationService.add(schedule, request);
+        parallelOperationService.add(schedule, request);
 
-        ParallelOperation created = result.getParallelOperations().values().iterator().next();
+        ParallelOperation created = schedule.getParallelOperations().values().iterator().next();
         assertNull(created.getEndDateTime());
         assertNull(created.getDuration());
     }
@@ -99,9 +99,9 @@ class ParallelOperationServiceTest {
         AddParallelOperationRequest request = new AddParallelOperationRequest(
                 "line1", null, 30, null, null);
 
-        PackagingSchedule result = parallelOperationService.add(schedule, request);
+        parallelOperationService.add(schedule, request);
 
-        ParallelOperation created = result.getParallelOperations().values().iterator().next();
+        ParallelOperation created = schedule.getParallelOperations().values().iterator().next();
         assertEquals("Параллельная операция", created.getName());
     }
 
@@ -112,9 +112,9 @@ class ParallelOperationServiceTest {
         AddParallelOperationRequest request = new AddParallelOperationRequest(
                 "line1", null, 30, 99, null);
 
-        PackagingSchedule result = parallelOperationService.add(schedule, request);
+        parallelOperationService.add(schedule, request);
 
-        ParallelOperation created = result.getParallelOperations().values().iterator().next();
+        ParallelOperation created = schedule.getParallelOperations().values().iterator().next();
         assertEquals("Параллельная операция", created.getName());
     }
 
@@ -147,9 +147,9 @@ class ParallelOperationServiceTest {
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, 120, null, null);
 
-        PackagingSchedule result = parallelOperationService.update(schedule, request);
+        parallelOperationService.update(schedule, request);
 
-        ParallelOperation updated = result.getParallelOperations().get("op1");
+        ParallelOperation updated = schedule.getParallelOperations().get("op1");
         assertEquals(120, updated.getDuration().toMinutes());
         assertEquals(start.plusMinutes(120), updated.getEndDateTime());
         // untouched fields stay the same
@@ -174,9 +174,9 @@ class ParallelOperationServiceTest {
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, newStart, null, null, null);
 
-        PackagingSchedule result = parallelOperationService.update(schedule, request);
+        parallelOperationService.update(schedule, request);
 
-        ParallelOperation updated = result.getParallelOperations().get("op1");
+        ParallelOperation updated = schedule.getParallelOperations().get("op1");
         assertEquals(newStart, updated.getStartDateTime());
         assertEquals(newStart.plusMinutes(60), updated.getEndDateTime());
     }
@@ -198,9 +198,9 @@ class ParallelOperationServiceTest {
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, null, 5, null);
 
-        PackagingSchedule result = parallelOperationService.update(schedule, request);
+        parallelOperationService.update(schedule, request);
 
-        ParallelOperation updated = result.getParallelOperations().get("op1");
+        ParallelOperation updated = schedule.getParallelOperations().get("op1");
         assertEquals(5, updated.getEventTypeId());
         assertEquals("Наладка", updated.getName());
     }
@@ -221,9 +221,9 @@ class ParallelOperationServiceTest {
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", "line2", null, null, null, "new note");
 
-        PackagingSchedule result = parallelOperationService.update(schedule, request);
+        parallelOperationService.update(schedule, request);
 
-        ParallelOperation updated = result.getParallelOperations().get("op1");
+        ParallelOperation updated = schedule.getParallelOperations().get("op1");
         assertEquals("line2", updated.getLineId());
         assertEquals("new note", updated.getNote());
         assertEquals(start, updated.getStartDateTime());
@@ -249,9 +249,9 @@ class ParallelOperationServiceTest {
         UpdateParallelOperationRequest request = new UpdateParallelOperationRequest(
                 "op1", null, null, null, null, null);
 
-        PackagingSchedule result = parallelOperationService.update(schedule, request);
+        parallelOperationService.update(schedule, request);
 
-        ParallelOperation updated = result.getParallelOperations().get("op1");
+        ParallelOperation updated = schedule.getParallelOperations().get("op1");
         assertEquals(existing.getLineId(), updated.getLineId());
         assertEquals(existing.getName(), updated.getName());
         assertEquals(existing.getStartDateTime(), updated.getStartDateTime());
@@ -271,9 +271,9 @@ class ParallelOperationServiceTest {
                 .build();
         schedule.getParallelOperations().put("op1", existing);
 
-        PackagingSchedule result = parallelOperationService.remove(schedule, "op1");
+        parallelOperationService.remove(schedule, "op1");
 
-        assertTrue(result.getParallelOperations().isEmpty());
+        assertTrue(schedule.getParallelOperations().isEmpty());
     }
 
     @Test

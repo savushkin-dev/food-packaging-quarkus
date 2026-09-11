@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.rest.scheduleresource;
+package org.acme.foodpackaging.rest.solution;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,9 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.dto.request.paralleloperations.*;
-import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
+import org.acme.foodpackaging.repository.PackagingScheduleRepository;
 import org.acme.foodpackaging.rest.ApiFields;
-import org.acme.foodpackaging.scheduleoperations.ParallelOperationService;
+import org.acme.foodpackaging.service.scheduleoperations.ParallelOperationService;
 
 import java.util.Collection;
 import java.util.Map;
@@ -50,8 +50,8 @@ public class ParallelOperationResource {
             return noScheduleLoaded();
         }
 
-        PackagingSchedule updated = parallelOperationService.add(schedule, request);
-        repository.writeForSession(sessionId, updated);
+        parallelOperationService.add(schedule, request);
+        repository.writeForSession(sessionId, schedule);
 
         return Response.status(Response.Status.CREATED).entity(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
@@ -69,8 +69,8 @@ public class ParallelOperationResource {
             return noScheduleLoaded();
         }
 
-        PackagingSchedule updated = parallelOperationService.update(schedule, request);
-        repository.writeForSession(sessionId, updated);
+        parallelOperationService.update(schedule, request);
+        repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,
@@ -88,8 +88,8 @@ public class ParallelOperationResource {
             return noScheduleLoaded();
         }
 
-        PackagingSchedule updated = parallelOperationService.remove(schedule, id);
-        repository.writeForSession(sessionId, updated);
+        parallelOperationService.remove(schedule, id);
+        repository.writeForSession(sessionId, schedule);
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,

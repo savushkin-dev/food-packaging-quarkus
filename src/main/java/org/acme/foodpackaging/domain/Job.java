@@ -26,6 +26,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.acme.foodpackaging.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.dto.request.maintenance.AddMaintenanceRequest;
 
 @Getter
 @Setter

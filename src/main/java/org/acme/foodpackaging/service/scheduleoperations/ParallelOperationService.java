@@ -1,4 +1,4 @@
-package org.acme.foodpackaging.scheduleoperations;
+package org.acme.foodpackaging.service.scheduleoperations;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.dto.request.paralleloperations.*;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+import org.acme.foodpackaging.service.load.LoadDataService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -22,7 +22,7 @@ public class ParallelOperationService {
     /**
      * Добавляет параллельную сервисную операцию, генерируя уникальный ключ
      */
-    public PackagingSchedule add(PackagingSchedule schedule, AddParallelOperationRequest request) {
+    public void add(PackagingSchedule schedule, AddParallelOperationRequest request) {
 
         String id = generateKey();
         String name = resolveName(request.eventTypeId());
@@ -42,14 +42,13 @@ public class ParallelOperationService {
                 .build();
 
         schedule.getParallelOperations().put(id, operation);
-        return schedule;
     }
 
     /**
      * Обновляет существующую параллельную операцию по id — устанавливаются только
      * переданные поля
      */
-    public PackagingSchedule update(PackagingSchedule schedule, UpdateParallelOperationRequest request) {
+    public void update(PackagingSchedule schedule, UpdateParallelOperationRequest request) {
 
         ParallelOperation existing = schedule.getParallelOperations().get(request.id());
         if (existing == null) {
@@ -79,20 +78,18 @@ public class ParallelOperationService {
 
         ParallelOperation updated = builder.build();
         schedule.getParallelOperations().put(updated.getId(), updated);
-
-        return schedule;
     }
 
     /**
      * Удаляет параллельную операцию по ключу
      */
 
-    public PackagingSchedule remove(PackagingSchedule schedule, String id) {
+    public void remove(PackagingSchedule schedule, String id) {
         ParallelOperation removed = schedule.getParallelOperations().remove(id);
         if (removed == null) {
             throw new IllegalArgumentException("Parallel operation not found: " + id);
         }
-        return schedule;
+        return;
     }
 
     private String generateKey() {

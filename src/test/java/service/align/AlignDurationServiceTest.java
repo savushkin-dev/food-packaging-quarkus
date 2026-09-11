@@ -1,11 +1,11 @@
-package align;
+package service.align;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.scheduleoperations.MaintenanceService;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.service.scheduleoperations.MaintenanceService;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.align.AlignDurationService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;

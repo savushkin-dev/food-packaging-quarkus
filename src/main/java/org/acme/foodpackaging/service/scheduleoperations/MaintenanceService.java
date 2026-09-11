@@ -5,16 +5,10 @@ import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 
 import org.acme.foodpackaging.domain.*;
-<<<<<<<< HEAD:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceService.java
 import org.acme.foodpackaging.dto.request.maintenance.AddMaintenanceRequest;
 import org.acme.foodpackaging.dto.request.maintenance.UpdateMaintenanceRequest;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
-import org.acme.foodpackaging.scheduleoperations.utils.CleaningDurationUtils;
-========
-import org.acme.foodpackaging.dto.request.maintenance.MaintenanceRequest;
 import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.utils.CleaningDurationUtils;
->>>>>>>> develop_rc:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceJob.java
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -36,14 +30,8 @@ public class MaintenanceService {
      * Добавляет Maintenance Job на линию (вставка в существующее расписание либо
      * старт пустой линии)
      */
-    public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule, AddMaintenanceRequest request) {
+    public void addMaintenanceJob(PackagingSchedule schedule, AddMaintenanceRequest request) {
 
-<<<<<<<< HEAD:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceService.java
-========
-    public PackagingSchedule addMaintenanceJob(PackagingSchedule schedule,
-                                               MaintenanceRequest request) {
-
->>>>>>>> develop_rc:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceJob.java
         Line line = findLineById(schedule, request.lineId());
         int typeKey = request.maintenanceTypeId() != null ? request.maintenanceTypeId() : 1;
 
@@ -56,14 +44,9 @@ public class MaintenanceService {
         fixPinnedJobs(line);
 
         schedule.getJobs().add(maintenanceJob);
-<<<<<<<< HEAD:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceService.java
 
         Integer alignExtraCleaning = request.alignExtraCleaning();
         if (alignExtraCleaning != null) {
-========
-        Integer alignExtraCleaning = request.alignExtraCleaning();
-        if(alignExtraCleaning!=null){
->>>>>>>> develop_rc:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceJob.java
             maybeAddExtraMaintenance(schedule, line, request, alignExtraCleaning, insertedIndex);
         }
 
@@ -72,7 +55,6 @@ public class MaintenanceService {
             maybeAddExtraMaintenance(schedule, line, request, extraMaintenance.extraMinutes(), insertedIndex);
         }
 
-        return schedule;
     }
 
     /**
@@ -111,7 +93,7 @@ public class MaintenanceService {
     /**
      * Удаляет Maintenance Job с линии
      */
-    public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule, String lineId, int removeIndex) {
+    public void removeMaintenanceJob(PackagingSchedule schedule, String lineId, int removeIndex) {
 
         Line line = findLineById(schedule, lineId);
         List<Job> lineJobs = line.getJobs();
@@ -131,7 +113,6 @@ public class MaintenanceService {
             fixLineJobs(line);
             fixPinnedJobs(line);
         }
-        return schedule;
     }
 
     public void addDailyFullCleaning(PackagingSchedule schedule) {
@@ -151,7 +132,7 @@ public class MaintenanceService {
     }
 
     private void createDailyCleaningJob(PackagingSchedule schedule, Line line,
-            LocalDateTime startTime, int durationMinutes) {
+                                        LocalDateTime startTime, int durationMinutes) {
 
         AddMaintenanceRequest request = new AddMaintenanceRequest(
                 line.getId(),
@@ -173,12 +154,8 @@ public class MaintenanceService {
         int alignType = 8;
         int maintenanceType = request.maintenanceTypeId();
 
-<<<<<<<< HEAD:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceService.java
         if (isMoreSixHours(request.durationMinutes()) && maintenanceType != alignType
                 && maintenanceType != packagingType) {
-========
-        if(isMoreSixHours(request.durationMinutes()) && maintenanceType!=alignType && maintenanceType!=packagingType) {
->>>>>>>> develop_rc:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceJob.java
             Map<String, Integer> cleanings = CleaningDurationUtils.getLinesCleaning();
             if (cleanings != null) {
                 Integer extraMinutes = cleanings.get(request.lineId());
@@ -208,7 +185,7 @@ public class MaintenanceService {
     }
 
     private Job buildMaintenanceJob(PackagingSchedule schedule, AddMaintenanceRequest request,
-            Line line, String maintenanceTypeName) {
+                                    Line line, String maintenanceTypeName) {
 
         Job maintenanceJob = new Job("MAINTENANCE-" + UUID.randomUUID(),
                 maintenanceTypeName, request, schedule.getMaintenanceProduct());
@@ -248,7 +225,7 @@ public class MaintenanceService {
     }
 
     private void maybeAddExtraMaintenance(PackagingSchedule schedule, Line line, AddMaintenanceRequest request,
-            int extraMinutes, int insertedIndex) {
+                                          int extraMinutes, int insertedIndex) {
 
         Job extraJob = createExtraCleaning(schedule.getMaintenanceProduct(), extraMinutes);
 
@@ -281,115 +258,7 @@ public class MaintenanceService {
         return extraJob;
     }
 
-<<<<<<<< HEAD:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceService.java
     private LocalDateTime getDailyCleaningStart(Line line, long requiredMinutes) {
-========
-    public PackagingSchedule removeMaintenanceJob(PackagingSchedule schedule,
-                                                  MaintenanceRequest request) {
-
-        Line line = findLineById(schedule, request.lineId());
-        if (line == null) {
-            return schedule;
-        }
-
-        List<Job> lineJobs = line.getJobs();
-        int index = request.removeIndex();
-
-        if (index < 0 || index >= lineJobs.size()) {
-            throw new IllegalArgumentException("Invalid insertIndex: " + index);
-        }
-
-        Job jobToRemove = lineJobs.get(index);
-        if(jobToRemove.isMaintenance()) {
-            schedule.getDeletedMaintenance().add(jobToRemove);
-            jobToRemove.setFDel((short) 1);
-            schedule.getJobs().remove(jobToRemove);
-
-            lineJobs.remove(index);
-
-            fixLineJobs(line);
-            fixPinnedJobs(line);
-        }
-        return schedule;
-    }
-
-    public PackagingSchedule updateDuration(PackagingSchedule schedule, MaintenanceRequest request) {
-
-        Line line = findLineById(schedule, request.lineId());
-        if (line == null) {
-            return schedule;
-        }
-
-        List<Job> jobs = line.getJobs();
-
-        int index = request.updateIndex();
-        if (index < 0 || index >= jobs.size()) {
-            throw new IllegalArgumentException("Invalid insertIndex: " + index);
-        }
-
-        Job job = jobs.get(index);
-
-        job.setDuration(Duration.ofMinutes(request.durationMinutes()));
-
-        fixLineJobs(line);
-        fixPinnedJobs(line);
-
-        return schedule;
-    }
-
-    public PackagingSchedule updateMaintenanceType(PackagingSchedule schedule, MaintenanceRequest request) {
-
-        Line line = findLineById(schedule, request.lineId());
-        if (line == null) {
-            return schedule;
-        }
-
-        List<Job> jobs = line.getJobs();
-
-        int index = request.updateIndex();
-        if (index < 0 || index >= jobs.size()) {
-            throw new IllegalArgumentException("Invalid insertIndex: " + index);
-        }
-
-        Job job = jobs.get(index);
-        job.setMaintenanceTypeId(request.maintenanceTypeId());
-        job.setName(loadDataService.getMaintenanceTypes().get(job.getMaintenanceTypeId()));
-
-        if(request.durationMinutes()!=null){
-            job.setDuration(Duration.ofMinutes(request.durationMinutes()));
-        }
-
-        if(request.maintenanceNote()!=null)
-        {
-            job.setMaintenanceNote(request.maintenanceNote());
-        }
-
-        fixLineJobs(line);
-        fixPinnedJobs(line);
-
-        return schedule;
-    }
-
-    public void addDailyFullCleaning(PackagingSchedule schedule) {
-        for (Line line : schedule.getLines()) {
-
-            Duration requiredDuration = Duration.ofMinutes(CleaningDurationUtils.getLinesCleaning().get(line.getId()));
-            long requiredMinutes = requiredDuration.toMinutes();
-            LocalDateTime dailyCleaningStart = getDailyCleaningStart(line, requiredMinutes);
-            if(dailyCleaningStart== null || dailyCleaningStart.isAfter(line.getJobs().getLast().getEndDateTime())) continue;
-
-            int minutesInt = Math.toIntExact(requiredDuration.toMinutes());
-            createDailyCleaningJob(schedule, line, dailyCleaningStart, minutesInt);
-            line.setMaxEndTime(line.getJobs().getLast().getEndDateTime().plusHours(20));
-        }
-    }
-
-    private LocalDateTime getDailyCleaningStart(
-            Line line, long requiredMinutes
-    ) {
-
-        LocalDateTime dailyCleaningStart= null;
->>>>>>>> develop_rc:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceJob.java
 
         LocalDateTime dailyCleaningStart = null;
         List<Job> lineJobs = line.getJobs();
@@ -418,27 +287,7 @@ public class MaintenanceService {
         return dailyCleaningStart;
     }
 
-<<<<<<<< HEAD:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceService.java
     private int findInsertIndexByTime(List<Job> jobs, LocalDateTime insertTime) {
-========
-    private void createDailyCleaningJob(
-            PackagingSchedule schedule,
-            Line line,
-            LocalDateTime startTime,
-            int durationMinutes
-    ) {
-        MaintenanceRequest request = new MaintenanceRequest(
-                line.getId(), null, 2, durationMinutes,
-                null, null, null, null, startTime);
-
-        addMaintenanceJob(schedule, request);
-    }
-
-    private int findInsertIndexByTime(
-            List<Job> jobs,
-            LocalDateTime insertTime
-    ) {
->>>>>>>> develop_rc:src/main/java/org/acme/foodpackaging/service/scheduleoperations/MaintenanceJob.java
         for (int i = 0; i < jobs.size(); i++) {
             Job j = jobs.get(i);
 

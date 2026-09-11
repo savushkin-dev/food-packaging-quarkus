@@ -14,7 +14,7 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.acme.foodpackaging.scheduleoperations.MaintenanceService.createMaintenanceProduct;
+import static org.acme.foodpackaging.service.scheduleoperations.MaintenanceService.createMaintenanceProduct;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SortByNpServiceTest {
