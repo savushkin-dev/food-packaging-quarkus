@@ -58,7 +58,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
                                             .orElse(line.getMaxEndTime());
 
                             return Duration
-                                    .between(line.getMaxEndTime(), lineEnd)
+                                    .between(line.getMaxEndTime().atZone(ZONE_ID), lineEnd.atZone(ZONE_ID))
                                     .toMinutes();
                         }
                 )
@@ -69,7 +69,7 @@ public class FoodPackagingConstraintProvider implements ConstraintProvider {
         return factory.forEach(Job.class)
                 .filter(job -> job.getEndDateTime() != null && job.getMaxEndTime().isBefore(job.getEndDateTime()))
                 .penalizeLong(HardMediumSoftLongScore.ONE_HARD,
-                        job -> Duration.between(job.getMaxEndTime(), job.getEndDateTime()).toMinutes())
+                        job -> Duration.between(job.getMaxEndTime().atZone(ZONE_ID), job.getEndDateTime().atZone(ZONE_ID)).toMinutes())
                 .asConstraint("Max end date time");
     }
 

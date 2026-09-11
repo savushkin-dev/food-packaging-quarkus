@@ -11,10 +11,11 @@ import ai.timefold.solver.core.api.domain.solution.ProblemFactProperty;
 import ai.timefold.solver.core.api.domain.valuerange.ValueRangeProvider;
 import ai.timefold.solver.core.api.score.buildin.hardmediumsoftlong.HardMediumSoftLongScore;
 import ai.timefold.solver.core.api.solver.SolverStatus;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
-import static org.acme.foodpackaging.scheduleoperations.MaintenanceService.createMaintenanceProduct;
+import static org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 
 @Setter
 @Getter
@@ -37,6 +38,8 @@ public class PackagingSchedule {
     private Product maintenanceProduct;
     private Map<Long, Job> allJobsById;
      private Map<String, ParallelOperation> parallelOperations;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private List<Job> deletedMaintenance;
     private Set<String> overloadedIds;
     private LocalDate dti;
@@ -82,16 +85,11 @@ public class PackagingSchedule {
     // Getters and setters
     // ************************************************************************
 
-    @Override
-    public String toString() {
-        return "PackagingSchedule{" +
-                "workCalendar=" + workCalendar +
-                ", products=" + products +
-                ", lines=" + lines +
-                ", jobs=" + jobs +
-                ", score=" + score +
-                ", solverStatus=" + solverStatus +
-                '}';
+    public List<Job> getDeletedMaintenance() {
+        return new ArrayList<>(deletedMaintenance);
+    }
 
+    public void setDeletedMaintenance(List<Job> deletedMaintenance) {
+        this.deletedMaintenance = deletedMaintenance == null ? new ArrayList<>() : new ArrayList<>(deletedMaintenance);
     }
 }

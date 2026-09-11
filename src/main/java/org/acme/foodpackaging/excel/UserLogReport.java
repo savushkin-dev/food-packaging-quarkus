@@ -1,0 +1,226 @@
+package org.acme.foodpackaging.excel;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.enterprise.inject.spi.CDI;
+import org.acme.foodpackaging.entity.RequestLog;
+import org.acme.foodpackaging.exception.excel.ReportGenerationException;
+import org.acme.foodpackaging.repository.RequestLogRepository;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+public class UserLogReport {
+
+    private static final String SHEET_NAME = "User Logs";
+    private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    private static final int MAX_AUTO_SIZE_COLUMN = 4;
+
+    private static final String[] HEADERS = {
+            "DT",
+            "IP",
+            "METHOD",
+            "QUERY"
+    };
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public byte[] createExcelReport(LocalDate from, LocalDate to) {
+
+        RequestLogRepository repository =
+                CDI.current().select(RequestLogRepository.class).get();
+
+        List<RequestLog> logs = repository.find(
+                "(method = ?1 or method = ?2) and dateTime >= ?3 and dateTime <= ?4 order by dateTime",
+                "stopSolving",
+                "save",
+                from.atStartOfDay(),
+                to.plusDays(1).atStartOfDay()
+        ).list();
+
+        try (
+                SXSSFWorkbook workbook = new SXSSFWorkbook(200);
+                ByteArrayOutputStream out = new ByteArrayOutputStream()
+        ) {
+
+            SXSSFSheet sheet = workbook.createSheet(SHEET_NAME);
+            sheet.trackAllColumnsForAutoSizing();
+
+            CellStyle headerStyle = createHeaderStyle(workbook);
+
+            int rowIndex = 0;
+
+            Row header = sheet.createRow(rowIndex++);
+            createHeader(header, headerStyle);
+
+            DateTimeFormatter formatter =
+                    DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
+
+            for (RequestLog log : logs) {
+
+                if (!isValidLog(log)) {
+                    continue;
+                }
+
+                Row row = sheet.createRow(rowIndex++);
+
+                writeRow(
+                        row,
+                        format(log.getDateTime(), formatter),
+                        trim(log.getIp()),
+                        trim(log.getMethod()),
+                        parseQuery(log.getQuery())
+                );
+            }
+
+            autoSizeColumns(sheet);
+
+            workbook.write(out);
+
+            return out.toByteArray();
+
+        } catch (IOException e) {
+            throw new ReportGenerationException(
+                    "Error while generating UserLog report",
+                    e
+            );
+        }
+    }
+
+    // ---------------- validation ----------------
+
+    private boolean isValidLog(RequestLog log) {
+
+        String method = trim(log.getMethod());
+
+        if (!("save".equalsIgnoreCase(method)
+                || "stopSolving".equalsIgnoreCase(method))) {
+            return false;
+        }
+
+        String query = log.getQuery();
+
+        if (query == null || query.isBlank()) {
+            return false;
+        }
+
+        query = query.trim();
+
+        if (query.equals("{}")) {
+            return false;
+        }
+
+        return hasPlanningDate(query);
+    }
+
+    private boolean hasPlanningDate(String query) {
+
+        try {
+            JsonNode root = objectMapper.readTree(query);
+            JsonNode planningDate = root.get("planningDate");
+
+            if (planningDate == null || planningDate.isNull()) {
+                return false;
+            }
+
+            return !planningDate.asText().trim().isEmpty();
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ---------------- excel helpers ----------------
+
+    private CellStyle createHeaderStyle(Workbook workbook) {
+
+        CellStyle style = workbook.createCellStyle();
+
+
+        style.setFillForegroundColor(IndexedColors.SKY_BLUE.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+
+        style.setFont(font);
+        style.setWrapText(true);
+
+        return style;
+    }
+
+    private void createHeader(Row row, CellStyle style) {
+
+        for (int i = 0; i < HEADERS.length; i++) {
+
+            Cell cell = row.createCell(i);
+            cell.setCellValue(HEADERS[i]);
+            cell.setCellStyle(style);
+        }
+    }
+
+    private void writeRow(Row row, Object... values) {
+
+        for (int i = 0; i < values.length; i++) {
+
+            Cell cell = row.createCell(i);
+            Object value = values[i];
+
+            if (value instanceof Number n) {
+                cell.setCellValue(n.doubleValue());
+            } else if (value != null) {
+                cell.setCellValue(value.toString());
+            }
+        }
+    }
+
+    private String parseQuery(String query) {
+
+        if (query == null || query.isBlank()) {
+            return "";
+        }
+
+        try {
+            Object json = objectMapper.readValue(query.trim(), Object.class);
+
+            return objectMapper
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(json);
+
+        } catch (Exception e) {
+            return query.trim();
+        }
+    }
+
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String format(LocalDateTime time, DateTimeFormatter formatter) {
+        return time == null ? "" : time.format(formatter);
+    }
+
+    private void autoSizeColumns(Sheet sheet) {
+
+        int maxWidth = 255 * 256;
+
+        for (int i = 0; i < MAX_AUTO_SIZE_COLUMN; i++) {
+
+            if (i == 3) {
+                sheet.setColumnWidth(i, 100 * 256);
+                continue;
+            }
+
+            sheet.autoSizeColumn(i);
+            int width = sheet.getColumnWidth(i) + 1024;
+            sheet.setColumnWidth(i, Math.min(width, maxWidth));
+        }
+    }
+}
