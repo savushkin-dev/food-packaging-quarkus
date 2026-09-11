@@ -707,4 +707,131 @@ class MaterialServiceTest {
 
         return new ArrayList<>(List.of(product));
     }
+
+    // ==================== ТЕСТЫ getMaterialsSettings() ====================
+
+    @Test
+    void testGetMaterialsSettings_Success() {
+        List<MaterialSettingDto> settings = createTestMaterialSettings();
+        PlrSprog sprog = createTestSprog();
+
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(materialRepository.findAllMaterialsForSettings(anyDouble())).thenReturn(settings);
+
+        List<MaterialSettingDto> result = materialService.getMaterialsSettings(testDateStr);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("1002051408", result.get(0).getKmt());
+        assertEquals("Тестовый материал", result.get(0).getSnm());
+        assertEquals(10.0, result.get(0).getPers());
+        assertEquals(5.0, result.get(0).getRnd());
+        assertTrue(result.get(0).getInCalc());
+
+        verify(sprogService, times(1)).findByDate(testDate);
+        verify(materialRepository, times(1)).findAllMaterialsForSettings(39000.0);
+    }
+
+    @Test
+    void testGetMaterialsSettings_EmptyList() {
+        PlrSprog sprog = createTestSprog();
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(materialRepository.findAllMaterialsForSettings(anyDouble())).thenReturn(Collections.emptyList());
+
+        List<MaterialSettingDto> result = materialService.getMaterialsSettings(testDateStr);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetMaterialsSettings_NoSprog_ThrowsException() {
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(null);
+
+        assertThrows(NullPointerException.class, () ->
+                materialService.getMaterialsSettings(testDateStr)
+        );
+        verify(materialRepository, never()).findAllMaterialsForSettings(anyDouble());
+    }
+
+    @Test
+    void testGetMaterialsSettings_InvalidDate_ThrowsException() {
+        assertThrows(Exception.class, () ->
+                materialService.getMaterialsSettings("invalid-date")
+        );
+    }
+
+    // ==================== ТЕСТЫ saveMaterialsSettings() ====================
+
+    @Test
+    void testSaveMaterialsSettings_Success() {
+        List<MaterialSettingDto> settings = createTestMaterialSettings();
+
+        doNothing().when(mtService).updateSettings(any(MaterialSettingDto.class));
+        doNothing().when(rnppService).invalidateAll();
+
+        materialService.saveMaterialsSettings(settings);
+
+        verify(mtService, times(2)).updateSettings(any(MaterialSettingDto.class));
+        verify(rnppService, times(1)).invalidateAll();
+    }
+
+    @Test
+    void testSaveMaterialsSettings_EmptyList_StillInvalidatesRnpp() {
+        List<MaterialSettingDto> settings = Collections.emptyList();
+        doNothing().when(rnppService).invalidateAll();
+
+        materialService.saveMaterialsSettings(settings);
+
+        verify(mtService, never()).updateSettings(any(MaterialSettingDto.class));
+        verify(rnppService, times(1)).invalidateAll();
+    }
+
+    @Test
+    void testSaveMaterialsSettings_UpdatesEachSetting() {
+        List<MaterialSettingDto> settings = createTestMaterialSettings();
+        doNothing().when(mtService).updateSettings(any(MaterialSettingDto.class));
+        doNothing().when(rnppService).invalidateAll();
+
+        materialService.saveMaterialsSettings(settings);
+
+        verify(mtService).updateSettings(argThat(dto -> "1002051408".equals(dto.getKmt())));
+        verify(mtService).updateSettings(argThat(dto -> "1002110286".equals(dto.getKmt())));
+    }
+
+    @Test
+    void testSaveMaterialsSettings_PropagatesException() {
+        List<MaterialSettingDto> settings = createTestMaterialSettings();
+        doThrow(new RuntimeException("Material not found: 1002051408"))
+                .when(mtService).updateSettings(any(MaterialSettingDto.class));
+
+        assertThrows(RuntimeException.class, () ->
+                materialService.saveMaterialsSettings(settings)
+        );
+        verify(rnppService, never()).invalidateAll();
+    }
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЙ МЕТОД ====================
+
+    private List<MaterialSettingDto> createTestMaterialSettings() {
+        MaterialSettingDto dto1 = MaterialSettingDto.builder()
+                .kmt("1002051408")
+                .snm("Тестовый материал")
+                .edu("кг")
+                .pers(10.0)
+                .rnd(5.0)
+                .inCalc(true)
+                .build();
+
+        MaterialSettingDto dto2 = MaterialSettingDto.builder()
+                .kmt("1002110286")
+                .snm("Этикетка")
+                .edu("тшт")
+                .pers(15.0)
+                .rnd(1.0)
+                .inCalc(false)
+                .build();
+
+        return List.of(dto1, dto2);
+    }
 }
