@@ -14,9 +14,9 @@ import java.util.Map;
 
 import org.acme.foodpackaging.service.lines.LineService;
 
-import static org.acme.foodpackaging.utils.ScheduleUtils.START_CAMERA_EVENT_TYPE;
-import static org.acme.foodpackaging.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
-import static org.acme.foodpackaging.utils.ScheduleUtils.START_FACT_EVENT_TYPE;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.START_CAMERA;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.END_CAMERA;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.START_FACT;
 
 /**
  * Business logic service for job management.
@@ -57,27 +57,25 @@ public class JobService {
 
     private void initFactProductionData(PackagingSchedule solution, Map<FactKey, FactProductionRow> factMap) {
         for (Job job : solution.getJobs()) {
-            if (job.getProduct() == null) {
+            if (job.getProduct() == null || job.getIdBatch() == null) {
                 continue;
             }
 
-            String kmc = job.getProduct().getId();
-            Integer np = job.getNp();
+            String idBatch = job.getIdBatch();
 
-            FactProductionRow startFact = factMap.get(new FactKey(kmc, np, START_FACT_EVENT_TYPE));
+            FactProductionRow startFact = factMap.get(new FactKey(idBatch, START_FACT));
             if (startFact != null) {
-                job.setIdBatch(startFact.idBatch());
                 job.setLineIdFact(startFact.lineIdFact());
                 job.setDtv(startFact.dtv());
                 job.setStartProductionDateTimeFact(startFact.eventTime());
             }
 
-            FactProductionRow startCamera = factMap.get(new FactKey(kmc, np, START_CAMERA_EVENT_TYPE));
+            FactProductionRow startCamera = factMap.get(new FactKey(idBatch, START_CAMERA));
             if (startCamera != null) {
                 job.setCameraStart(startCamera.eventTime());
             }
 
-            FactProductionRow endCamera = factMap.get(new FactKey(kmc, np, END_CAMERA_EVENT_TYPE));
+            FactProductionRow endCamera = factMap.get(new FactKey(idBatch, END_CAMERA));
             if (endCamera != null) {
                 job.setCameraEnd(endCamera.eventTime());
             }
