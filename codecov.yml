@@ -1,5 +1,19 @@
 # В паре с jacoco-maven-plugin <excludes> (pom.xml) и sonar.coverage.exclusions (pom.xml).
 # При изменении одного списка не забыть обновить остальные два.
+#
+# target равный minimum в jacoco-maven-plugin (pom.xml, plugin check), чтобы порог
+# в GitHub PR-чеке от Codecov совпадал с тем, что реально проверяет "mvn verify" локально/в CI.
+coverage:
+  status:
+    project:
+      default:
+        target: 89%
+        threshold: 0%
+    patch:
+      default:
+        target: 89%
+        threshold: 0%
+
 ignore:
   - "src/main/java/org/acme/foodpackaging/repository/**"
   - "src/main/java/org/acme/foodpackaging/entity/**"
