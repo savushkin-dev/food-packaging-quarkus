@@ -82,6 +82,11 @@ public class JobTestBuilder {
         return this;
     }
 
+    public JobTestBuilder withStartProductionDateTimeFact(LocalDateTime startProductionDateTimeFact) {
+        job.setStartProductionDateTimeFact(startProductionDateTimeFact);
+        return this;
+    }
+
     public JobTestBuilder withStartCleaningDateTime(LocalDateTime startCleaningDateTime) {
         job.setStartCleaningDateTime(startCleaningDateTime);
         return this;

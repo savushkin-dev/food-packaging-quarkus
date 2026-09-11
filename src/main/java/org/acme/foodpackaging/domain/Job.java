@@ -125,6 +125,7 @@ public class Job {
         this.lineId = row.lineId();
         this.name = jobName;
         this.snpz = row.snpz();
+        this.dti = row.dti();
         this.np = row.np() != null ? row.np() : 0;
         this.quantity = row.quantity() != null ? row.quantity() : 0;
         this.priority = normalizePriority(row.priority() != null ? row.priority() : 0);

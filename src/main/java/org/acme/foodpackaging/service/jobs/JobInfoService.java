@@ -31,7 +31,7 @@ public class JobInfoService {
             return solution;
         }
 
-        String idBatch = generateIdBatch(solution, snpz);
+        String idBatch = resolveIdBatch(job);
 
         int emk = job.getEmk();
         double mass = job.getProduct().getMass();
@@ -60,7 +60,7 @@ public class JobInfoService {
             return solution;
         }
 
-        String idBatch = generateIdBatch(solution, snpz);
+        String idBatch = resolveIdBatch(job);
 
         CameraFactRow cameraFact = pmLogRepository.getCameraFactRow(idBatch);
 
@@ -75,16 +75,38 @@ public class JobInfoService {
         return solution;
     }
 
+    /**
+     * Возвращает idBatch задачи, если он уже проставлен (обычно так и есть —
+     * см. JobFactory, где idBatch генерируется сразу при создании задачи, и
+     * JobEnrichmentService#assignIdBatches для остальных случаев).
+     * Пересчёт по текущим полям задачи здесь — только страховка для задач,
+     * которые почему-то остались без idBatch, а не основной путь: батч не
+     * должен "переезжать" при каждом обращении, если данные задачи (dti, np)
+     * поменялись после того, как idBatch уже был зафиксирован.
+     */
+    private String resolveIdBatch(Job job) {
+        if (job.getIdBatch() == null) {
+            job.setIdBatch(generateIdBatch(job));
+        }
+        return job.getIdBatch();
+    }
+
     public String generateIdBatch(PackagingSchedule solution, long snpz){
         Job job = solution.getAllJobsById().get(snpz);
         if (job == null) {
             throw new IllegalArgumentException("Job not found: " + snpz);
         }
+        return generateIdBatch(job);
+    }
+
+    /**
+     * Генерирует idBatch по данным самой задачи, без обращения к schedule.
+     * Используется при создании задачи (в BD_VZPMC значение партии не хранится).
+     */
+    public String generateIdBatch(Job job) {
         String ean13 = job.getProduct().getEan13().substring(0, 12) + "0";
         String formattedNp = String.format("%09d", job.getNp());
-
-        String dateToIdBatch = solution.getAllJobsById().get(snpz).getDti()
-                .format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String dateToIdBatch = job.getDti().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         return ean13 + dateToIdBatch + formattedNp;
     }
