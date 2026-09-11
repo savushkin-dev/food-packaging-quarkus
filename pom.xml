@@ -37,6 +37,10 @@
         <version.io.quarkus>3.15.1</version.io.quarkus>
         <version.ai.timefold.solver>1.15.0</version.ai.timefold.solver>
 
+        <!-- Selenium Versions -->
+        <version.selenium>4.27.0</version.selenium>
+        <version.webdrivermanager>5.9.2</version.webdrivermanager>
+
         <!-- Database Driver Versions -->
         <version.mssql.jdbc>12.8.1.jre11</version.mssql.jdbc>
 
@@ -210,6 +214,18 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>${version.selenium}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>${version.webdrivermanager}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
@@ -261,12 +277,10 @@
                         <exclude>**/utils/**</exclude>
                         <exclude>**/solver/**</exclude>
                         <exclude>**/service/solution/value/**</exclude>
-                        <exclude>**/service/solution/value/**</exclude>
                         <exclude>**/service/load/**</exclude>
                         <exclude>**/service/upload/**</exclude>
                         <exclude>**/excel/**</exclude>
                         <exclude>**/service/solution/SolutionImporter.class</exclude>
-
                     </excludes>
                 </configuration>
                 <executions>
@@ -289,7 +303,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
-                            <!-- Fail the build if overall coverage drops below 87% -->
+                            <!-- Fail the build if overall coverage drops below 89% -->
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
@@ -338,6 +352,7 @@
                 <configuration>
                     <!-- Include @Tag("database") tests so JobRepository, ProductRepository, etc. get coverage in SonarQube.
                          To exclude them (e.g. faster local runs): -DexcludedGroups=database -->
+                    <excludedGroups>selenium</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>
@@ -418,6 +433,21 @@
                     </dependency>
                 </dependencies>
             </dependencyManagement>
+        </profile>
+        <profile>
+            <id>selenium</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <groups>selenium</groups>
+                            <excludedGroups combine.self="override"/>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
