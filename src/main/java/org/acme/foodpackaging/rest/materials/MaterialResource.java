@@ -21,13 +21,11 @@ public class MaterialResource {
 
     private final MaterialService materialService;
     private final PpService ppService;
-    private final MtService mtService;
 
     @Inject
-    public MaterialResource(MaterialService materialService, PpService ppService, MtService mtService) {
+    public MaterialResource(MaterialService materialService, PpService ppService) {
         this.materialService = materialService;
         this.ppService = ppService;
-        this.mtService = mtService;
     }
 
     @GET

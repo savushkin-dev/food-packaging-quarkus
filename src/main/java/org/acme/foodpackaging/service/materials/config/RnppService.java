@@ -26,7 +26,7 @@ public class RnppService {
 
     @CacheInvalidateAll(cacheName = "rnpp-cache")
     public void invalidateAll() {
-
+        // Сбрасывает весь кэш
     }
 
     public void deleteAll(){

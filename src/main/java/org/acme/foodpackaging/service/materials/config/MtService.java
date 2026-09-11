@@ -31,7 +31,7 @@ public class MtService {
 
     @CacheInvalidateAll(cacheName = "material-cache")
     public void invalidateAll() {
-
+        // Сбрасывает весь кэш
     }
 
     /**
@@ -39,7 +39,7 @@ public class MtService {
      */
     @CacheInvalidate(cacheName = "material-cache")
     public void invalidate(@CacheKey String kmt) {
-
+        // Сбрасывает кэш по ключу
     }
 
     /**
