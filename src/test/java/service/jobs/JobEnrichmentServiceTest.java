@@ -64,21 +64,51 @@ class JobEnrichmentServiceTest {
     }
 
     @Test
-    void enrichCameraFacts_doesNothing_whenIdBatchIsNull() {
-        Job jobWithoutBatch = JobTestBuilder.aJob().withId("1").withIdBatch(null).build();
+    void enrichCameraFacts_doesNothing_whenStartProductionDateTimeFactIsNull() {
+        // Задача ещё не запущена в производство по факту (нет отметки камеры
+        // о старте), поэтому она не должна попадать в выборку на дозагрузку,
+        // даже если данные по камере у неё отсутствуют.
+        Job notStartedJob = JobTestBuilder.aJob().withId("1")
+                .withIdBatch("B1")
+                .build();
 
-        schedule.setJobs(List.of(jobWithoutBatch));
+        schedule.setJobs(List.of(notStartedJob));
 
         jobEnrichmentService.enrichCameraFactsFromPmLog(schedule);
 
         verifyNoInteractions(jobRepository, uploadDataService);
+        assertNull(notStartedJob.getCameraStart());
+        assertNull(notStartedJob.getCameraEnd());
+    }
+
+    @Test
+    void enrichCameraFacts_doesNothing_whenIdBatchIsNull() throws CameraDataReadException {
+        // Отсутствие idBatch больше не проверяется отдельным фильтром отбора:
+        // задача всё равно считается "без данных по камере" и попадает в
+        // выборку (и в запрос к БД сам игнорирует null
+        // idBatch), но сопоставление с результатом по idBatch пропускается.
+        Job jobWithoutBatch = JobTestBuilder.aJob().withId("1").withIdBatch(null)
+                .withStartProductionDateTimeFact(LocalDateTime.of(2025, Month.JANUARY, 1, 6, 0))
+                .build();
+
+        schedule.setJobs(List.of(jobWithoutBatch));
+
+        when(jobRepository.getCameraFactRowMap(List.of(jobWithoutBatch))).thenReturn(Map.of());
+
+        jobEnrichmentService.enrichCameraFactsFromPmLog(schedule);
+
+        verifyNoInteractions(uploadDataService);
+        assertNull(jobWithoutBatch.getCameraStart());
+        assertNull(jobWithoutBatch.getCameraEnd());
     }
 
     @Test
     void enrichCameraFacts_fillsStartAndEnd_andLogsBoth() throws CameraDataReadException {
         Job job = JobTestBuilder.aJob().withId("1")
                 .withProduct(new Product("1", "Chocolate"))
-                .withIdBatch("B1").build();
+                .withIdBatch("B1")
+                .withStartProductionDateTimeFact(LocalDateTime.of(2025, Month.JANUARY, 1, 6, 0))
+                .build();
         schedule.setJobs(List.of(job));
 
         LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 1, 8, 0);
@@ -105,6 +135,7 @@ class JobEnrichmentServiceTest {
         Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1")
                 .withCameraStart(existingStart)
                 .withProduct(new Product("1", "Vanilla"))
+                .withStartProductionDateTimeFact(LocalDateTime.of(2025, Month.JANUARY, 1, 6, 0))
                 .build();
         schedule.setJobs(List.of(job));
 
@@ -126,7 +157,9 @@ class JobEnrichmentServiceTest {
 
     @Test
     void enrichCameraFacts_skipsJob_whenCameraFactRowNotFound() throws CameraDataReadException {
-        Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1").build();
+        Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1")
+                .withStartProductionDateTimeFact(LocalDateTime.of(2025, Month.JANUARY, 1, 6, 0))
+                .build();
         schedule.setJobs(List.of(job));
 
         when(jobRepository.getCameraFactRowMap(List.of(job))).thenReturn(Map.of());
@@ -140,7 +173,9 @@ class JobEnrichmentServiceTest {
 
     @Test
     void enrichCameraFacts_doesNotCallUpload_whenNoRowsCollected() throws CameraDataReadException {
-        Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1").build();
+        Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1")
+                .withStartProductionDateTimeFact(LocalDateTime.of(2025, Month.JANUARY, 1, 6, 0))
+                .build();
         schedule.setJobs(List.of(job));
 
         when(jobRepository.getCameraFactRowMap(List.of(job))).thenReturn(Map.of());
@@ -152,7 +187,9 @@ class JobEnrichmentServiceTest {
 
     @Test
     void enrichCameraFacts_wrapsCheckedException_asRuntimeException() throws CameraDataReadException {
-        Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1").build();
+        Job job = JobTestBuilder.aJob().withId("1").withIdBatch("B1")
+                .withStartProductionDateTimeFact(LocalDateTime.of(2025, Month.JANUARY, 1, 6, 0))
+                .build();
         schedule.setJobs(List.of(job));
 
         when(jobRepository.getCameraFactRowMap(List.of(job)))

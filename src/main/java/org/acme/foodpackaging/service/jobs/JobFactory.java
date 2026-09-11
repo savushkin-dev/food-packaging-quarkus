@@ -21,6 +21,7 @@ public class JobFactory {
     private static final String DEFAULT_MAINTENANCE_NAME = "Обслуживание";
 
     private final LoadDataService loadDataService;
+    private final JobInfoService jobInfoService;
 
     public Job createProductionJob(JobRow row, Map<Long, Job> allJobsById) {
         if (row == null) {
@@ -33,6 +34,8 @@ public class JobFactory {
 
         LocalDateTime startTime = row.lineId() != null ? row.startProductionDateTime() : null;
         Job job = new Job(row, product, startTime, ScheduleUtils::nameCleaner);
+        // BD_VZPMC не хранит значение партии — генерируем idBatch сразу при создании задачи
+        job.setIdBatch(jobInfoService.generateIdBatch(job));
 
         allJobsById.put(row.snpz(), job);
         return job;

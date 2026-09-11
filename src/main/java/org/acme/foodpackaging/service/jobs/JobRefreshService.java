@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.acme.foodpackaging.utils.ScheduleUtils.END_CAMERA_EVENT_TYPE;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.END_CAMERA;
 import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
 
 @ApplicationScoped
@@ -118,7 +118,7 @@ public class JobRefreshService {
                     && differsMoreThan(job.getCameraEnd(), camera.cameraEnd())) {
                 job.setCameraEnd(camera.cameraEnd());
                 msLogRows.add(new MsLogInsertRow(
-                        job, END_CAMERA_EVENT_TYPE, camera.cameraEnd()));
+                        job, END_CAMERA.code(), camera.cameraEnd()));
             }
         }
 

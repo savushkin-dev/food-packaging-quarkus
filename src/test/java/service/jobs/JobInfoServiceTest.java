@@ -111,6 +111,15 @@ class JobInfoServiceTest {
     }
 
     @Test
+    void generateIdBatch_byJob_matchesScheduleBasedGeneration() {
+        String expected = jobInfoService.generateIdBatch(schedule, SNPZ);
+
+        String result = jobInfoService.generateIdBatch(job);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
     void findCameraFact_withNullTimestamps_shouldSetNull() {
         String idBatch = jobInfoService.generateIdBatch(schedule, SNPZ);
         when(pmLogRepository.getCameraFactRow(idBatch)).thenReturn(new CameraFactRow(null, null));
