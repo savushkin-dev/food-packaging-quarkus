@@ -196,6 +196,31 @@ class DbfImportServiceTest {
         verify(rnppService).deleteAll();
     }
 
+    @Test
+    void testImportRnpp_BatchSizeTriggersMultipleFlushes() {
+        List<Map<String, Object>> records = new ArrayList<>();
+        for (int i = 0; i < 25; i++) {
+            Map<String, Object> recordMap = new HashMap<>();
+            recordMap.put("SYSN", 39000 + i);
+            recordMap.put("KMC", "KMC" + i);
+            recordMap.put("KT", "KT" + i);
+            recordMap.put("EMK", 18.0);
+            recordMap.put("KKOM", "MT" + i);
+            recordMap.put("KOL1T", 10.0);
+            recordMap.put("KOLVK", 5.0);
+            records.add(recordMap);
+        }
+
+        simulateRead(rnppFile, records);
+
+        dbfImportService.importRnpp();
+
+        verify(rnppService).deleteAll();
+        verify(entityManager, times(25)).persist(any(PlrRnpp.class));
+        verify(entityManager, times(2)).flush();  // 20 + 5 → 2 flush
+        verify(entityManager, times(2)).clear();
+    }
+
     // ==================== ТЕСТЫ importMt() ====================
 
     @Test
