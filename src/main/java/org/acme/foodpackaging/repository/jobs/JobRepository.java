@@ -7,8 +7,8 @@ import org.acme.foodpackaging.dto.row.maintenance.CleaningRow;
 import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
+import org.acme.foodpackaging.repository.PmLogRepository;
 import org.acme.foodpackaging.service.load.DelayEventType;
-import org.acme.foodpackaging.service.load.CameraDataLoader;
 import org.acme.foodpackaging.service.load.JobDBLoader;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.domain.value.FactKey;
@@ -17,8 +17,10 @@ import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Data access repository for jobs.
@@ -28,13 +30,13 @@ import java.util.Map;
 public class JobRepository {
 
     @Inject
-    public JobRepository(JobDBLoader jobDBLoader, CameraDataLoader cameraDataLoader) {
+    public JobRepository(JobDBLoader jobDBLoader, PmLogRepository pmLogRepository) {
         this.jobDBLoader = jobDBLoader;
-        this.cameraDataLoader = cameraDataLoader;
+        this.pmLogRepository = pmLogRepository;
     }
 
     private final JobDBLoader jobDBLoader;
-    private final CameraDataLoader cameraDataLoader;
+    private final PmLogRepository pmLogRepository;
 
     @ConfigProperty(name = "ksk")
     String ksk;
@@ -121,6 +123,21 @@ public class JobRepository {
         if (jobs.isEmpty()) {
             return Map.of();
         }
-        return cameraDataLoader.loadCameraRowMap(jobs);
+
+        Map<String, CameraFactRow> result = HashMap.newHashMap(jobs.size());
+
+        for (String idBatch : jobs.stream()
+                .map(Job::getIdBatch)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList()) {
+
+            CameraFactRow row = pmLogRepository.getCameraFactRow(idBatch);
+            if (row != null) {
+                result.put(idBatch, row);
+            }
+        }
+
+        return result;
     }
 }

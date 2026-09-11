@@ -31,7 +31,7 @@ public class JobInfoService {
             return solution;
         }
 
-        String idBatch = generateIdBatch(solution, snpz);
+        String idBatch = resolveIdBatch(job);
 
         int emk = job.getEmk();
         double mass = job.getProduct().getMass();
@@ -60,7 +60,7 @@ public class JobInfoService {
             return solution;
         }
 
-        String idBatch = generateIdBatch(solution, snpz);
+        String idBatch = resolveIdBatch(job);
 
         CameraFactRow cameraFact = pmLogRepository.getCameraFactRow(idBatch);
 
@@ -73,6 +73,22 @@ public class JobInfoService {
         solution.getAllJobsById().get(snpz).setCameraEnd(end);
 
         return solution;
+    }
+
+    /**
+     * Возвращает idBatch задачи, если он уже проставлен (обычно так и есть —
+     * см. JobFactory, где idBatch генерируется сразу при создании задачи, и
+     * JobEnrichmentService#assignIdBatches для остальных случаев).
+     * Пересчёт по текущим полям задачи здесь — только страховка для задач,
+     * которые почему-то остались без idBatch, а не основной путь: батч не
+     * должен "переезжать" при каждом обращении, если данные задачи (dti, np)
+     * поменялись после того, как idBatch уже был зафиксирован.
+     */
+    private String resolveIdBatch(Job job) {
+        if (job.getIdBatch() == null) {
+            job.setIdBatch(generateIdBatch(job));
+        }
+        return job.getIdBatch();
     }
 
     public String generateIdBatch(PackagingSchedule solution, long snpz){
