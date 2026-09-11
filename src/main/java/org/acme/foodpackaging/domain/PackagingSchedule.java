@@ -15,7 +15,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
-import static org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
+import static org.acme.foodpackaging.service.scheduleoperations.MaintenanceService.createMaintenanceProduct;
 
 @Setter
 @Getter
@@ -39,7 +39,12 @@ public class PackagingSchedule {
     private Map<Long, Job> allJobsById;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
+     private Map<String, ParallelOperation> parallelOperations;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private List<Job> deletedMaintenance;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private Set<String> overloadedIds;
     private LocalDate dti;
     private String version;
@@ -53,14 +58,16 @@ public class PackagingSchedule {
     // No-arg constructor required for Timefold
     public PackagingSchedule() {
         maintenanceProduct = createMaintenanceProduct();
-        this.deletedMaintenance = new ArrayList<>();
         this.overloadedIds = new HashSet<>();
+        this.deletedMaintenance = new ArrayList<>();
+        this.parallelOperations = new HashMap<>();
     }
 
     public PackagingSchedule(List<Line> lines, LocalDate startDate) {
         maintenanceProduct = createMaintenanceProduct();
-        this.deletedMaintenance = new ArrayList<>();
         this.overloadedIds = new HashSet<>();
+        this.deletedMaintenance = new ArrayList<>();
+        this.parallelOperations = new HashMap<>();
 
         setWorkCalendar(new WorkCalendar(startDate));
         setLines(lines);
@@ -83,11 +90,27 @@ public class PackagingSchedule {
     // Getters and setters
     // ************************************************************************
 
+    public Map<String, ParallelOperation> getParallelOperations() {
+        return new HashMap<>(parallelOperations);
+    }
+
+    public void setParallelOperations(Map<String, ParallelOperation> parallelOperations) {
+        this.parallelOperations = parallelOperations == null ? new HashMap<>() : new HashMap<>(parallelOperations);
+    }
+
     public List<Job> getDeletedMaintenance() {
         return new ArrayList<>(deletedMaintenance);
     }
 
     public void setDeletedMaintenance(List<Job> deletedMaintenance) {
         this.deletedMaintenance = deletedMaintenance == null ? new ArrayList<>() : new ArrayList<>(deletedMaintenance);
+    }
+
+    public Set<String> getOverloadedIds() {
+        return new HashSet<>(overloadedIds);
+    }
+
+    public void setOverloadedIds(Set<String> overloadedIds) {
+        this.overloadedIds = overloadedIds == null ? new HashSet<>() : new HashSet<>(overloadedIds);
     }
 }
