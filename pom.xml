@@ -56,6 +56,10 @@
         <!-- Lombok Version -->
         <version.lombok>1.18.42</version.lombok>
 
+        <!-- DBF / IO Versions -->
+        <version.javadbf>1.13.1</version.javadbf>
+        <version.commons.io>2.11.0</version.commons.io>
+
         <!-- Maven Plugin Versions -->
         <version.compiler.plugin>3.13.0</version.compiler.plugin>
         <version.surefire.plugin>3.5.1</version.surefire.plugin>
@@ -215,6 +219,24 @@
             <artifactId>assertj-core</artifactId>
             <version>${version.assertj}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.albfernandez</groupId>
+            <artifactId>javadbf</artifactId>
+            <version>${version.javadbf}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${version.commons.io}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-multipart</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache</artifactId>
         </dependency>
     </dependencies>
     <build>
