@@ -32,6 +32,7 @@ public class JobEnrichmentService {
     public void enrichCameraFactsFromPmLog(PackagingSchedule solution) {
 
         List<Job> jobsWithoutCamera = solution.getJobs().stream()
+                .filter(j -> j.getStartProductionDateTimeFact() != null)
                 .filter(j -> j.getCameraStart() == null || j.getCameraEnd() == null)
                 .toList();
 
