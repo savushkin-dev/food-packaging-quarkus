@@ -392,6 +392,28 @@ class MaintenanceServiceTest {
                                 () -> maintenanceService.updateMaintenanceJob(schedule, request));
         }
 
+        @Test
+        void updateMaintenanceJob_unknownLineIsNoOp() {
+                Product product = schedule.getProducts().getFirst();
+                MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+
+                Job job = new Job(row, "MaintenanceJob 1", product);
+                job.setMaintenanceNote("Old note");
+                line.getJobs().add(job);
+                schedule.getJobs().add(job);
+
+                UpdateMaintenanceRequest request = new UpdateMaintenanceRequest(
+                                "unknown-line",
+                                0,
+                                null,
+                                "New note",
+                                null);
+
+                assertDoesNotThrow(() -> maintenanceService.updateMaintenanceJob(schedule, request));
+
+                assertEquals("Old note", schedule.getJobs().getFirst().getMaintenanceNote());
+        }
+
         // ============================================================
         // removeMaintenanceJob
         // ============================================================
@@ -435,6 +457,21 @@ class MaintenanceServiceTest {
                 schedule.getJobs().add(job);
 
                 maintenanceService.removeMaintenanceJob(schedule, "line1", 0);
+
+                assertEquals(1, schedule.getJobs().size());
+                assertEquals(1, line.getJobs().size());
+        }
+
+        @Test
+        void removeMaintenanceJob_unknownLineIsNoOp() {
+                Product product = schedule.getProducts().getFirst();
+                MaintenanceRow row = MaintenanceRowBuilder.aRow().build();
+                Job job = new Job(row, "MaintenanceJob 1", product);
+                job.setMaintenance(true);
+                line.getJobs().add(job);
+                schedule.getJobs().add(job);
+
+                assertDoesNotThrow(() -> maintenanceService.removeMaintenanceJob(schedule, "unknown-line", 0));
 
                 assertEquals(1, schedule.getJobs().size());
                 assertEquals(1, line.getJobs().size());
