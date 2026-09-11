@@ -89,8 +89,8 @@ public class MaintenanceResource {
             return noScheduleLoaded();
         }
 
-        PackagingSchedule updated = maintenanceService.updateMaintenanceJob(schedule, request);
-        persist(sessionId, updated);
+        maintenanceService.updateMaintenanceJob(schedule, request);
+        persist(sessionId, schedule);
 
         return Response.ok(Map.of(
                 ApiFields.STATUS, ApiFields.SUCCESS,

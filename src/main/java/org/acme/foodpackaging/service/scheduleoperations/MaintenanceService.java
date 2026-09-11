@@ -61,9 +61,14 @@ public class MaintenanceService {
      * Обновляет существующую Maintenance Job — тип, заметка и/или длительность,
      * в зависимости от того, что передано в запросе
      */
-    public PackagingSchedule updateMaintenanceJob(PackagingSchedule schedule, UpdateMaintenanceRequest request) {
+    public void updateMaintenanceJob(PackagingSchedule schedule, UpdateMaintenanceRequest request) {
 
         Line line = findLineById(schedule, request.lineId());
+
+        if (line == null) {
+            return;
+        }
+
         List<Job> jobs = line.getJobs();
 
         int index = request.updateIndex();
@@ -86,8 +91,6 @@ public class MaintenanceService {
 
         fixLineJobs(line);
         fixPinnedJobs(line);
-
-        return schedule;
     }
 
     /**
@@ -96,6 +99,11 @@ public class MaintenanceService {
     public void removeMaintenanceJob(PackagingSchedule schedule, String lineId, int removeIndex) {
 
         Line line = findLineById(schedule, lineId);
+
+        if (line == null) {
+            return;
+        }
+
         List<Job> lineJobs = line.getJobs();
 
         if (removeIndex < 0 || removeIndex >= lineJobs.size()) {
