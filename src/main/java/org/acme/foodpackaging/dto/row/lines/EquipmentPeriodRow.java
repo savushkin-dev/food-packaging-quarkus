@@ -1,8 +1,8 @@
-package org.acme.foodpackaging.dto.plrlc;
+package org.acme.foodpackaging.dto.row.lines;
 
 import java.time.LocalDate;
 
-public record EquipmentPeriodDto(
+public record EquipmentPeriodRow(
         String lineId,
         LocalDate begin,
         LocalDate end

@@ -4,7 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.plrlc.EquipmentPeriodDto;
+import org.acme.foodpackaging.dto.row.lines.EquipmentPeriodRow;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.PlrLcRepository;
 
@@ -29,7 +29,7 @@ public class LineActivitySyncService {
         Set<String> activeLineIds = plrLcRepository.loadEquipmentPeriods()
                 .stream()
                 .filter(period -> isActiveInPeriod(period, from, to))
-                .map(EquipmentPeriodDto::lineId)
+                .map(EquipmentPeriodRow::lineId)
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .collect(Collectors.toSet());
@@ -71,7 +71,7 @@ public class LineActivitySyncService {
     }
 
     private boolean isActiveInPeriod(
-            EquipmentPeriodDto period,
+            EquipmentPeriodRow period,
             LocalDate from,
             LocalDate to) {
 

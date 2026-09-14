@@ -36,9 +36,9 @@ public class LineService {
     public List<Line> getLines() {
         return new ArrayList<>(
                 loadDataService.getLines().entrySet().stream()
-                .sorted(lineNameComparator())
-                .map(e -> new Line(e.getKey(), e.getValue()))
-                .toList()
+                        .sorted(lineNameComparator())
+                        .map(e -> new Line(e.getKey(), e.getValue()))
+                        .toList()
         );
     }
 

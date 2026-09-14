@@ -22,7 +22,6 @@ import java.util.Map;
 
 import static org.acme.foodpackaging.utils.ScheduleUtils.*;
 import static org.acme.foodpackaging.utils.ScheduleUtils.findLineById;
-import static org.acme.foodpackaging.utils.ScheduleUtils.setLineStartDateTime;
 
 @Path("schedule/line")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -47,7 +46,7 @@ public class LineResource {
         }
         Line line = findLineById(solution, request.lineId());
         if (!line.getJobs().isEmpty()) {
-            setLineStartDateTime(line, request.startLineDateTime());
+            line.setStartDateTime(request.startLineDateTime());
 
             solutionManager.update(solution, SolutionUpdatePolicy.UPDATE_ALL);
             lineService.setMaxEndDateTimeByLastJob(solution);

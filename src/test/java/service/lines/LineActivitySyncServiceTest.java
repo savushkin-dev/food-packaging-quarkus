@@ -2,7 +2,7 @@ package service.lines;
 
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.dto.plrlc.EquipmentPeriodDto;
+import org.acme.foodpackaging.dto.row.lines.EquipmentPeriodRow;
 import org.acme.foodpackaging.entity.lines.PlrLines;
 import org.acme.foodpackaging.repository.lines.LineRepository;
 import org.acme.foodpackaging.repository.lines.PlrLcRepository;
@@ -172,8 +172,8 @@ class LineActivitySyncServiceTest {
                 return l;
         }
 
-        private EquipmentPeriodDto period(String id, LocalDate begin, LocalDate end) {
-                return new EquipmentPeriodDto(id, begin, end);
+        private EquipmentPeriodRow period(String id, LocalDate begin, LocalDate end) {
+                return new EquipmentPeriodRow(id, begin, end);
         }
 
         private PlrLines lineEntity(String id, String name) {

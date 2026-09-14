@@ -35,17 +35,4 @@ public class PlrLines {
 
     @Column(name = "F_DEL")
     private Integer fDel;
-
-    @Override
-    public String toString() {
-        return "PlrLines{" +
-                "id=" + id +
-                ", lineId='" + lineId + '\'' +
-                ", snm='" + snm + '\'' +
-                ", type='" + type + '\'' +
-                ", speed=" + speed +
-                ", handPackagingSpeed=" + handPackagingSpeed +
-                ", fDel=" + fDel +
-                '}';
-    }
 }

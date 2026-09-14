@@ -1,7 +1,7 @@
 package org.acme.foodpackaging.repository.lines;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.foodpackaging.dto.plrlc.EquipmentPeriodDto;
+import org.acme.foodpackaging.dto.row.lines.EquipmentPeriodRow;
 import org.acme.foodpackaging.entity.lines.PlrLC;
 
 import java.util.List;
@@ -20,10 +20,11 @@ public class PlrLcRepository implements PanacheRepository<PlrLC> {
                 ));
     }
 
-    public List<EquipmentPeriodDto> loadEquipmentPeriods() {
+    // Equipment operating period
+    public List<EquipmentPeriodRow> loadEquipmentPeriods() {
         return find("lineId is not null and dtBegin is not null")
                 .stream()
-                .map(e -> new EquipmentPeriodDto(
+                .map(e -> new EquipmentPeriodRow(
                         e.getLineId().trim(),
                         e.getDtBegin(),
                         e.getDtEnd()
