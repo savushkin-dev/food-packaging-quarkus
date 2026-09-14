@@ -117,6 +117,52 @@ class MoveJobsServiceTest {
     }
 
     @Test
+    void movingJobToAnotherLine_shrinksFirstUnpinnedIndexOnSourceLine() {
+        // Баг: на line1 было 5 задач, все считались pinned (firstUnpinnedIndex == 5).
+        // После переноса одной задачи на line2 на line1 остаётся 4 задачи -
+        // firstUnpinnedIndex обязан уменьшиться до 4, а не остаться равным 5
+        // (что указывало бы за пределы списка).
+        Job j1 = job("1", "J1", productA);
+        Job j2 = job("2", "J2", productA);
+        Job j3 = job("3", "J3", productA);
+        Job j4 = job("4", "J4", productA);
+        Job j5 = job("5", "J5", productA);
+
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3, j4, j5)));
+        line1.setFirstUnpinnedIndex(5);
+        line2.setJobs(new ArrayList<>());
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 4, 1, 0);
+
+        service.moveJobs(schedule, request);
+
+        assertEquals(4, line1.getJobs().size());
+        assertEquals(1, line2.getJobs().size());
+        assertEquals(4, line1.getFirstUnpinnedIndex(),
+                "firstUnpinnedIndex не должен указывать за пределы уменьшившегося списка");
+        assertTrue(line1.getFirstUnpinnedIndex() <= line1.getJobs().size());
+    }
+
+    @Test
+    void movingJobWithinSameLine_doesNotShrinkFirstUnpinnedIndex() {
+        // Контрольный тест: при перемещении внутри одной линии размер списка
+        // не меняется, значит и firstUnpinnedIndex не должен занижаться.
+        Job j1 = job("1", "J1", productA);
+        Job j2 = job("2", "J2", productA);
+        Job j3 = job("3", "J3", productA);
+
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
+        line1.setFirstUnpinnedIndex(3);
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line1", 0, 1, 2);
+
+        service.moveJobs(schedule, request);
+
+        assertEquals(3, line1.getJobs().size());
+        assertEquals(3, line1.getFirstUnpinnedIndex());
+    }
+
+    @Test
     void throwsWhenFromLineNotFound() {
         Job j1 = job("1", "J1", productA);
         line1.setJobs(new ArrayList<>(List.of(j1)));
