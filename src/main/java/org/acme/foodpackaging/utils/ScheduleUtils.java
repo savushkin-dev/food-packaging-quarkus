@@ -15,7 +15,9 @@ import java.util.regex.Pattern;
 
 public class ScheduleUtils {
 
-    private ScheduleUtils() {}
+    private ScheduleUtils() {
+    }
+
     /**
      * Восстанавливает previous/next и пересчитывает shadow variables в линии
      */
@@ -29,11 +31,18 @@ public class ScheduleUtils {
             current.updateStartCleaningDateTime();
         }
     }
+
     /**
      * Закрпеляет все что стоит до ремонтной работы, включая саму ремонтную работу
      */
     public static void fixPinnedJobs(Line line) {
         List<Job> jobs = line.getJobs();
+
+        // Список мог уменьшиться (перенос/удаление задачи) — граница не должна
+        // указывать за пределы текущего размера линии.
+        if (line.getFirstUnpinnedIndex() > jobs.size()) {
+            line.setFirstUnpinnedIndex(jobs.size());
+        }
 
         int lastPinnedIndex = -1;
 
@@ -52,22 +61,24 @@ public class ScheduleUtils {
             }
         }
 
-        if(line.getFirstUnpinnedIndex() < lastPinnedIndex + 1) {
+        if (line.getFirstUnpinnedIndex() < lastPinnedIndex + 1) {
             line.setFirstUnpinnedIndex(lastPinnedIndex + 1);
         }
     }
+
     /**
      * Назначает общий maxEndDateTime для всех задач
      */
     public static void fixEndDateTime(List<Job> jobs, LocalDateTime maxEndDateTime) {
-        for(Job job : jobs){
+        for (Job job : jobs) {
             job.setMaxEndTime(maxEndDateTime);
         }
     }
+
     /**
      * Поиск линии в schedule по id
      */
-    public static Line findLineById(PackagingSchedule schedule, String id){
+    public static Line findLineById(PackagingSchedule schedule, String id) {
         return schedule.getLines().stream()
                 .filter(l -> l.getId().equals(id))
                 .findFirst()
@@ -80,6 +91,7 @@ public class ScheduleUtils {
     public static void setLineMaxEndDateTime(Line line, LocalDateTime lineMaxEndDateTime) {
         line.setMaxEndTime(lineMaxEndDateTime);
     }
+
     /**
      * Закрепляет/Открепляет весь план
      */
@@ -95,7 +107,8 @@ public class ScheduleUtils {
                 .orElse(null);
 
         for (Line line : lines) {
-            if (line.getJobs() == null) line.setJobs(new ArrayList<>());
+            if (line.getJobs() == null)
+                line.setJobs(new ArrayList<>());
             if (maxEndTime != null) {
                 line.setStartDateTime(maxEndTime);
             }
@@ -111,8 +124,7 @@ public class ScheduleUtils {
 
     private static final Pattern NAME_CLEANER_PATTERN = Pattern.compile(
             "Сырок\\s*(тв\\.\\s*г\\.с?|тв\\.\\s*гл\\.с?|гл\\.|тв\\.\\s*глазированный|глазированный|тв\\.\\s*глазир\\.)",
-            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.CANON_EQ
-    );
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.CANON_EQ);
 
     public static String nameCleaner(String input) {
         return NAME_CLEANER_PATTERN.matcher(input).replaceFirst("").trim();
@@ -136,6 +148,7 @@ public class ScheduleUtils {
         }
         return (duration.toSeconds() + 59) / 60;
     }
+
     /**
      * Преобразует Map в List для удобства работы.
      *
@@ -152,10 +165,11 @@ public class ScheduleUtils {
     /**
      * Инициализирует списки с задачами у линий.
      */
-    public static void initLinesJobList(PackagingSchedule solution){
-        if(solution.getLines() == null) return;
+    public static void initLinesJobList(PackagingSchedule solution) {
+        if (solution.getLines() == null)
+            return;
 
-        for(Line line : solution.getLines()){
+        for (Line line : solution.getLines()) {
             List<Job> lineJobs = solution.getJobs().stream()
                     .filter(j -> j.getLine().getId().equals(line.getId()))
                     .sorted(Comparator.comparing(Job::getStartProductionDateTime)).toList();
@@ -166,7 +180,7 @@ public class ScheduleUtils {
     /**
      * Считает суммарное выремя простоя на всех линиях
      */
-    public static DowntimeDataValue getDowntimeData(PackagingSchedule solution){
+    public static DowntimeDataValue getDowntimeData(PackagingSchedule solution) {
         return calculateDownTime(solution);
     }
 
@@ -175,7 +189,7 @@ public class ScheduleUtils {
      */
     private static DowntimeDataValue calculateDownTime(PackagingSchedule solution) {
         if (isInvalidSolution(solution)) {
-            return new DowntimeDataValue("",0, Map.of());
+            return new DowntimeDataValue("", 0, Map.of());
         }
 
         Duration totalDowntime = Duration.ZERO;
@@ -183,7 +197,8 @@ public class ScheduleUtils {
         LocalDate planningDate = solution.getWorkCalendar().getPlanningDate();
 
         for (Line line : solution.getLines()) {
-            if (line == null) continue;
+            if (line == null)
+                continue;
 
             Duration lineDowntime = calculateLineDowntime(line, solution.getOverloadedIds());
             totalDowntime = totalDowntime.plus(lineDowntime);
@@ -203,14 +218,16 @@ public class ScheduleUtils {
     }
 
     private static Duration calculateLineDowntime(Line line, Set<String> targetIds) {
-        if (line.getJobs() == null) return Duration.ZERO;
+        if (line.getJobs() == null)
+            return Duration.ZERO;
 
         Duration lineDowntime = Duration.ZERO;
 
         for (Job job : line.getJobs()) {
-            if( job == null || job.getId() == null) continue;
+            if (job == null || job.getId() == null)
+                continue;
 
-            if(targetIds.contains(job.getId())){
+            if (targetIds.contains(job.getId())) {
                 Duration jobDowntime = calculateJobDowntime(job);
                 lineDowntime = lineDowntime.plus(jobDowntime);
             }
@@ -227,8 +244,7 @@ public class ScheduleUtils {
 
         Duration diff = Duration.between(
                 job.getStartCleaningDateTime().atZone(zoneId),
-                job.getStartProductionDateTime().atZone(zoneId)
-        );
+                job.getStartProductionDateTime().atZone(zoneId));
 
         return diff.isNegative() ? Duration.ZERO : diff;
     }

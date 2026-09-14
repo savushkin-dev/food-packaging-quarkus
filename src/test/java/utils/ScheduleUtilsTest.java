@@ -119,6 +119,45 @@ class ScheduleUtilsTest {
     }
 
     @Test
+    void fixPinnedJobs_clampsIndexWhenLineShrinks() {
+        // Баг: на линии было 3 задачи, все pinned (firstUnpinnedIndex == 3).
+        // Одну задачу перенесли на другую линию (или удалили) - список
+        // уменьшился до 2, граница обязана уменьшиться вместе с ним, а не
+        // "торчать" за пределами текущего списка задач.
+        line.setFirstUnpinnedIndex(3);
+        line.setJobs(new ArrayList<>(List.of(job1, job2)));
+
+        ScheduleUtils.fixPinnedJobs(line);
+
+        assertEquals(2, line.getFirstUnpinnedIndex());
+        assertTrue(line.getFirstUnpinnedIndex() <= line.getJobs().size());
+    }
+
+    @Test
+    void fixPinnedJobs_clampsThenStillPinsRemainingMaintenance() {
+        // После сжатия списка если единственная оставшаяся задача - maintenance,
+        // граница должна указывать сразу за ней (весь укоротившийся список pinned).
+        line.setFirstUnpinnedIndex(3);
+        job1.setMaintenance(true);
+        line.setJobs(new ArrayList<>(List.of(job1)));
+
+        ScheduleUtils.fixPinnedJobs(line);
+
+        assertEquals(1, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
+    void fixPinnedJobs_doesNotShrinkBelowListSizeWhenNothingRemoved() {
+        // Контрольный тест: если список не менялся, clamp не должен занижать
+        // корректно выставленный firstUnpinnedIndex.
+        line.setFirstUnpinnedIndex(3);
+
+        ScheduleUtils.fixPinnedJobs(line);
+
+        assertEquals(3, line.getFirstUnpinnedIndex());
+    }
+
+    @Test
     void fixEndDateTime() {
         LocalDateTime maxTime = LocalDateTime.now().plusHours(5);
 
