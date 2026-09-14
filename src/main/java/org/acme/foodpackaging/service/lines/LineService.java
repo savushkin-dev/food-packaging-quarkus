@@ -34,10 +34,12 @@ public class LineService {
     private static final int MASS_SCALE = 2;
 
     public List<Line> getLines() {
-        return loadDataService.getLines().entrySet().stream()
-                .sorted(lineNameComparator())
-                .map(e -> new Line(e.getKey(), e.getValue()))
-                .toList();
+        return new ArrayList<>(
+                loadDataService.getLines().entrySet().stream()
+                        .sorted(lineNameComparator())
+                        .map(e -> new Line(e.getKey(), e.getValue()))
+                        .toList()
+        );
     }
 
     private Comparator<Map.Entry<String, String>> lineNameComparator() {

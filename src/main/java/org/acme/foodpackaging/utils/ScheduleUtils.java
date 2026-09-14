@@ -86,21 +86,6 @@ public class ScheduleUtils {
     }
 
     /**
-     * Меняет время старта линии
-     */
-    public static void setLineStartDateTime(Line line, LocalDateTime lineStartDateTime) {
-        line.setStartDateTime(lineStartDateTime);
-        if (line.getJobs() != null
-                && !line.getJobs().isEmpty()
-                && line.getJobs().getLast() != null
-                && line.getJobs().getLast().getEndDateTime() != null) {
-
-            line.setMaxEndTime(
-                    line.getJobs().getLast().getEndDateTime().plusHours(24));
-        }
-    }
-
-    /**
      * Меняет максимальное время завершения работы линии
      */
     public static void setLineMaxEndDateTime(Line line, LocalDateTime lineMaxEndDateTime) {

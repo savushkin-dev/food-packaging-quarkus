@@ -8,6 +8,7 @@ import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
+import org.acme.foodpackaging.service.lines.LineActivitySyncService;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.acme.foodpackaging.service.products.ProductService;
 import static org.acme.foodpackaging.utils.ScheduleUtils.removeJobsWithoutLine;
@@ -23,7 +24,7 @@ public class ScheduleInitializer {
     private final LineService lineService;
     private final ProductService productService;
     private final AlignSolutionService alignSolutionService;
-
+    private final LineActivitySyncService lineActivitySyncService;
     /**
      * Строит новое расписание с нуля на заданную дату.
      * Порядок шагов важен:
@@ -35,6 +36,7 @@ public class ScheduleInitializer {
      */
     public InitDataValue initSchedule(LocalDate startDate) {
         PackagingSchedule schedule = createEmptySchedule(startDate);
+        checkEquipmentActivePeriod(schedule);
         List<JobRow> jobRows = attachJobs(schedule);
         attachProducts(schedule);
         finalizeEmptyState(schedule, startDate);
@@ -51,6 +53,14 @@ public class ScheduleInitializer {
 
     private PackagingSchedule createEmptySchedule(LocalDate startDate) {
         return new PackagingSchedule(lineService.getLines(), startDate);
+    }
+
+    private void checkEquipmentActivePeriod(PackagingSchedule schedule){
+        lineActivitySyncService.syncLines(
+                schedule,
+                schedule.getWorkCalendar().getFromDate(),
+                schedule.getWorkCalendar().getToDate()
+        );
     }
 
     private List<JobRow> attachJobs(PackagingSchedule schedule) {

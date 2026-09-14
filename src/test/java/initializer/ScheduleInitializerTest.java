@@ -8,8 +8,9 @@ import org.acme.foodpackaging.initializer.ScheduleInitializer;
 import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.service.align.AlignSolutionService;
 import org.acme.foodpackaging.service.jobs.JobService;
-import org.acme.foodpackaging.service.lines.LineService;
+import org.acme.foodpackaging.service.lines.LineActivitySyncService;
 import org.acme.foodpackaging.service.products.ProductService;
+import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,6 +40,8 @@ class ScheduleInitializerTest {
     ProductService productService;
     @Mock
     AlignSolutionService alignSolutionService;
+    @Mock
+    LineActivitySyncService syncService;
 
     @Test
     void buildSchedule() {
@@ -58,6 +61,7 @@ class ScheduleInitializerTest {
         }).when(productService).buildProducts(any());
 
         doNothing().when(alignSolutionService).align(any());
+        doNothing().when(syncService).syncLines(any(), any(), any());
 
         InitDataValue initData = scheduleInitializer.initSchedule(date);
 
