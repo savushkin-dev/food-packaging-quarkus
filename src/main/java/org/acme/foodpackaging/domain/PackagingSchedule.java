@@ -17,7 +17,6 @@ import lombok.Setter;
 
 import static org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob.createMaintenanceProduct;
 
-
 @Setter
 @Getter
 @PlanningSolution
