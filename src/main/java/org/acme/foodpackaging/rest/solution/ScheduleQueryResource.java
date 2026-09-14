@@ -48,11 +48,16 @@ public class ScheduleQueryResource {
     @Produces(MediaType.APPLICATION_JSON)
     public FrontendDataResponse getFrontendData(@HeaderParam("X-Session-Id") String sessionId) {
         PackagingSchedule schedule = scheduleSessionService.requireScheduleForRead(sessionId);
+        // Статус солвера всегда берется напрямую из solverManager, а не из закэшированного
+        // поля на schedule: оно проставляется только внутри get() и стирается новым
+        // клоном решения из withBestSolutionConsumer, из-за чего frontData мог отдавать
+        // solverStatus = null (undefined на фронте) в зависимости от гонки запросов.
+        SolverStatus solverStatus = solverManager.getSolverStatus(scheduleSessionService.getProblemId(sessionId));
         return new FrontendDataResponse(
                 schedule.getJobs(),
                 schedule.getLines(),
                 schedule.getScore(),
-                schedule.getSolverStatus());
+                solverStatus);
     }
 
     @GET
