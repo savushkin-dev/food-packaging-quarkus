@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.selenium;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -9,6 +10,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -16,7 +18,14 @@ import java.util.List;
 
 public class SchedulerPage {
 
-    private static final String URL = "http://10.30.0.5:7980/scheduler";
+    private static final String URL;
+
+    static {
+        System.setProperty("smallrye.config.locations",
+                Paths.get(System.getProperty("user.dir"), ".env").toUri().toString());
+
+        URL = ConfigProvider.getConfig().getValue("scheduler.url", String.class);
+    }
 
     private static final By ANY_OVERLAY = By.xpath(
             "//div[contains(@class,'fixed') and (contains(@class,'bg-black/50') or contains(@class,'bg-black/40'))]");
