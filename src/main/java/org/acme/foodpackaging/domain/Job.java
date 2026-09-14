@@ -26,6 +26,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.acme.foodpackaging.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.dto.request.maintenance.AddMaintenanceRequest;
 
 @Getter
 @Setter
@@ -205,6 +206,16 @@ public class Job {
     public Job(String id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    public Job(String id, String name, AddMaintenanceRequest request, Product mProduct) {
+        this.id = id;
+        this.name = name;
+        this.maintenance = true;
+        this.product = mProduct;
+        this.maintenanceTypeId = request.maintenanceTypeId();
+        this.maintenanceNote = request.maintenanceNote();
+        this.duration = Duration.ofMinutes(request.durationMinutes());
     }
 
     public boolean areEqualsPlanAndFactLines() {
