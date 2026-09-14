@@ -1,0 +1,56 @@
+package initializer;
+
+import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.initializer.ScheduleVersionInitializer;
+import org.acme.foodpackaging.service.solution.SolutionImporter;
+import org.acme.foodpackaging.dto.row.solution.SolutionVersionRow;
+import org.acme.foodpackaging.repository.solution.PlrPlanRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.time.Month;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class ScheduleVersionInitializerTest {
+
+    @InjectMocks
+    ScheduleVersionInitializer scheduleVersionInitializer;
+
+    @Mock
+    PlrPlanRepository repository;
+    @Mock
+    SolutionImporter importer;
+
+    @Test
+    void buildScheduleByVersion() {
+
+        LocalDate dti = LocalDate.of(2025, Month.DECEMBER, 24);
+        String version = "v1";
+
+        SolutionVersionRow solutionWrapper =
+                new SolutionVersionRow(version, "{json}");
+
+        PackagingSchedule schedule = new PackagingSchedule();
+
+        when(repository.getSolutionByVersion(dti, version))
+                .thenReturn(solutionWrapper);
+
+        when(importer.importFromJson(solutionWrapper))
+                .thenReturn(schedule);
+
+        PackagingSchedule resultSchedule = scheduleVersionInitializer.initSchedule(dti, version);
+
+        assertEquals(schedule, resultSchedule);
+
+        verify(repository).getSolutionByVersion(dti, version);
+        verify(importer).importFromJson(solutionWrapper);
+    }
+}

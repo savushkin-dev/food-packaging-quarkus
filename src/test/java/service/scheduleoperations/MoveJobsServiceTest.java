@@ -1,0 +1,189 @@
+package service.scheduleoperations;
+
+import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.Line;
+import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.Product;
+import org.acme.foodpackaging.dto.request.jobs.MoveJobsRequest;
+import org.acme.foodpackaging.service.load.LoadDataService;
+import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(MockitoExtension.class)
+class MoveJobsServiceTest {
+
+    @InjectMocks
+    MoveJobsService service;
+
+    @Mock
+    LoadDataService loadDataService;
+
+    PackagingSchedule schedule;
+    Line line1;
+    Line line2;
+    Product productA;
+    Product productB;
+
+    @BeforeEach
+    void setUp() {
+        productA = new Product("A", "A");
+        productB = new Product("B", "B");
+        productA.setType("TYPE_A");
+        productB.setType("TYPE_B");
+
+        line1 = new Line("line1", "Line 1");
+        line2 = new Line("line2", "Line 2");
+
+        schedule = new PackagingSchedule();
+        schedule.setLines(List.of(line1, line2));
+        schedule.setJobs(new ArrayList<>());
+
+        // speed cache
+        SpeedCacheUtils.init(Map.of(
+                "line1", Map.of("TYPE_A", Pair.of(10, 5), "TYPE_B", Pair.of(10, 5)),
+                "line2", Map.of("TYPE_A", Pair.of(15, 7), "TYPE_B", Pair.of(20, 10))
+        ));
+    }
+
+    private Job job(String id, String name, Product product) {
+        return new Job(
+                id, name, product,
+                Duration.ofMinutes(10),
+                1, false, null
+        );
+    }
+
+    @Test
+    void movingOnSameLine() {
+        Job j1 = job("1", "J1", productA);
+        Job j2 = job("2", "J2", productA);
+        Job j3 = job("3", "J3", productA);
+
+        line1.setJobs(new ArrayList<>(List.of(j1, j2, j3)));
+        schedule.getJobs().addAll(line1.getJobs());
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line1", 0, 1, 2);
+
+        service.moveJobs(schedule, request);
+
+        assertEquals(
+                List.of("J2", "J3", "J1"),
+                line1.getJobs().stream().map(Job::getName).toList()
+        );
+    }
+
+    @Test
+    void movingInsideRange_swapsTwoElements() {
+        Job j1 = job("1", "J1", productA);
+        Job j2 = job("2", "J2", productA);
+
+        line1.setJobs(new ArrayList<>(List.of(j1, j2)));
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line1", 0, 1, 1);
+
+        service.moveJobs(schedule, request);
+
+        assertEquals(List.of(j2, j1), line1.getJobs());
+    }
+
+    @Test
+    void movingBetweenLines() {
+        Job j1 = job("1", "J1", productA);
+
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+        line2.setJobs(new ArrayList<>());
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 0, 1, 0);
+
+        service.moveJobs(schedule, request);
+
+        assertTrue(line1.getJobs().isEmpty());
+        assertEquals(1, line2.getJobs().size());
+        assertEquals("J1", line2.getJobs().getFirst().getName());
+    }
+
+    @Test
+    void throwsWhenFromLineNotFound() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+
+        MoveJobsRequest request = new MoveJobsRequest("missing", "line2", 0, 1, 0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
+    void throwsWhenToLineNotFound() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "missing", 0, 1, 0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
+    void throwsWhenProductTypeUnsupportedOnTargetLine() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+        line2.setJobs(new ArrayList<>());
+
+        SpeedCacheUtils.init(Map.of(
+                "line1", Map.of("TYPE_A", Pair.of(10, 5)),
+                "line2", Map.of("TYPE_B", Pair.of(20, 10))
+        ));
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 0, 1, 0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
+    void movingMaintenanceJob_skipsSpeedCheckAcrossLines() {
+        Job maintenanceJob = job("1", "M1", productA);
+        maintenanceJob.setMaintenance(true);
+        line1.setJobs(new ArrayList<>(List.of(maintenanceJob)));
+        line2.setJobs(new ArrayList<>());
+
+        SpeedCacheUtils.init(Map.of(
+                "line1", Map.of("TYPE_A", Pair.of(10, 5)),
+                "line2", Map.of("TYPE_B", Pair.of(20, 10))
+        ));
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 0, 1, 0);
+
+        assertDoesNotThrow(() -> service.moveJobs(schedule, request));
+        assertEquals(1, line2.getJobs().size());
+    }
+
+    @Test
+    void throwsWhenFromIndexOutOfRange() {
+        Job j1 = job("1", "J1", productA);
+        line1.setJobs(new ArrayList<>(List.of(j1)));
+        line2.setJobs(new ArrayList<>());
+
+        MoveJobsRequest request = new MoveJobsRequest("line1", "line2", 5, 1, 0);
+
+        assertThrows(IllegalArgumentException.class, () -> service.moveJobs(schedule, request));
+    }
+
+    @Test
+    void sanityCheck() {
+        assertNotNull(service);
+        assertNotNull(loadDataService);
+    }
+}

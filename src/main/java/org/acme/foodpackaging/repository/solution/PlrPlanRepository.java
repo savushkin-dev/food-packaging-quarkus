@@ -3,16 +3,16 @@ package org.acme.foodpackaging.repository.solution;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.foodpackaging.entity.solution.PlrPlan;
-import org.acme.foodpackaging.record.SolutionByVersion;
+import org.acme.foodpackaging.dto.row.solution.SolutionVersionRow;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @ApplicationScoped
 public class PlrPlanRepository implements PanacheRepository<PlrPlan> {
-    public SolutionByVersion getSolutionByVersion(LocalDate dti, String version) {
+    public SolutionVersionRow getSolutionByVersion(LocalDate dti, String version) {
         return find("dti = ?1 and version =?2",
-                dti, version).project(SolutionByVersion.class).firstResult();
+                dti, version).project(SolutionVersionRow.class).firstResult();
     }
 
     public PlrPlan findByDateAndVersion(LocalDate dti, String version) {

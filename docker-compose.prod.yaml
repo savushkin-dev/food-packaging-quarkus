@@ -1,0 +1,23 @@
+# Компоуз-файл для прод серверов.
+# В отличие от docker-compose.yaml (который собирает образ из исходников —
+# используется на dev-сервере для тестирования веток), этот файл только
+# СКАЧИВАЕТ уже готовый образ, собранный в CI по релизному тегу
+# (см. .github/workflows/release.yml), и запускает его.
+#
+# Использование на проде:
+#   1) В .env этого сервера укажите APP_VERSION=v1.4.0 (нужный релизный тег)
+#   2) docker compose -f docker-compose.prod.yaml pull
+#   3) docker compose -f docker-compose.prod.yaml up -d
+#
+# Откат на предыдущую версию — поменять APP_VERSION в .env и повторить 2-3.
+services:
+  foodpack:
+    image: ghcr.io/savushkin-dev/food-packaging-quarkus:${APP_VERSION:-latest}
+    container_name: foodpack
+    ports:
+      - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    restart: always

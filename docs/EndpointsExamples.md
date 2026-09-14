@@ -24,11 +24,11 @@ curl -X GET "http://localhost:8080/schedule/lines"
 `cameraStart` / `cameraEnd` — `DTS` первой и последней строки выборки. Заголовок `X-Session-Id` не нужен.
 
 ```shell
-curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105"
+curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020268808990000105"
 ```
 
 ```shell
-curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610020260426000000105?duration=5"
+curl -X GET "http://localhost:8080/schedule/downtimePeriods/481026805610089800000000105?duration=5"
 ```
 
 Пример ответа:
@@ -63,53 +63,46 @@ curl -X POST "http://localhost:8080/schedule/work" ^
   -H "X-Session-Id: default"
 ```
 
-### POST /schedule/init
+### POST /schedule
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/init" ^
+curl -X POST "http://localhost:8080/schedule" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"startDate\":\"2026-01-19\"}"
 ```
 
-### POST /schedule/selection
+### PUT /schedule/selection
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/selection" ^
+curl -X PUT "http://localhost:8080/schedule/selection" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"selection\":{\"12345\":true,\"67890\":false}}"
 ```
 
-### POST /schedule/lineStart
+### PUT /schedule/line/start
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/lineStart" ^
+curl -X PUT "http://localhost:8080/schedule/line/start" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"startLineDateTime\":\"2026-01-19T08:00\"}"
 ```
 
-### POST /schedule/lineMaxEnd
+### PUT /schedule/line/maxEnd
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/lineMaxEnd" ^
+curl -X PUT "http://localhost:8080/schedule/line/maxEnd" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"lineMaxEndDateTime\":\"2026-01-19T18:00\"}"
 ```
 
-### POST /schedule/updateOrderList
+### PUT /schedule/sort
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/updateOrderList" ^
-  -H "X-Session-Id: default"
-```
-
-### POST /schedule/sortByNp
-
-```shell
-curl -X POST "http://localhost:8080/schedule/sortByNp" ^
+curl -X PUT "http://localhost:8080/schedule/sort" ^
   -H "X-Session-Id: default"
 ```
 
@@ -127,10 +120,10 @@ curl -X POST "http://localhost:8080/schedule/stopSolving" ^
   -H "X-Session-Id: default"
 ```
 
-### POST /schedule/moveJobs
+### PUT /schedule/moveJobs
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/moveJobs" ^
+curl -X PUT "http://localhost:8080/schedule/moveJobs" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"fromLineId\":\"170610020000\",\"toLineId\":\"170610020001\",\"fromIndex\":0,\"count\":2,\"insertIndex\":1}"
@@ -165,10 +158,10 @@ curl -X POST "http://localhost:8080/schedule/maintenance" ^
   -d "{\"lineId\":\"170610020000\",\"removeIndex\":0}"
 ```
 
-### POST /schedule/pin
+### PUT /schedule/line/pin
 
 ```shell
-curl -X POST "http://localhost:8080/schedule/pin" ^
+curl -X PUT "http://localhost:8080/schedule/line/pin" ^
   -H "Content-Type: application/json" ^
   -H "X-Session-Id: default" ^
   -d "{\"lineId\":\"170610020000\",\"pinCount\":3,\"pinAll\":false}"
@@ -181,19 +174,19 @@ curl -X POST "http://localhost:8080/schedule/save" ^
   -H "X-Session-Id: default"
 ```
 
-### PUT /schedule/analyze
+### GET /schedule/analyze
 
 Without fetchPolicy:
 
 ```shell
-curl -X PUT "http://localhost:8080/schedule/analyze" ^
+curl -X GET "http://localhost:8080/schedule/analyze" ^
   -H "X-Session-Id: default"
 ```
 
 With fetchPolicy:
 
 ```shell
-curl -X PUT "http://localhost:8080/schedule/analyze?fetchPolicy=FULL" ^
+curl -X GET "http://localhost:8080/schedule/analyze?fetchPolicy=FULL" ^
   -H "X-Session-Id: default"
 ```
 

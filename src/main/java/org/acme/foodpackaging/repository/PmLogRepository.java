@@ -5,7 +5,7 @@ import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.foodpackaging.exception.service.CameraDataReadException;
-import org.acme.foodpackaging.record.CameraFactRow;
+import org.acme.foodpackaging.dto.row.jobs.CameraFactRow;
 import org.acme.foodpackaging.sql.SqlQueries;
 
 import java.sql.Connection;

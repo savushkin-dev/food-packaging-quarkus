@@ -12,7 +12,7 @@ import ai.timefold.solver.core.config.solver.EnvironmentMode;
 import ai.timefold.solver.core.config.solver.SolverConfig;
 
 import org.acme.foodpackaging.domain.PackagingSchedule;
-import org.acme.foodpackaging.persistence.PackagingScheduleRepository;
+import org.acme.foodpackaging.repository.PackagingScheduleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 

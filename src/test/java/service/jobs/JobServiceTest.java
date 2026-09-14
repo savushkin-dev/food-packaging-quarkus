@@ -2,16 +2,12 @@ package service.jobs;
 
 import builder.*;
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.dto.DelayNoteRequest;
-import org.acme.foodpackaging.dto.oeepev.DelayRow;
-import org.acme.foodpackaging.dto.oeepev.MaintenanceRow;
-import org.acme.foodpackaging.exception.service.ProductNotFoundException;
-import org.acme.foodpackaging.persistence.load.LoadDataService;
+
+import org.acme.foodpackaging.dto.row.jobs.JobRow;
+import org.acme.foodpackaging.domain.value.FactKey;
+import org.acme.foodpackaging.dto.row.jobs.FactProductionRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
-import org.acme.foodpackaging.record.DbJobRow;
-import org.acme.foodpackaging.service.jobs.JobInfoService;
-import org.acme.foodpackaging.service.jobs.JobRefreshService;
-import org.acme.foodpackaging.service.jobs.JobService;
+import org.acme.foodpackaging.service.jobs.*;
 import org.acme.foodpackaging.service.lines.LineService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,10 +17,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.time.Month;
 import java.util.List;
 import java.util.Map;
 
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.START_FACT;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.START_CAMERA;
+import static org.acme.foodpackaging.domain.value.FactKey.EventType.END_CAMERA;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -36,213 +35,139 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class JobServiceTest {
 
-    @InjectMocks
-    JobService jobService;
+        @InjectMocks
+        JobService jobService;
 
-    @Mock
-    LoadDataService loadDataService;
-    @Mock
-    JobRepository jobRepository;
-    @Mock
-    JobInfoService jobInfoService;
-    @Mock
-    JobRefreshService jobRefreshService;
-    @Mock
-    LineService lineService;
+        @Mock JobRepository jobRepository;
+        @Mock JobListAssembler jobListAssembler;
+        @Mock
+        JobEnrichmentService jobEnrichmentService;
+        @Mock JobRefreshService jobRefreshService;
+        @Mock LineService lineService;
 
-    private PackagingSchedule schedule;
-    private Job job;
+        private PackagingSchedule schedule;
+        private Job job;
 
-    @BeforeEach
-    void setUp() {
+        @BeforeEach
+        void setUp() {
+                LocalDateTime lineStartDateTime = LocalDateTime.of(2025, Month.JANUARY, 15, 8, 0);
+                job = JobTestBuilder.aJob().withId("J1").build();
 
-        LocalDateTime lineStartDateTime = LocalDateTime.of(2025, 1, 15, 8, 0);
-        job = JobTestBuilder.aJob()
-                .withId("J1")
-                .build();
+                schedule = ScheduleTestBuilder.aSchedule()
+                        .withWorkCalendar(lineStartDateTime.toLocalDate(), lineStartDateTime)
+                        .withLines(LineTestBuilder.aLine("L1", lineStartDateTime).withJobs(job).build())
+                        .withSpeed("L1", "CLASSIC", 100)
+                        .withEmptyJobs()
+                        .withEmptyJobMap()
+                        .build();
+        }
 
-        schedule = ScheduleTestBuilder.aSchedule()
-                .withWorkCalendar(
-                        lineStartDateTime.toLocalDate(),
-                        lineStartDateTime
-                )
-                .withLines(
-                        LineTestBuilder
-                                .aLine("L1", lineStartDateTime)
-                                .withJobs(job)
-                                .build()
-                )
-                .withSpeed("L1", "CLASSIC", 100)
-                .withEmptyJobs()
-                .withEmptyJobMap()
-                .build();
+        @Test
+        void buildJobsOnLines_delegatesToAssemblerAndSetsScheduleState() {
+                List<Job> jobs = List.of(job);
+                Map<Long, Job> allJobsById = Map.of(123L, job);
+                List<JobRow> jobRows = List.of(JobRowBuilder.aRow().withSnpz(123L).withKmc("P1").withLineId("L1").build());
 
-    }
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(jobs, allJobsById, jobRows);
 
-    private Product getTestProduct() {
-        return ProductTestBuilder.aProduct("P1").withType("CLASSIC").build();
-    }
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
+                when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
 
-    private DbJobRow getTestDbJobRow() {
-        return DbJobRowBuilder.aRow()
-                .withSnpz(123L)
-                .withKmc("P1")
-                .withLineId("L1").build();
-    }
+                List<JobRow> returned = jobService.buildJobsOnLines(schedule);
 
-    private MaintenanceRow getTestMaintenanceRow() {
-        return MaintenanceRowBuilder.aRow()
-                .withFId(111L)
-                .withEventTypeId(7)
-                .withDuration(60)
-                .withNote("Maintenance note").build();
-    }
+                assertEquals(jobRows, returned);
+                assertEquals(jobs, schedule.getJobs());
+                assertEquals(allJobsById, schedule.getAllJobsById());
 
-    @Test
-    void buildJobsOnLines_createJobById() {
-        when(loadDataService.getProducts())
-                .thenReturn(Map.of("P1", getTestProduct()));
+                verify(jobEnrichmentService).enrichCameraFactsFromPmLog(schedule);
+                verify(jobEnrichmentService).assignIdBatches(schedule);
+                verify(jobRefreshService).refreshStaleCameraEndFromPmLog(schedule);
+                verify(lineService).initLineStartEnd(schedule);
+        }
 
-        when(jobRepository.getDbJobRowMap(any(), any()))
-                .thenReturn(Map.of(123L, getTestDbJobRow()));
+        @Test
+        void buildJobsOnLines_appliesFactProductionData() {
+                job.setProduct(ProductTestBuilder.aProduct("P1").withType("CLASSIC").build());
+                job.setNp(1);
+                job.setIdBatch("BATCH1");
 
-        when(jobRepository.getMaintenanceData(any(), any()))
-                .thenReturn(Collections.emptyList());
+                LocalDateTime dateTime = LocalDateTime.of(2026, Month.AUGUST, 27, 9, 0);
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
 
-        when(jobRepository.loadDelayDurationRows(any(), any()))
-                .thenReturn(Map.of(123L,
-                        new DelayRow(2L,123L, "Delay note", 22)));
+                FactProductionRow startFact = new FactProductionRow("BATCH1", "343355", dateTime,
+                        233, START_FACT.code(), dateTime, "13344");
+                when(jobRepository.getFactProductionRowMap(any(), any()))
+                        .thenReturn(Map.of(new FactKey("BATCH1", START_FACT), startFact));
 
-        when(jobRepository.loadCleaningDelayDurationRows(any(), any()))
-                .thenReturn(Map.of(123L,
-                        new DelayRow(2L, 123L, "Cleaning delay note", 12)));
+                jobService.buildJobsOnLines(schedule);
 
-        when(jobRepository.getDbJobRowMap(any(), any()))
-                .thenReturn(Map.of(123L, getTestDbJobRow()));
+                assertEquals("BATCH1", job.getIdBatch());
+                assertEquals("13344", job.getLineIdFact());
+                assertEquals(dateTime, job.getDtv());
+                assertEquals(dateTime, job.getStartProductionDateTimeFact());
+        }
 
-        when(jobInfoService.generateIdBatch(any(), anyLong())).thenReturn("1212");
-        doNothing().when(jobRefreshService).refreshStaleCameraEndFromPmLog(any());
-        doNothing().when(lineService).initLineStartEnd(any());
+        @Test
+        void buildJobsOnLines_appliesCameraFacts() {
+                job.setProduct(ProductTestBuilder.aProduct("P1").withType("CLASSIC").build());
+                job.setNp(1);
+                job.setIdBatch("BATCH1");
 
-        schedule.getJobs().clear();
-        schedule.getLines().getFirst().getJobs().clear();
+                LocalDateTime cameraStart = LocalDateTime.of(2026, Month.AUGUST, 27, 9, 0);
+                LocalDateTime cameraEnd = LocalDateTime.of(2026, Month.AUGUST, 27, 9, 30);
 
-        jobService.buildJobsOnLines(schedule);
-        assertEquals(1, schedule.getJobs().size());
-        assertEquals(1, schedule.getAllJobsById().size());
-        assertEquals(1, schedule.getLines().getFirst().getJobs().size());
-        assertEquals("123", schedule.getJobs().getFirst().getId());
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
 
-        assertEquals(22, schedule.getJobs().getFirst().getDelayDuration().toMinutes());
-        assertEquals(12, schedule.getJobs().getFirst().getCleaningDelay().toMinutes());
+                FactProductionRow startCameraFact = new FactProductionRow(
+                        "BATCH1", "P1", null, 1, START_CAMERA.code(), cameraStart, null);
+                FactProductionRow endCameraFact = new FactProductionRow(
+                        "BATCH1", "P1", null, 1, END_CAMERA.code(), cameraEnd, null);
 
-        assertEquals("Delay note", schedule.getJobs().getFirst().getDelayNote());
-        assertEquals("Cleaning delay note", schedule.getJobs().getFirst().getCleaningDelayNote());
-    }
+                when(jobRepository.getFactProductionRowMap(any(), any()))
+                        .thenReturn(Map.of(
+                                new FactKey("BATCH1", START_CAMERA), startCameraFact,
+                                new FactKey("BATCH1", END_CAMERA), endCameraFact
+                        ));
 
-    @Test
-    void buildJobsOnLines_createMaintenanceJobById() {
+                jobService.buildJobsOnLines(schedule);
 
-        when(jobRepository.getMaintenanceData(any(), any()))
-                .thenReturn(List.of(getTestMaintenanceRow()));
+                assertEquals(cameraStart, job.getCameraStart());
+                assertEquals(cameraEnd, job.getCameraEnd());
+        }
 
-        when(jobRepository.loadCleaningDelayDurationRows(any(), any()))
-                .thenReturn(Collections.emptyMap());
+        @Test
+        void buildJobsOnLines_skipsJobsWithoutProduct() {
+                job.setProduct(null);
 
-        when(jobRepository.loadCleaningDelayDurationRows(any(), any()))
-                .thenReturn(Collections.emptyMap());
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
+                when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
 
-        when(jobRepository.getDbJobRowMap(any(), any()))
-                .thenReturn(Collections.emptyMap());
+                assertDoesNotThrow(() -> jobService.buildJobsOnLines(schedule));
+                assertNull(job.getIdBatch());
+        }
 
-        doNothing().when(jobRefreshService).refreshStaleCameraEndFromPmLog(any());
-        doNothing().when(lineService).initLineStartEnd(any());
+        @Test
+        void buildJobsOnLines_noMatchingFactRows_leavesJobUnchanged() {
+                job.setProduct(ProductTestBuilder.aProduct("P1").withType("CLASSIC").build());
+                job.setNp(1);
+                job.setIdBatch("BATCH1");
 
-        schedule.getJobs().clear();
-        schedule.getLines().getFirst().getJobs().clear();
+                JobListAssembler.JobAssemblyResult result =
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                when(jobListAssembler.assemble(schedule)).thenReturn(result);
+                when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
 
-        jobService.buildJobsOnLines(schedule);
-        assertEquals(1, schedule.getJobs().size());
-        assertEquals(1, schedule.getLines().getFirst().getJobs().size());
-        assertEquals(7, schedule.getJobs().getFirst().getMaintenanceTypeId());
-        assertEquals("111", schedule.getJobs().getFirst().getId());
-        assertTrue(schedule.getJobs().getFirst().isMaintenance());
+                jobService.buildJobsOnLines(schedule);
 
-        assertEquals(60, schedule.getJobs().getFirst().getDuration().toMinutes());
-        assertEquals("Maintenance note", schedule.getJobs().getFirst().getMaintenanceNote());
-    }
-
-    @Test
-    void buildJobsOnLines_shouldThrowException_whenProductNotFound() {
-
-        DbJobRow jobRow = DbJobRowBuilder.aRow()
-                .withKmc("UNKNOWN")
-                .build();
-
-        when(loadDataService.getProducts())
-                .thenReturn(Map.of("P1", getTestProduct()));
-
-        when(jobRepository.getDbJobRowMap(any(), any()))
-                .thenReturn(Map.of(123L, jobRow));
-
-        assertThrows(ProductNotFoundException.class,
-                () -> jobService.buildJobsOnLines(schedule));
-    }
-
-    @Test
-    void writeDelayNote_success() {
-
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Note");
-
-        jobService.writeDelayNote(request, schedule);
-        assertEquals("Note", job.getDelayNote());
-    }
-
-    @Test
-    void writeCleaningDelayNote_success() {
-
-        schedule.setJobs(List.of());
-        schedule.setAllJobsById(Map.of());
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Cleaning");
-
-        jobService.writeCleaningDelayNote(request, schedule);
-        assertEquals("Cleaning", job.getCleaningDelayNote());
-    }
-
-    @Test
-    void writeDelayNote_whenLineNotFound() {
-
-        Job j1 = JobTestBuilder.aJob().build();
-
-        schedule.getLines().getFirst().setId("L2");
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setDelayNote("Note");
-
-        jobService.writeDelayNote(request, schedule);
-
-        assertNull(j1.getDelayNote());
-    }
-
-    @Test
-    void writeDelayNote_whenLineJobsNull() {
-
-        schedule.setAllJobsById(Map.of());
-        schedule.setJobs(List.of());
-        schedule.getLines().getFirst().setJobs(null);
-        DelayNoteRequest request = new DelayNoteRequest();
-        request.setLineId("L1");
-        request.setIndex(0);
-        request.setDelayNote("Note");
-
-        jobService.writeDelayNote(request, schedule);
-
-        assertNull(schedule.getLines().getFirst().getJobs());
-    }
+                assertEquals("BATCH1", job.getIdBatch());
+                assertNull(job.getCameraStart());
+                assertNull(job.getCameraEnd());
+        }
 }

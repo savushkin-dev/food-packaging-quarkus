@@ -1,7 +1,7 @@
 package builder;
 
 import org.acme.foodpackaging.domain.*;
-import org.acme.foodpackaging.scheduleoperations.utils.SpeedCacheUtils;
+import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalDate;
