@@ -517,6 +517,38 @@ class JobTest {
         assertEquals(0, j1.getCleaningDurationPlan());
     }
 
+    @Test
+    void getCleaningDurationPlan_WhenCleaningResultsMapIsNull() {
+        Job j1 = new Job();
+        Job j2 = new Job();
+        Product p1 = new Product();
+        Product p2 = new Product();
+        p1.setCleaningDurations(new HashMap<>());
+        p2.setCleaningDurations(new HashMap<>());
+        p1.setCleaningResults(null);
+        j1.setProduct(p1);
+        j2.setProduct(p2);
+        j1.setPreviousJob(j2);
+        assertEquals(0, j1.getCleaningDurationPlan());
+    }
+
+    // Регрессионный тест на баг: cleaningResults и cleaningDurations - разные карты и
+    // могут разойтись (см. cleaningCalculate()). Раньше при отсутствии записи именно в
+    // cleaningResults для конкретной пары продуктов (хотя cleaningDurations её содержит)
+    // падал NPE на meta.isPLRLC() - и это роняло всю сериализацию /schedule/frontData
+    // во время активного солвинга. Стоит смотреть также аналогичный сценарий в
+    // updateStartCleaningDateTime_whenNPE выше - там та же ситуация уже была защищена
+    // try/catch, а здесь - нет.
+    @Test
+    void getCleaningDurationPlan_WhenCleaningResultsMissingEntryForPreviousProduct() {
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
+
+        jobs.getRight().getProduct().getCleaningResults()
+                .remove(jobs.getRight().getPreviousJob().getProduct());
+
+        assertEquals(0, jobs.getRight().getCleaningDurationPlan());
+    }
+
     // ============================================================
     //  getCleaningDurationFact
     // ============================================================
