@@ -26,12 +26,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.acme.foodpackaging.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.utils.SpeedCacheUtils;
+import org.jboss.logging.Logger;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @PlanningEntity
 public class Job {
+
+    private static final Logger LOG = Logger.getLogger(Job.class);
 
     @PlanningId
     private String id;
@@ -218,7 +221,33 @@ public class Job {
                 || previousJob.getProduct() == null
                 || previousJob.getProduct().getCleaningDurations() == null)
             return 0;
-        CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
+        // product.getCleaningResults() - отдельная карта от product.getCleaningDurations(),
+        // и для некоторых пар (продукт -> предыдущий продукт) она может не содержать записи,
+        // даже если cleaningDurations её содержит (данные заполняются по-разному и могут
+        // разойтись). Раньше здесь падал NPE на meta.isPLRLC(), из-за чего падала вся
+        // сериализация /schedule/frontData во время солвинга, как только очерёдность job-ов
+        // менялась так, что previousJob оказывался продуктом без записи в cleaningResults.
+        CleaningResult meta = product.getCleaningResults() == null
+                ? null
+                : product.getCleaningResults().get(previousJob.getProduct());
+        if (meta == null) {
+            // ВРЕМЕННО (для диагностики, пока не выяснена причина расхождения карт):
+            // вместо тихого fallback на 0 бросаем исключение с точными product id/name -
+            // оно долетает до браузера через FrontDataSerializationException (см.
+            // ScheduleQueryResource.getFrontendData) как раз в теле ответа, без
+            // необходимости лезть в серверные логи. Как только причина будет найдена,
+            // здесь нужно будет вернуться к безопасному fallback (return 0) вместо throw,
+            // чтобы одна отсутствующая запись не роняла весь frontData.
+            Product previousProduct = previousJob.getProduct();
+            String message = String.format(
+                    "Нет записи в cleaningResults для пары product=%s(id=%s) -> previousProduct=%s(id=%s). "
+                            + "job=%s, previousJob=%s",
+                    product.getName(), product.getId(),
+                    previousProduct.getName(), previousProduct.getId(),
+                    id, previousJob.getId());
+            LOG.warn("getCleaningDurationPlan: " + message);
+            throw new IllegalStateException(message);
+        }
         return meta.isPLRLC()
                 ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
                 : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
