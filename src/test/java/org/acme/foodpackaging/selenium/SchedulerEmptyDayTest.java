@@ -25,7 +25,9 @@ class SchedulerEmptyDayTest {
 
     @AfterAll
     static void tearDown() {
-        page.quit();
+        if (!Boolean.getBoolean("keepBrowserOpen")) {
+            page.quit();
+        }
     }
 
     @Test

@@ -9,6 +9,7 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.domain.value.CleaningResult;
+import org.acme.foodpackaging.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.utils.ScheduleUtils;
 import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -515,6 +516,42 @@ class JobTest {
         j2.setProduct(p2);
         j1.setPreviousJob(j2);
         assertEquals(0, j1.getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenCleaningResultsMapIsNull() {
+        Job j1 = new Job();
+        Job j2 = new Job();
+        Product p1 = new Product();
+        Product p2 = new Product();
+        p1.setCleaningDurations(new HashMap<>());
+        p2.setCleaningDurations(new HashMap<>());
+        p1.setCleaningResults(null);
+        j1.setProduct(p1);
+        j2.setProduct(p2);
+        j1.setPreviousJob(j2);
+        assertEquals(0, j1.getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenCleaningResultsMissingEntryForPreviousProduct() {
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
+
+        jobs.getRight().getProduct().getCleaningResults()
+                .remove(jobs.getRight().getPreviousJob().getProduct());
+
+        assertEquals(0, jobs.getRight().getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenPLRCTrueAndLineCleaningMissing() {
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
+
+        jobs.getRight().getProduct().getCleaningResults()
+                .put(jobs.getLeft().getProduct(), new CleaningResult(60, true));
+        CleaningDurationUtils.init(Map.of());
+
+        assertEquals(0, jobs.getRight().getCleaningDurationPlan());
     }
 
     // ============================================================

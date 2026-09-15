@@ -200,8 +200,17 @@ public class SchedulerPage {
 
     // --- Тест 7: остановка планирования ---
 
+    // Фронтенд намеренно держит кнопку "Остановить" заблокированной 2 минуты
+    // после старта планирования (см. SchedulePage.jsx, solve(): setTimeout(...,
+    // 120000)). Раньше здесь использовался общий wait на 3 минуты - разница
+    // всего в минуту запаса, и под нагрузкой (солвер грузит ту же машину)
+    // setTimeout в браузере может сработать с опозданием, из-за чего тест
+    // ловил таймаут впритык к границе.
+    private static final Duration STOP_BUTTON_ACTIVE_TIMEOUT = Duration.ofMinutes(4);
+
     public void waitUntilStopButtonActive() {
-        wait.until(d -> isStopButtonActive(d.findElements(STOP_BUTTON)));
+        new WebDriverWait(driver, STOP_BUTTON_ACTIVE_TIMEOUT)
+                .until(d -> isStopButtonActive(d.findElements(STOP_BUTTON)));
     }
 
     public void clickStopPlanning() {
