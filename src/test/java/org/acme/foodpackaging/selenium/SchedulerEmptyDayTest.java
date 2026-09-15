@@ -25,7 +25,12 @@ class SchedulerEmptyDayTest {
 
     @AfterAll
     static void tearDown() {
-        page.quit();
+        // Для локальной отладки: mvn test -Dtest=SchedulerEmptyDayTest -DkeepBrowserOpen=true
+        // не закроет браузер после прогона, чтобы можно было руками посмотреть
+        // DevTools/Network/Console в конечном состоянии страницы.
+        if (!Boolean.getBoolean("keepBrowserOpen")) {
+            page.quit();
+        }
     }
 
     @Test

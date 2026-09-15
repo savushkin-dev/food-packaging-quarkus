@@ -14,6 +14,11 @@ public class GlobalExceptionHandler implements ExceptionMapper<PackagingExceptio
         return Response.status(ex.getStatus())
                 .entity(Map.of(
                         "error", ex.getMessage(),
+                        // Фронтенд везде читает текст ошибки из e.response.data.message
+                        // (см. ScheduleService/SchedulePage.jsx) - без этого поля он
+                        // получал бы "Ошибка ...: undefined" для любого PackagingException,
+                        // хотя структурированное тело ответа уже пришло корректно.
+                        "message", ex.getMessage(),
                         "type", ex.getClass().getSimpleName()
                 ))
                 .build();
