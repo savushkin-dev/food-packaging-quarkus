@@ -217,37 +217,36 @@ public class Job {
     }
 
     public long getCleaningDurationPlan() {
+        // Общая проверка на отсутствие данных: помимо product/previousJob/cleaningDurations
+        // (как было раньше) сюда же добавлена проверка cleaningResults == null - это
+        // ОТДЕЛЬНАЯ карта от cleaningDurations, и её отсутствие само по себе раньше не
+        // проверялось. Наличие самой карты (не null) ещё не гарантирует наличие в ней
+        // записи для конкретной пары продуктов - это проверяется ниже отдельно, так как
+        // ключ для поиска (previousJob.getProduct()) становится известен только после
+        // прохождения этой проверки.
         if (product == null || product.getCleaningDurations() == null || previousJob == null
                 || previousJob.getProduct() == null
-                || previousJob.getProduct().getCleaningDurations() == null)
+                || previousJob.getProduct().getCleaningDurations() == null
+                || product.getCleaningResults() == null)
             return 0;
-        // product.getCleaningResults() - отдельная карта от product.getCleaningDurations(),
-        // и для некоторых пар (продукт -> предыдущий продукт) она может не содержать записи,
-        // даже если cleaningDurations её содержит (данные заполняются по-разному и могут
-        // разойтись). Раньше здесь падал NPE на meta.isPLRLC(), из-за чего падала вся
-        // сериализация /schedule/frontData во время солвинга, как только очерёдность job-ов
-        // менялась так, что previousJob оказывался продуктом без записи в cleaningResults.
-        CleaningResult meta = product.getCleaningResults() == null
-                ? null
-                : product.getCleaningResults().get(previousJob.getProduct());
+
+        CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
         if (meta == null) {
-            // ВРЕМЕННО (для диагностики, пока не выяснена причина расхождения карт):
-            // вместо тихого fallback на 0 бросаем исключение с точными product id/name -
-            // оно долетает до браузера через FrontDataSerializationException (см.
-            // ScheduleQueryResource.getFrontendData) как раз в теле ответа, без
-            // необходимости лезть в серверные логи. Как только причина будет найдена,
-            // здесь нужно будет вернуться к безопасному fallback (return 0) вместо throw,
-            // чтобы одна отсутствующая запись не роняла весь frontData.
+            // Для этой пары продуктов нет записи в cleaningResults, хотя cleaningDurations
+            // её содержит (карты могут расходиться, если cleaningCalculate() считался не по
+            // полному списку продуктов). Раньше здесь падал NPE на meta.isPLRLC(), из-за чего
+            // падала вся сериализация /schedule/frontData во время солвинга. Логируем для
+            // будущей диагностики и безопасно возвращаем 0, а не роняем весь ответ.
             Product previousProduct = previousJob.getProduct();
-            String message = String.format(
-                    "Нет записи в cleaningResults для пары product=%s(id=%s) -> previousProduct=%s(id=%s). "
-                            + "job=%s, previousJob=%s",
+            LOG.warnf(
+                    "getCleaningDurationPlan: нет записи в cleaningResults для пары "
+                            + "product=%s(id=%s) -> previousProduct=%s(id=%s). job=%s, previousJob=%s",
                     product.getName(), product.getId(),
                     previousProduct.getName(), previousProduct.getId(),
                     id, previousJob.getId());
-            LOG.warn("getCleaningDurationPlan: " + message);
-            throw new IllegalStateException(message);
+            return 0;
         }
+
         return meta.isPLRLC()
                 ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
                 : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
