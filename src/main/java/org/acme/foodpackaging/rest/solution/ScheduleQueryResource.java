@@ -64,16 +64,7 @@ public class ScheduleQueryResource {
                 schedule.getLines(),
                 schedule.getScore(),
                 solverStatus);
-
-        // Временная диагностика. Во время активного солвинга solver-поток может
-        // мутировать shadow-переменные (line, previousJob, nextJob) и не клонируемые
-        // Timefold-ом поля PackagingSchedule ровно в момент, когда Jackson обходит
-        // этот же граф объектов, сериализуя ответ. В таком случае RESTEasy перехватывает
-        // сбой сериализации сам, в обход наших ExceptionMapper-ов, и отдаёт клиенту
-        // только голый текст "Not able to deserialize data provided." без каких-либо
-        // деталей (см. FrontDataSerializationException). Поэтому сериализуем ответ сами:
-        // это позволяет поймать сбой здесь, залогировать полный стектрейс с контекстом
-        // и вернуть клиенту нормальную структурированную ошибку вместо этого текста.
+                
         String json;
         try {
             json = objectMapper.writeValueAsString(response);

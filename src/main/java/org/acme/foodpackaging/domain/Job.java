@@ -217,13 +217,6 @@ public class Job {
     }
 
     public long getCleaningDurationPlan() {
-        // Общая проверка на отсутствие данных: помимо product/previousJob/cleaningDurations
-        // (как было раньше) сюда же добавлена проверка cleaningResults == null - это
-        // ОТДЕЛЬНАЯ карта от cleaningDurations, и её отсутствие само по себе раньше не
-        // проверялось. Наличие самой карты (не null) ещё не гарантирует наличие в ней
-        // записи для конкретной пары продуктов - это проверяется ниже отдельно, так как
-        // ключ для поиска (previousJob.getProduct()) становится известен только после
-        // прохождения этой проверки.
         if (product == null || product.getCleaningDurations() == null || previousJob == null
                 || previousJob.getProduct() == null
                 || previousJob.getProduct().getCleaningDurations() == null
@@ -232,11 +225,6 @@ public class Job {
 
         CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
         if (meta == null) {
-            // Для этой пары продуктов нет записи в cleaningResults, хотя cleaningDurations
-            // её содержит (карты могут расходиться, если cleaningCalculate() считался не по
-            // полному списку продуктов). Раньше здесь падал NPE на meta.isPLRLC(), из-за чего
-            // падала вся сериализация /schedule/frontData во время солвинга. Логируем для
-            // будущей диагностики и безопасно возвращаем 0, а не роняем весь ответ.
             Product previousProduct = previousJob.getProduct();
             LOG.warnf(
                     "getCleaningDurationPlan: нет записи в cleaningResults для пары "
