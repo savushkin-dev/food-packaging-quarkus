@@ -9,6 +9,7 @@ import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.domain.value.CleaningResult;
+import org.acme.foodpackaging.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.utils.ScheduleUtils;
 import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -538,6 +539,17 @@ class JobTest {
 
         jobs.getRight().getProduct().getCleaningResults()
                 .remove(jobs.getRight().getPreviousJob().getProduct());
+
+        assertEquals(0, jobs.getRight().getCleaningDurationPlan());
+    }
+
+    @Test
+    void getCleaningDurationPlan_WhenPLRCTrueAndLineCleaningMissing() {
+        Pair<Job, Job> jobs = JobFixtures.jobsWithCleanings();
+
+        jobs.getRight().getProduct().getCleaningResults()
+                .put(jobs.getLeft().getProduct(), new CleaningResult(60, true));
+        CleaningDurationUtils.init(Map.of());
 
         assertEquals(0, jobs.getRight().getCleaningDurationPlan());
     }
