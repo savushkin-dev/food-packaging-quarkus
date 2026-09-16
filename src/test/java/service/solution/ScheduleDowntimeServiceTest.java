@@ -26,9 +26,9 @@ class ScheduleDowntimeServiceTest {
     private final ScheduleDowntimeService service = new ScheduleDowntimeService();
 
     private Line line;
-    private Job job1, job2, job3;
+    private Job job1;
+    private Job job2;
     private PackagingSchedule schedule;
-    private LocalDateTime now;
 
     @BeforeEach
     void setup() {
@@ -54,7 +54,7 @@ class ScheduleDowntimeServiceTest {
         productSpeeds.put("NORMAL", Pair.of(2, 1));
         speeds.put("line1", productSpeeds);
         SpeedCacheUtils.init(speeds);
-        now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
 
         // Создание линии
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
@@ -62,7 +62,7 @@ class ScheduleDowntimeServiceTest {
         // Создание задач
         job1 = new Job("1", "Job 1", normalProduct, null, 1, false, null);
         job2 = new Job("2", "Job 2", normalProduct, null, 1, false, null);
-        job3 = new Job("3", "Job 3", maintenanceProduct, null, 1, false, null);
+        Job job3 = new Job("3", "Job 3", maintenanceProduct, null, 1, false, null);
 
         line.setJobs(new ArrayList<>(Arrays.asList(job1, job2, job3)));
 
