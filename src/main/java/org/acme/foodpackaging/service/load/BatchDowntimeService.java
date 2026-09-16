@@ -18,9 +18,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Ищет простои по логам БД (PmLogRepository) для одной конкретной партии.
+ *
+ * Не путать с {@link org.acme.foodpackaging.service.solution.ScheduleDowntimeService},
+ * который считает простой по уже посчитанному солвером расписанию в памяти.
+ */
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
-public class DowntimeDataService {
+public class BatchDowntimeService {
 
     private static final Duration MIN_DOWNTIME = Duration.ofMinutes(2);
 
