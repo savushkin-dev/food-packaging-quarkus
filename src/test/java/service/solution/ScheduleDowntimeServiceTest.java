@@ -54,7 +54,6 @@ class ScheduleDowntimeServiceTest {
         productSpeeds.put("NORMAL", Pair.of(2, 1));
         speeds.put("line1", productSpeeds);
         SpeedCacheUtils.init(speeds);
-        LocalDateTime now = LocalDateTime.now();
 
         // Создание линии
         line = new Line("line1", "Line 1", "operator", LocalDateTime.now());
