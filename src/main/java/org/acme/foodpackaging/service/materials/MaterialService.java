@@ -182,6 +182,7 @@ public class MaterialService {
                 .insurancePerc(pers)
                 .roundStep(rnd)
                 .order(existing != null ? existing.order : null)
+                .orderFinal(existing != null ? existing.orderFinal : null)
                 .build();
     }
 
@@ -222,6 +223,7 @@ public class MaterialService {
                 if (material.getKmt().equals(request.getKmt())) {
                     material.setKolf(request.getKolf());
                     material.setOrder(null);
+                    material.setOrderFinal(null);
                 }
             }
         }
@@ -279,6 +281,7 @@ public class MaterialService {
                         .pers(material.getInsurancePerc() != null ? material.getInsurancePerc() : 0.0)
                         .rnd(material.getRoundStep() != null && material.getRoundStep() > 0 ? material.getRoundStep() : 1.0)
                         .order(material.getOrder() != null ? material.getOrder() : 0.0)
+                        .orderFinal(material.getOrderFinal() != null ? material.getOrderFinal() : 0.0)
                         .build();
                 sinvRepository.saveOrUpdate(plrSinv);
             }
@@ -325,6 +328,12 @@ public class MaterialService {
                 material.setRoundStep(roundStep);
                 material.setSnmMt(snmMt);
                 material.setOrder(order);
+
+
+                // Устанавливаем orderFinal только если он ещё не задан
+                if (material.getOrderFinal() == null) {
+                    material.setOrderFinal(order);
+                }
             }
         }
     }
