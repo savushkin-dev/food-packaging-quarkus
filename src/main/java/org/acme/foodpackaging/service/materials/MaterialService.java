@@ -51,7 +51,7 @@ public class MaterialService {
         LocalDate dt = LocalDate.parse(date);
 
         // 1. Получаем список продуктов на дату
-        List<ProductDto> products = materialRepository.findProductsByDate(date);
+        List<ProductDto> products = materialRepository.findPreliminaryProductsByDate(date);
         if (products.isEmpty()) {
             return Collections.emptyList();
         }
