@@ -27,5 +27,6 @@ public class SinvDto {
     private Double roundStep;    // Шаг округления
     private Double order;        // Дозаказ по расчету
     private Double orderFinal;   // Итоговый дозаказ
+    private String type;         // Тип заявки
     private Integer productCount;// Количество продуктов с этим материалом
 }

@@ -50,9 +50,10 @@ public class MaterialResource {
     @Path("/load")
     public Response loadProducts(
             @QueryParam("date") String date,
-            @QueryParam("kpp") String kpp) {
+            @QueryParam("kpp") String kpp,
+            @QueryParam("type") String type) {
         try {
-            List<ProductWithMaterialsDto> data = materialService.loadProducts(date, kpp);
+            List<ProductWithMaterialsDto> data = materialService.loadProducts(date, kpp, type);
             return Response.ok(data).build();
         } catch (Exception e) {
             String safeDate = sanitizeForLog(date);

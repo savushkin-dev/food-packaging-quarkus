@@ -20,4 +20,5 @@ public class ZinvDto {
     private Double emk;
     private String name;
     private Double sumMass;
+    private String type;
 }

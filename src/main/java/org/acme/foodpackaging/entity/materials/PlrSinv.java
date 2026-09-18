@@ -71,4 +71,7 @@ public class PlrSinv extends PanacheEntityBase {
 
     @Column(name = "ORDER_FINAL", nullable = false)
     public Double orderFinal = 0.0;
+
+    @Column(name = "TYPE", length = 1, nullable = false)
+    public String type = "M";
 }
