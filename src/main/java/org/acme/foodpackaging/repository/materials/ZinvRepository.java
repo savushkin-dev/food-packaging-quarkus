@@ -21,10 +21,11 @@ public class ZinvRepository {
         return em.merge(plrZinv);
     }
 
-    public void deleteByDateAndKpp(LocalDate date, String kpp) {
-        em.createQuery("DELETE FROM PlrZinv z WHERE z.dt = :dt AND z.kpp = :kpp")
+    public void deleteByDateAndKppAndType(LocalDate date, String kpp, String type) {
+        em.createQuery("DELETE FROM PlrZinv z WHERE z.dt = :dt AND z.kpp = :kpp AND z.type = :type")
                 .setParameter("dt", date)
                 .setParameter("kpp", kpp)
+                .setParameter("type", type)
                 .executeUpdate();
     }
 }

@@ -14,5 +14,6 @@ import java.util.List;
 public class SaveRequest {
     private String date;
     private String kpp;
+    private String type;
     private List<ProductWithMaterialsDto> data;
 }

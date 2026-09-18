@@ -23,16 +23,16 @@ public class SinvRepository implements PanacheRepository<PlrSinv> {
         return em.merge(plrSinv);
     }
 
-    public List<PlrSinv> findByDateAndKpp(LocalDate date, String kpp) {
-        return find("dt = ?1 AND kpp = ?2", date, kpp).list();
+    public List<PlrSinv> findByDateAndKppAndType(LocalDate date, String kpp, String type) {
+        return find("dt = ?1 AND kpp = ?2AND type = ?3", date, kpp, type).list();
     }
 
     public List<PlrSinv> findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {
         return find("dt = ?1 AND kpp = ?2 AND kmc = ?3", date, kpp, kmc).list();
     }
 
-    public void deleteByDateAndKpp(LocalDate date, String kpp) {
-        delete("dt = ?1 AND kpp = ?2", date, kpp);
+    public void deleteByDateAndKppAndType(LocalDate date, String kpp, String type) {
+        delete("dt = ?1 AND kpp = ?2 AND type = ?3", date, kpp, type);
     }
 
 

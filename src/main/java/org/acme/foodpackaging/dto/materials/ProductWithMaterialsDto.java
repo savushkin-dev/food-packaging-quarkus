@@ -23,5 +23,6 @@ public class ProductWithMaterialsDto {
     private Double sumMass;
     private Double sumKolev;
     private Double krkmc;
+    private String type;
     private List<SinvDto> materials;
 }
