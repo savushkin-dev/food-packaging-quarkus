@@ -65,6 +65,25 @@ public class MaterialResource {
         }
     }
 
+    @GET
+    @Path("/reset")
+    public Response reset(
+            @QueryParam("date") String date,
+            @QueryParam("kpp") String kpp,
+            @QueryParam("type") String type) {
+        try {
+            List<ProductWithMaterialsDto> result = materialService.resetDataAndLoadProduct(date, kpp, type);
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            String safeDate = sanitizeForLog(date);
+            String safeKpp = sanitizeForLog(kpp);
+            log.error("Error reset and loading products for date: {}, kpp: {}", safeDate, safeKpp, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error reset and loading products: " + e.getMessage())
+                    .build();
+        }
+    }
+
     @POST
     @Path("/recalc")
     public Response recalcKolf(KolfRecalcRequest request) {

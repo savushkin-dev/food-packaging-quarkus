@@ -92,6 +92,21 @@ public class MaterialService {
     }
 
     /**
+     * Пересчёт: удаляем сохранённое и загружаем заново
+     */
+    @Transactional
+    public List<ProductWithMaterialsDto> resetDataAndLoadProduct(String date, String kpp, String type) {
+        LocalDate dt = LocalDate.parse(date);
+
+        // Удаляем сохранённые данные
+        zinvRepository.deleteByDateAndKppAndType(dt, kpp, type);
+        sinvRepository.deleteByDateAndKppAndType(dt, kpp, type);
+
+        // Загружаем заново — loadProducts увидит, что данных нет, и пересчитает
+        return loadProducts(date, kpp, type);
+    }
+
+    /**
      * Загружает кэш материалов
      */
     private Map<String, PlrMt> loadMaterialCache(List<ProductDto> products, Double sysn) {
@@ -294,7 +309,7 @@ public class MaterialService {
                         .pers(material.getInsurancePerc() != null ? material.getInsurancePerc() : 0.0)
                         .rnd(material.getRoundStep() != null && material.getRoundStep() > 0 ? material.getRoundStep() : 1.0)
                         .order(material.getOrder() != null ? material.getOrder() : 0.0)
-                        .orderFinal(material.getOrderFinal() != null ? material.getOrderFinal() : 0.0)
+                        .orderFinal(material.getOrderFinal() != null && material.getOrderFinal() >= 0 ? material.getOrderFinal() : 0.0)
                         .type(type)
                         .build();
                 sinvRepository.saveOrUpdate(plrSinv);

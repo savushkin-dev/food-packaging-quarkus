@@ -24,7 +24,7 @@ public class SinvRepository implements PanacheRepository<PlrSinv> {
     }
 
     public List<PlrSinv> findByDateAndKppAndType(LocalDate date, String kpp, String type) {
-        return find("dt = ?1 AND kpp = ?2AND type = ?3", date, kpp, type).list();
+        return find("dt = ?1 AND kpp = ?2 AND type = ?3", date, kpp, type).list();
     }
 
     public List<PlrSinv> findByDateAndKppAndKmc(LocalDate date, String kpp, String kmc) {

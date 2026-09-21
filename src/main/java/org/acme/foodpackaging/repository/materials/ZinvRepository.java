@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.repository.materials;
 
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -8,7 +9,7 @@ import org.acme.foodpackaging.entity.materials.PlrZinv;
 import java.time.LocalDate;
 
 @ApplicationScoped
-public class ZinvRepository {
+public class ZinvRepository implements PanacheRepository<PlrZinv> {
 
     private final EntityManager em;
 
@@ -22,10 +23,6 @@ public class ZinvRepository {
     }
 
     public void deleteByDateAndKppAndType(LocalDate date, String kpp, String type) {
-        em.createQuery("DELETE FROM PlrZinv z WHERE z.dt = :dt AND z.kpp = :kpp AND z.type = :type")
-                .setParameter("dt", date)
-                .setParameter("kpp", kpp)
-                .setParameter("type", type)
-                .executeUpdate();
+        delete("dt = ?1 AND kpp = ?2 AND type = ?3", date, kpp, type);
     }
 }
