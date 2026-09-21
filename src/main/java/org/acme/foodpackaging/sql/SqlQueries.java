@@ -87,6 +87,25 @@ public class SqlQueries {
                 """;
     }
 
+    public String loadRnppGroupedByKkom() {
+        return """
+                SELECT r.SYSN, r.KMC, r.KT, r.EMK, r.KKOM,
+                       SUM(r.KOL1T) as KOL1T, SUM(r.KOLVK) as KOLVK
+                FROM dbo.PLR_RNPP r
+                WHERE r.SYSN = ?
+                    AND r.KMC = ?
+                    AND r.KT = ?
+                    AND r.EMK = ?
+                    AND (r.KKOM LIKE '1001%' OR r.KKOM LIKE '1002%' OR r.KKOM LIKE '1005%')
+                    AND EXISTS (
+                        SELECT 1 FROM dbo.PLR_MT mt
+                        WHERE mt.KMT = r.KKOM AND mt.IN_CALC = 1
+                    )
+                GROUP BY r.SYSN, r.KMC, r.KT, r.EMK, r.KKOM
+                ORDER BY r.KKOM
+                """;
+    }
+
 
     public String loadJobs() {
         return """
