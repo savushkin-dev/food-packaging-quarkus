@@ -75,11 +75,23 @@ public class MaterialService {
                         (v1, v2) -> v1
                 ));
 
+        // Если основная не сохранена — берём kolf из предварительной
+        Map<String, Double> preliminaryKolf = new HashMap<>();
+        if ("M".equals(type) && existingPlrSinv.isEmpty()) {
+            preliminaryKolf = sinvRepository.findByDateAndKppAndType(dt, kpp, "P").stream()
+                    .collect(Collectors.toMap(
+                            PlrSinv::getKmt,
+                            s -> s.getKolf() != null ? s.getKolf() : 0.0,
+                            (a, b) -> a
+                    ));
+        }
+
+
         // 4. Загружаем кэш материалов
         Map<String, PlrMt> mtCache = loadMaterialCache(products, sysn);
 
         // 5. Собираем результат
-        List<ProductWithMaterialsDto> result = buildResult(products, sysn, existingDataMap, mtCache, dt, kpp, type);
+        List<ProductWithMaterialsDto> result = buildResult(products, sysn, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf);
 
         // 6. Пересчет
         if (existingPlrSinv.isEmpty()) {
@@ -139,7 +151,8 @@ public class MaterialService {
             Map<String, PlrMt> mtCache,
             LocalDate dt,
             String kpp,
-            String type
+            String type,
+            Map<String, Double> preliminaryKolf
     ) {
         List<ProductWithMaterialsDto> result = new ArrayList<>();
 
@@ -151,7 +164,7 @@ public class MaterialService {
             List<SinvDto> materialDtos = new ArrayList<>();
 
             for (PlrRnpp material : materials) {
-                SinvDto dto = buildSinvDto(product, material, existingDataMap, mtCache, dt, kpp, type);
+                SinvDto dto = buildSinvDto(product, material, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf);
                 materialDtos.add(dto);
             }
 
@@ -171,7 +184,8 @@ public class MaterialService {
             Map<String, PlrMt> mtCache,
             LocalDate dt,
             String kpp,
-            String type
+            String type,
+            Map<String, Double> preliminaryKolf
     ) {
         Double normf = BigDecimal.valueOf((product.getSumMass() / 1000) * material.getKol1t())
                 .setScale(2, RoundingMode.HALF_UP)
@@ -180,6 +194,12 @@ public class MaterialService {
         String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
         PlrSinv existing = existingDataMap.get(key);
         PlrMt plrMt = mtCache.get(material.getKkom());
+
+        // kolf: из сохранённой основной → иначе из предварительной → иначе 0
+        Double kolf = existing != null ? existing.kolf : null;
+        if (kolf == null) {
+            kolf = preliminaryKolf.getOrDefault(material.getKkom(), 0.0);
+        }
 
         return SinvDto.builder()
                 .dt(dt)
@@ -191,7 +211,7 @@ public class MaterialService {
                 .eduMt(plrMt != null ? plrMt.getEdu() : null)
                 .norm(material.getKol1t())
                 .normf(normf)
-                .kolf(existing != null ? existing.kolf : 0.0)
+                .kolf(kolf)
                 .insurancePerc(existing != null ? existing.pers : null)
                 .roundStep(existing != null ? existing.rnd : null)
                 .order(existing != null ? existing.order : null)
