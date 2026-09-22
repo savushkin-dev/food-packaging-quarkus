@@ -29,4 +29,5 @@ public class SinvDto {
     private Double orderFinal;   // Итоговый дозаказ
     private String type;         // Тип заявки
     private Integer productCount;// Количество продуктов с этим материалом
+    private Double orderPre;     // Предварительный заказ (для уточненной заявки)
 }

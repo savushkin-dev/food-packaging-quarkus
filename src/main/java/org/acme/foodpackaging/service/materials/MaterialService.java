@@ -77,13 +77,24 @@ public class MaterialService {
 
         // Если основная не сохранена — берём kolf из предварительной
         Map<String, Double> preliminaryKolf = new HashMap<>();
+        Map<String, Double> preliminaryOrders = new HashMap<>();
         if ("M".equals(type) && existingPlrSinv.isEmpty()) {
-            preliminaryKolf = sinvRepository.findByDateAndKppAndType(dt, kpp, "P").stream()
+            List<PlrSinv> preliminaryList = sinvRepository.findByDateAndKppAndType(dt, kpp, "P");
+
+            preliminaryKolf = preliminaryList.stream()
                     .collect(Collectors.toMap(
                             PlrSinv::getKmt,
                             s -> s.getKolf() != null ? s.getKolf() : 0.0,
                             (a, b) -> a
                     ));
+
+            preliminaryOrders = preliminaryList.stream()
+                    .collect(Collectors.toMap(
+                            PlrSinv::getKmt,
+                            s -> s.getOrderFinal() != null ? s.getOrderFinal() : 0.0,
+                            (a, b) -> a
+                    ));
+
         }
 
 
@@ -91,7 +102,7 @@ public class MaterialService {
         Map<String, PlrMt> mtCache = loadMaterialCache(products, sysn);
 
         // 5. Собираем результат
-        List<ProductWithMaterialsDto> result = buildResult(products, sysn, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf);
+        List<ProductWithMaterialsDto> result = buildResult(products, sysn, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf, preliminaryOrders);
 
         // 6. Пересчет
         if (existingPlrSinv.isEmpty()) {
@@ -152,7 +163,8 @@ public class MaterialService {
             LocalDate dt,
             String kpp,
             String type,
-            Map<String, Double> preliminaryKolf
+            Map<String, Double> preliminaryKolf,
+            Map<String, Double> preliminaryOrders
     ) {
         List<ProductWithMaterialsDto> result = new ArrayList<>();
 
@@ -164,7 +176,7 @@ public class MaterialService {
             List<SinvDto> materialDtos = new ArrayList<>();
 
             for (PlrRnpp material : materials) {
-                SinvDto dto = buildSinvDto(product, material, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf);
+                SinvDto dto = buildSinvDto(product, material, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf, preliminaryOrders);
                 materialDtos.add(dto);
             }
 
@@ -185,7 +197,8 @@ public class MaterialService {
             LocalDate dt,
             String kpp,
             String type,
-            Map<String, Double> preliminaryKolf
+            Map<String, Double> preliminaryKolf,
+            Map<String, Double> preliminaryOrders
     ) {
         Double normf = BigDecimal.valueOf((product.getSumMass() / 1000) * material.getKol1t())
                 .setScale(2, RoundingMode.HALF_UP)
@@ -200,6 +213,9 @@ public class MaterialService {
         if (kolf == null) {
             kolf = preliminaryKolf.getOrDefault(material.getKkom(), 0.0);
         }
+
+        // orderPre — берём из предварительной (для основной)
+        Double orderPre = preliminaryOrders.getOrDefault(material.getKkom(), 0.0);
 
         return SinvDto.builder()
                 .dt(dt)
@@ -217,6 +233,7 @@ public class MaterialService {
                 .order(existing != null ? existing.order : null)
                 .orderFinal(existing != null ? existing.orderFinal : null)
                 .type(type)
+                .orderPre(type.equals("M")? orderPre : null)
                 .build();
     }
 
