@@ -268,6 +268,13 @@ public class MaterialService {
         sinvRepository.deleteByDateAndKppAndType(dt, kpp, type);
 
         // Сохраняем продукты
+        saveZinvProducts(data, dt, kpp, type);
+
+        // Сохраняем материалы со всеми расчетами
+        saveSinvMaterials(data, dt, kpp, type);
+    }
+
+    private void saveZinvProducts(List<ProductWithMaterialsDto> data, LocalDate dt, String kpp, String type) {
         for (ProductWithMaterialsDto product : data) {
             PlrZinv plrZinv = PlrZinv.builder()
                     .dt(dt)
@@ -283,8 +290,9 @@ public class MaterialService {
                     .build();
             zinvRepository.save(plrZinv);
         }
+    }
 
-        // Сохраняем материалы со всеми расчетами
+    private void saveSinvMaterials(List<ProductWithMaterialsDto> data, LocalDate dt, String kpp, String type) {
         for (ProductWithMaterialsDto product : data) {
             for (SinvDto material : product.getMaterials()) {
                 PlrSinv plrSinv = PlrSinv.builder()
