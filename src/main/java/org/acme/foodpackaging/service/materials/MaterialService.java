@@ -326,12 +326,6 @@ public class MaterialService {
      */
     private void calculateTotals(List<ProductWithMaterialsDto> data, String type, LocalDate dt, String kpp) {
 
-        Map<String, Double> preliminary = new HashMap<>();
-        if ("M".equals(type)) {
-            preliminary = sinvRepository.findByDateAndKppAndType(dt, kpp, "P").stream()
-                    .collect(Collectors.toMap(PlrSinv::getKmt, PlrSinv::getOrderFinal, (a, b) -> a));
-        }
-
         Map<String, List<SinvDto>> groupByKmt = groupByKmt(data);
         Map<String, Integer> productCountMap = countProductsPerMaterial(data);
 
@@ -354,6 +348,8 @@ public class MaterialService {
             double totalWithInsurance = roundToTwo(totalNormf * (1 + (insurancePerc / 100.0)));
             double deficit = roundToTwo(Math.max(0, totalWithInsurance - kolf));
 
+            Map<String, Double> preliminary = loadPreliminary(type, dt, kpp);
+
             // Для основной заявки — вычитаем значение предварительной перед округлением
             if (!preliminary.isEmpty()) {
                 deficit = roundToTwo(Math.max(0, deficit - preliminary.getOrDefault(kmt, 0.0)));
@@ -370,13 +366,20 @@ public class MaterialService {
                 material.setSnmMt(snmMt);
                 material.setOrder(order);
 
-
                 // Устанавливаем orderFinal только если он ещё не задан
                 if (material.getOrderFinal() == null) {
                     material.setOrderFinal(order);
                 }
             }
         }
+    }
+
+    private Map<String, Double> loadPreliminary(String type, LocalDate dt, String kpp) {
+        if (!"M".equals(type)) {
+            return Collections.emptyMap();
+        }
+        return sinvRepository.findByDateAndKppAndType(dt, kpp, "P").stream()
+                .collect(Collectors.toMap(PlrSinv::getKmt, PlrSinv::getOrderFinal, (a, b) -> a));
     }
 
 
