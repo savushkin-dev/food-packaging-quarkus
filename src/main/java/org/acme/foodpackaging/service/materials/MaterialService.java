@@ -181,16 +181,6 @@ public class MaterialService {
         PlrSinv existing = existingDataMap.get(key);
         PlrMt plrMt = mtCache.get(material.getKkom());
 
-        Double pers = existing != null ? existing.pers : null;
-        if (pers == null && plrMt != null) {
-            pers = plrMt.getPers() != null ? plrMt.getPers() : 0.0;
-        }
-
-        Double rnd = existing != null ? existing.rnd : null;
-        if (rnd == null && plrMt != null) {
-            rnd = plrMt.getRnd() != null && plrMt.getRnd() > 0 ? plrMt.getRnd() : 1.0;
-        }
-
         return SinvDto.builder()
                 .dt(dt)
                 .kpp(kpp)
@@ -202,8 +192,8 @@ public class MaterialService {
                 .norm(material.getKol1t())
                 .normf(normf)
                 .kolf(existing != null ? existing.kolf : 0.0)
-                .insurancePerc(pers)
-                .roundStep(rnd)
+                .insurancePerc(existing != null ? existing.pers : null)
+                .roundStep(existing != null ? existing.rnd : null)
                 .order(existing != null ? existing.order : null)
                 .orderFinal(existing != null ? existing.orderFinal : null)
                 .type(type)

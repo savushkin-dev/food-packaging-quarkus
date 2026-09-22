@@ -5,7 +5,6 @@ import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import org.acme.foodpackaging.dto.materials.MaterialSettingDto;
 import org.acme.foodpackaging.dto.materials.ProductDto;
@@ -26,9 +25,7 @@ public class MaterialRepository {
 
     private final EntityManager em;
 
-    @Inject
-    @DataSource("disp")
-    AgroalDataSource dispDataSource;
+    private final AgroalDataSource dispDataSource;
 
     private final SqlQueries sqlQueries;
 
@@ -36,9 +33,10 @@ public class MaterialRepository {
     String defaultKsk;
 
     @Inject
-    public MaterialRepository(EntityManager em, SqlQueries sqlQueries) {
+    public MaterialRepository(EntityManager em, SqlQueries sqlQueries, @DataSource("disp") AgroalDataSource dispDataSource) {
         this.em = em;
         this.sqlQueries = sqlQueries;
+        this.dispDataSource = dispDataSource;
     }
 
     public List<ProductDto> findPreliminaryProductsByDate(String date) {

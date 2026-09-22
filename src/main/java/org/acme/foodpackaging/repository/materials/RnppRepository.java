@@ -14,11 +14,15 @@ import java.util.List;
 @ApplicationScoped
 public class RnppRepository implements PanacheRepository<PlrRnpp> {
 
-    @Inject
-    EntityManager em;
+
+    private final EntityManager em;
+    private final SqlQueries sqlQueries;
 
     @Inject
-    SqlQueries sqlQueries;
+    public RnppRepository(EntityManager em, SqlQueries sqlQueries) {
+        this.em = em;
+        this.sqlQueries = sqlQueries;
+    }
 
     @SuppressWarnings("unchecked")
     public List<PlrRnpp> findByKmcAndKtAndEmkAndSysn(Double sysn, String kmc, String kt, Double emk) {
