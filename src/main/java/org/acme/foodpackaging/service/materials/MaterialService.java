@@ -316,31 +316,35 @@ public class MaterialService {
     private void saveSinvMaterials(List<ProductWithMaterialsDto> data, LocalDate dt, String kpp, String type) {
         for (ProductWithMaterialsDto product : data) {
             for (SinvDto material : product.getMaterials()) {
-                double pers = material.getInsurancePerc() != null ? material.getInsurancePerc() : 0.0;
-                double rnd  = (material.getRoundStep() != null && material.getRoundStep() > 0)
-                        ? material.getRoundStep() : 1.0;
-                double order = material.getOrder() != null ? material.getOrder() : 0.0;
-                double orderFinal = (material.getOrderFinal() != null && material.getOrderFinal() >= 0)
-                        ? material.getOrderFinal() : 0.0;
-
-                PlrSinv plrSinv = PlrSinv.builder()
-                        .dt(dt)
-                        .kpp(kpp)
-                        .kmc(product.getKmc())
-                        .kt(material.getKt())
-                        .kmt(material.getKmt())
-                        .norm(material.getNorm())
-                        .normf(material.getNormf())
-                        .kolf(material.getKolf())
-                        .pers(pers)
-                        .rnd(rnd)
-                        .order(order)
-                        .orderFinal(orderFinal)
-                        .type(type)
-                        .build();
-                sinvRepository.saveOrUpdate(plrSinv);
+                sinvRepository.saveOrUpdate(toPlrSinv(product, material, dt, kpp, type));
             }
         }
+    }
+
+    private PlrSinv toPlrSinv(ProductWithMaterialsDto product, SinvDto material,
+                              LocalDate dt, String kpp, String type) {
+        double pers = material.getInsurancePerc() != null ? material.getInsurancePerc() : 0.0;
+        double rnd  = (material.getRoundStep() != null && material.getRoundStep() > 0)
+                ? material.getRoundStep() : 1.0;
+        double order = material.getOrder() != null ? material.getOrder() : 0.0;
+        double orderFinal = (material.getOrderFinal() != null && material.getOrderFinal() >= 0)
+                ? material.getOrderFinal() : 0.0;
+
+        return PlrSinv.builder()
+                .dt(dt)
+                .kpp(kpp)
+                .kmc(product.getKmc())
+                .kt(material.getKt())
+                .kmt(material.getKmt())
+                .norm(material.getNorm())
+                .normf(material.getNormf())
+                .kolf(material.getKolf())
+                .pers(pers)
+                .rnd(rnd)
+                .order(order)
+                .orderFinal(orderFinal)
+                .type(type)
+                .build();
     }
 
     /**
