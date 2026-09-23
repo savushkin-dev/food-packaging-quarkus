@@ -62,4 +62,7 @@ public class PlrZinv extends PanacheEntityBase {
 
     @Column(name = "EMK")
     public Double emk;
+
+    @Column(name = "TYPE", length = 1, nullable = false)
+    public String type = "M";
 }
