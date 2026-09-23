@@ -101,8 +101,14 @@ public class MaterialService {
         // 4. Загружаем кэш материалов
         Map<String, PlrMt> mtCache = loadMaterialCache(products, sysn);
 
+        LoadContext ctx = new LoadContext(
+                sysn, dt, kpp, type,
+                existingDataMap, mtCache,
+                preliminaryKolf, preliminaryOrders
+        );
+
         // 5. Собираем результат
-        List<ProductWithMaterialsDto> result = buildResult(products, sysn, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf, preliminaryOrders);
+        List<ProductWithMaterialsDto> result = buildResult(products, ctx);
 
         // 6. Пересчет
         if (existingPlrSinv.isEmpty()) {
@@ -155,34 +161,18 @@ public class MaterialService {
     /**
      * Собирает результат
      */
-    private List<ProductWithMaterialsDto> buildResult(
-            List<ProductDto> products,
-            Double sysn,
-            Map<String, PlrSinv> existingDataMap,
-            Map<String, PlrMt> mtCache,
-            LocalDate dt,
-            String kpp,
-            String type,
-            Map<String, Double> preliminaryKolf,
-            Map<String, Double> preliminaryOrders
-    ) {
+    private List<ProductWithMaterialsDto> buildResult(List<ProductDto> products, LoadContext ctx) {
         List<ProductWithMaterialsDto> result = new ArrayList<>();
-
         for (ProductDto product : products) {
             List<PlrRnpp> materials = rnppService.findByKmcAndKtAndEmkAndSysn(
-                    sysn, product.getKmc(), product.getKt(), product.getEmk()
+                    ctx.sysn(), product.getKmc(), product.getKt(), product.getEmk()
             );
-
             List<SinvDto> materialDtos = new ArrayList<>();
-
             for (PlrRnpp material : materials) {
-                SinvDto dto = buildSinvDto(product, material, existingDataMap, mtCache, dt, kpp, type, preliminaryKolf, preliminaryOrders);
-                materialDtos.add(dto);
+                materialDtos.add(buildSinvDto(product, material, ctx));
             }
-
-            result.add(buildProductDto(product, materialDtos, dt, kpp, type));
+            result.add(buildProductDto(product, materialDtos, ctx.dt(), ctx.kpp(), ctx.type()));
         }
-
         return result;
     }
 
@@ -192,34 +182,28 @@ public class MaterialService {
     private SinvDto buildSinvDto(
             ProductDto product,
             PlrRnpp material,
-            Map<String, PlrSinv> existingDataMap,
-            Map<String, PlrMt> mtCache,
-            LocalDate dt,
-            String kpp,
-            String type,
-            Map<String, Double> preliminaryKolf,
-            Map<String, Double> preliminaryOrders
+            LoadContext ctx
     ) {
         Double normf = BigDecimal.valueOf((product.getSumMass() / 1000) * material.getKol1t())
                 .setScale(2, RoundingMode.HALF_UP)
                 .doubleValue();
 
         String key = product.getKmc() + "|" + material.getKt() + "|" + material.getKkom() + "|" + material.getKol1t();
-        PlrSinv existing = existingDataMap.get(key);
-        PlrMt plrMt = mtCache.get(material.getKkom());
+        PlrSinv existing = ctx.existingDataMap().get(key);
+        PlrMt plrMt = ctx.mtCache().get(material.getKkom());
 
         // kolf: из сохранённой основной → иначе из предварительной → иначе 0
         Double kolf = existing != null ? existing.kolf : null;
         if (kolf == null) {
-            kolf = preliminaryKolf.getOrDefault(material.getKkom(), 0.0);
+            kolf = ctx.preliminaryKolf().getOrDefault(material.getKkom(), 0.0);
         }
 
         // orderPre — берём из предварительной (для основной)
-        Double orderPre = preliminaryOrders.getOrDefault(material.getKkom(), 0.0);
+        Double orderPre = ctx.preliminaryOrders().getOrDefault(material.getKkom(), 0.0);
 
         return SinvDto.builder()
-                .dt(dt)
-                .kpp(kpp)
+                .dt(ctx.dt())
+                .kpp(ctx.kpp())
                 .kmc(product.getKmc())
                 .kt(material.getKt())
                 .kmt(material.getKkom())
@@ -232,8 +216,8 @@ public class MaterialService {
                 .roundStep(existing != null ? existing.rnd : null)
                 .order(existing != null ? existing.order : null)
                 .orderFinal(existing != null ? existing.orderFinal : null)
-                .type(type)
-                .orderPre(type.equals("M")? orderPre : null)
+                .type(ctx.type())
+                .orderPre(ctx.type().equals("M")? orderPre : null)
                 .build();
     }
 
@@ -332,6 +316,13 @@ public class MaterialService {
     private void saveSinvMaterials(List<ProductWithMaterialsDto> data, LocalDate dt, String kpp, String type) {
         for (ProductWithMaterialsDto product : data) {
             for (SinvDto material : product.getMaterials()) {
+                double pers = material.getInsurancePerc() != null ? material.getInsurancePerc() : 0.0;
+                double rnd  = (material.getRoundStep() != null && material.getRoundStep() > 0)
+                        ? material.getRoundStep() : 1.0;
+                double order = material.getOrder() != null ? material.getOrder() : 0.0;
+                double orderFinal = (material.getOrderFinal() != null && material.getOrderFinal() >= 0)
+                        ? material.getOrderFinal() : 0.0;
+
                 PlrSinv plrSinv = PlrSinv.builder()
                         .dt(dt)
                         .kpp(kpp)
@@ -341,10 +332,10 @@ public class MaterialService {
                         .norm(material.getNorm())
                         .normf(material.getNormf())
                         .kolf(material.getKolf())
-                        .pers(material.getInsurancePerc() != null ? material.getInsurancePerc() : 0.0)
-                        .rnd(material.getRoundStep() != null && material.getRoundStep() > 0 ? material.getRoundStep() : 1.0)
-                        .order(material.getOrder() != null ? material.getOrder() : 0.0)
-                        .orderFinal(material.getOrderFinal() != null && material.getOrderFinal() >= 0 ? material.getOrderFinal() : 0.0)
+                        .pers(pers)
+                        .rnd(rnd)
+                        .order(order)
+                        .orderFinal(orderFinal)
                         .type(type)
                         .build();
                 sinvRepository.saveOrUpdate(plrSinv);
@@ -362,9 +353,10 @@ public class MaterialService {
      * 3. Заказ = Округлить_вверх(Дефицит / Шаг) × Шаг
      */
     private void calculateTotals(List<ProductWithMaterialsDto> data, String type, LocalDate dt, String kpp) {
-
         Map<String, List<SinvDto>> groupByKmt = groupByKmt(data);
         Map<String, Integer> productCountMap = countProductsPerMaterial(data);
+
+        Map<String, Double> preliminary = loadPreliminary(type, dt, kpp);
 
         for (Map.Entry<String, List<SinvDto>> entry : groupByKmt.entrySet()) {
             String kmt = entry.getKey();
@@ -377,22 +369,20 @@ public class MaterialService {
             SinvDto first = materials.get(0);
             PlrMt plrMt = mtService.getByKmt(kmt);
 
-            double insurancePerc = plrMt != null && plrMt.getPers() != null ? roundToTwo(plrMt.getPers()) : 0.0;
-            double roundStep = plrMt != null && plrMt.getRnd() != null && plrMt.getRnd() > 0 ? roundToTwo(plrMt.getRnd()) : 1.0;
-            double kolf = first.getKolf() != null ? roundToTwo(first.getKolf()) : 0.0;
-            String snmMt = plrMt != null ? plrMt.getSnm() : null;
+            double insurancePerc = getDoubleOrDefault(plrMt != null ? plrMt.getPers() : null, 0.0);
+            double roundStep     = getPositiveOrDefault(plrMt != null ? plrMt.getRnd() : null, 1.0);
+            double kolf          = getDoubleOrDefault(first.getKolf(), 0.0);
+            String snmMt         = plrMt != null ? plrMt.getSnm() : null;
 
             double totalWithInsurance = roundToTwo(totalNormf * (1 + (insurancePerc / 100.0)));
             double deficit = roundToTwo(Math.max(0, totalWithInsurance - kolf));
 
-            Map<String, Double> preliminary = loadPreliminary(type, dt, kpp);
-
             // Для основной заявки — вычитаем значение предварительной перед округлением
+            double pre = preliminary.getOrDefault(kmt, 0.0);
             if (!preliminary.isEmpty()) {
-                deficit = roundToTwo(Math.max(0, deficit - preliminary.getOrDefault(kmt, 0.0)));
+                deficit = roundToTwo(Math.max(0, deficit - pre));
             }
 
-            // Округляем после вычитания
             double order = roundToTwo(Math.ceil(deficit / roundStep) * roundStep);
 
             for (SinvDto material : materials) {
@@ -403,12 +393,19 @@ public class MaterialService {
                 material.setSnmMt(snmMt);
                 material.setOrder(order);
 
-                // Устанавливаем orderFinal только если он ещё не задан
                 if (material.getOrderFinal() == null) {
                     material.setOrderFinal(order);
                 }
             }
         }
+    }
+
+    private double getDoubleOrDefault(Double value, double def) {
+        return value != null ? roundToTwo(value) : def;
+    }
+
+    private double getPositiveOrDefault(Double value, double def) {
+        return (value != null && value > 0) ? roundToTwo(value) : def;
     }
 
     private Map<String, Double> loadPreliminary(String type, LocalDate dt, String kpp) {
