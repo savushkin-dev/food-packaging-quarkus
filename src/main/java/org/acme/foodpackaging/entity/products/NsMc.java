@@ -15,7 +15,7 @@ public class NsMc extends PanacheEntityBase {
     @Column(name = "F_GUID")
     public UUID id;
 
-    @Column(name = "KMC")
+    @Column(name = "KMC", unique = true)
     public String kmc;
 
     @Column(name = "MASSA")

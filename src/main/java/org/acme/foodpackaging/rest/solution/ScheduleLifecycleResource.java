@@ -21,8 +21,9 @@ import org.acme.foodpackaging.service.solution.value.DowntimeDataValue;
 import org.acme.foodpackaging.initializer.value.InitDataValue;
 import org.acme.foodpackaging.rest.ApiFields;
 
+import org.acme.foodpackaging.service.solution.ScheduleDowntimeService;
+
 import java.util.Map;
-import static org.acme.foodpackaging.utils.ScheduleUtils.getDowntimeData;
 
 @Path("schedule")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -37,6 +38,7 @@ public class ScheduleLifecycleResource {
     private final JobSaveService jobSaveService;
     private final UploadDataService uploadDataService;
     private final ScheduleSessionService scheduleSessionService;
+    private final ScheduleDowntimeService scheduleDowntimeService;
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -96,7 +98,7 @@ public class ScheduleLifecycleResource {
         PackagingSchedule finalSchedule = repository.readForSession(sessionId);
         repository.writeForSession(sessionId, finalSchedule);
 
-        DowntimeDataValue response = getDowntimeData(finalSchedule);
+        DowntimeDataValue response = scheduleDowntimeService.calculate(finalSchedule);
 
         return Response.ok(response).build();
     }
@@ -107,7 +109,7 @@ public class ScheduleLifecycleResource {
         PackagingSchedule bestSolution = scheduleSessionService.requireScheduleForRead(sessionId);
 
         jobSaveService.saveJobsByType(bestSolution);
-        DowntimeDataValue response = getDowntimeData(bestSolution);
+        DowntimeDataValue response = scheduleDowntimeService.calculate(bestSolution);
 
         return Response.ok(response).build();
     }

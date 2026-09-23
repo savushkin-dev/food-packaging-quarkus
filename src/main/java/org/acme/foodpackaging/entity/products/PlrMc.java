@@ -34,7 +34,7 @@ public class PlrMc extends PanacheEntityBase {
     @Column(name = "F_DEL")
     public Integer deletedFlag;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
         name = "KMC",
         referencedColumnName = "KMC",

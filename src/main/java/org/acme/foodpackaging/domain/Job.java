@@ -27,12 +27,15 @@ import lombok.Setter;
 import org.acme.foodpackaging.utils.CleaningDurationUtils;
 import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.dto.request.maintenance.AddMaintenanceRequest;
+import org.jboss.logging.Logger;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @PlanningEntity
 public class Job {
+
+    private static final Logger LOG = Logger.getLogger(Job.class);
 
     @PlanningId
     private String id;
@@ -229,10 +232,22 @@ public class Job {
                 || previousJob.getProduct() == null
                 || previousJob.getProduct().getCleaningDurations() == null)
             return 0;
-        CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
-        return meta.isPLRLC()
-                ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
-                : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
+
+        try {
+            CleaningResult meta = product.getCleaningResults().get(previousJob.getProduct());
+            return meta.isPLRLC()
+                    ? CleaningDurationUtils.getLinesCleaning().get(line.getId())
+                    : product.getCleaningDurations().get(previousJob.getProduct()).toMinutes();
+        } catch (IllegalArgumentException | NullPointerException e) {
+            Product previousProduct = previousJob.getProduct();
+            LOG.warnf(e,
+                    "getCleaningDurationPlan: не удалось посчитать время мойки для "
+                            + "product=%s(id=%s) -> previousProduct=%s(id=%s). job=%s, previousJob=%s",
+                    product.getName(), product.getId(),
+                    previousProduct.getName(), previousProduct.getId(),
+                    id, previousJob.getId());
+            return 0;
+        }
     }
 
     public long getCleaningDurationFact() {

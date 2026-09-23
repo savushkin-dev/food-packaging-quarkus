@@ -7,7 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.dto.response.solution.DowntimeDataResponse;
-import org.acme.foodpackaging.service.load.DowntimeDataService;
+import org.acme.foodpackaging.service.load.BatchDowntimeService;
 
 import java.time.Duration;
 
@@ -16,7 +16,7 @@ import java.time.Duration;
 @ApplicationScoped
 public class DowntimeResource {
 
-    private final DowntimeDataService downtimeDataService;
+    private final BatchDowntimeService batchDowntimeService;
 
     @GET
     @Path("downtimePeriods/{idBatch}")
@@ -28,11 +28,11 @@ public class DowntimeResource {
         }
         String trimmed = idBatch.trim();
         if (duration == null) {
-            return downtimeDataService.build(trimmed);
+            return batchDowntimeService.build(trimmed);
         }
         if (duration < 0) {
             throw new WebApplicationException("Query parameter 'duration' must be >= 0", Response.Status.BAD_REQUEST);
         }
-        return downtimeDataService.build(trimmed, Duration.ofMinutes(duration.longValue()));
+        return batchDowntimeService.build(trimmed, Duration.ofMinutes(duration.longValue()));
     }
 }
