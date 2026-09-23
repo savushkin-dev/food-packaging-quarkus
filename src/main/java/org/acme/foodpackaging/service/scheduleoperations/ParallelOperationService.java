@@ -38,8 +38,8 @@ public class ParallelOperationService {
                 .startDateTime(request.startDateTime())
                 .duration(duration)
                 .endDateTime(calculateEndDateTime(request.startDateTime(), duration))
-                .eventTypeId(request.eventTypeId())
-                .note(request.note())
+                .maintenanceTypeId(request.eventTypeId())
+                .maintenanceNote(request.note())
                 .build();
 
         Map<String, ParallelOperation> operations = schedule.getParallelOperations();
@@ -65,11 +65,11 @@ public class ParallelOperationService {
             builder.lineId(request.lineId());
         }
         if (request.eventTypeId() != null) {
-            builder.eventTypeId(request.eventTypeId());
+            builder.maintenanceTypeId(request.eventTypeId());
             builder.name(resolveName(request.eventTypeId()));
         }
         if (request.note() != null) {
-            builder.note(request.note());
+            builder.maintenanceNote(request.note());
         }
 
         LocalDateTime newStart = request.startDateTime() != null ? request.startDateTime() : existing.getStartDateTime();

@@ -64,8 +64,8 @@ class ParallelOperationServiceTest {
         assertEquals(start, created.getStartDateTime());
         assertEquals(start.plusMinutes(90), created.getEndDateTime());
         assertEquals(90, created.getDuration().toMinutes());
-        assertEquals(3, created.getEventTypeId());
-        assertEquals("note", created.getNote());
+        assertEquals(3, created.getMaintenanceTypeId());
+        assertEquals("note", created.getMaintenanceNote());
     }
 
     @Test
@@ -140,8 +140,8 @@ class ParallelOperationServiceTest {
                 .startDateTime(start)
                 .duration(java.time.Duration.ofMinutes(30))
                 .endDateTime(start.plusMinutes(30))
-                .eventTypeId(2)
-                .note("old note")
+                .maintenanceTypeId(2)
+                .maintenanceNote("old note")
                 .build();
         schedule.setParallelOperations(Map.of("op1", existing));
 
@@ -155,8 +155,8 @@ class ParallelOperationServiceTest {
         assertEquals(start.plusMinutes(120), updated.getEndDateTime());
         // untouched fields stay the same
         assertEquals("line1", updated.getLineId());
-        assertEquals("old note", updated.getNote());
-        assertEquals(2, updated.getEventTypeId());
+        assertEquals("old note", updated.getMaintenanceNote());
+        assertEquals(2, updated.getMaintenanceTypeId());
     }
 
     @Test
@@ -192,7 +192,7 @@ class ParallelOperationServiceTest {
                 .id("op1")
                 .lineId("line1")
                 .name("Old name")
-                .eventTypeId(1)
+                .maintenanceTypeId(1)
                 .build();
         schedule.setParallelOperations(Map.of("op1", existing));
 
@@ -202,7 +202,7 @@ class ParallelOperationServiceTest {
         parallelOperationService.update(schedule, request);
 
         ParallelOperation updated = schedule.getParallelOperations().get("op1");
-        assertEquals(5, updated.getEventTypeId());
+        assertEquals(5, updated.getMaintenanceTypeId());
         assertEquals("Наладка", updated.getName());
     }
 
@@ -215,7 +215,7 @@ class ParallelOperationServiceTest {
                 .startDateTime(start)
                 .duration(java.time.Duration.ofMinutes(45))
                 .endDateTime(start.plusMinutes(45))
-                .note("old")
+                .maintenanceNote("old")
                 .build();
         schedule.setParallelOperations(Map.of("op1", existing));
 
@@ -226,7 +226,7 @@ class ParallelOperationServiceTest {
 
         ParallelOperation updated = schedule.getParallelOperations().get("op1");
         assertEquals("line2", updated.getLineId());
-        assertEquals("new note", updated.getNote());
+        assertEquals("new note", updated.getMaintenanceNote());
         assertEquals(start, updated.getStartDateTime());
         assertEquals(45, updated.getDuration().toMinutes());
         assertEquals(start.plusMinutes(45), updated.getEndDateTime());
@@ -242,8 +242,8 @@ class ParallelOperationServiceTest {
                 .startDateTime(start)
                 .duration(java.time.Duration.ofMinutes(30))
                 .endDateTime(start.plusMinutes(30))
-                .eventTypeId(2)
-                .note("note")
+                .maintenanceTypeId(2)
+                .maintenanceNote("note")
                 .build();
         schedule.setParallelOperations(Map.of("op1", existing));
 
@@ -258,8 +258,8 @@ class ParallelOperationServiceTest {
         assertEquals(existing.getStartDateTime(), updated.getStartDateTime());
         assertEquals(existing.getDuration(), updated.getDuration());
         assertEquals(existing.getEndDateTime(), updated.getEndDateTime());
-        assertEquals(existing.getEventTypeId(), updated.getEventTypeId());
-        assertEquals(existing.getNote(), updated.getNote());
+        assertEquals(existing.getMaintenanceTypeId(), updated.getMaintenanceTypeId());
+        assertEquals(existing.getMaintenanceNote(), updated.getMaintenanceNote());
     }
 
     // ---------- remove ----------

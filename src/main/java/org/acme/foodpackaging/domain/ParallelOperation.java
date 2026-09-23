@@ -19,6 +19,6 @@ public class ParallelOperation {
     private final LocalDateTime endDateTime;
     @JsonSerialize(using = DurationMinutesSerializer.class)
     private final Duration duration;
-    private final Integer eventTypeId;
-    private final String note;
+    private final Integer maintenanceTypeId;
+    private final String maintenanceNote;
 }
