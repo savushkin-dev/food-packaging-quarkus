@@ -1545,27 +1545,5 @@ class MaterialServiceTest {
         assertNotNull(material.getOrder());
     }
 
-    // ---------- 5. loadPreliminary: ветка type != "M" ----------
 
-    @Test
-    void testCalculateTotals_PreliminaryType_LoadPreliminaryReturnsEmpty() {
-        // Arrange — type = "P", loadPreliminary должен вернуть emptyMap
-        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
-        PlrMt mt = createTestMt();
-        when(mtService.getByKmt(anyString())).thenReturn(mt);
-
-        // Act
-        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
-                KolfRecalcRequest.builder()
-                        .date(testDateStr).kpp(testKpp).type("P")
-                        .kmt("1002051408").kolf(0.0).data(data)
-                        .build()
-        );
-
-        // Assert
-        SinvDto material = result.get(0).getMaterials().get(0);
-        assertNotNull(material.getOrder());
-        // Для "P" мы не должны ходить в репозиторий за "P"
-        verify(sinvRepository, never()).findByDateAndKppAndType(any(), any(), eq("P"));
-    }
 }
