@@ -12,6 +12,7 @@ import org.acme.foodpackaging.service.materials.config.MtService;
 import org.acme.foodpackaging.service.materials.config.PpService;
 
 import java.util.List;
+import java.util.Map;
 
 @Log4j2
 @Path("/api/material")
@@ -26,6 +27,20 @@ public class MaterialResource {
     public MaterialResource(MaterialService materialService, PpService ppService) {
         this.materialService = materialService;
         this.ppService = ppService;
+    }
+
+    @POST
+    @Path("/send-1c")
+    public Response sendTo1C(SaveRequest request) {
+        try {
+            List<ProductWithMaterialsDto> data = materialService.sendTo1C(request);
+            return Response.ok(data).build();
+        } catch (Exception e) {
+            log.error("Error send to 1c", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error send to 1c: " + e.getMessage())
+                    .build();
+        }
     }
 
     @GET

@@ -9,6 +9,7 @@ import org.acme.foodpackaging.repository.materials.*;
 import org.acme.foodpackaging.service.materials.config.MtService;
 import org.acme.foodpackaging.service.materials.config.RnppService;
 import org.acme.foodpackaging.service.materials.config.SprogService;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -22,6 +23,8 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class MaterialService {
 
+    @ConfigProperty(name = "kppc")
+    String defaultKppc;
 
     private final MaterialRepository materialRepository;
     private final SprogService sprogService;
@@ -29,16 +32,38 @@ public class MaterialService {
     private final SinvRepository sinvRepository;
     private final ZinvRepository zinvRepository;
     private final MtService mtService;
+    private final OneCSyncService oneCSyncService;
 
     @Inject
     public MaterialService(MaterialRepository materialRepository, SprogService sprogService, RnppService rnppService
-            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService) {
+            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService, OneCSyncService oneCSyncService) {
         this.materialRepository = materialRepository;
         this.sprogService = sprogService;
         this.rnppService = rnppService;
         this.sinvRepository = sinvRepository;
         this.zinvRepository = zinvRepository;
         this.mtService = mtService;
+        this.oneCSyncService = oneCSyncService;
+    }
+
+    /**
+     * Отправляет данные в 1С и сохраняет их с полученным req1c
+     */
+    @Transactional
+    public List<ProductWithMaterialsDto> sendTo1C(SaveRequest request) {
+        String kpp = request.getKpp();
+        List<ProductWithMaterialsDto> data = request.getData();
+
+        String req1c = oneCSyncService.sendOrder(kpp, defaultKppc, data);
+
+        for (ProductWithMaterialsDto product : data) {
+            product.setReq1c(req1c);
+            product.setKppc(defaultKppc);
+        }
+
+        saveAll(request);
+
+        return data;
     }
 
 
@@ -308,6 +333,8 @@ public class MaterialService {
                     .sumMass(product.getSumMass())
                     .sumKolev(product.getSumKolev())
                     .type(type)
+                    .kppc(product.getKppc())
+                    .req1c(product.getReq1c())
                     .build();
             zinvRepository.save(plrZinv);
         }

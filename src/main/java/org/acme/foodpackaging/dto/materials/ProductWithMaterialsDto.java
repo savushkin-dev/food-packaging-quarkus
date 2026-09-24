@@ -24,5 +24,7 @@ public class ProductWithMaterialsDto {
     private Double sumKolev;
     private Double krkmc;
     private String type;
+    private String req1c;
+    private String kppc;
     private List<SinvDto> materials;
 }
