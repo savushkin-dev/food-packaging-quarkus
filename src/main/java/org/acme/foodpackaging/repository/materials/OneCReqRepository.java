@@ -11,10 +11,7 @@ import java.util.List;
 public class OneCReqRepository implements PanacheRepository<Plr1cReq> {
 
     public List<Plr1cReq> findByDtAndKpp2AndType(LocalDate dt, String kpp2, String type) {
-        return find("dt = ?1 AND kpp2 = ?2 AND type = ?3", dt, kpp2, type).list();
+        return find("dt = ?1 AND kpp2 = ?2 AND type = ?3 ORDER BY sentAt DESC", dt, kpp2, type).list();
     }
 
-    public List<Plr1cReq> findByReq1c(String req1c) {
-        return find("req1c = ?1", req1c).list();
-    }
 }

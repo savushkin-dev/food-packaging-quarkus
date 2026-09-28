@@ -11,11 +11,10 @@ import jakarta.ws.rs.core.Response;
 import lombok.extern.log4j.Log4j2;
 import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.service.materials.MaterialService;
-import org.acme.foodpackaging.service.materials.config.MtService;
+import org.acme.foodpackaging.service.materials.OneCLogService;
 import org.acme.foodpackaging.service.materials.config.PpService;
 
 import java.util.List;
-import java.util.Map;
 
 @Log4j2
 @Path("/api/material")
@@ -25,11 +24,31 @@ public class MaterialResource {
 
     private final MaterialService materialService;
     private final PpService ppService;
+    private final OneCLogService oneCLogService;
 
     @Inject
-    public MaterialResource(MaterialService materialService, PpService ppService) {
+    public MaterialResource(MaterialService materialService, PpService ppService, OneCLogService oneCLogService) {
         this.materialService = materialService;
         this.ppService = ppService;
+        this.oneCLogService = oneCLogService;
+    }
+
+    @GET
+    @Path("/log-1c")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getOneCLog(
+            @QueryParam("date") String date,
+            @QueryParam("kpp") String kpp,
+            @QueryParam("type") String type) {
+        try {
+            List<OneCReqGroupDto> result = oneCLogService.getLog(date, kpp, type);
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            log.error("Error get log 1c", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error get log 1c: " + e.getMessage())
+                    .build();
+        }
     }
 
     @POST

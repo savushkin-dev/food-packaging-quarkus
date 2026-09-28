@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import org.acme.foodpackaging.dto.materials.OneCRequest;
-import org.acme.foodpackaging.dto.materials.OneCResponse;
+import org.acme.foodpackaging.dto.materials.OneCRemoteReq;
+import org.acme.foodpackaging.dto.materials.OneCRemoteResp;
 import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
 import org.acme.foodpackaging.dto.materials.SinvDto;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -16,7 +16,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -47,11 +46,11 @@ public class OneCSyncService {
      */
     public String sendOrder(String kpp, String kppc, List<ProductWithMaterialsDto> data) {
         try {
-            OneCRequest request = buildRequest(kpp, kppc, data);
-
+            OneCRemoteReq request = buildRequest(kpp, kppc, data);
+            System.out.println();
             String responseBody = sendHttpRequest(request);
 
-            OneCResponse oneCResponse = objectMapper.readValue(responseBody, OneCResponse.class);
+            OneCRemoteResp oneCResponse = objectMapper.readValue(responseBody, OneCRemoteResp.class);
 
             if (oneCResponse.getCode() == null || oneCResponse.getCode() != 0) {
                 throw new RuntimeException("1C error: " + oneCResponse.getDescription());
@@ -68,24 +67,24 @@ public class OneCSyncService {
     /**
      * Формирует запрос для 1С
      */
-    private OneCRequest buildRequest(String kpp, String kppc, List<ProductWithMaterialsDto> data) {
+    private OneCRemoteReq buildRequest(String kpp, String kppc, List<ProductWithMaterialsDto> data) {
         Map<String, Double> materialsMap = data.stream()
                 .flatMap(p -> p.getMaterials().stream())
                 .filter(m -> m.getOrderFinal() != null && m.getOrderFinal() > 0)
                 .collect(Collectors.toMap(
                         SinvDto::getKmt,
                         SinvDto::getOrderFinal,
-                        Double::sum
+                        (a, b) -> a
                 ));
 
-        List<OneCRequest.OneCMaterial> materials = materialsMap.entrySet().stream()
-                .map(e -> OneCRequest.OneCMaterial.builder()
+        List<OneCRemoteReq.OneCMaterial> materials = materialsMap.entrySet().stream()
+                .map(e -> OneCRemoteReq.OneCMaterial.builder()
                         .KMT(e.getKey())
                         .KOLE(e.getValue())
                         .build())
                 .collect(Collectors.toList());
 
-        return OneCRequest.builder()
+        return OneCRemoteReq.builder()
                 .KPP1(kppc)
                 .KPP2(kpp)
                 .MATERIALS(materials)
@@ -95,7 +94,7 @@ public class OneCSyncService {
     /**
      * Отправляет HTTP-запрос в 1С
      */
-    private String sendHttpRequest(OneCRequest request) throws Exception {
+    private String sendHttpRequest(OneCRemoteReq request) throws Exception {
         String jsonBody = objectMapper.writeValueAsString(request);
         log.info("Sending order to 1C: {}", jsonBody);
 

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OneCResponse {
+public class OneCRemoteResp {
     private Integer code;
     private String description;
     private String tasknumber;

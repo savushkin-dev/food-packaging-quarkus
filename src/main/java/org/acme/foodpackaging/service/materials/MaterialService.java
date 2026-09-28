@@ -92,14 +92,13 @@ public class MaterialService {
     ) {
         LocalDateTime sentAt = LocalDateTime.now();
 
-        // Группируем материалы по KMT и суммируем orderFinal (так же, как отправляли)
         Map<String, Double> materialsMap = data.stream()
                 .flatMap(p -> p.getMaterials().stream())
                 .filter(m -> m.getOrderFinal() != null && m.getOrderFinal() > 0)
                 .collect(Collectors.toMap(
                         SinvDto::getKmt,
                         SinvDto::getOrderFinal,
-                        Double::sum
+                        (a, b) -> a
                 ));
 
         for (Map.Entry<String, Double> entry : materialsMap.entrySet()) {

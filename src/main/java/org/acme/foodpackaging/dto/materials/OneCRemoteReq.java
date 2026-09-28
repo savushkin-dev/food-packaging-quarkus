@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OneCRequest {
+public class OneCRemoteReq {
     private String KPP1;
     private String KPP2;
     private List<OneCMaterial> MATERIALS;
