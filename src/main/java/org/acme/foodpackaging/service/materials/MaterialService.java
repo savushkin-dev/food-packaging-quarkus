@@ -3,6 +3,7 @@ package org.acme.foodpackaging.service.materials;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.entity.materials.*;
 import org.acme.foodpackaging.repository.materials.*;
@@ -14,12 +15,14 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Сервис для работы с материалами и расчетами потребности
  */
+@Slf4j
 @ApplicationScoped
 public class MaterialService {
 
@@ -33,10 +36,11 @@ public class MaterialService {
     private final ZinvRepository zinvRepository;
     private final MtService mtService;
     private final OneCSyncService oneCSyncService;
+    private final OneCReqRepository oneCReqRepository;
 
     @Inject
     public MaterialService(MaterialRepository materialRepository, SprogService sprogService, RnppService rnppService
-            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService, OneCSyncService oneCSyncService) {
+            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService, OneCSyncService oneCSyncService, OneCReqRepository oneCReqRepository) {
         this.materialRepository = materialRepository;
         this.sprogService = sprogService;
         this.rnppService = rnppService;
@@ -44,17 +48,24 @@ public class MaterialService {
         this.zinvRepository = zinvRepository;
         this.mtService = mtService;
         this.oneCSyncService = oneCSyncService;
+        this.oneCReqRepository = oneCReqRepository;
     }
 
     /**
      * Отправляет данные в 1С и сохраняет их с полученным req1c
      */
     @Transactional
-    public List<ProductWithMaterialsDto> sendTo1C(SaveRequest request) {
+    public List<ProductWithMaterialsDto> sendTo1C(SaveRequest request, String userId, String ip) {
+        String date = request.getDate();
         String kpp = request.getKpp();
+        String type = request.getType();
         List<ProductWithMaterialsDto> data = request.getData();
 
+        LocalDate dt = LocalDate.parse(date);
+
         String req1c = oneCSyncService.sendOrder(kpp, defaultKppc, data);
+
+        saveOneCReqLog(dt, defaultKppc, kpp, type, data, req1c, userId, ip);
 
         for (ProductWithMaterialsDto product : data) {
             product.setReq1c(req1c);
@@ -64,6 +75,50 @@ public class MaterialService {
         saveAll(request);
 
         return data;
+    }
+
+    /**
+     * Сохраняет лог отправки в 1С
+     */
+    private void saveOneCReqLog(
+            LocalDate dt,
+            String kpp1,
+            String kpp2,
+            String type,
+            List<ProductWithMaterialsDto> data,
+            String req1c,
+            String userId,
+            String ip
+    ) {
+        LocalDateTime sentAt = LocalDateTime.now();
+
+        // Группируем материалы по KMT и суммируем orderFinal (так же, как отправляли)
+        Map<String, Double> materialsMap = data.stream()
+                .flatMap(p -> p.getMaterials().stream())
+                .filter(m -> m.getOrderFinal() != null && m.getOrderFinal() > 0)
+                .collect(Collectors.toMap(
+                        SinvDto::getKmt,
+                        SinvDto::getOrderFinal,
+                        Double::sum
+                ));
+
+        for (Map.Entry<String, Double> entry : materialsMap.entrySet()) {
+            Plr1cReq log = Plr1cReq.builder()
+                    .dt(dt)
+                    .kpp1(kpp1)
+                    .kpp2(kpp2)
+                    .type(type)
+                    .kmt(entry.getKey())
+                    .kole(entry.getValue())
+                    .req1c(req1c)
+                    .userId(userId)
+                    .ip(ip)
+                    .sentAt(sentAt)
+                    .build();
+            oneCReqRepository.persist(log);
+        }
+
+        log.info("Saved {} log entries for req1c={}", materialsMap.size(), req1c);
     }
 
 

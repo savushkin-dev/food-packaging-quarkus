@@ -1,8 +1,11 @@
 package org.acme.foodpackaging.rest.materials;
 
+import io.vertx.ext.web.RoutingContext;
 import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.extern.log4j.Log4j2;
@@ -31,9 +34,13 @@ public class MaterialResource {
 
     @POST
     @Path("/send-1c")
-    public Response sendTo1C(SaveRequest request) {
+    public Response sendTo1C(SaveRequest request, @Context RoutingContext ctx) {
         try {
-            List<ProductWithMaterialsDto> data = materialService.sendTo1C(request);
+            String ip = ctx.request().remoteAddress().host();
+//            String userId = getUserId(httpRequest);
+            String userId = "12741";
+
+            List<ProductWithMaterialsDto> data = materialService.sendTo1C(request, userId, ip);
             return Response.ok(data).build();
         } catch (Exception e) {
             log.error("Error send to 1c", e);
@@ -41,6 +48,20 @@ public class MaterialResource {
                     .entity("Error send to 1c: " + e.getMessage())
                     .build();
         }
+    }
+
+    private String getUserId(HttpServletRequest request) {
+        // Вариант 1: из header
+        String userId = request.getHeader("X-User-Id");
+        if (userId != null && !userId.isEmpty()) {
+            return userId;
+        }
+        // Вариант 2: из session
+        Object sessionUser = request.getSession().getAttribute("userId");
+        if (sessionUser != null) {
+            return sessionUser.toString();
+        }
+        return null;
     }
 
     @GET
