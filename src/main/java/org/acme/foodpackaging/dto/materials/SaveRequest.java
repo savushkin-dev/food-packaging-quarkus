@@ -15,5 +15,6 @@ public class SaveRequest {
     private String date;
     private String kpp;
     private String type;
+    private String userId;
     private List<ProductWithMaterialsDto> data;
 }
