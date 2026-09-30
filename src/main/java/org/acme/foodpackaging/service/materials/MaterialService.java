@@ -27,9 +27,7 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class MaterialService {
 
-    @ConfigProperty(name = "kppc")
-    String defaultKppc;
-
+    private final String defaultKppc;
     private final MaterialRepository materialRepository;
     private final SprogService sprogService;
     private final RnppService rnppService;
@@ -41,7 +39,7 @@ public class MaterialService {
 
     @Inject
     public MaterialService(MaterialRepository materialRepository, SprogService sprogService, RnppService rnppService
-            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService, OneCSyncService oneCSyncService, OneCReqRepository oneCReqRepository) {
+            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService, OneCSyncService oneCSyncService, OneCReqRepository oneCReqRepository, @ConfigProperty(name = "kppc") String defaultKppc) {
         this.materialRepository = materialRepository;
         this.sprogService = sprogService;
         this.rnppService = rnppService;
@@ -50,6 +48,7 @@ public class MaterialService {
         this.mtService = mtService;
         this.oneCSyncService = oneCSyncService;
         this.oneCReqRepository = oneCReqRepository;
+        this.defaultKppc = defaultKppc;
     }
 
     /**
