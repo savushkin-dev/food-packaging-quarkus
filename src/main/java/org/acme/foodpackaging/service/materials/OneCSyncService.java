@@ -62,6 +62,9 @@ public class OneCSyncService {
 
             return oneCResponse.getTasknumber();
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new OneCSyncException("Interrupted while sending order to 1C", e);
         } catch (Exception e) {
             log.error("Failed to send order to 1C", e);
             throw new OneCSyncException("Failed to send order to 1C: " + e.getMessage(), e);

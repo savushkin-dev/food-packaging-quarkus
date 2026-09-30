@@ -239,10 +239,9 @@ public class MaterialService {
             List<PlrRnpp> materials = rnppService.findByKmcAndKtAndEmkAndSysn(
                     ctx.sysn(), product.getKmc(), product.getKt(), product.getEmk()
             );
-            List<SinvDto> materialDtos = new ArrayList<>();
-            for (PlrRnpp material : materials) {
-                materialDtos.add(buildSinvDto(product, material, ctx));
-            }
+            List<SinvDto> materialDtos = materials.stream()
+                    .map(material -> buildSinvDto(product, material, ctx))
+                    .toList();
             result.add(buildProductDto(product, materialDtos, ctx.dt(), ctx.kpp(), ctx.type()));
         }
         return result;
