@@ -30,20 +30,22 @@ public class OneCSyncService {
     private static final int HTTP_UNAUTHORIZED = 401;
     private static final int HTTP_OK = 200;
 
-    @ConfigProperty(name = "one-c.url")
-    String oneCUrl;
-
-    @ConfigProperty(name = "one-c.username")
-    String oneCUsername;
-
-    @ConfigProperty(name = "one-c.password")
-    String oneCPassword;
+    private final String oneCUrl;
+    private final String oneCUsername;
+    private final String oneCPassword;
 
     private final ObjectMapper objectMapper;
 
     @Inject
-    public OneCSyncService(ObjectMapper objectMapper) {
+    public OneCSyncService(
+            ObjectMapper objectMapper,
+            @ConfigProperty(name = "one-c.url") String oneCUrl,
+            @ConfigProperty(name = "one-c.username") String oneCUsername,
+            @ConfigProperty(name = "one-c.password") String oneCPassword) {
         this.objectMapper = objectMapper;
+        this.oneCUrl = oneCUrl;
+        this.oneCUsername = oneCUsername;
+        this.oneCPassword = oneCPassword;
     }
 
     /**
