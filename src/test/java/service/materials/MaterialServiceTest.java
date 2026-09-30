@@ -2,14 +2,16 @@ package service.materials;
 
 import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.entity.materials.*;
+import org.acme.foodpackaging.exception.materials.OneCSyncException;
 import org.acme.foodpackaging.repository.materials.*;
 import org.acme.foodpackaging.service.materials.*;
 import org.acme.foodpackaging.service.materials.config.MtService;
 import org.acme.foodpackaging.service.materials.config.RnppService;
 import org.acme.foodpackaging.service.materials.config.SprogService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,7 +27,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MaterialServiceTest {
 
-    @InjectMocks
     private MaterialService materialService;
 
     @Mock
@@ -46,9 +47,32 @@ class MaterialServiceTest {
     @Mock
     private MtService mtService;
 
+    @Mock
+    private OneCSyncService oneCSyncService;
+
+    @Mock
+    private OneCReqRepository oneCReqRepository;
+
+    private static final String DEFAULT_KPPC = "01020391";
+
     private final LocalDate testDate = LocalDate.of(2026, Month.FEBRUARY, 15);
     private final String testDateStr = "2026-02-15";
     private final String testKpp = "01020391";
+
+    @BeforeEach
+    void setUp() {
+        materialService = new MaterialService(
+                materialRepository,
+                sprogService,
+                rnppService,
+                sinvRepository,
+                zinvRepository,
+                mtService,
+                oneCSyncService,
+                oneCReqRepository,
+                DEFAULT_KPPC
+        );
+    }
 
     // ==================== ТЕСТЫ loadProducts() ====================
 
@@ -1543,6 +1567,210 @@ class MaterialServiceTest {
         // Assert
         SinvDto material = result.get(0).getMaterials().get(0);
         assertNotNull(material.getOrder());
+    }
+
+    // ==================== ТЕСТЫ sendTo1C() ====================
+
+    @Test
+    void testSendTo1C_Success_SendsOrderAndSavesLog() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.getFirst().getMaterials().getFirst().setOrderFinal(10.0);
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .type("M")
+                .data(data)
+                .build();
+
+        when(oneCSyncService.sendOrder(testKpp, "01020391", data)).thenReturn("REQ-1");
+
+        // saveAll удаляет и сохраняет
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "user-1", "127.0.0.1");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("REQ-1", result.get(0).getReq1c());
+        assertEquals("01020391", result.get(0).getKppc());
+
+        verify(oneCSyncService, times(1)).sendOrder(testKpp, "01020391", data);
+        verify(oneCReqRepository, times(1)).persist(any(Plr1cReq.class));
+    }
+
+    @Test
+    void testSendTo1C_SavesLogWithCorrectFields() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        // orderFinal = 10, чтобы материал попал в лог
+        data.get(0).getMaterials().get(0).setOrderFinal(10.0);
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .type("M")
+                .data(data)
+                .build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-X");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.sendTo1C(request, "user-42", "10.0.0.1");
+
+        // Assert
+        ArgumentCaptor<Plr1cReq> captor = ArgumentCaptor.forClass(Plr1cReq.class);
+        verify(oneCReqRepository).persist(captor.capture());
+
+        Plr1cReq saved = captor.getValue();
+        assertEquals(testDate, saved.getDt());
+        assertEquals("01020391", saved.getKpp1());
+        assertEquals(testKpp, saved.getKpp2());
+        assertEquals("M", saved.getType());
+        assertEquals("1002051408", saved.getKmt());
+        assertEquals(10.0, saved.getKole());
+        assertEquals("REQ-X", saved.getReq1c());
+        assertEquals("user-42", saved.getUserId());
+        assertEquals("10.0.0.1", saved.getIp());
+        assertNotNull(saved.getSentAt());
+    }
+
+    @Test
+    void testSendTo1C_FiltersOutNonPositiveOrderFinal_NoLogEntries() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.getFirst().getMaterials().getFirst().setOrderFinal(0.0); // не попадёт в лог
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .type("M")
+                .data(data)
+                .build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-0");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.sendTo1C(request, "user-1", "127.0.0.1");
+
+        // Assert
+        verify(oneCReqRepository, never()).persist(any(Plr1cReq.class));
+    }
+
+    @Test
+    void testSendTo1C_DuplicateKmtInLog_KeepsFirstOrderFinal() {
+        // Arrange — два материала с одним kmt и разными orderFinal
+        SinvDto m1 = SinvDto.builder()
+                .dt(testDate).kpp(testKpp).kmc("0307060046").kt("2201040296")
+                .kmt("1002051408").norm(10.0).normf(10.0).kolf(0.0)
+                .insurancePerc(10.0).roundStep(1.0).orderFinal(10.0)
+                .build();
+        SinvDto m2 = SinvDto.builder()
+                .dt(testDate).kpp(testKpp).kmc("0307060046").kt("2201040296")
+                .kmt("1002051408").norm(10.0).normf(10.0).kolf(0.0)
+                .insurancePerc(10.0).roundStep(1.0).orderFinal(99.0)
+                .build();
+
+        ProductWithMaterialsDto product = ProductWithMaterialsDto.builder()
+                .dt(testDate).kpp(testKpp).kmc("0307060046").kt("2201040296")
+                .ean13("4810268043727").emk(18.0).name("Тест")
+                .sumMass(1000.0).sumKolev(1000.0).krkmc(2743.0)
+                .materials(new ArrayList<>(List.of(m1, m2)))
+                .build();
+
+        List<ProductWithMaterialsDto> data = new ArrayList<>(List.of(product));
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).type("M").data(data).build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-1");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.sendTo1C(request, "user-1", "127.0.0.1");
+
+        // Assert — запись одна, kole = 10.0 (первый победил)
+        ArgumentCaptor<Plr1cReq> captor = ArgumentCaptor.forClass(Plr1cReq.class);
+        verify(oneCReqRepository, times(1)).persist(captor.capture());
+        assertEquals(10.0, captor.getValue().getKole());
+    }
+
+    @Test
+    void testSendTo1C_SetsReq1cAndKppcOnAllProducts() {
+        // Arrange — два продукта
+        List<ProductWithMaterialsDto> data = new ArrayList<>();
+        data.add(createTestProductWithMaterials().get(0));
+        data.add(createTestProductWithMaterials().get(0));
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).type("M").data(data).build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-Z");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "user-1", "127.0.0.1");
+
+        // Assert
+        assertEquals(2, result.size());
+        result.forEach(p -> {
+            assertEquals("REQ-Z", p.getReq1c());
+            assertEquals("01020391", p.getKppc());
+        });
+    }
+
+    @Test
+    void testSendTo1C_PropagatesOneCSyncException() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).type("M").data(data).build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList()))
+                .thenThrow(new OneCSyncException("1C error"));
+
+        // Act & Assert
+        assertThrows(OneCSyncException.class,
+                () -> materialService.sendTo1C(request, "user-1", "127.0.0.1"));
+
+        // Лог и сохранение не должны произойти
+        verify(oneCReqRepository, never()).persist(any(Plr1cReq.class));
+        verify(zinvRepository, never()).deleteByDateAndKppAndType(any(), any(), any());
+    }
+
+    @Test
+    void testSendTo1C_InvalidDate_ThrowsException() {
+        SaveRequest request = SaveRequest.builder()
+                .date("invalid-date").kpp(testKpp).type("M")
+                .data(Collections.emptyList())
+                .build();
+
+        assertThrows(Exception.class,
+                () -> materialService.sendTo1C(request, "user-1", "127.0.0.1"));
+
+        verifyNoInteractions(oneCSyncService);
     }
 
 

@@ -3,42 +3,113 @@ package org.acme.foodpackaging.service.materials;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.entity.materials.*;
 import org.acme.foodpackaging.repository.materials.*;
 import org.acme.foodpackaging.service.materials.config.MtService;
 import org.acme.foodpackaging.service.materials.config.RnppService;
 import org.acme.foodpackaging.service.materials.config.SprogService;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Сервис для работы с материалами и расчетами потребности
  */
+@Slf4j
 @ApplicationScoped
 public class MaterialService {
 
-
+    private final String defaultKppc;
     private final MaterialRepository materialRepository;
     private final SprogService sprogService;
     private final RnppService rnppService;
     private final SinvRepository sinvRepository;
     private final ZinvRepository zinvRepository;
     private final MtService mtService;
+    private final OneCSyncService oneCSyncService;
+    private final OneCReqRepository oneCReqRepository;
 
     @Inject
     public MaterialService(MaterialRepository materialRepository, SprogService sprogService, RnppService rnppService
-            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService) {
+            , SinvRepository sinvRepository, ZinvRepository zinvRepository, MtService mtService, OneCSyncService oneCSyncService, OneCReqRepository oneCReqRepository, @ConfigProperty(name = "kppc") String defaultKppc) {
         this.materialRepository = materialRepository;
         this.sprogService = sprogService;
         this.rnppService = rnppService;
         this.sinvRepository = sinvRepository;
         this.zinvRepository = zinvRepository;
         this.mtService = mtService;
+        this.oneCSyncService = oneCSyncService;
+        this.oneCReqRepository = oneCReqRepository;
+        this.defaultKppc = defaultKppc;
+    }
+
+    /**
+     * Отправляет данные в 1С и сохраняет их с полученным req1c
+     */
+    @Transactional
+    public List<ProductWithMaterialsDto> sendTo1C(SaveRequest request, String userId, String ip) {
+        String date = request.getDate();
+        String kpp = request.getKpp();
+        String type = request.getType();
+        List<ProductWithMaterialsDto> data = request.getData();
+
+        LocalDate dt = LocalDate.parse(date);
+
+        String req1c = oneCSyncService.sendOrder(kpp, defaultKppc, data);
+
+        OneCReqLogContext ctx = new OneCReqLogContext(dt, defaultKppc, kpp, type, data, req1c, userId, ip);
+        saveOneCReqLog(ctx);
+
+        for (ProductWithMaterialsDto product : data) {
+            product.setReq1c(req1c);
+            product.setKppc(defaultKppc);
+        }
+
+        saveAll(request);
+
+        return data;
+    }
+
+    /**
+     * Сохраняет лог отправки в 1С
+     */
+    private void saveOneCReqLog(OneCReqLogContext ctx) {
+        LocalDateTime sentAt = LocalDateTime.now(ZoneId.systemDefault());
+
+        Map<String, Double> materialsMap = ctx.data().stream()
+                .flatMap(p -> p.getMaterials().stream())
+                .filter(m -> m.getOrderFinal() != null && m.getOrderFinal() > 0)
+                .collect(Collectors.toMap(
+                        SinvDto::getKmt,
+                        SinvDto::getOrderFinal,
+                        (a, b) -> a
+                ));
+
+        for (Map.Entry<String, Double> entry : materialsMap.entrySet()) {
+            Plr1cReq logEntry = Plr1cReq.builder()
+                    .dt(ctx.dt())
+                    .kpp1(ctx.kpp1())
+                    .kpp2(ctx.kpp2())
+                    .type(ctx.type())
+                    .kmt(entry.getKey())
+                    .kole(entry.getValue())
+                    .req1c(ctx.req1c())
+                    .userId(ctx.userId())
+                    .ip(ctx.ip())
+                    .sentAt(sentAt)
+                    .build();
+            oneCReqRepository.persist(logEntry);
+        }
+
+        log.info("Saved {} log entries for req1c={}", materialsMap.size(), ctx.req1c());
     }
 
 
@@ -167,10 +238,9 @@ public class MaterialService {
             List<PlrRnpp> materials = rnppService.findByKmcAndKtAndEmkAndSysn(
                     ctx.sysn(), product.getKmc(), product.getKt(), product.getEmk()
             );
-            List<SinvDto> materialDtos = new ArrayList<>();
-            for (PlrRnpp material : materials) {
-                materialDtos.add(buildSinvDto(product, material, ctx));
-            }
+            List<SinvDto> materialDtos = materials.stream()
+                    .map(material -> buildSinvDto(product, material, ctx))
+                    .toList();
             result.add(buildProductDto(product, materialDtos, ctx.dt(), ctx.kpp(), ctx.type()));
         }
         return result;
@@ -308,6 +378,8 @@ public class MaterialService {
                     .sumMass(product.getSumMass())
                     .sumKolev(product.getSumKolev())
                     .type(type)
+                    .kppc(product.getKppc())
+                    .req1c(product.getReq1c())
                     .build();
             zinvRepository.save(plrZinv);
         }

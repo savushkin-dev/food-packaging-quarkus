@@ -5,16 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SaveRequest {
-    private String date;
-    private String kpp;
-    private String type;
-    private String userId;
-    private List<ProductWithMaterialsDto> data;
+public class OneCRemoteResp {
+    private Integer code;
+    private String description;
+    private String tasknumber;
 }
