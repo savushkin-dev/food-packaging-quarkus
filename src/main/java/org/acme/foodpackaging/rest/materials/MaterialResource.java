@@ -161,7 +161,7 @@ public class MaterialResource {
     private Response error(String message, Exception e) {
         log.error(message, e);
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ApiError(String.format("%s: %s", message, e.getMessage())))
+                .entity(new ApiError(message + ": " + e.getMessage()))
                 .build();
     }
 }
