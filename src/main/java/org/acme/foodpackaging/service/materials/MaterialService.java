@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,7 +66,8 @@ public class MaterialService {
 
         String req1c = oneCSyncService.sendOrder(kpp, defaultKppc, data);
 
-        saveOneCReqLog(dt, defaultKppc, kpp, type, data, req1c, userId, ip);
+        OneCReqLogContext ctx = new OneCReqLogContext(dt, defaultKppc, kpp, type, data, req1c, userId, ip);
+        saveOneCReqLog(ctx);
 
         for (ProductWithMaterialsDto product : data) {
             product.setReq1c(req1c);
@@ -80,19 +82,10 @@ public class MaterialService {
     /**
      * Сохраняет лог отправки в 1С
      */
-    private void saveOneCReqLog(
-            LocalDate dt,
-            String kpp1,
-            String kpp2,
-            String type,
-            List<ProductWithMaterialsDto> data,
-            String req1c,
-            String userId,
-            String ip
-    ) {
-        LocalDateTime sentAt = LocalDateTime.now();
+    private void saveOneCReqLog(OneCReqLogContext ctx) {
+        LocalDateTime sentAt = LocalDateTime.now(ZoneId.systemDefault());
 
-        Map<String, Double> materialsMap = data.stream()
+        Map<String, Double> materialsMap = ctx.data().stream()
                 .flatMap(p -> p.getMaterials().stream())
                 .filter(m -> m.getOrderFinal() != null && m.getOrderFinal() > 0)
                 .collect(Collectors.toMap(
@@ -102,22 +95,22 @@ public class MaterialService {
                 ));
 
         for (Map.Entry<String, Double> entry : materialsMap.entrySet()) {
-            Plr1cReq log = Plr1cReq.builder()
-                    .dt(dt)
-                    .kpp1(kpp1)
-                    .kpp2(kpp2)
-                    .type(type)
+            Plr1cReq logEntry = Plr1cReq.builder()
+                    .dt(ctx.dt())
+                    .kpp1(ctx.kpp1())
+                    .kpp2(ctx.kpp2())
+                    .type(ctx.type())
                     .kmt(entry.getKey())
                     .kole(entry.getValue())
-                    .req1c(req1c)
-                    .userId(userId)
-                    .ip(ip)
+                    .req1c(ctx.req1c())
+                    .userId(ctx.userId())
+                    .ip(ctx.ip())
                     .sentAt(sentAt)
                     .build();
-            oneCReqRepository.persist(log);
+            oneCReqRepository.persist(logEntry);
         }
 
-        log.info("Saved {} log entries for req1c={}", materialsMap.size(), req1c);
+        log.info("Saved {} log entries for req1c={}", materialsMap.size(), ctx.req1c());
     }
 
 

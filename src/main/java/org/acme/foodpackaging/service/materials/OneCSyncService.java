@@ -8,8 +8,10 @@ import org.acme.foodpackaging.dto.materials.OneCRemoteReq;
 import org.acme.foodpackaging.dto.materials.OneCRemoteResp;
 import org.acme.foodpackaging.dto.materials.ProductWithMaterialsDto;
 import org.acme.foodpackaging.dto.materials.SinvDto;
+import org.acme.foodpackaging.exception.materials.OneCSyncException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -24,6 +26,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @ApplicationScoped
 public class OneCSyncService {
+
+    private static final int HTTP_UNAUTHORIZED = 401;
+    private static final int HTTP_OK = 200;
 
     @ConfigProperty(name = "one-c.url")
     String oneCUrl;
@@ -47,20 +52,19 @@ public class OneCSyncService {
     public String sendOrder(String kpp, String kppc, List<ProductWithMaterialsDto> data) {
         try {
             OneCRemoteReq request = buildRequest(kpp, kppc, data);
-            System.out.println();
             String responseBody = sendHttpRequest(request);
 
             OneCRemoteResp oneCResponse = objectMapper.readValue(responseBody, OneCRemoteResp.class);
 
             if (oneCResponse.getCode() == null || oneCResponse.getCode() != 0) {
-                throw new RuntimeException("1C error: " + oneCResponse.getDescription());
+                throw new OneCSyncException("1C error: " + oneCResponse.getDescription());
             }
 
             return oneCResponse.getTasknumber();
-            
+
         } catch (Exception e) {
             log.error("Failed to send order to 1C", e);
-            throw new RuntimeException("Failed to send order to 1C: " + e.getMessage(), e);
+            throw new OneCSyncException("Failed to send order to 1C: " + e.getMessage(), e);
         }
     }
 
@@ -79,22 +83,22 @@ public class OneCSyncService {
 
         List<OneCRemoteReq.OneCMaterial> materials = materialsMap.entrySet().stream()
                 .map(e -> OneCRemoteReq.OneCMaterial.builder()
-                        .KMT(e.getKey())
-                        .KOLE(e.getValue())
+                        .kmt(e.getKey())
+                        .kole(e.getValue())
                         .build())
                 .collect(Collectors.toList());
 
         return OneCRemoteReq.builder()
-                .KPP1(kppc)
-                .KPP2(kpp)
-                .MATERIALS(materials)
+                .kpp1(kppc)
+                .kpp2(kpp)
+                .materials(materials)
                 .build();
     }
 
     /**
      * Отправляет HTTP-запрос в 1С
      */
-    private String sendHttpRequest(OneCRemoteReq request) throws Exception {
+    private String sendHttpRequest(OneCRemoteReq request) throws IOException, InterruptedException {
         String jsonBody = objectMapper.writeValueAsString(request);
         log.info("Sending order to 1C: {}", jsonBody);
 
@@ -116,12 +120,12 @@ public class OneCSyncService {
         log.info("1C response status: {}", response.statusCode());
         log.info("1C response body: {}", response.body());
 
-        if (response.statusCode() == 401) {
-            throw new RuntimeException("1C authorization failed (401)");
+        if (response.statusCode() == HTTP_UNAUTHORIZED) {
+            throw new OneCSyncException("1C authorization failed (401)");
         }
 
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("1C returned status " + response.statusCode());
+        if (response.statusCode() != HTTP_OK) {
+            throw new OneCSyncException("1C returned status " + response.statusCode());
         }
 
         return response.body();
@@ -133,5 +137,4 @@ public class OneCSyncService {
                 credentials.getBytes(StandardCharsets.UTF_8)
         );
     }
-
 }
