@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -214,7 +215,7 @@ class OneCSyncServiceTest {
 
     private ProductWithMaterialsDto createProduct(String kmc, List<SinvDto> materials) {
         return ProductWithMaterialsDto.builder()
-                .dt(LocalDate.of(2026, 2, 15))
+                .dt(LocalDate.of(2026, Month.FEBRUARY, 15))
                 .kpp("01020391")
                 .kmc(kmc)
                 .kt("2201040296")
@@ -230,7 +231,7 @@ class OneCSyncServiceTest {
 
     private SinvDto createMaterial(String kmt, Double orderFinal) {
         return SinvDto.builder()
-                .dt(LocalDate.of(2026, 2, 15))
+                .dt(LocalDate.of(2026, Month.FEBRUARY, 15))
                 .kpp("01020391")
                 .kmc("0307060046")
                 .kt("2201040296")
