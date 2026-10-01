@@ -1592,7 +1592,7 @@ class MaterialServiceTest {
         when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "user-1", "127.0.0.1");
+        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "127.0.0.1");
 
         // Assert
         assertNotNull(result);
@@ -1616,6 +1616,8 @@ class MaterialServiceTest {
                 .kpp(testKpp)
                 .type("M")
                 .data(data)
+                .userId("user-42")
+                .userFio("user-fio")
                 .build();
 
         when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-X");
@@ -1626,7 +1628,7 @@ class MaterialServiceTest {
         when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
 
         // Act
-        materialService.sendTo1C(request, "user-42", "10.0.0.1");
+        materialService.sendTo1C(request, "10.0.0.1");
 
         // Assert
         ArgumentCaptor<Plr1cReq> captor = ArgumentCaptor.forClass(Plr1cReq.class);
@@ -1641,6 +1643,7 @@ class MaterialServiceTest {
         assertEquals(10.0, saved.getKole());
         assertEquals("REQ-X", saved.getReq1c());
         assertEquals("user-42", saved.getUserId());
+        assertEquals("user-fio", saved.userFio);
         assertEquals("10.0.0.1", saved.getIp());
         assertNotNull(saved.getSentAt());
     }
@@ -1666,7 +1669,7 @@ class MaterialServiceTest {
         when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
 
         // Act
-        materialService.sendTo1C(request, "user-1", "127.0.0.1");
+        materialService.sendTo1C(request,  "127.0.0.1");
 
         // Assert
         verify(oneCReqRepository, never()).persist(any(Plr1cReq.class));
@@ -1705,7 +1708,7 @@ class MaterialServiceTest {
         when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
 
         // Act
-        materialService.sendTo1C(request, "user-1", "127.0.0.1");
+        materialService.sendTo1C(request, "127.0.0.1");
 
         // Assert — запись одна, kole = 10.0 (первый победил)
         ArgumentCaptor<Plr1cReq> captor = ArgumentCaptor.forClass(Plr1cReq.class);
@@ -1731,7 +1734,7 @@ class MaterialServiceTest {
         when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "user-1", "127.0.0.1");
+        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "127.0.0.1");
 
         // Assert
         assertEquals(2, result.size());
@@ -1753,7 +1756,7 @@ class MaterialServiceTest {
 
         // Act & Assert
         assertThrows(OneCSyncException.class,
-                () -> materialService.sendTo1C(request, "user-1", "127.0.0.1"));
+                () -> materialService.sendTo1C(request, "127.0.0.1"));
 
         // Лог и сохранение не должны произойти
         verify(oneCReqRepository, never()).persist(any(Plr1cReq.class));
@@ -1768,7 +1771,7 @@ class MaterialServiceTest {
                 .build();
 
         assertThrows(Exception.class,
-                () -> materialService.sendTo1C(request, "user-1", "127.0.0.1"));
+                () -> materialService.sendTo1C(request, "127.0.0.1"));
 
         verifyNoInteractions(oneCSyncService);
     }

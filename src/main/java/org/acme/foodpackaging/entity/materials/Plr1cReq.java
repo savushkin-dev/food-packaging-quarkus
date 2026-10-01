@@ -76,6 +76,10 @@ public class Plr1cReq extends PanacheEntityBase {
     @Column(name = "USER_ID", length = 20)
     public String userId;
 
+    /** ФИО сотрудника, отправившего заявку */
+    @Column(name = "USER_FIO")
+    public String userFio;
+
     /** IP-адрес клиента */
     @Column(name = "IP", length = 45)
     public String ip;

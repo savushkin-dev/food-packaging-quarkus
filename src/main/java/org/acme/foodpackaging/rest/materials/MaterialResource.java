@@ -52,9 +52,8 @@ public class MaterialResource {
     public Response sendTo1C(SaveRequest request, @Context RoutingContext ctx) {
         try {
             String ip = ctx.request().remoteAddress().host();
-            String userId = request.getUserId();
 
-            List<ProductWithMaterialsDto> data = materialService.sendTo1C(request, userId, ip);
+            List<ProductWithMaterialsDto> data = materialService.sendTo1C(request, ip);
             return Response.ok(data).build();
         } catch (Exception e) {
             return error("Не удалось отправить заявку в 1С", e);

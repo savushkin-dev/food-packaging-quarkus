@@ -59,6 +59,7 @@ public class OneCLogService {
                     .kpp2(first.getKpp2().trim())
                     .type(first.getType())
                     .userId(first.getUserId())
+                    .userFio(first.getUserFio())
                     .ip(first.getIp())
                     .sentAt(first.getSentAt())
                     .materials(materials)
