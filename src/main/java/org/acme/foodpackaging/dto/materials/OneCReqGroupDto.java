@@ -18,6 +18,7 @@ public class OneCReqGroupDto {
     private String kpp2;           // МОЛ
     private String type;           // M/P
     private String userId;         // Табельный
+    private String userFio;        // ФИО отправителя
     private String ip;             // IP
     private LocalDateTime sentAt;  // Дата/время отправки
     private List<OneCReqItemDto> materials;  // Список материалов

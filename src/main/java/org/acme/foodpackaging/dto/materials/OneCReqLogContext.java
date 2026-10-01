@@ -15,5 +15,6 @@ public record OneCReqLogContext(
         List<ProductWithMaterialsDto> data,
         String req1c,
         String userId,
+        String userFio,
         String ip
 ) {}

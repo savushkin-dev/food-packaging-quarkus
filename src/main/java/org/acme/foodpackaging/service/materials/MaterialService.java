@@ -55,7 +55,7 @@ public class MaterialService {
      * Отправляет данные в 1С и сохраняет их с полученным req1c
      */
     @Transactional
-    public List<ProductWithMaterialsDto> sendTo1C(SaveRequest request, String userId, String ip) {
+    public List<ProductWithMaterialsDto> sendTo1C(SaveRequest request, String ip) {
         String date = request.getDate();
         String kpp = request.getKpp();
         String type = request.getType();
@@ -65,7 +65,7 @@ public class MaterialService {
 
         String req1c = oneCSyncService.sendOrder(kpp, defaultKppc, data);
 
-        OneCReqLogContext ctx = new OneCReqLogContext(dt, defaultKppc, kpp, type, data, req1c, userId, ip);
+        OneCReqLogContext ctx = new OneCReqLogContext(dt, defaultKppc, kpp, type, data, req1c, request.getUserId(), request.getUserFio(), ip);
         saveOneCReqLog(ctx);
 
         for (ProductWithMaterialsDto product : data) {
@@ -103,6 +103,7 @@ public class MaterialService {
                     .kole(entry.getValue())
                     .req1c(ctx.req1c())
                     .userId(ctx.userId())
+                    .userFio(ctx.userFio())
                     .ip(ctx.ip())
                     .sentAt(sentAt)
                     .build();
