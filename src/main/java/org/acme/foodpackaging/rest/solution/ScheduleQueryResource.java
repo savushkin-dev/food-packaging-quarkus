@@ -62,6 +62,7 @@ public class ScheduleQueryResource {
         FrontendDataResponse response = new FrontendDataResponse(
                 schedule.getJobs(),
                 schedule.getLines(),
+                schedule.getParallelOperations().values(),
                 schedule.getScore(),
                 solverStatus);
                 

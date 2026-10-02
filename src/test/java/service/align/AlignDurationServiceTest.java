@@ -1,10 +1,10 @@
-package align;
+package service.align;
 
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
 import org.acme.foodpackaging.domain.Product;
-import org.acme.foodpackaging.service.scheduleoperations.MaintenanceJob;
+import org.acme.foodpackaging.service.scheduleoperations.MaintenanceService;
 import org.acme.foodpackaging.utils.SpeedCacheUtils;
 import org.acme.foodpackaging.service.align.AlignDurationService;
 import org.apache.commons.lang3.tuple.Pair;
@@ -36,7 +36,7 @@ class AlignDurationServiceTest {
     AlignDurationService alignDuration;
 
     @Mock
-    MaintenanceJob maintenanceJob;
+    MaintenanceService maintenanceService;
 
     private PackagingSchedule solution;
     private Line line;
