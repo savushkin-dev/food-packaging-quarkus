@@ -16,5 +16,6 @@ public class KolfRecalcRequest {
     private String kpp;
     private String kmt;
     private Double kolf;
+    private String type;
     private List<ProductWithMaterialsDto> data;
 }

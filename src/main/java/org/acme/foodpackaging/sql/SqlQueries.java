@@ -19,6 +19,9 @@ public class SqlQueries {
     @ConfigProperty(name = "app.prommark.schema")
     String prommarkSchema;
 
+    @ConfigProperty(name = "app.disp.schema")
+    String dispSchema;
+
     public String loadProductsGroupedByDti() {
         return """
                 SELECT
@@ -42,6 +45,29 @@ public class SqlQueries {
                 """.formatted(mesSchema, mesSchema);
     }
 
+    public String loadPreliminaryProducts() {
+        return """
+                SELECT
+                    v.KMC,
+                    m.EAN13,
+                    v.EMK,
+                    v.KT,
+                    SUM(v.KOLEZ * m.MASSA) as SUM_MASS,
+                    SUM(v.KOLEZ) as SUM_KOLEZ,
+                    m.SNM as PRODUCT_NAME,
+                    m.KRKMC
+                FROM %s.dbo.BD_ZZPMC AS z
+                    JOIN %s.dbo.BD_SZPMC AS v ON z.SYSN = v.SYSN
+                    JOIN %s.dbo.NS_MC AS m ON v.KMC = m.KMC
+                WHERE
+                    CAST(z.DTI AS DATE) = ?
+                    AND z.KSK = ?
+                    AND z.F_DEL = 0
+                GROUP BY v.KMC, m.EAN13, v.EMK, m.SNM, m.KRKMC, v.KT
+                ORDER BY v.KMC
+                """.formatted(dispSchema, dispSchema, dispSchema);
+    }
+
     public String loadMaterialsBySysn() {
         return """
                 SELECT DISTINCT
@@ -58,6 +84,25 @@ public class SqlQueries {
                     AND r.sysn = ?1
                     AND (r.kkom LIKE '1001%' OR r.kkom LIKE '1002%' OR r.kkom LIKE '1005%')
                 ORDER BY r.kkom
+                """;
+    }
+
+    public String loadRnppGroupedByKkom() {
+        return """
+                SELECT r.SYSN, r.KMC, r.KT, r.EMK, r.KKOM,
+                       SUM(r.KOL1T) as KOL1T, SUM(r.KOLVK) as KOLVK
+                FROM dbo.PLR_RNPP r
+                WHERE r.SYSN = ?
+                    AND r.KMC = ?
+                    AND r.KT = ?
+                    AND r.EMK = ?
+                    AND (r.KKOM LIKE '1001%' OR r.KKOM LIKE '1002%' OR r.KKOM LIKE '1005%')
+                    AND EXISTS (
+                        SELECT 1 FROM dbo.PLR_MT mt
+                        WHERE mt.KMT = r.KKOM AND mt.IN_CALC = 1
+                    )
+                GROUP BY r.SYSN, r.KMC, r.KT, r.EMK, r.KKOM
+                ORDER BY r.KKOM
                 """;
     }
 

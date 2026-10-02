@@ -9,10 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class KolfRequest {
-    private String kmt;
-    private Double kolf;
-    private String date;
-    private String kpp;
-    private String type;
+public class OneCRemoteResp {
+    private Integer code;
+    private String description;
+    private String tasknumber;
 }

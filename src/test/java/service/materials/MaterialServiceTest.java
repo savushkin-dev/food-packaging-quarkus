@@ -2,14 +2,16 @@ package service.materials;
 
 import org.acme.foodpackaging.dto.materials.*;
 import org.acme.foodpackaging.entity.materials.*;
+import org.acme.foodpackaging.exception.materials.OneCSyncException;
 import org.acme.foodpackaging.repository.materials.*;
 import org.acme.foodpackaging.service.materials.*;
 import org.acme.foodpackaging.service.materials.config.MtService;
 import org.acme.foodpackaging.service.materials.config.RnppService;
 import org.acme.foodpackaging.service.materials.config.SprogService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,7 +27,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MaterialServiceTest {
 
-    @InjectMocks
     private MaterialService materialService;
 
     @Mock
@@ -46,9 +47,32 @@ class MaterialServiceTest {
     @Mock
     private MtService mtService;
 
+    @Mock
+    private OneCSyncService oneCSyncService;
+
+    @Mock
+    private OneCReqRepository oneCReqRepository;
+
+    private static final String DEFAULT_KPPC = "01020391";
+
     private final LocalDate testDate = LocalDate.of(2026, Month.FEBRUARY, 15);
     private final String testDateStr = "2026-02-15";
     private final String testKpp = "01020391";
+
+    @BeforeEach
+    void setUp() {
+        materialService = new MaterialService(
+                materialRepository,
+                sprogService,
+                rnppService,
+                sinvRepository,
+                zinvRepository,
+                mtService,
+                oneCSyncService,
+                oneCReqRepository,
+                DEFAULT_KPPC
+        );
+    }
 
     // ==================== ТЕСТЫ loadProducts() ====================
 
@@ -64,12 +88,12 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(norms);
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(Collections.emptyList());
         when(mtService.getByKmt(anyString())).thenReturn(mt);
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         assertNotNull(result);
@@ -98,12 +122,12 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(norms);
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(existingData);
         when(mtService.getByKmt(anyString())).thenReturn(mt);
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         assertNotNull(result);
@@ -120,13 +144,13 @@ class MaterialServiceTest {
         when(materialRepository.findProductsByDate(anyString())).thenReturn(Collections.emptyList());
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
         verify(sprogService, never()).findByDate(any());
-        verify(sinvRepository, never()).findByDateAndKpp(any(), any());
+        verify(sinvRepository, never()).findByDateAndKppAndType(any(), any(), any());
     }
 
     @Test
@@ -138,7 +162,7 @@ class MaterialServiceTest {
 
         // Act & Assert
         assertThrows(NullPointerException.class, () -> {
-            materialService.loadProducts(testDateStr, testKpp);
+            materialService.loadProducts(testDateStr, testKpp, "M");
         });
     }
 
@@ -161,12 +185,12 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(norms);
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(existingData);
         when(mtService.getByKmt(anyString())).thenReturn(mt);
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         SinvDto material = result.get(0).getMaterials().get(0);
@@ -206,13 +230,13 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(norms);
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(Collections.emptyList());
         when(mtService.getByKmt("1002051408")).thenReturn(mt1);
         when(mtService.getByKmt("1002110286")).thenReturn(mt2);
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         assertNotNull(result);
@@ -260,15 +284,15 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(norms);
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(existingData);
         when(mtService.getByKmt(anyString())).thenReturn(mt);
 
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         assertNotNull(result);
         SinvDto material = result.get(0).getMaterials().get(0);
-        
+
         assertEquals(100.0, material.getKolf());
         assertEquals(15.0, material.getInsurancePerc());
         assertEquals(5.0, material.getRoundStep());
@@ -360,11 +384,12 @@ class MaterialServiceTest {
                 .date(testDateStr)
                 .kpp(testKpp)
                 .data(data)
+                .type("M")
                 .build();
 
         // ✅ Исправлено: when().thenReturn() вместо doNothing()
-        doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
 
         PlrZinv savedZinv = new PlrZinv();
         when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
@@ -376,8 +401,8 @@ class MaterialServiceTest {
         materialService.saveAll(request);
 
         // Assert
-        verify(zinvRepository, times(1)).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        verify(sinvRepository, times(1)).deleteByDateAndKpp(any(LocalDate.class), anyString());
+        verify(zinvRepository, times(1)).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        verify(sinvRepository, times(1)).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
         verify(zinvRepository, times(data.size())).save(any(PlrZinv.class));
 
         int totalMaterials = data.stream().mapToInt(p -> p.getMaterials().size()).sum();
@@ -391,14 +416,15 @@ class MaterialServiceTest {
                 .date(testDateStr)
                 .kpp(testKpp)
                 .data(Collections.emptyList())
+                .type("M")
                 .build();
 
         // Act
         materialService.saveAll(request);
 
         // Assert
-        verify(zinvRepository, times(1)).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        verify(sinvRepository, times(1)).deleteByDateAndKpp(any(LocalDate.class), anyString());
+        verify(zinvRepository, times(1)).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        verify(sinvRepository, times(1)).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
         verify(zinvRepository, never()).save(any(PlrZinv.class));
         verify(sinvRepository, never()).saveOrUpdate(any(PlrSinv.class));
     }
@@ -413,10 +439,11 @@ class MaterialServiceTest {
                 .date(testDateStr)
                 .kpp(testKpp)
                 .data(data)
+                .type("M")
                 .build();
 
-        doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
 
         PlrZinv savedZinv = new PlrZinv();
         when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
@@ -444,10 +471,11 @@ class MaterialServiceTest {
                 .date(testDateStr)
                 .kpp(testKpp)
                 .data(data)
+                .type("M")
                 .build();
 
-        doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
 
         PlrZinv savedZinv = new PlrZinv();
         when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
@@ -474,10 +502,11 @@ class MaterialServiceTest {
                 .date(testDateStr)
                 .kpp(testKpp)
                 .data(data)
+                .type("M")
                 .build();
 
-        doNothing().when(zinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
-        doNothing().when(sinvRepository).deleteByDateAndKpp(any(LocalDate.class), anyString());
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
 
         PlrZinv savedZinv = new PlrZinv();
         when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
@@ -561,12 +590,12 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(createTestRnpp());
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(createTestSinv());
         when(mtService.getByKmt(anyString())).thenReturn(mt);
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         assertNotNull(result);
@@ -594,12 +623,12 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(norms);
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(Collections.emptyList());
         when(mtService.getByKmt(anyString())).thenReturn(mt);
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         assertNotNull(result);
@@ -623,12 +652,12 @@ class MaterialServiceTest {
         when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
         when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
                 .thenReturn(createTestRnpp());
-        when(sinvRepository.findByDateAndKpp(any(LocalDate.class), anyString()))
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
                 .thenReturn(Collections.emptyList());
         when(mtService.getByKmt(anyString())).thenReturn(mt);
 
         // Act
-        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp);
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
 
         // Assert
         assertNotNull(result);
@@ -889,4 +918,863 @@ class MaterialServiceTest {
 
         return List.of(dto1, dto2);
     }
+
+    // ==================== ТЕСТЫ ПРЕДВАРИТЕЛЬНОЙ ЗАЯВКИ (type = "P") ====================
+
+    @Test
+    void testLoadProducts_PreliminaryType_UsesPreliminaryRepository() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+        PlrMt mt = createTestMt();
+        List<PlrRnpp> norms = createTestRnpp();
+
+        when(materialRepository.findPreliminaryProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(norms);
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
+                .thenReturn(Collections.emptyList());
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "P");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        // Проверяем, что использовался именно preliminary-метод
+        verify(materialRepository, times(1)).findPreliminaryProductsByDate(testDateStr);
+        verify(materialRepository, never()).findProductsByDate(anyString());
+    }
+
+    @Test
+    void testLoadProducts_MainType_UsesMainRepository() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+        PlrMt mt = createTestMt();
+        List<PlrRnpp> norms = createTestRnpp();
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(norms);
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
+                .thenReturn(Collections.emptyList());
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
+
+        // Assert
+        assertNotNull(result);
+        verify(materialRepository, times(1)).findProductsByDate(testDateStr);
+        verify(materialRepository, never()).findPreliminaryProductsByDate(anyString());
+    }
+
+    // ==================== ТЕСТЫ resetDataAndLoadProduct() ====================
+
+    @Test
+    void testResetDataAndLoadProduct_Success() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+        PlrMt mt = createTestMt();
+        List<PlrRnpp> norms = createTestRnpp();
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(norms);
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
+                .thenReturn(Collections.emptyList());
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.resetDataAndLoadProduct(testDateStr, testKpp, "M");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        // Проверяем, что удаление было вызвано
+        verify(zinvRepository, times(1)).deleteByDateAndKppAndType(testDate, testKpp, "M");
+        verify(sinvRepository, times(1)).deleteByDateAndKppAndType(testDate, testKpp, "M");
+
+        // Проверяем, что загрузка была вызвана
+        verify(materialRepository, times(1)).findProductsByDate(testDateStr);
+    }
+
+    @Test
+    void testResetDataAndLoadProduct_PreliminaryType() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+        PlrMt mt = createTestMt();
+        List<PlrRnpp> norms = createTestRnpp();
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+
+        when(materialRepository.findPreliminaryProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(norms);
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
+                .thenReturn(Collections.emptyList());
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.resetDataAndLoadProduct(testDateStr, testKpp, "P");
+
+        // Assert
+        assertNotNull(result);
+        verify(zinvRepository, times(1)).deleteByDateAndKppAndType(testDate, testKpp, "P");
+        verify(sinvRepository, times(1)).deleteByDateAndKppAndType(testDate, testKpp, "P");
+        verify(materialRepository, times(1)).findPreliminaryProductsByDate(testDateStr);
+    }
+
+    @Test
+    void testResetDataAndLoadProduct_EmptyProducts_ReturnsEmptyList() {
+        // Arrange
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(Collections.emptyList());
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.resetDataAndLoadProduct(testDateStr, testKpp, "M");
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(zinvRepository, times(1)).deleteByDateAndKppAndType(any(), any(), any());
+        verify(sinvRepository, times(1)).deleteByDateAndKppAndType(any(), any(), any());
+    }
+
+    // ==================== ТЕСТЫ orderFinal ====================
+
+    @Test
+    void testSaveAll_WithNegativeOrderFinal_UseDefaultZero() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setOrderFinal(-50.0);
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .data(data)
+                .type("M")
+                .build();
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+
+        PlrZinv savedZinv = new PlrZinv();
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
+
+        PlrSinv savedSinv = new PlrSinv();
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(savedSinv);
+
+        // Act
+        materialService.saveAll(request);
+
+        // Assert
+        // Проверяем, что отрицательный orderFinal превратился в 0
+        verify(sinvRepository, times(1)).saveOrUpdate(argThat(entity ->
+                entity.orderFinal == 0.0
+        ));
+    }
+
+    @Test
+    void testSaveAll_WithPositiveOrderFinal_SavesAsIs() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setOrderFinal(123.45);
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .data(data)
+                .type("M")
+                .build();
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+
+        PlrZinv savedZinv = new PlrZinv();
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(savedZinv);
+
+        PlrSinv savedSinv = new PlrSinv();
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(savedSinv);
+
+        // Act
+        materialService.saveAll(request);
+
+        // Assert
+        verify(sinvRepository, times(1)).saveOrUpdate(argThat(entity ->
+                entity.orderFinal == 123.45
+        ));
+    }
+
+    // ==================== ТЕСТЫ ВЫЧИТАНИЯ ПРЕДВАРИТЕЛЬНОЙ ====================
+
+    @Test
+    void testCalculateTotals_MainType_SubtractsPreliminaryOrder() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setKolf(0.0);
+
+        PlrMt mt = createTestMt();
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Предварительная заявка с orderFinal = 100
+        PlrSinv preliminary = new PlrSinv();
+        preliminary.kmt = "1002051408";
+        preliminary.orderFinal = 100.0;
+
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), eq("P")))
+                .thenReturn(List.of(preliminary));
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr)
+                        .kpp(testKpp)
+                        .type("M")
+                        .kmt("1002051408")
+                        .kolf(0.0)
+                        .data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertNotNull(material.getOrder());
+        // order должен быть уменьшен на 100 (но не меньше 0)
+        assertTrue(material.getOrder() >= 0);
+    }
+
+    @Test
+    void testCalculateTotals_MainType_FullCoverageByPreliminary_ReturnsZero() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setKolf(0.0);
+
+        PlrMt mt = createTestMt();
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Предварительная заявка с очень большим orderFinal — покрывает всё
+        PlrSinv preliminary = new PlrSinv();
+        preliminary.kmt = "1002051408";
+        preliminary.orderFinal = 99999.0;
+
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), eq("P")))
+                .thenReturn(List.of(preliminary));
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr)
+                        .kpp(testKpp)
+                        .type("M")
+                        .kmt("1002051408")
+                        .kolf(0.0)
+                        .data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertEquals(0.0, material.getOrder());
+    }
+
+    @Test
+    void testCalculateTotals_PreliminaryType_DoesNotSubtract() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        PlrMt mt = createTestMt();
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr)
+                        .kpp(testKpp)
+                        .type("P")
+                        .kmt("1002051408")
+                        .kolf(0.0)
+                        .data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertNotNull(material.getOrder());
+
+        // Для предварительной заявки — НЕ должно быть вызова поиска "P"
+        verify(sinvRepository, never()).findByDateAndKppAndType(any(), any(), eq("P"));
+    }
+
+    // ==================== ТЕСТЫ orderFinal = null ====================
+
+    @Test
+    void testCalculateTotals_WithNullOrderFinal_SetsToOrder() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setOrderFinal(null);
+
+        PlrMt mt = createTestMt();
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr)
+                        .kpp(testKpp)
+                        .type("M")
+                        .kmt("1002051408")
+                        .kolf(0.0)
+                        .data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        // orderFinal должен стать равным order
+        assertEquals(material.getOrder(), material.getOrderFinal());
+    }
+
+    @Test
+    void testCalculateTotals_WithExistingOrderFinal_ResetsToOrder() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setOrderFinal(500.0);
+
+        PlrMt mt = createTestMt();
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr)
+                        .kpp(testKpp)
+                        .type("M")
+                        .kmt("1002051408")
+                        .kolf(0.0)
+                        .data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        // orderFinal СБРАСЫВАЕТСЯ и становится = order
+        assertEquals(material.getOrder(), material.getOrderFinal());
+        assertNotEquals(500.0, material.getOrderFinal());
+    }
+
+    // ============================================================
+    // НОВЫЕ ТЕСТЫ — покрытие веток, на которые ругается Sonar
+    // ============================================================
+
+    // ---------- 1. loadProducts: предварительная с null kolf / null orderFinal ----------
+
+    @Test
+    void testLoadProducts_MainType_PreliminaryWithNullKolf_UsesDefaultForKolf() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+        PlrMt mt = createTestMt();
+        List<PlrRnpp> norms = createTestRnpp();
+
+        // kolf = null → должен стать 0.0 через getOrDefault в buildSinvDto
+        // orderFinal НЕ null, иначе loadPreliminary упадёт в Collectors.toMap
+        PlrSinv pre = new PlrSinv();
+        pre.kmt = "1002051408";
+        pre.kolf = null;
+        pre.orderFinal = 0.0;
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(norms);
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), eq("M")))
+                .thenReturn(Collections.emptyList());
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), eq("P")))
+                .thenReturn(List.of(pre));
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertEquals(0.0, material.getKolf());   // null → 0.0
+        assertEquals(0.0, material.getOrderPre());
+    }
+
+    @Test
+    void testLoadProducts_MainType_PreliminaryWithValues_UsesPreliminaryValues() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+        PlrMt mt = createTestMt();
+        List<PlrRnpp> norms = createTestRnpp();
+
+        PlrSinv pre = new PlrSinv();
+        pre.kmt = "1002051408";
+        pre.kolf = 42.0;
+        pre.orderFinal = 77.0;
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(norms);
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), eq("M")))
+                .thenReturn(Collections.emptyList());
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), eq("P")))
+                .thenReturn(List.of(pre));
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertEquals(42.0, material.getKolf());
+        assertEquals(77.0, material.getOrderPre());
+    }
+
+    // ---------- 2. buildSinvDto: existing == null, plrMt != null → pers/rnd из plrMt ----------
+
+    @Test
+    void testLoadProducts_NoExistingData_FallsBackToMtSettings() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+
+        PlrMt mt = new PlrMt();
+        mt.setKmt("1002051408");
+        mt.setSnm("Тестовый материал");
+        mt.setEdu("кг");
+        mt.setPers(20.0);
+        mt.setRnd(3.0);
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(createTestRnpp());
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
+                .thenReturn(Collections.emptyList());
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        // existing == null → pers/rnd должны прийти из plrMt
+        assertEquals(20.0, material.getInsurancePerc());
+        assertEquals(3.0, material.getRoundStep());
+    }
+
+    @Test
+    void testLoadProducts_NoExistingData_AndMtNull_UsesDefaultsFromCalculateTotals() {
+        // Arrange
+        List<ProductDto> products = createTestProducts();
+        PlrSprog sprog = createTestSprog();
+
+        when(materialRepository.findProductsByDate(anyString())).thenReturn(products);
+        when(sprogService.findByDate(any(LocalDate.class))).thenReturn(sprog);
+        when(rnppService.findByKmcAndKtAndEmkAndSysn(anyDouble(), anyString(), anyString(), anyDouble()))
+                .thenReturn(createTestRnpp());
+        when(sinvRepository.findByDateAndKppAndType(any(LocalDate.class), anyString(), anyString()))
+                .thenReturn(Collections.emptyList());
+        when(mtService.getByKmt(anyString())).thenReturn(null);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.loadProducts(testDateStr, testKpp, "M");
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        // calculateTotals подставит дефолты, потому что plrMt == null
+        assertEquals(0.0, material.getInsurancePerc());
+        assertEquals(1.0, material.getRoundStep());
+        assertNull(material.getSnmMt());
+    }
+
+    // ---------- 3. toPlrSinv: null/<=0 значения ----------
+
+    @Test
+    void testSaveAll_WithNullRoundStepZeroOrNegative_UseDefaultOne() {
+        // Arrange — rnd = 0 (не проходит условие > 0) → должен стать 1.0
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setRoundStep(0.0);
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).data(data).type("M").build();
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.saveAll(request);
+
+        // Assert
+        verify(sinvRepository, times(1)).saveOrUpdate(argThat(entity -> entity.rnd == 1.0));
+    }
+
+    @Test
+    void testSaveAll_WithNullOrderFinal_UsesZero() {
+        // Arrange — orderFinal = null → должен стать 0.0
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setOrderFinal(null);
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).data(data).type("M").build();
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.saveAll(request);
+
+        // Assert
+        verify(sinvRepository, times(1)).saveOrUpdate(argThat(entity -> entity.orderFinal == 0.0));
+    }
+
+    @Test
+    void testSaveAll_WithNullNorm_UsesAsIs() {
+        // Arrange — проверяем, что norm тоже прокидывается
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setNorm(null);
+        data.get(0).getMaterials().get(0).setNormf(null);
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).data(data).type("M").build();
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(LocalDate.class), anyString(), anyString());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.saveAll(request);
+
+        // Assert — просто проверяем, что сохранение прошло
+        verify(sinvRepository, times(1)).saveOrUpdate(any(PlrSinv.class));
+    }
+
+    // ---------- 4. calculateTotals: plrMt == null и его null-поля ----------
+
+    @Test
+    void testCalculateTotals_MtIsNull_UsesDefaultInsuranceAndRoundStep() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        when(mtService.getByKmt(anyString())).thenReturn(null);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr).kpp(testKpp).type("M")
+                        .kmt("1002051408").kolf(0.0).data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertEquals(0.0, material.getInsurancePerc());
+        assertEquals(1.0, material.getRoundStep());
+        assertNull(material.getSnmMt());
+    }
+
+    @Test
+    void testCalculateTotals_MtWithNullPersAndNullRnd_UsesDefaults() {
+        // Arrange
+        PlrMt mt = new PlrMt();
+        mt.setKmt("1002051408");
+        mt.setPers(null);
+        mt.setRnd(null);
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr).kpp(testKpp).type("M")
+                        .kmt("1002051408").kolf(0.0).data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertEquals(0.0, material.getInsurancePerc());
+        assertEquals(1.0, material.getRoundStep());
+    }
+
+    @Test
+    void testCalculateTotals_MtWithZeroRnd_UsesDefaultOne() {
+        // Arrange
+        PlrMt mt = new PlrMt();
+        mt.setKmt("1002051408");
+        mt.setPers(10.0);
+        mt.setRnd(0.0); // <= 0 → должен стать 1.0
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr).kpp(testKpp).type("M")
+                        .kmt("1002051408").kolf(0.0).data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertEquals(1.0, material.getRoundStep());
+        assertEquals(10.0, material.getInsurancePerc());
+    }
+
+    @Test
+    void testCalculateTotals_WithNullKolf_UsesZero() {
+        // Arrange — kolf = null → getDoubleOrDefault вернёт 0.0
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.get(0).getMaterials().get(0).setKolf(null);
+
+        PlrMt mt = createTestMt();
+        when(mtService.getByKmt(anyString())).thenReturn(mt);
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.recalcKolf(
+                KolfRecalcRequest.builder()
+                        .date(testDateStr).kpp(testKpp).type("M")
+                        .kmt("1002051408").kolf(null).data(data)
+                        .build()
+        );
+
+        // Assert
+        SinvDto material = result.get(0).getMaterials().get(0);
+        assertNotNull(material.getOrder());
+    }
+
+    // ==================== ТЕСТЫ sendTo1C() ====================
+
+    @Test
+    void testSendTo1C_Success_SendsOrderAndSavesLog() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.getFirst().getMaterials().getFirst().setOrderFinal(10.0);
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .type("M")
+                .data(data)
+                .build();
+
+        when(oneCSyncService.sendOrder(testKpp, "01020391", data)).thenReturn("REQ-1");
+
+        // saveAll удаляет и сохраняет
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "127.0.0.1");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("REQ-1", result.get(0).getReq1c());
+        assertEquals("01020391", result.get(0).getKppc());
+
+        verify(oneCSyncService, times(1)).sendOrder(testKpp, "01020391", data);
+        verify(oneCReqRepository, times(1)).persist(any(Plr1cReq.class));
+    }
+
+    @Test
+    void testSendTo1C_SavesLogWithCorrectFields() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        // orderFinal = 10, чтобы материал попал в лог
+        data.get(0).getMaterials().get(0).setOrderFinal(10.0);
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .type("M")
+                .data(data)
+                .userId("user-42")
+                .userFio("user-fio")
+                .build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-X");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.sendTo1C(request, "10.0.0.1");
+
+        // Assert
+        ArgumentCaptor<Plr1cReq> captor = ArgumentCaptor.forClass(Plr1cReq.class);
+        verify(oneCReqRepository).persist(captor.capture());
+
+        Plr1cReq saved = captor.getValue();
+        assertEquals(testDate, saved.getDt());
+        assertEquals("01020391", saved.getKpp1());
+        assertEquals(testKpp, saved.getKpp2());
+        assertEquals("M", saved.getType());
+        assertEquals("1002051408", saved.getKmt());
+        assertEquals(10.0, saved.getKole());
+        assertEquals("REQ-X", saved.getReq1c());
+        assertEquals("user-42", saved.getUserId());
+        assertEquals("user-fio", saved.userFio);
+        assertEquals("10.0.0.1", saved.getIp());
+        assertNotNull(saved.getSentAt());
+    }
+
+    @Test
+    void testSendTo1C_FiltersOutNonPositiveOrderFinal_NoLogEntries() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        data.getFirst().getMaterials().getFirst().setOrderFinal(0.0); // не попадёт в лог
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr)
+                .kpp(testKpp)
+                .type("M")
+                .data(data)
+                .build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-0");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.sendTo1C(request,  "127.0.0.1");
+
+        // Assert
+        verify(oneCReqRepository, never()).persist(any(Plr1cReq.class));
+    }
+
+    @Test
+    void testSendTo1C_DuplicateKmtInLog_KeepsFirstOrderFinal() {
+        // Arrange — два материала с одним kmt и разными orderFinal
+        SinvDto m1 = SinvDto.builder()
+                .dt(testDate).kpp(testKpp).kmc("0307060046").kt("2201040296")
+                .kmt("1002051408").norm(10.0).normf(10.0).kolf(0.0)
+                .insurancePerc(10.0).roundStep(1.0).orderFinal(10.0)
+                .build();
+        SinvDto m2 = SinvDto.builder()
+                .dt(testDate).kpp(testKpp).kmc("0307060046").kt("2201040296")
+                .kmt("1002051408").norm(10.0).normf(10.0).kolf(0.0)
+                .insurancePerc(10.0).roundStep(1.0).orderFinal(99.0)
+                .build();
+
+        ProductWithMaterialsDto product = ProductWithMaterialsDto.builder()
+                .dt(testDate).kpp(testKpp).kmc("0307060046").kt("2201040296")
+                .ean13("4810268043727").emk(18.0).name("Тест")
+                .sumMass(1000.0).sumKolev(1000.0).krkmc(2743.0)
+                .materials(new ArrayList<>(List.of(m1, m2)))
+                .build();
+
+        List<ProductWithMaterialsDto> data = new ArrayList<>(List.of(product));
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).type("M").data(data).build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-1");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        materialService.sendTo1C(request, "127.0.0.1");
+
+        // Assert — запись одна, kole = 10.0 (первый победил)
+        ArgumentCaptor<Plr1cReq> captor = ArgumentCaptor.forClass(Plr1cReq.class);
+        verify(oneCReqRepository, times(1)).persist(captor.capture());
+        assertEquals(10.0, captor.getValue().getKole());
+    }
+
+    @Test
+    void testSendTo1C_SetsReq1cAndKppcOnAllProducts() {
+        // Arrange — два продукта
+        List<ProductWithMaterialsDto> data = new ArrayList<>();
+        data.add(createTestProductWithMaterials().get(0));
+        data.add(createTestProductWithMaterials().get(0));
+
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).type("M").data(data).build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList())).thenReturn("REQ-Z");
+
+        doNothing().when(zinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        doNothing().when(sinvRepository).deleteByDateAndKppAndType(any(), any(), any());
+        when(zinvRepository.save(any(PlrZinv.class))).thenReturn(new PlrZinv());
+        when(sinvRepository.saveOrUpdate(any(PlrSinv.class))).thenReturn(new PlrSinv());
+
+        // Act
+        List<ProductWithMaterialsDto> result = materialService.sendTo1C(request, "127.0.0.1");
+
+        // Assert
+        assertEquals(2, result.size());
+        result.forEach(p -> {
+            assertEquals("REQ-Z", p.getReq1c());
+            assertEquals("01020391", p.getKppc());
+        });
+    }
+
+    @Test
+    void testSendTo1C_PropagatesOneCSyncException() {
+        // Arrange
+        List<ProductWithMaterialsDto> data = createTestProductWithMaterials();
+        SaveRequest request = SaveRequest.builder()
+                .date(testDateStr).kpp(testKpp).type("M").data(data).build();
+
+        when(oneCSyncService.sendOrder(anyString(), anyString(), anyList()))
+                .thenThrow(new OneCSyncException("1C error"));
+
+        // Act & Assert
+        assertThrows(OneCSyncException.class,
+                () -> materialService.sendTo1C(request, "127.0.0.1"));
+
+        // Лог и сохранение не должны произойти
+        verify(oneCReqRepository, never()).persist(any(Plr1cReq.class));
+        verify(zinvRepository, never()).deleteByDateAndKppAndType(any(), any(), any());
+    }
+
+    @Test
+    void testSendTo1C_InvalidDate_ThrowsException() {
+        SaveRequest request = SaveRequest.builder()
+                .date("invalid-date").kpp(testKpp).type("M")
+                .data(Collections.emptyList())
+                .build();
+
+        assertThrows(Exception.class,
+                () -> materialService.sendTo1C(request, "127.0.0.1"));
+
+        verifyNoInteractions(oneCSyncService);
+    }
+
+
 }
