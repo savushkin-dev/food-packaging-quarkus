@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.entity.jobs.MsLog;
 import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
@@ -15,6 +16,9 @@ import org.acme.foodpackaging.repository.jobs.OeePevRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 @ApplicationScoped
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -44,6 +48,9 @@ public class JobSaveService {
             saveCleaningDelayDuration(job);
             saveDrawCleaningEvents(job);
         }
+
+        markDeletedParallelOperations(schedule);
+        saveParallelOperations(schedule);
     }
 
     private void markDeletedMaintenanceJobs(PackagingSchedule schedule) {
@@ -133,6 +140,74 @@ public class JobSaveService {
         existing.setReason(null);
         existing.setNote(job.getMaintenanceNote());
         existing.setSnpz(0L);
+    }
+
+    // ============================================================
+    // ParallelOperations
+    // ========================================================
+    private void markDeletedParallelOperations(PackagingSchedule schedule) {
+
+        for (ParallelOperation operation : schedule.getDeletedParallelOperations()) {
+
+            OeePev existing = findParallelOperationOeePev(operation.getId());
+
+            if (existing != null) {
+                existing.setFDel(DELETED_FLAG);
+            }
+        }
+        schedule.setDeletedParallelOperations(null);
+    }
+
+    /**
+     * Сохраняет параллельные операции в OEE_PEV. После сохранения id операции
+     * (и ключ в карте) заменяется на сгенерированный F_ID
+     */
+    private void saveParallelOperations(PackagingSchedule schedule) {
+
+        Map<String, ParallelOperation> saved = new HashMap<>();
+
+        for (ParallelOperation operation : schedule.getParallelOperations().values()) {
+
+            OeePev existing = findParallelOperationOeePev(operation.getId());
+
+            if (existing != null) {
+                updateParallelOperationOeePev(existing, operation);
+                saved.put(operation.getId(), operation);
+                continue;
+            }
+
+            OeePev entity = new OeePev();
+            updateParallelOperationOeePev(entity, operation);
+            oeePevRepository.persist(entity);
+
+            String id = String.valueOf(entity.getFId());
+            saved.put(id, operation.toBuilder().id(id).build());
+        }
+
+        schedule.setParallelOperations(saved);
+    }
+
+    private OeePev findParallelOperationOeePev(String id) {
+        try {
+            OeePev existing = oeePevRepository.findByFId(Long.valueOf(id));
+            return existing != null && Objects.equals(existing.getSnpz(), OeePev.PARALLEL_OPERATION_SNPZ)
+                    ? existing : null;
+        } catch (NumberFormatException e) {
+            // id ещё не сохранённой операции — сгенерированный ключ, а не F_ID
+            return null;
+        }
+    }
+
+    private void updateParallelOperationOeePev(OeePev entity, ParallelOperation operation) {
+
+        entity.setLineId(operation.getLineId());
+        entity.setStartDateTime(operation.getStartDateTime());
+        entity.setEndDateTime(operation.getEndDateTime());
+        entity.setDuration(convertToIntDuration(operation.getDuration()));
+        entity.setEventTypeId(operation.getMaintenanceTypeId());
+        entity.setReason(null);
+        entity.setNote(operation.getMaintenanceNote());
+        entity.setSnpz(OeePev.PARALLEL_OPERATION_SNPZ);
     }
 
     private void saveRegularJob(Job job) {

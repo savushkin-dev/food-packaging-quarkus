@@ -4,7 +4,9 @@ import builder.*;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
+import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.repository.jobs.JobRepository;
@@ -27,6 +29,8 @@ import static io.smallrye.common.constraint.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,5 +107,29 @@ class JobListAssemblerTest {
         assertEquals(1, result.jobs().size());
         assertEquals("111", result.jobs().getFirst().getId());
         assertTrue(result.jobs().getFirst().isMaintenance());
+    }
+
+    @Test
+    void assemble_splitsParallelOperationsFromMaintenanceBySnpz() {
+        MaintenanceRow maintenanceRow = MaintenanceRowBuilder.aRow().withFId(111L).withSnpz(0L).build();
+        MaintenanceRow parallelRow = MaintenanceRowBuilder.aRow()
+                .withFId(77L).withSnpz(OeePev.PARALLEL_OPERATION_SNPZ).build();
+        Job maintenanceJob = JobTestBuilder.aJob().withId("111").withLineId("L1").withLineIdFact("L1").asMaintenance().build();
+        ParallelOperation operation = ParallelOperation.builder().id("77").lineId("L1").build();
+
+        when(jobRepository.getMaintenanceData(any(), any())).thenReturn(List.of(maintenanceRow, parallelRow));
+        when(jobRepository.getJobRowMap(any(), any())).thenReturn(Collections.emptyMap());
+        when(jobRepository.loadDelayDurationRows(any(), any())).thenReturn(Collections.emptyMap());
+        when(jobRepository.loadCleaningDelayDurationRows(any(), any())).thenReturn(Collections.emptyMap());
+        when(jobRepository.getCleaningData(any(), any())).thenReturn(Collections.emptyMap());
+        when(jobFactory.createMaintenanceJob(eq(maintenanceRow), any())).thenReturn(maintenanceJob);
+        when(jobFactory.createParallelOperation(parallelRow)).thenReturn(operation);
+
+        JobListAssembler.JobAssemblyResult result = jobListAssembler.assemble(schedule);
+
+        assertEquals(1, result.jobs().size());
+        assertEquals("111", result.jobs().getFirst().getId());
+        assertEquals(Map.of("77", operation), result.parallelOperations());
+        verify(jobFactory, never()).createMaintenanceJob(eq(parallelRow), any());
     }
 }

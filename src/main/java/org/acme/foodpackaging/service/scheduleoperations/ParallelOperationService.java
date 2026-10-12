@@ -11,6 +11,7 @@ import org.acme.foodpackaging.service.load.LoadDataService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -96,6 +97,10 @@ public class ParallelOperationService {
             throw new IllegalArgumentException("Parallel operation not found: " + id);
         }
         schedule.setParallelOperations(operations);
+
+        List<ParallelOperation> deleted = schedule.getDeletedParallelOperations();
+        deleted.add(removed);
+        schedule.setDeletedParallelOperations(deleted);
     }
 
     private String generateKey() {

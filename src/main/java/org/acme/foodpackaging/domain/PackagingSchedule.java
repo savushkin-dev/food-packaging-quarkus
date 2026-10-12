@@ -45,6 +45,9 @@ public class PackagingSchedule {
     private List<Job> deletedMaintenance;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
+    private List<ParallelOperation> deletedParallelOperations;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private Set<String> overloadedIds;
     private LocalDate dti;
     private String version;
@@ -60,6 +63,7 @@ public class PackagingSchedule {
         maintenanceProduct = createMaintenanceProduct();
         this.overloadedIds = new HashSet<>();
         this.deletedMaintenance = new ArrayList<>();
+        this.deletedParallelOperations = new ArrayList<>();
         this.parallelOperations = new HashMap<>();
     }
 
@@ -67,6 +71,7 @@ public class PackagingSchedule {
         maintenanceProduct = createMaintenanceProduct();
         this.overloadedIds = new HashSet<>();
         this.deletedMaintenance = new ArrayList<>();
+        this.deletedParallelOperations = new ArrayList<>();
         this.parallelOperations = new HashMap<>();
 
         setWorkCalendar(new WorkCalendar(startDate));
@@ -104,6 +109,15 @@ public class PackagingSchedule {
 
     public void setDeletedMaintenance(List<Job> deletedMaintenance) {
         this.deletedMaintenance = deletedMaintenance == null ? new ArrayList<>() : new ArrayList<>(deletedMaintenance);
+    }
+
+    public List<ParallelOperation> getDeletedParallelOperations() {
+        return new ArrayList<>(deletedParallelOperations);
+    }
+
+    public void setDeletedParallelOperations(List<ParallelOperation> deletedParallelOperations) {
+        this.deletedParallelOperations = deletedParallelOperations == null
+                ? new ArrayList<>() : new ArrayList<>(deletedParallelOperations);
     }
 
     public Set<String> getOverloadedIds() {

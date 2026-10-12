@@ -282,4 +282,18 @@ class ParallelOperationServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> parallelOperationService.remove(schedule, "missing-id"));
     }
+
+    @Test
+    void remove_existingOperation_remembersItAsDeleted() {
+        ParallelOperation existing = ParallelOperation.builder()
+                .id("42")
+                .lineId("line1")
+                .build();
+        schedule.setParallelOperations(Map.of("42", existing));
+
+        parallelOperationService.remove(schedule, "42");
+
+        assertEquals(1, schedule.getDeletedParallelOperations().size());
+        assertSame(existing, schedule.getDeletedParallelOperations().getFirst());
+    }
 }
