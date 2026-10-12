@@ -6,12 +6,15 @@ import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.acme.foodpackaging.repository.jobs.BdVpmcRepository;
 import org.acme.foodpackaging.repository.jobs.MsLogRepository;
 import org.acme.foodpackaging.repository.jobs.OeePevRepository;
+import org.acme.foodpackaging.service.upload.DrawCleaningSaveService;
 import org.acme.foodpackaging.service.upload.JobSaveService;
+import org.acme.foodpackaging.service.upload.MaintenanceSaveService;
+import org.acme.foodpackaging.service.upload.ParallelOperationSaveService;
+import org.acme.foodpackaging.service.upload.ProductionJobSaveService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,7 +34,6 @@ class JobSaveServiceTest {
 
     private static final LocalDateTime START = LocalDateTime.of(2026, Month.FEBRUARY, 24, 9, 0);
 
-    @InjectMocks
     JobSaveService jobSaveService;
 
     @Mock
@@ -45,6 +47,11 @@ class JobSaveServiceTest {
 
     @BeforeEach
     void setUp() {
+        jobSaveService = new JobSaveService(
+                new MaintenanceSaveService(oeePevRepository),
+                new ProductionJobSaveService(bdVpmcRepository, oeePevRepository),
+                new DrawCleaningSaveService(msLogRepository),
+                new ParallelOperationSaveService(oeePevRepository));
         schedule = new PackagingSchedule();
         schedule.setJobs(new ArrayList<>());
     }
