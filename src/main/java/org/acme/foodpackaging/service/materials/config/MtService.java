@@ -16,15 +16,13 @@ import java.util.Map;
 @ApplicationScoped
 public class MtService {
 
-
     private final MtRepository mtRepository;
+    private final MtService self;
 
     @Inject
-    MtService self;
-
-    @Inject
-    public MtService(MtRepository mtRepository) {
+    public MtService(MtRepository mtRepository, MtService self) {
         this.mtRepository = mtRepository;
+        this.self = self;
     }
 
     @CacheResult(cacheName = "material-cache")

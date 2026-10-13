@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -122,8 +123,9 @@ class DbfReaderServiceTest {
     @Test
     void shouldThrowException_whenPathIsDirectory() throws IOException {
         Path dirPath = Files.createDirectory(tempDir.resolve("directory"));
+        String path = dirPath.toString();
 
-        assertThatThrownBy(() -> service.readDbfFileStreaming(dirPath.toString(), consumer))
+        assertThatThrownBy(() -> service.readDbfFileStreaming(path, consumer))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not a regular file");
     }
@@ -197,10 +199,10 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> record = capturedRecords.get(0);
-        assertThat(record.get("STR")).isInstanceOf(String.class);
-        assertThat(record.get("NUM")).isInstanceOf(Number.class);
-        assertThat(record.get("LOG")).isInstanceOf(Boolean.class);
+        Map<String, Object> row = capturedRecords.get(0);
+        assertThat(row.get("STR")).isInstanceOf(String.class);
+        assertThat(row.get("NUM")).isInstanceOf(Number.class);
+        assertThat(row.get("LOG")).isInstanceOf(Boolean.class);
     }
 
     // ==================== ENCODING TESTS ====================
@@ -233,29 +235,26 @@ class DbfReaderServiceTest {
 
     // ==================== PATH HANDLING TESTS ====================
 
+    @ParameterizedTest(name = "fileName={0}")
+    @ValueSource(strings = {
+            "test.dbf",
+            "test_特殊字符.dbf",
+            "test_안녕_世界.dbf"
+    })
+    void shouldAcceptDifferentFileNames(String fileName) throws Exception {
+        Path dbfFile = createTestDbfFile(tempDir.resolve(fileName));
+
+        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+
+        assertThat(capturedRecords).hasSize(2);
+    }
+
     @Test
     void shouldHandleAbsolutePath() throws Exception {
         Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
+        String absolutePath = dbfFile.toAbsolutePath().toString();
 
-        service.readDbfFileStreaming(dbfFile.toAbsolutePath().toString(), consumer);
-
-        assertThat(capturedRecords).hasSize(2);
-    }
-
-    @Test
-    void shouldAcceptPathWithSpecialCharacters() throws Exception {
-        Path dbfFile = createTestDbfFile(tempDir.resolve("test_特殊字符.dbf"));
-
-        service.readDbfFileStreaming(dbfFile.toString(), consumer);
-
-        assertThat(capturedRecords).hasSize(2);
-    }
-
-    @Test
-    void shouldAcceptPathWithUnicodeCharacters() throws Exception {
-        Path dbfFile = createTestDbfFile(tempDir.resolve("test_안녕_世界.dbf"));
-
-        service.readDbfFileStreaming(dbfFile.toString(), consumer);
+        service.readDbfFileStreaming(absolutePath, consumer);
 
         assertThat(capturedRecords).hasSize(2);
     }
@@ -266,8 +265,9 @@ class DbfReaderServiceTest {
     void shouldHandleCorruptFile() throws Exception {
         Path dbfFile = tempDir.resolve("corrupt.dbf");
         Files.write(dbfFile, "not a valid DBF file".getBytes());
+        String dbfPath = dbfFile.toString();
 
-        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), consumer))
+        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfPath, consumer))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Failed to read DBF file");
     }
@@ -309,9 +309,9 @@ class DbfReaderServiceTest {
         service.readDbfFileStreaming(dbfFile.toString(), consumer);
 
         assertThat(capturedRecords).hasSize(1);
-        Map<String, Object> record = capturedRecords.get(0);
-        Object name = record.get("NAME");
-        Object age  = record.get("AGE");
+        Map<String, Object> row = capturedRecords.get(0);
+        Object name = row.get("NAME");
+        Object age  = row.get("AGE");
         assertThat(name).isIn(null, "", " ");
         assertThat(age).isIn(null, 0, 0.0);
     }
@@ -413,10 +413,11 @@ class DbfReaderServiceTest {
     @Test
     void shouldWrapNonIOExceptionAsRuntimeException() throws Exception {
         Path dbfFile = createTestDbfFile(tempDir.resolve("test.dbf"));
+        String dbfPath = dbfFile.toString();
 
         Consumer<DBFRow> throwing = row -> { throw new IllegalStateException("boom"); };
 
-        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), throwing))
+        assertThatThrownBy(() -> service.readDbfFileStreaming(dbfPath, throwing))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Failed to read DBF file")
                 .hasMessageContaining("boom");
@@ -435,6 +436,7 @@ class DbfReaderServiceTest {
     @Test
     void shouldThrowException_whenFileIsNotReadable() throws Exception {
         Path dbfFile = createTestDbfFile(tempDir.resolve("unreadable.dbf"));
+        String dbfPath = dbfFile.toString();
 
         assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
 
@@ -443,7 +445,7 @@ class DbfReaderServiceTest {
         view.setPermissions(Set.of());
 
         try {
-            assertThatThrownBy(() -> service.readDbfFileStreaming(dbfFile.toString(), consumer))
+            assertThatThrownBy(() -> service.readDbfFileStreaming(dbfPath, consumer))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("not readable");
         } finally {

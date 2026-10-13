@@ -403,13 +403,13 @@ class DbfImportServiceTest {
     void testImportMt_BlankStringsAreReplacedWithDefault() {
         when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
 
-        Map<String, Object> record = new HashMap<>();
-        record.put("KGR", "GRP");
-        record.put("KMT", "MT-BLANK");
-        record.put("SNM", "   ");   // trim → "" → DEFAULT_EMPTY
-        record.put("EDU", "   ");   // trim → "" → DEFAULT_EMPTY
+        Map<String, Object> rowData = new HashMap<>();
+        rowData.put("KGR", "GRP");
+        rowData.put("KMT", "MT-BLANK");
+        rowData.put("SNM", "   ");
+        rowData.put("EDU", "   ");
 
-        simulateRead(mtFile, List.of(record));
+        simulateRead(mtFile, List.of(rowData));
 
         dbfImportService.importMt();
 

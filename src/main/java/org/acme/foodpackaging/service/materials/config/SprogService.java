@@ -9,6 +9,7 @@ import org.acme.foodpackaging.repository.materials.SprogRepository;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 
 @ApplicationScoped
 public class SprogService {
@@ -42,12 +43,12 @@ public class SprogService {
 
     /** Текущий месяц — обязателен. Бросает исключение, если программы нет. */
     public double sysnNow() {
-        return findByDate(LocalDate.now()).sysn;
+        return findByDate(LocalDate.now(ZoneId.systemDefault())).sysn;
     }
 
     /** Следующий месяц — опционально. null, если программы нет. */
     public Double sysnNextOrNull() {
-        return sprogRepository.findByDateOptional(LocalDate.now().plusMonths(1))
+        return sprogRepository.findByDateOptional(LocalDate.now(ZoneId.systemDefault()).plusMonths(1))
                 .map(p -> p.sysn)
                 .orElse(null);
     }
