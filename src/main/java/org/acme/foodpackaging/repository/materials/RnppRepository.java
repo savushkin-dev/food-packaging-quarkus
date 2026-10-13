@@ -51,4 +51,8 @@ public class RnppRepository implements PanacheRepository<PlrRnpp> {
 
         return result;
     }
+
+    public void deleteBySysn(Double sysn) {
+        delete("sysn = ?1", sysn);
+    }
 }

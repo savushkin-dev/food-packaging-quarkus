@@ -7,6 +7,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Optional;
 
 @ApplicationScoped
 public class SprogRepository implements PanacheRepository<PlrSprog> {
@@ -16,18 +17,15 @@ public class SprogRepository implements PanacheRepository<PlrSprog> {
     @ConfigProperty(name = "app.sprog.obj")
     String obj;
 
-    public PlrSprog findByDate(LocalDate date) {
+    /** Найти программу на месяц. Если нет — вернуть null (или Optional.empty). */
+    public Optional<PlrSprog> findByDateOptional(LocalDate date) {
         YearMonth yearMonth = YearMonth.from(date);
         LocalDate firstDay = yearMonth.atDay(1);
-        LocalDate lastDay = yearMonth.atEndOfMonth();
+        LocalDate lastDay  = yearMonth.atEndOfMonth();
 
         return find(
                 "obj = ?1 AND np = ?2 AND dt1 >= ?3 AND dt2 <= ?4",
                 obj, NP, firstDay, lastDay
-        )
-                .firstResultOptional()
-                .orElseThrow(() -> new RuntimeException(
-                        "Не найдена программа для месяца: " + yearMonth
-                ));
+        ).firstResultOptional();
     }
 }

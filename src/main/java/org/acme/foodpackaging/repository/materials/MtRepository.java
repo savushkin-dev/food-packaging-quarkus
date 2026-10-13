@@ -48,7 +48,7 @@ public class MtRepository implements PanacheRepository<PlrMt> {
      * Загружает все материалы в Map по KMT
      */
     public Map<String, PlrMt> findAllAsMapByKmt() {
-        return find("ORDER BY kmt")
+        return find("FROM PlrMt")
                 .stream()
                 .collect(Collectors.toMap(
                         PlrMt::getKmt,

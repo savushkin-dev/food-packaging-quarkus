@@ -20,6 +20,9 @@ public class MtService {
     private final MtRepository mtRepository;
 
     @Inject
+    MtService self;
+
+    @Inject
     public MtService(MtRepository mtRepository) {
         this.mtRepository = mtRepository;
     }
@@ -60,6 +63,6 @@ public class MtService {
         mt.pers = materialSettingDto.getPers();
         mt.rnd = materialSettingDto.getRnd();
         mt.inCalc = materialSettingDto.getInCalc();
-        invalidate(kmt);
+        self.invalidate(kmt);
     }
 }

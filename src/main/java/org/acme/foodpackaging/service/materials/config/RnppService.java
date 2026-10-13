@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.service.materials.config;
 
+import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheResult;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,8 +30,14 @@ public class RnppService {
         // Сбрасывает весь кэш
     }
 
+    @CacheInvalidateAll(cacheName = "rnpp-cache")
     public void deleteAll(){
         invalidateAll();
         rnppRepository.deleteAll();
+    }
+
+    @CacheInvalidateAll(cacheName = "rnpp-cache")
+    public void deleteBySysn(Double sysn) {
+        rnppRepository.deleteBySysn(sysn);
     }
 }
