@@ -67,8 +67,6 @@ public class DbfImportService {
         this.clock = Clock.systemDefaultZone();
     }
 
-    // ==================== PUBLIC IMPORT METHODS ====================
-
     @Transactional
     @TransactionConfiguration(timeout = 1800)
     public void importSprog() {
@@ -346,7 +344,7 @@ public class DbfImportService {
 
         for (PlrMt entity : batch) {
             if (!entityManager.contains(entity)) {
-                entityManager.persist(entity);   // новые — INSERT
+                entityManager.persist(entity);
             }
             // existing уже managed — ничего не делаем, flush подхватит изменения
         }
@@ -442,6 +440,10 @@ public class DbfImportService {
     private LocalDate toLocalDate(java.util.Date date, LocalDate defaultValue) {
         if (date == null) {
             return defaultValue;
+        }
+        // java.sql.Date.toInstant() кидает UnsupportedOperationException
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
         }
         return date.toInstant()
                 .atZone(ZoneId.systemDefault())
