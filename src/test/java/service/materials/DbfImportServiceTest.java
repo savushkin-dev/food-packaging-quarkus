@@ -176,14 +176,55 @@ class DbfImportServiceTest {
 
     @Test
     void testImportSprog_BatchSizeTriggersMultipleFlushes() {
-        simulateRead(sprogFile, createSprogRecords(25));
+        simulateRead(sprogFile, createSprogRecords(250));
 
         dbfImportService.importSprog();
 
         verify(sprogService).deleteAll();
-        verify(entityManager, times(25)).persist(any(PlrSprog.class));
-        verify(entityManager, times(1)).flush();   // BATCH_SIZE=100 → 1 батч
-        verify(entityManager, times(1)).clear();
+        verify(entityManager, times(250)).persist(any(PlrSprog.class));
+        verify(entityManager, times(3)).flush();   // 100 + 100 + 50
+        verify(entityManager, times(3)).clear();
+    }
+
+    @Test
+    void testImportSprog_HandlesNullAndUtilDate() {
+        List<Map<String, Object>> records = new ArrayList<>();
+
+        // Запись 1: DT1 = null → toLocalDate(null, default)
+        Map<String, Object> r1 = new HashMap<>();
+        r1.put("SYSN", 39001.0);
+        r1.put("DT1", null);
+        r1.put("DT2", null);
+        r1.put("OBJ", "OBJ-NULL");
+        r1.put("NP", 0);
+        records.add(r1);
+
+        // Запись 2: DT1 = java.util.Date → toInstant().atZone().toLocalDate()
+        Map<String, Object> r2 = new HashMap<>();
+        r2.put("SYSN", 39002.0);
+        r2.put("DT1", java.util.Date.from(
+                LocalDate.of(2026, Month.FEBRUARY, 15)
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()));
+        r2.put("DT2", java.util.Date.from(
+                LocalDate.of(2026, Month.MARCH, 15)
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()));
+        r2.put("OBJ", "OBJ-UTIL");
+        r2.put("NP", 1);
+        records.add(r2);
+
+        simulateRead(sprogFile, records);
+
+        dbfImportService.importSprog();
+
+        ArgumentCaptor<PlrSprog> captor = ArgumentCaptor.forClass(PlrSprog.class);
+        verify(entityManager, times(2)).persist(captor.capture());
+
+        List<PlrSprog> saved = captor.getAllValues();
+        assertNotNull(saved.get(0).getDt1(), "DT1=null должен дать default (today)");
+        assertEquals(LocalDate.of(2026, Month.FEBRUARY, 15), saved.get(1).getDt1());
+        assertEquals(LocalDate.of(2026, Month.MARCH, 15), saved.get(1).getDt2());
     }
 
     // ==================== RNPP ====================
@@ -237,14 +278,14 @@ class DbfImportServiceTest {
         when(sprogService.sysnNow()).thenReturn((double) SYSN_NOW);
         when(sprogService.sysnNextOrNull()).thenReturn(null);
 
-        simulateRead(rnppFile, createRnppRecords(SYSN_NOW, 25));
+        simulateRead(rnppFile, createRnppRecords(SYSN_NOW, 250));
 
         dbfImportService.importRnpp();
 
         verify(rnppService).deleteBySysn((double) SYSN_NOW);
-        verify(entityManager, times(25)).persist(any(PlrRnpp.class));
-        verify(entityManager, times(1)).flush();   // BATCH_SIZE=100 → 1 батч
-        verify(entityManager, times(1)).clear();
+        verify(entityManager, times(250)).persist(any(PlrRnpp.class));
+        verify(entityManager, times(3)).flush();   // 100 + 100 + 50
+        verify(entityManager, times(3)).clear();
     }
 
     @Test
@@ -355,6 +396,61 @@ class DbfImportServiceTest {
         verify(mtService, never()).invalidateAll();
     }
 
+    /**
+     * Покрывает ветку getString(...): после trim получается пустая строка → DEFAULT_EMPTY.
+     */
+    @Test
+    void testImportMt_BlankStringsAreReplacedWithDefault() {
+        when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
+
+        Map<String, Object> record = new HashMap<>();
+        record.put("KGR", "GRP");
+        record.put("KMT", "MT-BLANK");
+        record.put("SNM", "   ");   // trim → "" → DEFAULT_EMPTY
+        record.put("EDU", "   ");   // trim → "" → DEFAULT_EMPTY
+
+        simulateRead(mtFile, List.of(record));
+
+        dbfImportService.importMt();
+
+        ArgumentCaptor<PlrMt> captor = ArgumentCaptor.forClass(PlrMt.class);
+        verify(entityManager).persist(captor.capture());
+        assertEquals("", captor.getValue().getSnm());
+        assertEquals("", captor.getValue().getEdu());
+    }
+
+    /**
+     * Покрывает catch-ветку в getString: mock кидает исключение на несуществующем поле.
+     * В реальной жизни это DBFFieldNotFoundException.
+     */
+    @Test
+    void testImportMt_HandlesMissingFieldInRow() {
+        when(mtService.findAllAsMapByKmt()).thenReturn(new HashMap<>());
+
+        DBFRow row = mock(DBFRow.class, withSettings().lenient());
+        lenient().when(row.getString("KGR")).thenReturn("GRP");
+        lenient().when(row.getString("KMT")).thenReturn("MT-MISSING");
+        // SNM и EDU отсутствуют в моке → Mockito вернёт null.
+        // Чтобы сработал catch, заставим getString бросить исключение:
+        lenient().when(row.getString("SNM"))
+                .thenThrow(new RuntimeException("DBFFieldNotFoundException"));
+        lenient().when(row.getString("EDU")).thenReturn("kg");
+
+        doAnswer(invocation -> {
+            Consumer<DBFRow> consumer = invocation.getArgument(1);
+            consumer.accept(row);
+            return null;
+        }).when(dbfReaderService).readDbfFileStreaming(
+                eq(mtFile.toAbsolutePath().normalize().toString()),
+                any(Consumer.class));
+
+        dbfImportService.importMt();
+
+        ArgumentCaptor<PlrMt> captor = ArgumentCaptor.forClass(PlrMt.class);
+        verify(entityManager).persist(captor.capture());
+        assertEquals("", captor.getValue().getSnm());   // упало → DEFAULT_EMPTY
+    }
+
     // ==================== PP ====================
 
     @Test
@@ -380,14 +476,14 @@ class DbfImportServiceTest {
 
     @Test
     void testImportPp_BatchSizeTriggersMultipleFlushes() {
-        simulateRead(ppFile, createPpRecords(23));
+        simulateRead(ppFile, createPpRecords(230));
 
         dbfImportService.importPp();
 
         verify(ppService).deleteAll();
-        verify(entityManager, times(23)).persist(any(PlrPp.class));
-        verify(entityManager, times(1)).flush();   // BATCH_SIZE=100 → 1 батч
-        verify(entityManager, times(1)).clear();
+        verify(entityManager, times(230)).persist(any(PlrPp.class));
+        verify(entityManager, times(3)).flush();   // 100 + 100 + 30
+        verify(entityManager, times(3)).clear();
     }
 
     // ==================== getImportFile ====================
