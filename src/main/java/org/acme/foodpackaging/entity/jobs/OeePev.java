@@ -27,7 +27,8 @@ import java.time.LocalDateTime;
                         @ColumnResult(name = "NOTE", type = String.class),
                         @ColumnResult(name = "PDTN", type = LocalDateTime.class),
                         @ColumnResult(name = "PDUR", type = Integer.class),
-                        @ColumnResult(name = "EVTYPE", type = Integer.class)
+                        @ColumnResult(name = "EVTYPE", type = Integer.class),
+                        @ColumnResult(name = "SNPZ", type = Long.class)
                 }
         )
 )
@@ -56,6 +57,9 @@ import java.time.LocalDateTime;
         )
 )
 public class OeePev extends PanacheEntityBase {
+
+    /** Значение SNPZ, которым помечаются параллельные сервисные операции */
+    public static final long PARALLEL_OPERATION_SNPZ = -1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

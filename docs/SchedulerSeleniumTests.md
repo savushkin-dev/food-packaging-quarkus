@@ -32,7 +32,7 @@ mvn clean test "-Pselenium"
 |3|`shouldOpenLineSettingsWithStartAndMaxTimeThenClose`|Открыть "Настройка линий"|У каждой линии заданы дата начала и максимальное время; диалог закрывается|
 |4|`shouldSelectAllProductsForTargetDate`|Отметить все продукты за дату|Все чекбоксы установлены|
 |5|`shouldLoadPlanSuccessfully`|Нажать "Догрузить план"|Догрузка без ошибок|
-|6|`shouldStartPlanningAndShowDisabledStopButton`|Нажать "Планировать"|Кнопка стала "Остановить" и неактивна|
+|6|`shouldStartPlanningAndShowDisabledStopButton`|Нажать "Планировать"|Кнопка стала "Подождите" (с таймером) и неактивна|
 |7|`shouldWaitAndStopPlanningThenShowStartButtonAgain`|Дождаться активации, нажать "Остановить"|Кнопка снова "Планировать"|
 |8|`shouldReadResultIndicatorsAfterPlanning`|Прочитать показатели|Ошибки/простой/время выполнения — читаемые числа|
 
