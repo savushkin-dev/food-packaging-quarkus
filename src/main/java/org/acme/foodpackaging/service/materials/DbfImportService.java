@@ -127,11 +127,12 @@ public class DbfImportService {
     @TransactionConfiguration(timeout = 1800)
     public void importRnpp() {
 
+        Path dbfFile = getImportFile(RNPP_FILE);
+        log.info("=== START Rnpp IMPORT ===");
+
         double sysnNowMonth = sprogService.sysnNow();
         double sysnNextMonth = Optional.ofNullable(sprogService.sysnNextOrNull()).orElse(SYSN_NONE);
 
-        Path dbfFile = getImportFile(RNPP_FILE);
-        log.info("=== START Rnpp IMPORT ===");
         long startTime = System.currentTimeMillis();
 
         long deleteStart = System.currentTimeMillis();
