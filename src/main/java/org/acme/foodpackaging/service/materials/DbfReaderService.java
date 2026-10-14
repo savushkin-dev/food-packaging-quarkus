@@ -1,10 +1,11 @@
 package org.acme.foodpackaging.service.materials;
 
 import com.linuxense.javadbf.DBFReader;
-import com.linuxense.javadbf.DBFField;
+import com.linuxense.javadbf.DBFRow;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -13,8 +14,6 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -30,7 +29,7 @@ public class DbfReaderService {
      * Потоковое чтение DBF файла с memo и кодировкой
      */
     public void readDbfFileStreaming(String dbfPath, String memoPath, String charsetName,
-                                     Consumer<Map<String, Object>> recordConsumer) {
+                                     Consumer<DBFRow> recordConsumer) {
         validateInput(dbfPath, recordConsumer);
 
         Path dbfFilePath = normalizeAndValidatePath(dbfPath);
@@ -38,13 +37,11 @@ public class DbfReaderService {
 
         log.info("Opening DBF file: {}", dbfFilePath.getFileName());
 
-        // Кодировка теперь передаётся сразу в конструктор DBFReader,
-        // а не выставляется постфактум через deprecated-сеттер.
-        try (DBFReader reader = new DBFReader(new FileInputStream(dbfFilePath.toFile()), encoding, false)) {
+        try (DBFReader reader = new DBFReader(
+                new BufferedInputStream(new FileInputStream(dbfFilePath.toFile())),
+                encoding, false)) {
             loadMemoFileIfPresent(reader, memoPath);
-
-            DBFField[] fields = readStructure(reader, dbfFilePath);
-            processRecords(reader, fields, recordConsumer);
+            processRecords(reader, recordConsumer);
 
         } catch (IOException e) {
             log.error("IO error reading DBF file: {}", dbfFilePath.getFileName(), e);
@@ -58,15 +55,13 @@ public class DbfReaderService {
     /**
      * Упрощенный метод - автоматически ищет memo файл
      */
-    public void readDbfFileStreaming(String dbfPath, Consumer<Map<String, Object>> recordConsumer) {
+    public void readDbfFileStreaming(String dbfPath, Consumer<DBFRow> recordConsumer) {
         validateInput(dbfPath, recordConsumer);
         String memoPath = findMemoFile(dbfPath);
         readDbfFileStreaming(dbfPath, memoPath, DEFAULT_ENCODING, recordConsumer);
     }
 
-    // ==================== PRIVATE METHODS ====================
-
-    private void validateInput(String dbfPath, Consumer<Map<String, Object>> recordConsumer) {
+    private void validateInput(String dbfPath, Consumer<DBFRow> recordConsumer) {
         if (dbfPath == null || dbfPath.trim().isEmpty()) {
             throw new IllegalArgumentException("DBF file path cannot be null or empty");
         }
@@ -81,7 +76,6 @@ public class DbfReaderService {
         }
 
         try {
-            // Проверяем на path traversal ДО нормализации
             String normalizedPathStr = path.replace('\\', '/');
             if (normalizedPathStr.contains("..")) {
                 throw new IllegalArgumentException("Invalid file path: path traversal detected");
@@ -184,38 +178,18 @@ public class DbfReaderService {
             log.info("Memo file loaded: {}", memoFilePath.getFileName());
         } catch (Exception e) {
             log.warn("Memo file is corrupted or invalid: {}", memoFilePath.getFileName());
-            // Продолжаем без memo файла
         }
     }
 
-    private DBFField[] readStructure(DBFReader reader, Path dbfFilePath) {
-        int fieldCount = reader.getFieldCount();
-        DBFField[] fields = new DBFField[fieldCount];
-
-
-        log.info("=== DBF Structure: {} ===", dbfFilePath.getFileName());
-        for (int i = 0; i < fieldCount; i++) {
-            fields[i] = reader.getField(i);
-            log.info("Field {}: {} ({}) length: {}",
-                    i, fields[i].getName(), fields[i].getType().name(), fields[i].getLength());
-        }
-        return fields;
-    }
-
-    private void processRecords(DBFReader reader, DBFField[] fields,
-                                Consumer<Map<String, Object>> recordConsumer) throws IOException {
-        Object[] rowData;
+    private void processRecords(DBFReader reader,
+                                Consumer<DBFRow> recordConsumer) throws IOException {
+        DBFRow row;
         int rowCount = 0;
 
-        while ((rowData = reader.nextRecord()) != null) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            for (int i = 0; i < fields.length; i++) {
-                row.put(fields[i].getName(), rowData[i] != null ? rowData[i] : null);
-            }
+        while ((row = reader.nextRow()) != null) {
             recordConsumer.accept(row);
             rowCount++;
         }
-
         log.info("Total records processed: {}", rowCount);
     }
 }
