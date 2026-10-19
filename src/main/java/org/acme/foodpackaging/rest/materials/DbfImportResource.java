@@ -14,7 +14,7 @@ import org.acme.foodpackaging.service.materials.DbfImportService;
 public class DbfImportResource {
 
     private static final String ERROR_IMPORT_FAILED = "Не удалось выполнить импорт DBF";
-    private static final String ERROR_IMPORT_UNAVAILABLE = "DBF import is unavailable";
+    private static final String ERROR_IMPORT_UNAVAILABLE = "Файл справочника DBF недоступен";
 
     private final DbfImportService dbfImportService;
 
@@ -26,25 +26,25 @@ public class DbfImportResource {
     @POST
     @Path("/sprog")
     public Response importSprog() {
-        return runImport("SPROG", dbfImportService::importSprog);
+        return runImport("Справочник производственных программ (SPROG)", dbfImportService::importSprog);
     }
 
     @POST
     @Path("/rnpp")
     public Response importRnpp() {
-        return runImport("RNPP", dbfImportService::importRnpp);
+        return runImport("Справочник норм расхода (RNPP)", dbfImportService::importRnpp);
     }
 
     @POST
     @Path("/mt")
     public Response importMt() {
-        return runImport("MT", dbfImportService::importMt);
+        return runImport("Справочник материалов (MT)", dbfImportService::importMt);
     }
 
     @POST
     @Path("/pp")
     public Response importPp() {
-        return runImport("PP", dbfImportService::importPp);
+        return runImport("Справочник МОЛ (PP)", dbfImportService::importPp);
     }
 
     private Response runImport(String tag, ImportOperation importOperation) {
