@@ -16,6 +16,7 @@ import org.acme.foodpackaging.service.scheduleoperations.MoveJobsService;
 import org.acme.foodpackaging.service.jobs.JobRefreshService;
 
 import java.util.Map;
+import java.util.Set;
 
 @Path("schedule")
 @RequiredArgsConstructor(onConstructor_ = @Inject)
@@ -31,7 +32,7 @@ public class ScheduleEditResource {
     @Path("selection")
     public Response applySelection(@HeaderParam("X-Session-Id") String sessionId, JobSelectionRequest dto) {
         scheduleSessionService.mutateAndResolve(sessionId, schedule -> {
-            schedule.getOverloadedIds().clear();
+            schedule.setOverloadedIds(Set.of());
             jobRefreshService.applySelection(dto.selection(), schedule);
         }, solutionManager);
         return Response.ok().build();

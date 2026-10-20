@@ -1,4 +1,4 @@
-package align;
+package service.align;
 
 import builder.JobTestBuilder;
 import builder.LineTestBuilder;

@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.acme.foodpackaging.domain.value.FactKey.EventType.END_CAMERA;
 import static org.acme.foodpackaging.utils.ScheduleUtils.fixLineJobs;
@@ -57,7 +58,9 @@ public class JobRefreshService {
         job.setHandPackaging(isHandPackaging);
         job.setMinStartTime(solution.getWorkCalendar().getMinStartDateTime());
 
-        solution.getOverloadedIds().add(snpz.toString());
+        Set<String> overloadedIds = solution.getOverloadedIds();
+        overloadedIds.add(snpz.toString());
+        solution.setOverloadedIds(overloadedIds);
         solution.getJobs().add(job);
     }
 
