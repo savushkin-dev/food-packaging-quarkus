@@ -1,6 +1,7 @@
 package org.acme.foodpackaging.sql;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import org.acme.foodpackaging.entity.jobs.OeePev;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
@@ -244,11 +245,11 @@ public class SqlQueries {
         return """
                 SELECT
                     v.F_ID, v.KRC,v.NOTE,
-                    v.PDTN, v.PDUR, v.EVTYPE
+                    v.PDTN, v.PDUR, v.EVTYPE, v.SNPZ
                 FROM [%s].[dbo].[OEE_PEV] v
                 WHERE
                     v.F_DEL = 0
-                    AND (v.SNPZ IN (0, 10) OR v.SNPZ IS NULL)
+                    AND (v.SNPZ IN (0, 10, %d) OR v.SNPZ IS NULL)
                     AND (
                         (
                             v.PDTN >= ?1
@@ -263,7 +264,7 @@ public class SqlQueries {
                 ORDER BY
                     v.KRC,
                     v.PDTN
-                """.formatted(mesSchema);
+                """.formatted(mesSchema, OeePev.PARALLEL_OPERATION_SNPZ);
     }
 
 

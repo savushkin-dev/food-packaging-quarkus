@@ -94,7 +94,7 @@ class SchedulerEmptyDayTest {
     void shouldStartPlanningAndShowDisabledStopButton() {
         page.clickStartPlanning();
         assertThat(page.isStopButtonShownAndInitiallyDisabled())
-                .as("После нажатия \"Планировать\" кнопка должна стать \"Остановить\" и быть неактивной")
+                .as("После нажатия \"Планировать\" должна появиться неактивная кнопка остановки (\"Подождите\" с таймером)")
                 .isTrue();
     }
 

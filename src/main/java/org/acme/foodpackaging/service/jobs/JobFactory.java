@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.domain.Product;
 import org.acme.foodpackaging.dto.row.jobs.JobRow;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
@@ -11,6 +12,7 @@ import org.acme.foodpackaging.exception.service.ProductNotFoundException;
 import org.acme.foodpackaging.service.load.LoadDataService;
 import org.acme.foodpackaging.utils.ScheduleUtils;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -19,6 +21,7 @@ import java.util.Map;
 public class JobFactory {
 
     private static final String DEFAULT_MAINTENANCE_NAME = "Обслуживание";
+    private static final String DEFAULT_PARALLEL_OPERATION_NAME = "Параллельная операция";
 
     private final LoadDataService loadDataService;
     private final JobInfoService jobInfoService;
@@ -49,6 +52,30 @@ public class JobFactory {
                 .getOrDefault(safe(row.eventTypeId()), DEFAULT_MAINTENANCE_NAME);
 
         return new Job(row, typeName, maintenanceProduct);
+    }
+
+    /**
+     * Создаёт параллельную операцию из строки OEE_PEV — id операции равен F_ID
+     */
+    public ParallelOperation createParallelOperation(MaintenanceRow row) {
+        if (row == null) {
+            throw new IllegalArgumentException("Unknown parallel operation: row is null");
+        }
+        String typeName = loadDataService.getMaintenanceTypes()
+                .getOrDefault(safe(row.eventTypeId()), DEFAULT_PARALLEL_OPERATION_NAME);
+        Duration duration = row.duration() != null ? Duration.ofMinutes(row.duration()) : null;
+        LocalDateTime start = row.startProductionDateTime();
+
+        return ParallelOperation.builder()
+                .id(String.valueOf(row.fId()))
+                .lineId(row.lineId())
+                .name(typeName)
+                .startDateTime(start)
+                .duration(duration)
+                .endDateTime(start == null || duration == null ? null : start.plus(duration))
+                .maintenanceTypeId(row.eventTypeId())
+                .maintenanceNote(row.note())
+                .build();
     }
 
     private int safe(Integer v) {

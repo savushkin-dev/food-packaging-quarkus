@@ -29,7 +29,11 @@ public class SchedulerPage {
 
     private static final By ANY_OVERLAY = By.xpath(
             "//div[contains(@class,'fixed') and (contains(@class,'bg-black/50') or contains(@class,'bg-black/40'))]");
-    private static final By STOP_BUTTON = By.xpath("//button[contains(., 'Остановить')]");
+    // Во время блокировки (первые 2 минуты после старта) фронтенд показывает
+    // кнопку "Подождите" с таймером обратного отсчёта, затем - "Остановить".
+    // Локатор принимает оба варианта текста.
+    private static final By STOP_BUTTON = By.xpath(
+            "//button[contains(., 'Остановить') or contains(., 'Подождите')]");
     private static final By START_BUTTON = By.xpath("//button[contains(., 'Планировать')]");
     private static final By DATE_INPUT = By.xpath("//input[@type='date']");
     private static final By TASK_SELECT_BUTTONS = By.xpath(
@@ -200,10 +204,11 @@ public class SchedulerPage {
 
     // --- Тест 7: остановка планирования ---
 
-    // Фронтенд намеренно держит кнопку "Остановить" заблокированной 2 минуты
-    // после старта планирования (см. SchedulePage.jsx, solve(): setTimeout(...,
-    // 120000)). Раньше здесь использовался общий wait на 3 минуты - разница
-    // всего в минуту запаса, и под нагрузкой (солвер грузит ту же машину)
+    // Фронтенд намеренно держит кнопку остановки заблокированной 2 минуты
+    // после старта планирования (в это время она называется "Подождите" и
+    // показывает таймер; см. SchedulePage.jsx, solve(): setTimeout(..., 120000)).
+    // Раньше здесь использовался общий wait на 3 минуты - разница всего
+    // в минуту запаса, и под нагрузкой (солвер грузит ту же машину)
     // setTimeout в браузере может сработать с опозданием, из-за чего тест
     // ловил таймаут впритык к границе.
     private static final Duration STOP_BUTTON_ACTIVE_TIMEOUT = Duration.ofMinutes(4);
