@@ -13,4 +13,5 @@ services:
       - QUARKUS_PROFILE=${QUARKUS_PROFILE:-prod}
     volumes:
       - ./logs:/app/logs
+      - ${DBF_IMPORT}:${DBF_IMPORT}:ro
     restart: always

@@ -34,6 +34,7 @@ public class PpService {
         // Очищает кэш поиска получателей
     }
 
+    @CacheInvalidateAll(cacheName = "pp-search-cache")
     public void deleteAll(){
         invalidateSearchCache();
         ppRepository.deleteAll();
