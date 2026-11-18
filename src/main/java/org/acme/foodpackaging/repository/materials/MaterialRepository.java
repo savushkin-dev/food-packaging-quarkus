@@ -1,5 +1,7 @@
 package org.acme.foodpackaging.repository.materials;
 
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -10,6 +12,10 @@ import org.acme.foodpackaging.sql.SqlQueries;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,15 +24,49 @@ public class MaterialRepository {
 
 
     private final EntityManager em;
+
+    private final AgroalDataSource dispDataSource;
+
     private final SqlQueries sqlQueries;
 
     @ConfigProperty(name = "ksk")
     String defaultKsk;
 
     @Inject
-    public MaterialRepository(EntityManager em, SqlQueries sqlQueries) {
+    public MaterialRepository(EntityManager em, SqlQueries sqlQueries, @DataSource("disp") AgroalDataSource dispDataSource) {
         this.em = em;
         this.sqlQueries = sqlQueries;
+        this.dispDataSource = dispDataSource;
+    }
+
+    public List<ProductDto> findPreliminaryProductsByDate(String date) {
+        String sql = sqlQueries.loadPreliminaryProducts();
+
+        try (Connection conn = dispDataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, date);
+            ps.setString(2, defaultKsk);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                List<ProductDto> products = new ArrayList<>();
+                while (rs.next()) {
+                    ProductDto product = new ProductDto();
+                    product.setKmc(rs.getString("KMC"));
+                    product.setEan13(rs.getString("EAN13"));
+                    product.setEmk(rs.getDouble("EMK"));
+                    product.setKt(rs.getString("KT"));
+                    product.setSumMass(rs.getDouble("SUM_MASS"));
+                    product.setSumKolev(rs.getDouble("SUM_KOLEZ"));
+                    product.setProductName(rs.getString("PRODUCT_NAME"));
+                    product.setKrkmc(rs.getDouble("KRKMC"));
+                    products.add(product);
+                }
+                return products;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load preliminary products", e);
+        }
     }
 
     @SuppressWarnings("unchecked")

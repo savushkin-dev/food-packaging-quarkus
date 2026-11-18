@@ -15,6 +15,7 @@ public class MaintenanceRowBuilder {
     private Long fId = 1L;
     private String lineId = "L1";
     private Integer eventTypeId = 2;
+    private Long snpz = 0L;
 
     public static MaintenanceRowBuilder aRow() {
         return new MaintenanceRowBuilder();
@@ -52,6 +53,11 @@ public class MaintenanceRowBuilder {
         return this;
     }
 
+    public MaintenanceRowBuilder withSnpz(Long snpz) {
+        this.snpz = snpz;
+        return this;
+    }
+
     public MaintenanceRow build() {
         return new MaintenanceRow(
                 fId,
@@ -59,7 +65,8 @@ public class MaintenanceRowBuilder {
                 note,
                 startProductionDateTime,
                 duration,
-                eventTypeId
+                eventTypeId,
+                snpz
         );
     }
 }

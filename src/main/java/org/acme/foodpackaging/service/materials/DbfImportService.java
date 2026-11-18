@@ -1,5 +1,6 @@
 package org.acme.foodpackaging.service.materials;
 
+import com.linuxense.javadbf.DBFRow;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -15,14 +16,14 @@ import org.acme.foodpackaging.service.materials.config.PpService;
 import org.acme.foodpackaging.service.materials.config.RnppService;
 import org.acme.foodpackaging.service.materials.config.SprogService;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.time.Clock;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import java.nio.file.Path;
@@ -32,11 +33,10 @@ import java.nio.file.Files;
 @ApplicationScoped
 public class DbfImportService {
 
-    private static final int BATCH_SIZE = 20;
-    private static final DateTimeFormatter DBF_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int BATCH_SIZE = 100;
     private static final String DEFAULT_UNKNOWN = "UNKNOWN";
     private static final String DEFAULT_EMPTY = "";
-    private static final int MIN_SYSN = 39000;
+    private static final double SYSN_NONE = -1d;
 
     private final DbfReaderService dbfReaderService;
     private final EntityManager entityManager;
@@ -54,9 +54,9 @@ public class DbfImportService {
 
     @Inject
     public DbfImportService(DbfReaderService dbfReaderService, EntityManager entityManager,
-            MtService mtService, PpService ppService,
-            SprogService sprogService, RnppService rnppService,
-        @ConfigProperty(name = "dbf.import.directory") Path importDirectory) {
+                            MtService mtService, PpService ppService,
+                            SprogService sprogService, RnppService rnppService,
+                            @ConfigProperty(name = "dbf.import.directory") Path importDirectory) {
         this.dbfReaderService = dbfReaderService;
         this.entityManager = entityManager;
         this.mtService = mtService;
@@ -67,8 +67,6 @@ public class DbfImportService {
         this.clock = Clock.systemDefaultZone();
     }
 
-    // ==================== PUBLIC IMPORT METHODS ====================
-
     @Transactional
     @TransactionConfiguration(timeout = 1800)
     public void importSprog() {
@@ -77,19 +75,26 @@ public class DbfImportService {
         log.info("=== START SPROG IMPORT ===");
         long startTime = System.currentTimeMillis();
 
+        long deleteStart = System.currentTimeMillis();
         sprogService.deleteAll();
+        long deleteMs = System.currentTimeMillis() - deleteStart;
 
         AtomicInteger importedCount = new AtomicInteger(0);
+        AtomicLong saveMs = new AtomicLong(0);
         List<PlrSprog> batch = new ArrayList<>(BATCH_SIZE);
 
+        long readStart = System.currentTimeMillis();
+
         try {
-            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), row -> {
                 try {
-                    PlrSprog entity = mapToSprog(recordMap);
+                    PlrSprog entity = mapToSprog(row);
                     batch.add(entity);
 
                     if (batch.size() >= BATCH_SIZE) {
+                        long s = System.currentTimeMillis();
                         int saved = saveSprogBatch(batch);
+                        saveMs.addAndGet(System.currentTimeMillis() - s);
                         importedCount.addAndGet(saved);
                         batch.clear();
                     }
@@ -99,13 +104,18 @@ public class DbfImportService {
             });
 
             if (!batch.isEmpty()) {
+                long s = System.currentTimeMillis();
                 int saved = saveSprogBatch(batch);
+                saveMs.addAndGet(System.currentTimeMillis() - s);
                 importedCount.addAndGet(saved);
                 batch.clear();
             }
 
-            long totalTime = (System.currentTimeMillis() - startTime) / 1000;
-            log.info("=== FINISHED SPROG IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
+            long readMs = System.currentTimeMillis() - readStart;
+            long totalMs = System.currentTimeMillis() - startTime;
+            log.info("=== FINISHED SPROG IMPORT: {} records in {} sec | delete={} ms, read={} ms (save={} ms, pure-read={} ms), total={} ms ===",
+                    importedCount.get(), totalMs / 1000,
+                    deleteMs, readMs, saveMs.get(), readMs - saveMs.get(), totalMs);
 
         } catch (Exception e) {
             log.error("SPROG import failed", e);
@@ -116,28 +126,43 @@ public class DbfImportService {
     @Transactional()
     @TransactionConfiguration(timeout = 1800)
     public void importRnpp() {
+
         Path dbfFile = getImportFile(RNPP_FILE);
         log.info("=== START Rnpp IMPORT ===");
+
+        double sysnNowMonth = sprogService.sysnNow();
+        double sysnNextMonth = Optional.ofNullable(sprogService.sysnNextOrNull()).orElse(SYSN_NONE);
+
         long startTime = System.currentTimeMillis();
 
-        rnppService.deleteAll();
+        long deleteStart = System.currentTimeMillis();
+        rnppService.deleteBySysn(sysnNowMonth);
+        if (sysnNextMonth != SYSN_NONE) {
+            rnppService.deleteBySysn(sysnNextMonth);
+        }
+        long deleteMs = System.currentTimeMillis() - deleteStart;
 
         AtomicInteger importedCount = new AtomicInteger(0);
+        AtomicLong saveMs = new AtomicLong(0);
         List<PlrRnpp> batch = new ArrayList<>(BATCH_SIZE);
+
+        long readStart = System.currentTimeMillis();
 
         try {
 
-            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), row -> {
                 try {
-                    if (((Number) recordMap.get("SYSN")).intValue() < MIN_SYSN) {
+                    if (row.getInt("SYSN") != sysnNowMonth && row.getInt("SYSN") != sysnNextMonth) {
                         return;
                     }
 
-                    PlrRnpp entity = mapToRnpp(recordMap);
+                    PlrRnpp entity = mapToRnpp(row);
                     batch.add(entity);
 
                     if (batch.size() >= BATCH_SIZE) {
+                        long s = System.currentTimeMillis();
                         int saved = saveRnppBatch(batch);
+                        saveMs.addAndGet(System.currentTimeMillis() - s);
                         importedCount.addAndGet(saved);
                         batch.clear();
                     }
@@ -148,13 +173,18 @@ public class DbfImportService {
             });
 
             if (!batch.isEmpty()) {
+                long s = System.currentTimeMillis();
                 int saved = saveRnppBatch(batch);
+                saveMs.addAndGet(System.currentTimeMillis() - s);
                 importedCount.addAndGet(saved);
                 batch.clear();
             }
 
-            long totalTime = (System.currentTimeMillis() - startTime) / 1000;
-            log.info("=== FINISHED Rnpp IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
+            long readMs = System.currentTimeMillis() - readStart;
+            long totalMs = System.currentTimeMillis() - startTime;
+            log.info("=== FINISHED Rnpp IMPORT: {} records in {} sec | delete={} ms, read={} ms (save={} ms, pure-read={} ms), total={} ms ===",
+                    importedCount.get(), totalMs / 1000,
+                    deleteMs, readMs, saveMs.get(), readMs - saveMs.get(), totalMs);
 
         } catch (Exception e) {
             log.error("Rnpp import failed", e);
@@ -169,13 +199,19 @@ public class DbfImportService {
         log.info("=== START Mt IMPORT ===");
         long startTime = System.currentTimeMillis();
 
+        long loadStart = System.currentTimeMillis();
         Map<String, PlrMt> existingMap = mtService.findAllAsMapByKmt();
+        long loadMs = System.currentTimeMillis() - loadStart;
+
         List<PlrMt> allEntitiesToSave = new ArrayList<>();
+        long saveMs = 0;
+
+        long readStart = System.currentTimeMillis();
 
         try {
-            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), row -> {
                 try {
-                    PlrMt newEntity = mapToMt(recordMap);
+                    PlrMt newEntity = mapToMt(row);
                     String kmt = newEntity.getKmt();
 
                     PlrMt existing = existingMap.get(kmt);
@@ -197,13 +233,18 @@ public class DbfImportService {
             });
 
             if (!allEntitiesToSave.isEmpty()) {
+                long s = System.currentTimeMillis();
                 saveMtBatch(allEntitiesToSave);
+                saveMs = System.currentTimeMillis() - s;
             }
 
             mtService.invalidateAll();
 
-            long totalTime = (System.currentTimeMillis() - startTime) / 1000;
-            log.info("=== FINISHED Mt IMPORT: {} records in {} sec ===", allEntitiesToSave.size(), totalTime);
+            long readMs = System.currentTimeMillis() - readStart;
+            long totalMs = System.currentTimeMillis() - startTime;
+            log.info("=== FINISHED Mt IMPORT: {} records in {} sec | loadExisting={} ms, read={} ms (save={} ms, pure-read={} ms), total={} ms ===",
+                    allEntitiesToSave.size(), totalMs / 1000,
+                    loadMs, readMs, saveMs, readMs - saveMs, totalMs);
 
         } catch (Exception e) {
             log.error("Mt import failed", e);
@@ -218,19 +259,26 @@ public class DbfImportService {
         log.info("=== START Pp IMPORT ===");
         long startTime = System.currentTimeMillis();
 
+        long deleteStart = System.currentTimeMillis();
         ppService.deleteAll();
+        long deleteMs = System.currentTimeMillis() - deleteStart;
 
         AtomicInteger importedCount = new AtomicInteger(0);
+        AtomicLong saveMs = new AtomicLong(0);
         List<PlrPp> batch = new ArrayList<>(BATCH_SIZE);
 
+        long readStart = System.currentTimeMillis();
+
         try {
-            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), recordMap -> {
+            dbfReaderService.readDbfFileStreaming(dbfFile.toString(), row -> {
                 try {
-                    PlrPp entity = mapToPp(recordMap);
+                    PlrPp entity = mapToPp(row);
                     batch.add(entity);
 
                     if (batch.size() >= BATCH_SIZE) {
+                        long s = System.currentTimeMillis();
                         int saved = savePpBatch(batch);
+                        saveMs.addAndGet(System.currentTimeMillis() - s);
                         importedCount.addAndGet(saved);
                         batch.clear();
                     }
@@ -241,13 +289,18 @@ public class DbfImportService {
             });
 
             if (!batch.isEmpty()) {
+                long s = System.currentTimeMillis();
                 int saved = savePpBatch(batch);
+                saveMs.addAndGet(System.currentTimeMillis() - s);
                 importedCount.addAndGet(saved);
                 batch.clear();
             }
 
-            long totalTime = (System.currentTimeMillis() - startTime) / 1000;
-            log.info("=== FINISHED Pp IMPORT: {} records in {} sec ===", importedCount.get(), totalTime);
+            long readMs = System.currentTimeMillis() - readStart;
+            long totalMs = System.currentTimeMillis() - startTime;
+            log.info("=== FINISHED Pp IMPORT: {} records in {} sec | delete={} ms, read={} ms (save={} ms, pure-read={} ms), total={} ms ===",
+                    importedCount.get(), totalMs / 1000,
+                    deleteMs, readMs, saveMs.get(), readMs - saveMs.get(), totalMs);
 
         } catch (Exception e) {
             log.error("Pp import failed", e);
@@ -262,15 +315,12 @@ public class DbfImportService {
             return 0;
         }
 
-        long startTime = System.currentTimeMillis();
-
         for (PlrSprog entity : batch) {
             entityManager.persist(entity);
         }
         entityManager.flush();
         entityManager.clear();
 
-        log.debug("Saved SPROG batch of {} records in {} ms", batch.size(), System.currentTimeMillis() - startTime);
         return batch.size();
     }
 
@@ -279,15 +329,12 @@ public class DbfImportService {
             return 0;
         }
 
-        long startTime = System.currentTimeMillis();
-
         for (PlrRnpp entity : batch) {
             entityManager.persist(entity);
         }
         entityManager.flush();
         entityManager.clear();
 
-        log.debug("Saved Rnpp batch of {} records in {} ms", batch.size(), System.currentTimeMillis() - startTime);
         return batch.size();
     }
 
@@ -296,9 +343,11 @@ public class DbfImportService {
             return;
         }
 
-        for (int index = 0; index < batch.size(); index++) {
-            PlrMt mergedEntity = entityManager.merge(batch.get(index));
-            batch.set(index, mergedEntity);
+        for (PlrMt entity : batch) {
+            if (!entityManager.contains(entity)) {
+                entityManager.persist(entity);
+            }
+            // existing уже managed — ничего не делаем, flush подхватит изменения
         }
 
         entityManager.flush();
@@ -310,77 +359,97 @@ public class DbfImportService {
             return 0;
         }
 
-        long startTime = System.currentTimeMillis();
-
         for (PlrPp entity : batch) {
             entityManager.persist(entity);
         }
         entityManager.flush();
         entityManager.clear();
 
-        log.debug("Saved Pp batch of {} records in {} ms", batch.size(), System.currentTimeMillis() - startTime);
         return batch.size();
     }
 
     // ==================== MAPPER METHODS ====================
 
-    private PlrSprog mapToSprog(Map<String, Object> recordMap) {
+    private PlrSprog mapToSprog(DBFRow row) {
         PlrSprog entity = new PlrSprog();
 
-        entity.setSysn(getDoubleOrDefault(recordMap, "SYSN", 0.0));
-        entity.setDt1(getDateOrDefault(recordMap, "DT1", LocalDate.now(clock)));
-        entity.setDt2(getDateOrDefault(recordMap, "DT2", LocalDate.now(clock).plusDays(1)));
-        entity.setObj(getStringOrDefault(recordMap, "OBJ", DEFAULT_UNKNOWN));
-        entity.setNp(getIntegerOrDefault(recordMap, "NP", 0));
+        entity.setSysn(row.getDouble("SYSN"));
+        entity.setDt1(toLocalDate(row.getDate("DT1"), LocalDate.now(clock)));
+        entity.setDt2(toLocalDate(row.getDate("DT2"), LocalDate.now(clock).plusDays(1)));
+        entity.setObj(getString(row, "OBJ", DEFAULT_UNKNOWN));
+        entity.setNp(row.getInt("NP"));
 
         return entity;
     }
 
-    private PlrRnpp mapToRnpp(Map<String, Object> recordMap) {
+    private PlrRnpp mapToRnpp(DBFRow row) {
         PlrRnpp entity = new PlrRnpp();
 
-        entity.setSysn(getDoubleOrDefault(recordMap, "SYSN", 0.0));
-        entity.setKmc(getStringOrDefault(recordMap, "KMC", DEFAULT_UNKNOWN));
-        entity.setKt(getStringOrDefault(recordMap, "KT", DEFAULT_UNKNOWN));
-        entity.setEmk(getDoubleOrDefault(recordMap, "EMK", 0.0));
+        entity.setSysn(row.getDouble("SYSN"));
+        entity.setKmc(getString(row, "KMC", DEFAULT_UNKNOWN));
+        entity.setKt(getString(row, "KT", DEFAULT_UNKNOWN));
+        entity.setEmk(row.getDouble("EMK"));
+        entity.setTkom(row.getInt("TKOM"));
 
-        entity.setTkom(getIntegerOrDefault(recordMap, "TKOM", 0));
-
-        String kkom = getStringOrDefault(recordMap, "KKOM", DEFAULT_UNKNOWN);
+        String kkom = getString(row, "KKOM", DEFAULT_UNKNOWN);
         if (kkom.length() > 10) {
             kkom = kkom.substring(0, 10);
         }
         entity.setKkom(kkom);
 
-        entity.setKol1t(getDoubleOrDefault(recordMap, "KOL1T", 0.0));
-        entity.setKolvk(getDoubleOrDefault(recordMap, "KOLVK", 0.0));
+        entity.setKol1t(row.getDouble("KOL1T"));
+        entity.setKolvk(row.getDouble("KOLVK"));
 
         return entity;
     }
 
-    private PlrMt mapToMt(Map<String, Object> recordMap) {
+    private PlrMt mapToMt(DBFRow row) {
         PlrMt entity = new PlrMt();
 
-        entity.setKgr(getStringOrDefault(recordMap, "KGR", DEFAULT_EMPTY));
-        entity.setKmt(getStringOrDefault(recordMap, "KMT", DEFAULT_EMPTY));
-        entity.setSnm(getStringOrDefault(recordMap, "SNM", DEFAULT_EMPTY));
-        entity.setEdu(getStringOrDefault(recordMap, "EDU", DEFAULT_EMPTY));
-        entity.setPers(getDoubleOrDefault(recordMap, "PERS", 0.0));
-        entity.setRnd(getDoubleOrDefault(recordMap, "RND", 0.0));
+        entity.setKgr(getString(row, "KGR", DEFAULT_EMPTY));
+        entity.setKmt(getString(row, "KMT", DEFAULT_EMPTY));
+        entity.setSnm(getString(row, "SNM", DEFAULT_EMPTY));
+        entity.setEdu(getString(row, "EDU", DEFAULT_EMPTY));
 
         return entity;
     }
 
-    private PlrPp mapToPp(Map<String, Object> recordMap) {
+    private PlrPp mapToPp(DBFRow row) {
         PlrPp entity = new PlrPp();
 
-        entity.setKpp(getStringOrDefault(recordMap, "KPP", DEFAULT_EMPTY));
-        entity.setSnm(getStringOrDefault(recordMap, "SNM", DEFAULT_EMPTY));
+        entity.setKpp(getString(row, "KPP", DEFAULT_EMPTY));
+        entity.setSnm(getString(row, "SNM", DEFAULT_EMPTY));
 
         return entity;
     }
 
     // ==================== HELPER METHODS ====================
+
+    private String getString(DBFRow row, String field, String defaultValue) {
+        try {
+            String s = row.getString(field);
+            if (s == null) {
+                return defaultValue;
+            }
+            s = s.trim();
+            return s.isEmpty() ? defaultValue : s;
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
+    private LocalDate toLocalDate(java.util.Date date, LocalDate defaultValue) {
+        if (date == null) {
+            return defaultValue;
+        }
+        // java.sql.Date.toInstant() кидает UnsupportedOperationException
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        return date.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
 
     private Path getImportFile(String fileName) {
         Path importRoot = importDirectory.toAbsolutePath().normalize();
@@ -395,95 +464,5 @@ public class DbfImportService {
         }
 
         return dbfFile;
-    }
-
-    /**
-     * Находит файл memo (DBT или FPT) по пути DBF файла
-     */
-    
-    private String getString(Map<String, Object> recordMap, String key) {
-        Object value = recordMap.get(key);
-        if (value == null) {
-            return null;
-        }
-        String str = value.toString().trim();
-        return str.isEmpty() ? null : str;
-    }
-
-    private String getStringOrDefault(Map<String, Object> recordMap, String key, String defaultValue) {
-        String value = getString(recordMap, key);
-        return value != null ? value : defaultValue;
-    }
-
-    private Double getDouble(Map<String, Object> recordMap, String key) {
-        Object value = recordMap.get(key);
-        if (value == null) {
-            return null;
-        }
-        try {
-            return Double.parseDouble(value.toString().trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private Double getDoubleOrDefault(Map<String, Object> recordMap, String key, Double defaultValue) {
-        Double value = getDouble(recordMap, key);
-        return value != null ? value : defaultValue;
-    }
-
-    private Integer getInteger(Map<String, Object> recordMap, String key) {
-        Object value = recordMap.get(key);
-        if (value == null) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(value.toString().trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private Integer getIntegerOrDefault(Map<String, Object> recordMap, String key, Integer defaultValue) {
-        Integer value = getInteger(recordMap, key);
-        return value != null ? value : defaultValue;
-    }
-
-    @SuppressWarnings("unused")
-    private BigDecimal getBigDecimal(Map<String, Object> recordMap, String key) {
-        Object value = recordMap.get(key);
-        if (value == null) {
-            return null;
-        }
-        try {
-            return new BigDecimal(value.toString().trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private LocalDate getDate(Map<String, Object> recordMap, String key) {
-        Object value = recordMap.get(key);
-        if (value == null) {
-            return null;
-        }
-
-        try {
-            if (value instanceof java.util.Date date) {
-                return date.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-            }
-            String str = value.toString().trim();
-            return LocalDate.parse(str, DBF_DATE_FORMAT);
-        } catch (Exception e) {
-            log.warn("Failed to parse date: {} for field {}", value, key);
-            return null;
-        }
-    }
-
-    private LocalDate getDateOrDefault(Map<String, Object> recordMap, String key, LocalDate defaultValue) {
-        LocalDate value = getDate(recordMap, key);
-        return value != null ? value : defaultValue;
     }
 }

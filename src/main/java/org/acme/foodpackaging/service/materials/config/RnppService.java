@@ -29,8 +29,14 @@ public class RnppService {
         // Сбрасывает весь кэш
     }
 
+    @CacheInvalidateAll(cacheName = "rnpp-cache")
     public void deleteAll(){
         invalidateAll();
         rnppRepository.deleteAll();
+    }
+
+    @CacheInvalidateAll(cacheName = "rnpp-cache")
+    public void deleteBySysn(Double sysn) {
+        rnppRepository.deleteBySysn(sysn);
     }
 }

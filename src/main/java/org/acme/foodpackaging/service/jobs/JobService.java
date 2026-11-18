@@ -51,6 +51,7 @@ public class JobService {
 
         solution.setAllJobsById(result.allJobsById());
         solution.setJobs(result.jobs());
+        solution.setParallelOperations(result.parallelOperations());
 
         return result.jobRows();
     }

@@ -4,15 +4,17 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import lombok.extern.log4j.Log4j2;
+import org.acme.foodpackaging.dto.materials.ApiError;
 import org.acme.foodpackaging.service.materials.DbfImportService;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
+@Log4j2
 @Path("/api/dbf/import")
 @Produces(MediaType.APPLICATION_JSON)
 public class DbfImportResource {
 
-    private static final String ERROR_IMPORT_FAILED = "Import failed";
+    private static final String ERROR_IMPORT_FAILED = "Не удалось выполнить импорт DBF";
+    private static final String ERROR_IMPORT_UNAVAILABLE = "Файл справочника DBF недоступен";
 
     private final DbfImportService dbfImportService;
 
@@ -24,42 +26,56 @@ public class DbfImportResource {
     @POST
     @Path("/sprog")
     public Response importSprog() {
-        return runImport(dbfImportService::importSprog);
+        return runImport("Справочник производственных программ (SPROG)", dbfImportService::importSprog);
     }
 
     @POST
     @Path("/rnpp")
     public Response importRnpp() {
-        return runImport(dbfImportService::importRnpp);
+        return runImport("Справочник норм расхода (RNPP)", dbfImportService::importRnpp);
     }
 
     @POST
     @Path("/mt")
     public Response importMt() {
-        return runImport(dbfImportService::importMt);
+        return runImport("Справочник материалов (MT)", dbfImportService::importMt);
     }
 
     @POST
     @Path("/pp")
     public Response importPp() {
-        return runImport(dbfImportService::importPp);
+        return runImport("Справочник МОЛ (PP)", dbfImportService::importPp);
     }
 
-    private Response runImport(ImportOperation importOperation) {
+    private Response runImport(String tag, ImportOperation importOperation) {
         try {
             importOperation.run();
             return Response.ok().build();
         } catch (IllegalArgumentException e) {
-            log.warn("DBF import request was rejected");
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("DBF import is unavailable")
-                    .build();
+            return warn("[" + tag + "] " + ERROR_IMPORT_UNAVAILABLE, e);
         } catch (Exception e) {
-            log.error("DBF import failed");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(ERROR_IMPORT_FAILED)
-                    .build();
+            return error("[" + tag + "] " + ERROR_IMPORT_FAILED, e);
         }
+    }
+
+    /**
+     * Ошибка клиента: файл не найден, путь недоступен и т.п.
+     */
+    private Response warn(String message, Exception e) {
+        log.warn("{}: {}", message, e.getMessage());
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity(new ApiError(message + ": " + e.getMessage()))
+                .build();
+    }
+
+    /**
+     * Внутренняя ошибка: упал импорт целиком.
+     */
+    private Response error(String message, Exception e) {
+        log.error(message, e);
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ApiError(message + ": " + e.getMessage()))
+                .build();
     }
 
     @FunctionalInterface

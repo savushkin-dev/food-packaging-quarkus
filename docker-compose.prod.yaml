@@ -20,4 +20,5 @@ services:
       - .env
     volumes:
       - ./logs:/app/logs
+      - ${DBF_IMPORT}:${DBF_IMPORT}:ro
     restart: always

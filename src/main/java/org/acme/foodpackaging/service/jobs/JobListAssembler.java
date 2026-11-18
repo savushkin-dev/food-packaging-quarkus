@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.acme.foodpackaging.domain.Job;
 import org.acme.foodpackaging.domain.Line;
 import org.acme.foodpackaging.domain.PackagingSchedule;
+import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.domain.WorkCalendar;
 import org.acme.foodpackaging.dto.row.maintenance.CleaningRow;
 import org.acme.foodpackaging.dto.row.maintenance.DelayRow;
@@ -45,7 +46,8 @@ public class JobListAssembler {
         applyDelayDurations(jobs, data.delayDurations());
         applyCleaningDelayDurations(jobs, data.cleaningDelayDurations());
 
-        return new JobAssemblyResult(jobs, allJobsById, new ArrayList<>(data.jobRows().values()));
+        return new JobAssemblyResult(jobs, allJobsById, new ArrayList<>(data.jobRows().values()),
+                initParallelOperations(data.maintenanceRows()));
     }
 
     private void initProductionJobs(PackagingSchedule solution, Map<Long, JobRow> jobRows,
@@ -65,7 +67,7 @@ public class JobListAssembler {
     private void initMaintenanceJobs(PackagingSchedule solution, List<MaintenanceRow> serviceData,
                                      List<Job> jobs, LocalDateTime minStartDateTime) {
         for (MaintenanceRow row : serviceData) {
-            if (row.lineId() == null) continue;
+            if (row.lineId() == null || row.isParallelOperation()) continue;
             Job job = jobFactory.createMaintenanceJob(row, solution.getMaintenanceProduct());
             Line line = findLineById(solution, job.getLineId());
             if (line != null) {
@@ -75,6 +77,20 @@ public class JobListAssembler {
                 assignJobToLine(job, line, jobs);
             }
         }
+    }
+
+    /**
+     * Параллельные операции приходят тем же запросом, что и обслуживание,
+     * и отличаются значением SNPZ — ключом служит F_ID записи
+     */
+    private Map<String, ParallelOperation> initParallelOperations(List<MaintenanceRow> serviceData) {
+        Map<String, ParallelOperation> operations = new HashMap<>();
+        for (MaintenanceRow row : serviceData) {
+            if (row.lineId() == null || !row.isParallelOperation()) continue;
+            ParallelOperation operation = jobFactory.createParallelOperation(row);
+            operations.put(operation.getId(), operation);
+        }
+        return operations;
     }
 
     private void enrichProductionJob(Job job, JobRow row, Map<Long, CleaningRow> cleaningIdMap,
@@ -132,7 +148,8 @@ public class JobListAssembler {
         }
     }
 
-    public record JobAssemblyResult(List<Job> jobs, Map<Long, Job> allJobsById, List<JobRow> jobRows) {}
+    public record JobAssemblyResult(List<Job> jobs, Map<Long, Job> allJobsById, List<JobRow> jobRows,
+                                    Map<String, ParallelOperation> parallelOperations) {}
 
     private record JobSourceData(
             List<MaintenanceRow> maintenanceRows,

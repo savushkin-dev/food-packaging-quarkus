@@ -9,6 +9,7 @@ import org.acme.foodpackaging.service.jobs.JobFactory;
 import org.acme.foodpackaging.service.jobs.JobInfoService;
 import org.acme.foodpackaging.dto.row.maintenance.MaintenanceRow;
 import org.acme.foodpackaging.domain.Job;
+import org.acme.foodpackaging.domain.ParallelOperation;
 import org.acme.foodpackaging.domain.Product;
 import builder.MaintenanceRowBuilder;
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,6 +22,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -136,5 +139,35 @@ class JobFactoryTest {
         Job job = jobFactory.createMaintenanceJob(row, maintenanceProduct);
 
         assertEquals("Обслуживание", job.getName());
+    }
+
+    @Test
+    void createParallelOperation_usesFIdAsId() {
+        LocalDateTime start = LocalDateTime.of(2025, Month.JANUARY, 15, 9, 0);
+        MaintenanceRow row = MaintenanceRowBuilder.aRow()
+                .withFId(77L).withLineId("L1").withEventTypeId(3).withDuration(90)
+                .withStartProductionDateTime(start).withNote("note").build();
+
+        when(loadDataService.getMaintenanceTypes()).thenReturn(new ConcurrentHashMap<>(Map.of(3, "Мойка")));
+
+        ParallelOperation operation = jobFactory.createParallelOperation(row);
+
+        assertEquals("77", operation.getId());
+        assertEquals("L1", operation.getLineId());
+        assertEquals("Мойка", operation.getName());
+        assertEquals(start, operation.getStartDateTime());
+        assertEquals(start.plusMinutes(90), operation.getEndDateTime());
+        assertEquals(90, operation.getDuration().toMinutes());
+        assertEquals(3, operation.getMaintenanceTypeId());
+        assertEquals("note", operation.getMaintenanceNote());
+    }
+
+    @Test
+    void createParallelOperation_usesDefaultName_whenTypeUnknown() {
+        MaintenanceRow row = MaintenanceRowBuilder.aRow().withEventTypeId(null).build();
+
+        when(loadDataService.getMaintenanceTypes()).thenReturn(new ConcurrentHashMap<>());
+
+        assertEquals("Параллельная операция", jobFactory.createParallelOperation(row).getName());
     }
 }

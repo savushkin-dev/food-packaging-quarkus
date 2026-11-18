@@ -69,7 +69,7 @@ class JobServiceTest {
                 List<JobRow> jobRows = List.of(JobRowBuilder.aRow().withSnpz(123L).withKmc("P1").withLineId("L1").build());
 
                 JobListAssembler.JobAssemblyResult result =
-                        new JobListAssembler.JobAssemblyResult(jobs, allJobsById, jobRows);
+                        new JobListAssembler.JobAssemblyResult(jobs, allJobsById, jobRows, Map.of());
 
                 when(jobListAssembler.assemble(schedule)).thenReturn(result);
                 when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
@@ -94,7 +94,7 @@ class JobServiceTest {
 
                 LocalDateTime dateTime = LocalDateTime.of(2026, Month.AUGUST, 27, 9, 0);
                 JobListAssembler.JobAssemblyResult result =
-                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of(), Map.of());
                 when(jobListAssembler.assemble(schedule)).thenReturn(result);
 
                 FactProductionRow startFact = new FactProductionRow("BATCH1", "343355", dateTime,
@@ -120,7 +120,7 @@ class JobServiceTest {
                 LocalDateTime cameraEnd = LocalDateTime.of(2026, Month.AUGUST, 27, 9, 30);
 
                 JobListAssembler.JobAssemblyResult result =
-                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of(), Map.of());
                 when(jobListAssembler.assemble(schedule)).thenReturn(result);
 
                 FactProductionRow startCameraFact = new FactProductionRow(
@@ -145,7 +145,7 @@ class JobServiceTest {
                 job.setProduct(null);
 
                 JobListAssembler.JobAssemblyResult result =
-                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of(), Map.of());
                 when(jobListAssembler.assemble(schedule)).thenReturn(result);
                 when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
 
@@ -160,7 +160,7 @@ class JobServiceTest {
                 job.setIdBatch("BATCH1");
 
                 JobListAssembler.JobAssemblyResult result =
-                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of());
+                        new JobListAssembler.JobAssemblyResult(List.of(job), Map.of(), List.of(), Map.of());
                 when(jobListAssembler.assemble(schedule)).thenReturn(result);
                 when(jobRepository.getFactProductionRowMap(any(), any())).thenReturn(Map.of());
 

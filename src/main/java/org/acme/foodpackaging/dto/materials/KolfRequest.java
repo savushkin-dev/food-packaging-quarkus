@@ -14,4 +14,5 @@ public class KolfRequest {
     private Double kolf;
     private String date;
     private String kpp;
+    private String type;
 }
