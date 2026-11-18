@@ -25,6 +25,14 @@ public class SchedulerPage {
     private static final By DATE_INPUT=By.xpath("//input[@type='date']");
     private static final By TASK_SELECT_BUTTONS=By.xpath("//span[starts-with(normalize-space(.), 'Задание ')]/ancestor::div[contains(@class,'justify-between')][1]//button[contains(., 'Отметить все') or contains(., 'Снять все') or contains(., 'Нет доступных')]");
     private static final By LINE_ROWS=By.xpath("//div[contains(concat(' ',normalize-space(@class),' '),' rct-sidebar-row ')]//div[contains(concat(' ',normalize-space(@class),' '),' group-title ')]");
+    private static final By SIDEBAR_ROWS=By.xpath("//div[contains(concat(' ',normalize-space(@class),' '),' rct-sidebar-row ')]");
+
+    private Object queryLine(String line,String mode,String title,String np){
+        By row=By.xpath("(" + "//div[contains(concat(' ',normalize-space(@class),' '),' group-title ')]"
+                + "[normalize-space(.)=" + literal(line) + "])/ancestor::div[contains(concat(' ',normalize-space(@class),' '),' rct-sidebar-row ')][1]");
+        return js().executeScript(LINE_QUERY_SCRIPT,line,mode,title,np,
+                driver.findElements(row),driver.findElements(JOB_CARDS));
+    }
     private static final By ERROR_TOAST=By.xpath("//*[contains(@class,'toast') or contains(@class,'error') or contains(@class,'alert')][contains(translate(., 'ОШИБКА', 'ошибка'), 'ошибка')]");
     private static final By JOB_CARDS=By.xpath("//div[contains(concat(' ',normalize-space(@class),' '),' rct-item ')]");
     private static final By MOVE_MODAL=By.xpath("//h1[normalize-space(.)='Перемещение элементов']/parent::div");
@@ -102,15 +110,17 @@ public class SchedulerPage {
     public int countAllJobCards(){return driver.findElements(JOB_CARDS).size();}
 
     private static final String READ_LINES_SCRIPT="""
-        const rows=[...document.querySelectorAll('.rct-sidebar-row')].map(r=>{
-          const b=r.getBoundingClientRect(),t=r.querySelector('.group-title');
+        const one=(root,path)=>document.evaluate(path,root,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;
+        const badges=item=>Array.from(item.getElementsByTagName("span")).filter(e=>e.classList.contains("px-1")&&e.classList.contains("rounded"));
+        const rows=arguments[0].map(r=>{
+          const b=r.getBoundingClientRect(),t=one(r,".//div[contains(concat(' ',normalize-space(@class),' '),' group-title ')]");
           return {name:(t?t.textContent:r.textContent).trim(),top:b.top,bottom:b.bottom,cards:[]};
         });
-        const val=(item,label)=>{const s=[...item.querySelectorAll('span.px-1.rounded')].find(x=>x.textContent.includes(label));return s&&s.firstElementChild?s.firstElementChild.textContent.trim():'';};
-        for(const item of document.querySelectorAll('.rct-item')){
+        const val=(item,label)=>{const s=badges(item).find(x=>x.textContent.includes(label));return s&&s.firstElementChild?s.firstElementChild.textContent.trim():'';};
+        for(const item of arguments[1]){
           const b=item.getBoundingClientRect(),cy=b.top+b.height/2;
           const row=rows.find(r=>cy>=r.top&&cy<r.bottom);if(!row||!b.width||!b.height)continue;
-          const s=[...item.querySelectorAll('span.px-1.rounded')].find(x=>x.textContent.includes('Время'));
+          const s=badges(item).find(x=>x.textContent.includes('Время'));
           const m=s?s.textContent.match(/(\\d{2}:\\d{2})\\s*-\\s*(\\d{2}:\\d{2})/):null;
           row.cards.push({left:b.left,title:item.getAttribute('title')||'',batch:val(item,'№ партии'),position:val(item,'Позиция на линии'),start:m?m[1]:'',end:m?m[2]:''});
         }
@@ -118,7 +128,7 @@ public class SchedulerPage {
         """;
     @SuppressWarnings("unchecked")
     public List<LineSnapshot> readLines(){
-        List<Map<String,Object>> raw=(List<Map<String,Object>>)js().executeScript(READ_LINES_SCRIPT);List<LineSnapshot> result=new ArrayList<>();
+        List<Map<String,Object>> raw=(List<Map<String,Object>>)js().executeScript(READ_LINES_SCRIPT,driver.findElements(SIDEBAR_ROWS),driver.findElements(JOB_CARDS));List<LineSnapshot> result=new ArrayList<>();
         for(Map<String,Object> row:raw){List<JobCard> cards=new ArrayList<>();
             for(Map<String,Object> c:(List<Map<String,Object>>)row.get("cards"))cards.add(new JobCard(String.valueOf(c.get("title")),String.valueOf(c.get("batch")),parseIntOrMinusOne(String.valueOf(c.get("position"))),String.valueOf(c.get("start")),String.valueOf(c.get("end"))));
             result.add(new LineSnapshot(String.valueOf(row.get("name")),cards));}
@@ -129,15 +139,13 @@ public class SchedulerPage {
     private static final String LINE_QUERY_SCRIPT="""
         const line=arguments[0],mode=arguments[1];
         const norm=s=>s.replace(/\\s+/g,' ').trim();
-        const title=[...document.querySelectorAll('div.group-title')].find(e=>norm(e.textContent)===line);
-        if(!title)return null;
-        const row=title.closest('div.rct-sidebar-row');if(!row)return null;
+        const row=arguments[4][0];if(!row)return null;
         const bounds=row.getBoundingClientRect();
         const one=(root,path)=>document.evaluate(path,root,null,XPathResult.FIRST_ORDERED_NODE_TYPE,null).singleNodeValue;
         const text=e=>e?(e.innerText??e.textContent).trim():'';
         const identity=card=>({title:card.getAttribute('title'),np:text(one(card,".//span[normalize-space(.)='№ партии']/preceding-sibling::span[1]"))});
         const entries=[];
-        for(const card of document.querySelectorAll('div.rct-item')){
+        for(const card of arguments[5]){
             if(!one(card,".//span[contains(normalize-space(.),'Позиция на линии')]"))continue;
             const b=card.getBoundingClientRect(),cy=b.top+b.height/2;
             if(cy<bounds.top||cy>=bounds.bottom||b.width<=0||b.height<=0)continue;
@@ -158,7 +166,7 @@ public class SchedulerPage {
         """;
     @SuppressWarnings("unchecked")
     private List<JobIdentity> readJobOrderNow(String line){
-        List<Map<String,Object>> raw=(List<Map<String,Object>>)js().executeScript(LINE_QUERY_SCRIPT,line,"order");if(raw==null)return null;
+        List<Map<String,Object>> raw=(List<Map<String,Object>>)queryLine(line,"order",null,null);if(raw==null)return null;
         List<JobIdentity> result=new ArrayList<>(raw.size());for(Map<String,Object> item:raw)result.add(new JobIdentity((String)item.get("title"),(String)item.get("np")));return result;
     }
     public List<String> getLineNames(){return driver.findElements(By.xpath("//div[contains(concat(' ',normalize-space(@class),' '),' group-title ')]")).stream().map(WebElement::getText).map(String::trim).filter(s->!s.isEmpty()).toList();}
@@ -167,7 +175,7 @@ public class SchedulerPage {
     private JobIdentity jobIdentity(String line,int index){return wait.until(d->{List<JobIdentity> order=readJobOrderNow(line);return order!=null&&index>=0&&index<order.size()?order.get(index):null;});}
     private void actOnJob(String line,JobIdentity identity,Consumer<WebElement> action){
         new WebDriverWait(driver,Duration.ofSeconds(20)).withMessage("Карточка не готова к действию: "+line+" / "+identity).until(d->{
-            try{WebElement card=(WebElement)js().executeScript(LINE_QUERY_SCRIPT,line,"target",identity.title(),identity.np());if(card==null)return false;action.accept(card);return true;}
+            try{WebElement card=(WebElement)queryLine(line,"target",identity.title(),identity.np());if(card==null)return false;action.accept(card);return true;}
             catch(StaleElementReferenceException e){return false;}});
     }
     private void reveal(WebElement e){js().executeScript("arguments[0].scrollIntoView({block:'center',inline:'nearest'});",e);}
@@ -211,7 +219,7 @@ public class SchedulerPage {
         waitUntilOverlayGone();selectJobRange(line,from,count);contextMenu(line,from);exactButton(ascending?"Отсортировать по возрастанию":"Отсортировать по убыванию");waitUntilOverlayGone();waitOrder(line,expected);
     }
     @SuppressWarnings("unchecked")
-    public List<Boolean> getPinnedState(String line){return wait.until(d->(List<Boolean>)js().executeScript(LINE_QUERY_SCRIPT,line,"pins"));}
+    public List<Boolean> getPinnedState(String line){return wait.until(d->(List<Boolean>)queryLine(line,"pins",null,null));}
     public void pinLineThrough(String line,int count){
         validateRange(getJobOrder(line).size(),0,count);waitUntilOverlayGone();selectJobRange(line,count-1,1);contextMenu(line,count-1);exactButton("Закрепить линию по");waitUntilOverlayGone();
         wait.until(d->{try{List<Boolean> pins=getPinnedState(line);if(pins.isEmpty())return false;for(int i=0;i<pins.size();i++)if(pins.get(i)!=(i<count))return false;return true;}catch(StaleElementReferenceException e){return false;}});
@@ -251,6 +259,15 @@ public class SchedulerPage {
             if(!(value instanceof Map<?,?> job)||!(job.get("line") instanceof Map<?,?> assigned)||!lineId.equals(text(assigned.get("id"))))continue;
             JobIdentity identity=new JobIdentity(text(job.get("name")),text(job.get("np")));
             candidates.computeIfAbsent(identity,k->new ArrayList<>()).add(job);
+        }
+        Set<JobIdentity> uiJobs=new LinkedHashSet<>(order);
+        Set<JobIdentity> missing=new LinkedHashSet<>(uiJobs);
+        missing.removeAll(candidates.keySet());
+        Set<JobIdentity> extra=new LinkedHashSet<>(candidates.keySet());
+        extra.removeAll(uiJobs);
+        if(!missing.isEmpty()||!extra.isEmpty()){
+            throw new IllegalStateException("UI/API: разные наборы заданий линии " + line
+                    + "; отсутствуют в API: " + missing + "; отсутствуют в UI: " + extra);
         }
         Map<JobIdentity,JobTimes> result=new LinkedHashMap<>();
         for(JobIdentity identity:order){
