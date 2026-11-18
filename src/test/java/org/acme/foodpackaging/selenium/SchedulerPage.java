@@ -8,6 +8,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import java.nio.file.Paths;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -17,7 +18,15 @@ import java.net.http.*;
 import java.math.BigDecimal;
 
 public class SchedulerPage {
-    private static final String URL=ConfigProvider.getConfig().getValue("scheduler.url",String.class);
+    private static final String URL;
+
+    static {
+        System.setProperty(
+                "smallrye.config.locations",
+                Paths.get(System.getProperty("user.dir"), ".env").toUri().toString()
+        );
+        URL = ConfigProvider.getConfig().getValue("scheduler.url", String.class);
+    }
     private static final By ANY_OVERLAY=By.xpath("//div[contains(@class,'fixed') and (contains(@class,'bg-black/50') or contains(@class,'bg-black/40'))]");
     private static final By STOP_BUTTON=By.xpath("//button[contains(., 'Остановить')]");
     private static final By COUNTDOWN_BUTTON=By.xpath("//button[.//span[starts-with(normalize-space(.), 'Подождите ')]]");
